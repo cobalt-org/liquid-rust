@@ -28,4 +28,6 @@ fn split_blocks(text: &str) -> Vec<String>{
 fn test_split_blocks() {
     assert_eq!(split_blocks("asdlkjfn\n{{askdljfbalkjsdbf}} asdjlfb"),
                 vec!["asdlkjfn\n".to_string(), "{{askdljfbalkjsdbf}}".to_string(), " asdjlfb".to_string()]);
+    assert_eq!(split_blocks("asdlkjfn\n{%askdljfbalkjsdbf%} asdjlfb"),
+                vec!["asdlkjfn\n".to_string(), "{%askdljfbalkjsdbf%}".to_string(), " asdjlfb".to_string()]);
 }
