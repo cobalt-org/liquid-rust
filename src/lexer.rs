@@ -1,9 +1,23 @@
 use regex::Regex;
 
-static TAGS : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
-static EXPRESSION : Regex = regex!("\\{%.*?%\\}");
-static STATEMENT : Regex = regex!("\\{\\{.*?\\}\\}");
+static TAGS       : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
+static EXPRESSION : Regex = regex!("\\{%(.*?)%\\}");
+static STATEMENT  : Regex = regex!("\\{\\{(.*?)\\}\\}");
 static WHITESPACE : Regex = regex!(r"\s+");
+
+static IDENTIFIER            : Regex = regex!(r"[a-zA-Z_][\w-]*\??");
+static SINGLE_STRING_LITERAL : Regex = regex!(r"'[^']*'");
+static DOUBLE_STRING_LITERAL : Regex = regex!("\"[^\"]*\"");
+static NUMBER_LITERAL        : Regex = regex!(r"-?\d+(\.\d+)?");
+static DOTDOT                : Regex = regex!(r"\.\.");
+
+#[deriving(Show, PartialEq)]
+enum ComparisonOperator{
+    Equals, NotEquals,
+    LessThan, GreaterThan,
+    LessThanEquals, GreaterThanEquals,
+    Contains
+}
 
 #[deriving(Show, PartialEq)]
 enum Token {
@@ -18,12 +32,11 @@ enum Token {
     Question,
     Dash,
 
-    Identifier,
-    SingleStringLiteral,
-    DoubleStringLiteral,
-    NumberLiteral,
+    Identifier(String),
+    StringLiteral(String),
+    NumberLiteral(String),
     DotDot,
-    ComparisonOperator
+    Comparison(ComparisonOperator)
 }
 
 #[deriving(Show, PartialEq)]
@@ -52,12 +65,13 @@ fn split_blocks(text: &str) -> Vec<&str>{
 }
 
 fn tokenize(text: &str) -> Vec<Element> {
-    let blocks = split_blocks(text);
-    blocks.iter().map(|block| {
+    split_blocks(text).iter().map(|block| {
         if(EXPRESSION.is_match(*block)){
-            Expression(granularize(*block), block.to_string())
+            let caps = EXPRESSION.captures(*block).unwrap();
+            Expression(granularize(caps.at(1)), block.to_string())
         }else if(STATEMENT.is_match(*block)){
-            Statement(granularize(*block), block.to_string())
+            let caps = STATEMENT.captures(*block).unwrap();
+            Statement(granularize(caps.at(1)), block.to_string())
         }else{
             Raw(block.to_string())
         }
@@ -65,7 +79,35 @@ fn tokenize(text: &str) -> Vec<Element> {
 }
 
 fn granularize(block: &str) -> Vec<Token>{
-    vec!()
+    WHITESPACE.split(block).map(|el|{
+        match el {
+            "|" => Pipe,
+            "." => Dot,
+            ":" => Colon,
+            "," => Comma,
+            "[" => OpenSquare,
+            "]" => CloseSquare,
+            "(" => OpenRound,
+            ")" => CloseRound,
+            "?" => Question,
+            "-" => Dash,
+
+            "=="       => Comparison(Equals),
+            "!="       => Comparison(NotEquals),
+            "<="       => Comparison(LessThanEquals),
+            ">="       => Comparison(GreaterThanEquals),
+            "<"        => Comparison(LessThan),
+            ">"        => Comparison(GreaterThan),
+            "contains" => Comparison(Contains),
+
+            x if DOTDOT.is_match(x) => DotDot,
+            x if SINGLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
+            x if DOUBLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
+            x if NUMBER_LITERAL.is_match(x) => NumberLiteral(x.to_string()),
+            x if IDENTIFIER.is_match(x) => Identifier(x.to_string()),
+            x => panic!("{} is not a valid identifier", x)
+        }
+    }).collect()
 }
 
 #[test]
@@ -78,8 +120,12 @@ fn test_split_blocks() {
 
 #[test]
 fn test_tokenize() {
-    assert_eq!(tokenize("asdlkjfn\n{{askdljfbalkjsdbf}} asdjlfb"), vec![
-               Raw("asdlkjfn\n".to_string()), Statement(vec!(), "{{askdljfbalkjsdbf}}".to_string()), Raw(" asdjlfb".to_string())
+    assert_eq!(tokenize("wat\n{{hello 'world'}} test"), vec![
+               Raw("wat\n".to_string()), Statement(vec![Identifier("hello".to_string()), StringLiteral("'world'".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
                ]);
+}
+
+#[test]
+fn test_granularize() {
 }
 
