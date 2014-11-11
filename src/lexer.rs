@@ -1,8 +1,8 @@
 use regex::Regex;
 
-static TAGS       : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
-static EXPRESSION : Regex = regex!("\\{%(.*?)%\\}");
-static STATEMENT  : Regex = regex!("\\{\\{(.*?)\\}\\}");
+static MARKUP     : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
+static TAG        : Regex = regex!("\\{%(.*?)%\\}");
+static OUTPUT     : Regex = regex!("\\{\\{(.*?)\\}\\}");
 static WHITESPACE : Regex = regex!(r"\s+");
 
 static IDENTIFIER            : Regex = regex!(r"[a-zA-Z_][\w-]*\??");
@@ -41,15 +41,15 @@ enum Token {
 
 #[deriving(Show, PartialEq)]
 enum Element{
-    Statement(Vec<Token>, String),
-    Expression(Vec<Token>, String),
+    Output(Vec<Token>, String),
+    Tag(Vec<Token>, String),
     Raw(String)
 }
 
 fn split_blocks(text: &str) -> Vec<&str>{
     let mut tokens = vec![];
     let mut current = 0;
-    for (begin, end) in TAGS.find_iter(text) {
+    for (begin, end) in MARKUP.find_iter(text) {
         match text.slice(current, begin){
             "" => {}
             t => tokens.push(t)
@@ -66,12 +66,12 @@ fn split_blocks(text: &str) -> Vec<&str>{
 
 fn tokenize(text: &str) -> Vec<Element> {
     split_blocks(text).iter().map(|block| {
-        if(EXPRESSION.is_match(*block)){
-            let caps = EXPRESSION.captures(*block).unwrap();
-            Expression(granularize(caps.at(1)), block.to_string())
-        }else if(STATEMENT.is_match(*block)){
-            let caps = STATEMENT.captures(*block).unwrap();
-            Statement(granularize(caps.at(1)), block.to_string())
+        if(TAG.is_match(*block)){
+            let caps = TAG.captures(*block).unwrap();
+            Tag(granularize(caps.at(1)), block.to_string())
+        }else if(OUTPUT.is_match(*block)){
+            let caps = OUTPUT.captures(*block).unwrap();
+            Output(granularize(caps.at(1)), block.to_string())
         }else{
             Raw(block.to_string())
         }
@@ -121,7 +121,7 @@ fn test_split_blocks() {
 #[test]
 fn test_tokenize() {
     assert_eq!(tokenize("wat\n{{hello 'world'}} test"), vec![
-               Raw("wat\n".to_string()), Statement(vec![Identifier("hello".to_string()), StringLiteral("'world'".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
+               Raw("wat\n".to_string()), Output(vec![Identifier("hello".to_string()), StringLiteral("'world'".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
                ]);
 }
 
