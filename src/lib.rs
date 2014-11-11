@@ -14,10 +14,10 @@ struct Liquid {
 }
 
 impl Liquid {
-    pub fn new(text: &str) -> Liquid {
+    fn new(text: &str) -> Liquid {
         Liquid { text: text.to_string(), content: HashMap::new() }
     }
-    pub fn parse (content: &HashMap<String, String>) -> String{
+    fn parse (&self, content: &HashMap<String, String>) -> String{
         "wtf".to_string()
     }
 }
