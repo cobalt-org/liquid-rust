@@ -12,7 +12,7 @@ static NUMBER_LITERAL        : Regex = regex!(r"-?\d+(\.\d+)?");
 static DOTDOT                : Regex = regex!(r"\.\.");
 
 #[deriving(Show, PartialEq)]
-enum ComparisonOperator{
+pub enum ComparisonOperator{
     Equals, NotEquals,
     LessThan, GreaterThan,
     LessThanEquals, GreaterThanEquals,
@@ -20,7 +20,7 @@ enum ComparisonOperator{
 }
 
 #[deriving(Show, PartialEq)]
-enum Token {
+pub enum Token {
     Pipe,
     Dot,
     Colon,
@@ -40,7 +40,7 @@ enum Token {
 }
 
 #[deriving(Show, PartialEq)]
-enum Element{
+pub enum Element{
     Output(Vec<Token>, String),
     Tag(Vec<Token>, String),
     Raw(String)
@@ -64,7 +64,7 @@ fn split_blocks(text: &str) -> Vec<&str>{
     tokens
 }
 
-fn tokenize(text: &str) -> Vec<Element> {
+pub fn tokenize(text: &str) -> Vec<Element> {
     split_blocks(text).iter().map(|block| {
         if(TAG.is_match(*block)){
             let caps = TAG.captures(*block).unwrap();
