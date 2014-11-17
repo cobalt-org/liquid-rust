@@ -66,10 +66,10 @@ fn split_blocks(text: &str) -> Vec<&str>{
 
 pub fn tokenize(text: &str) -> Vec<Element> {
     split_blocks(text).iter().map(|block| {
-        if(TAG.is_match(*block)){
+        if TAG.is_match(*block) {
             let caps = TAG.captures(*block).unwrap();
             Tag(granularize(caps.at(1)), block.to_string())
-        }else if(OUTPUT.is_match(*block)){
+        }else if OUTPUT.is_match(*block) {
             let caps = OUTPUT.captures(*block).unwrap();
             Output(granularize(caps.at(1)), block.to_string())
         }else{

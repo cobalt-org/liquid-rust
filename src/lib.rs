@@ -8,6 +8,7 @@ use template::Template;
 
 mod template;
 mod variable;
+mod text;
 mod lexer;
 mod parser;
 
@@ -23,8 +24,10 @@ pub fn parse (text: &str) -> Template{
 
 #[test]
 fn test_liquid() {
-    let template = parse("wat\n{{hello 'world'}} test");
-    let output = template.render(&HashMap::new());
-    assert_eq!(output, "wat".to_string());
+    let mut data = HashMap::new();
+    data.insert("hello".to_string(), "world".to_string());
+    let template = parse("wat\n{{hello}} test");
+    let output = template.render(&data);
+    assert_eq!(output, "wat\nworld test".to_string());
 }
 
