@@ -12,7 +12,7 @@ impl<'a> Renderable for Template<'a> {
 }
 
 impl<'a> Template<'a> {
-    pub fn new(elements: Vec<Box<Renderable>>) -> Template<'a> {
+    pub fn new(elements: Vec<Box<Renderable +'a>>) -> Template<'a> {
         Template{elements: elements}
     }
 }
