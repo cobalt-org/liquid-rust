@@ -7,7 +7,7 @@ pub struct Variable{
 
 impl Renderable for Variable {
     fn render (&self, context: &HashMap<String, String>) -> String{
-        match context.find(&self.name) {
+        match context.get(&self.name) {
             Some(val) => val.to_string(),
             None => "".to_string()
         }

@@ -1,10 +1,10 @@
 use Renderable;
 use text::Text;
 use variable::Variable;
-use lexer::Element;
 use lexer::Token;
-use lexer::Identifier;
-use lexer::{Output, Tag, Raw};
+use lexer::Token::{Identifier};
+use lexer::Element;
+use lexer::Element::{Output, Tag, Raw};
 
 pub fn parse<'a> (tokens: Vec<Element>) -> Vec<Box<Renderable + 'a>> {
     tokens.iter().map(|token| {

@@ -1,3 +1,6 @@
+use self::Token::*;
+use self::Element::*;
+use self::ComparisonOperator::*;
 use regex::Regex;
 
 static MARKUP     : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
