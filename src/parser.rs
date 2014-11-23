@@ -20,7 +20,7 @@ pub fn parse<'a> (tokens: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box<R
 fn parse_token<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            options.tags.find(x).unwrap().initialize(x.as_slice(), vec![], vec![])
+            options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), &vec![])
         },
         Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
          _ => box Variable::new("output") as Box<Renderable>
