@@ -16,11 +16,11 @@ mod lexer;
 mod parser;
 
 pub trait Block {
-    fn initialize(&self, tag_name: &str, arguments: &Vec<Token>, tokens: &Vec<Box<Renderable>>) -> Box<Renderable>;
+    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: String) -> Box<Renderable>;
 }
 
 pub trait Tag {
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: &Vec<Box<Renderable>>) -> Box<Renderable>;
+    fn initialize(&self, tag_name: &str, arguments: &[Token]) -> Box<Renderable>;
 }
 
 pub struct LiquidOptions<'a> {
@@ -52,7 +52,7 @@ fn test_liquid() {
 
     struct MultiplyTag;
     impl Tag for MultiplyTag{
-        fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: &Vec<Box<Renderable>>) -> Box<Renderable>{
+        fn initialize(&self, tag_name: &str, arguments: &[Token]) -> Box<Renderable>{
             let numbers = arguments.iter().filter_map( |x| {
                 match x {
                     &Token::NumberLiteral(ref num) => from_str(num.as_slice()),
