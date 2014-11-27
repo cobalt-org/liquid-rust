@@ -8,12 +8,14 @@ extern crate regex;
 use std::collections::HashMap;
 use template::Template;
 use lexer::Token;
+use tags::IfBlock;
 
 mod template;
 mod variable;
 mod text;
 mod lexer;
 mod parser;
+mod tags;
 
 pub trait Block {
     fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: String) -> Box<Renderable>;
@@ -33,10 +35,12 @@ pub trait Renderable{
 }
 
 pub fn parse<'a> (text: &str, options: &'a LiquidOptions<'a>) -> Template<'a>{
+    //let blocks = vec![];
     let tokens = lexer::tokenize(text.as_slice());
     let renderables = parser::parse(tokens, options);
     Template::new(renderables)
 }
+
 
 #[test]
 fn test_liquid() {
