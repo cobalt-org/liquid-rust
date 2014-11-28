@@ -26,7 +26,7 @@ pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box
 fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail())
+            options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), options)
         },
         Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
         ref x => panic!("{} not implemented", x)
@@ -38,29 +38,21 @@ fn parse_tag<'a> (iter: &mut Items<Element>, tokens: &Vec<Token>, options: &'a L
 
         // is a tag
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail())
+            options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), options)
         },
 
         // is a block
         Identifier(ref x) if options.blocks.contains_key(&x.to_string()) => {
-            // TODO this is so ugly
-            // Please make this look better
-            // it just works
             let end_tag = Identifier("end".to_string() + *x);
             let mut children = vec![];
             loop {
                 children.push(match iter.next() {
                     Some(&Tag(ref tokens,_)) if tokens[0] == end_tag => break,
                     None => break,
-                    Some(&Output(_, ref t)) => t,
-                    Some(&Tag(_, ref t)) => t,
-                    Some(&Raw(ref t)) => t,
+                    Some(t) => t.clone(),
                 })
             }
-            options.blocks.get(x).unwrap().initialize(x.as_slice(),
-                                                      tokens.tail(),
-                                                      // TODO i'm gonna puke
-                                                      children.iter().fold("".to_string(), |a, b| a + b.to_string()))
+            options.blocks.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), children, options)
         },
         Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
         ref x => panic!("{} not implemented", x)

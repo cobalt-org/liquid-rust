@@ -8,6 +8,7 @@ extern crate regex;
 use std::collections::HashMap;
 use template::Template;
 use lexer::Token;
+use lexer::Element;
 use tags::IfBlock;
 
 mod template;
@@ -18,11 +19,11 @@ mod parser;
 mod tags;
 
 pub trait Block {
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: String) -> Box<Renderable>;
+    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Box<Renderable>;
 }
 
 pub trait Tag {
-    fn initialize(&self, tag_name: &str, arguments: &[Token]) -> Box<Renderable>;
+    fn initialize(&self, tag_name: &str, arguments: &[Token], options : &LiquidOptions) -> Box<Renderable>;
 }
 
 pub struct LiquidOptions<'a> {
@@ -56,7 +57,7 @@ fn test_liquid() {
 
     struct MultiplyTag;
     impl Tag for MultiplyTag{
-        fn initialize(&self, tag_name: &str, arguments: &[Token]) -> Box<Renderable>{
+        fn initialize(&self, tag_name: &str, arguments: &[Token], options: &LiquidOptions) -> Box<Renderable>{
             let numbers = arguments.iter().filter_map( |x| {
                 match x {
                     &Token::NumberLiteral(ref num) => from_str(num.as_slice()),
