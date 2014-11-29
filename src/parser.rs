@@ -1,6 +1,7 @@
 use Renderable;
 use LiquidOptions;
 use text::Text;
+use std::collections::HashMap;
 use std::slice::Items;
 use variable::Variable;
 use lexer::Token;

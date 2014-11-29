@@ -2,7 +2,7 @@ use Renderable;
 use std::collections::HashMap;
 
 pub struct Template<'a>{
-    elements: Vec<Box<Renderable +'a>>
+    pub elements: Vec<Box<Renderable +'a>>
 }
 
 impl<'a> Renderable for Template<'a> {

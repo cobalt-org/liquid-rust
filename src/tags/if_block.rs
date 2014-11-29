@@ -8,6 +8,7 @@ use lexer::Element;
 use std::collections::HashMap;
 
 struct If;
+
 impl Renderable for If{
     fn render(&self, context: &HashMap<String, String>) -> String{
         "".to_string()

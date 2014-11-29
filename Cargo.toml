@@ -1,5 +1,5 @@
 [package]
 
-name = "liquid-rust"
+name = "liquid"
 version = "0.0.1"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
