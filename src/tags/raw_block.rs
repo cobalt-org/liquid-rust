@@ -5,13 +5,14 @@ use tags::RawBlock;
 use lexer::Token;
 use parser::parse;
 use lexer::Element;
+use lexer::Element::{Output, Tag, Raw};
 use std::collections::HashMap;
 
-struct Raw{
+struct RawT{
     content : String
 }
 
-impl Renderable for Raw{
+impl Renderable for RawT{
     fn render(&self, context: &HashMap<String, String>) -> String{
         self.content.to_string()
     }
@@ -19,8 +20,13 @@ impl Renderable for Raw{
 
 impl Block for RawBlock{
     fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Box<Renderable>{
-        println!("init");
-        let content = tokens.iter().fold("".to_string(), |a, b| a + b.to_string());
-        box Raw{content: content} as Box<Renderable>
+        let content = tokens.iter().fold("".to_string(), |a, b|
+                                         match b  {
+                                            &Output(_, ref text) => text,
+                                            &Tag(_, ref text) => text,
+                                            &Raw(ref text) => text
+                                         }.to_string() + a.to_string()
+                                        );
+        box RawT{content: content} as Box<Renderable>
     }
 }

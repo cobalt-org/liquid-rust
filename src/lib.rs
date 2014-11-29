@@ -80,7 +80,7 @@ fn test_liquid() {
         blocks: blocks,
         tags: tags,
     };
-    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{{raw}}{{multiply 5 3}}{{endraw}} test", &mut options);
+    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options);
 
     let mut data = HashMap::new();
     data.insert("hello".to_string(), "world".to_string());
