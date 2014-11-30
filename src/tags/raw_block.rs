@@ -30,3 +30,10 @@ impl Block for RawBlock{
         box RawT{content: content} as Box<Renderable>
     }
 }
+
+#[test]
+fn test_raw() {
+    let block = RawBlock;
+    let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()});
+    assert_eq!(raw.render(&HashMap::new()), "This is a test".to_string());
+}
