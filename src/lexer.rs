@@ -37,7 +37,7 @@ pub enum Token {
 
     Identifier(String),
     StringLiteral(String),
-    NumberLiteral(String),
+    NumberLiteral(f32),
     DotDot,
     Comparison(ComparisonOperator)
 }
@@ -106,7 +106,7 @@ fn granularize(block: &str) -> Vec<Token>{
             x if DOTDOT.is_match(x) => DotDot,
             x if SINGLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
             x if DOUBLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
-            x if NUMBER_LITERAL.is_match(x) => NumberLiteral(x.to_string()),
+            x if NUMBER_LITERAL.is_match(x) => NumberLiteral(from_str::<f32>(x).unwrap()),
             x if IDENTIFIER.is_match(x) => Identifier(x.to_string()),
             x => panic!("{} is not a valid identifier", x)
         }

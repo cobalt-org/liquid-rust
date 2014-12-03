@@ -1,4 +1,5 @@
 use Renderable;
+use Value;
 use std::collections::HashMap;
 
 pub struct Variable{
@@ -6,7 +7,7 @@ pub struct Variable{
 }
 
 impl Renderable for Variable {
-    fn render (&self, context: &HashMap<String, String>) -> String{
+    fn render (&self, context: &HashMap<String, Value>) -> String{
         match context.get(&self.name) {
             Some(val) => val.to_string(),
             None => "".to_string()

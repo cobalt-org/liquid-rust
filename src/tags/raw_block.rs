@@ -1,9 +1,9 @@
 use Renderable;
+use Value;
 use Block;
 use LiquidOptions;
 use tags::RawBlock;
 use lexer::Token;
-use parser::parse;
 use lexer::Element;
 use lexer::Element::{Output, Tag, Raw};
 use std::collections::HashMap;
@@ -13,7 +13,7 @@ struct RawT{
 }
 
 impl Renderable for RawT{
-    fn render(&self, context: &HashMap<String, String>) -> String{
+    fn render(&self, context: &HashMap<String, Value>) -> String{
         self.content.to_string()
     }
 }
