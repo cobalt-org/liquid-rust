@@ -39,7 +39,7 @@ impl ToString for Value{
 }
 
 pub trait Block {
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Box<Renderable>;
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Box<Renderable>;
 }
 
 pub trait Tag {

@@ -34,6 +34,7 @@ impl Block for RawBlock{
 #[test]
 fn test_raw() {
     let block = RawBlock;
-    let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()});
+    let options = LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()};
+    let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &options);
     assert_eq!(raw.render(&HashMap::new()), "This is a test".to_string());
 }
