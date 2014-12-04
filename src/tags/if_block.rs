@@ -66,13 +66,13 @@ fn compare_numbers(a : f32, b : f32, comparison : &ComparisonOperator) -> bool{
 }
 
 impl<'a> Renderable for If<'a>{
-    fn render(&self, context: &HashMap<String, Value>) -> String{
+    fn render(&self, context: &HashMap<String, Value>) -> Option<String>{
         if self.compare(context).unwrap_or(false){
             self.if_true.render(context)
         }else{
             match self.if_false {
                 Some(ref template) => template.render(context),
-                _ => "".to_string()
+                _ => None
             }
         }
     }
@@ -81,36 +81,44 @@ impl<'a> Renderable for If<'a>{
 impl<'a> Block for IfBlock<'a>{
     fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Box<Renderable>{
         let mut args = arguments.iter();
+
         let lh = match args.next() {
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
             x => panic!("Expected a value, found {}", x)
         };
+
         let comp = match args.next() {
             Some(&Comparison(ref x)) => x.clone(),
             x => panic!("Expected a comparison operator, found {}", x)
         };
+
         let rh = match args.next() {
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
             x => panic!("Expected a value, found {}", x)
         };
+
         let else_block = vec![Identifier("else".to_string())];
+
         let if_true_tokens = tokens.iter().take_while(|&x| match x  {
             &Tag(ref eb, _) => *eb != else_block,
             _ => true
         }).map(|x| x.clone()).collect();
+
         let if_false_tokens : Vec<Element> = tokens.iter().skip_while(|&x| match x  {
             &Tag(ref eb, _) => *eb != else_block,
             _ => true
         }).map(|x| x.clone()).collect();
+
         let if_false = if if_false_tokens.len() > 0 {
             Some(Template::new(parse(if_false_tokens, options)))
         }else{
             None
         };
+
         box If{
             lh : lh,
             comparison : comp,

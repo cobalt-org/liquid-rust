@@ -13,8 +13,8 @@ struct RawT{
 }
 
 impl Renderable for RawT{
-    fn render(&self, context: &HashMap<String, Value>) -> String{
-        self.content.to_string()
+    fn render(&self, context: &HashMap<String, Value>) -> Option<String>{
+        Some(self.content.to_string())
     }
 }
 
@@ -36,5 +36,5 @@ fn test_raw() {
     let block = RawBlock;
     let options = LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()};
     let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &options);
-    assert_eq!(raw.render(&HashMap::new()), "This is a test".to_string());
+    assert_eq!(raw.render(&HashMap::new()).unwrap(), "This is a test".to_string());
 }

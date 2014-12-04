@@ -52,7 +52,7 @@ pub struct LiquidOptions<'a> {
 }
 
 pub trait Renderable{
-    fn render(&self, context: &HashMap<String, Value>) -> String;
+    fn render(&self, context: &HashMap<String, Value>) -> Option<String>;
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
@@ -80,7 +80,7 @@ fn test_liquid() {
     data.insert("numTwo".to_string(), Value::Num(6f32));
 
     let output = template.render(&data);
-    assert_eq!(output, "wat wot".to_string());
+    assert_eq!(output.unwrap(), "wat wot".to_string());
 }
 
 
@@ -90,9 +90,9 @@ fn test_custom_output() {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, context: &HashMap<String, Value>) -> String{
+        fn render(&self, context: &HashMap<String, Value>) -> Option<String>{
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
-            x.to_string()
+            Some(x.to_string())
         }
     }
 
@@ -123,6 +123,6 @@ fn test_custom_output() {
     data.insert("hello".to_string(), Value::Str("world".to_string()));
 
     let output = template.render(&data);
-    assert_eq!(output, "wat\nworld\n15{{multiply 5 3}} test".to_string());
+    assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
 }
 

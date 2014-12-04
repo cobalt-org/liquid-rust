@@ -7,8 +7,13 @@ pub struct Template<'a>{
 }
 
 impl<'a> Renderable for Template<'a> {
-    fn render (&self, context: &HashMap<String, Value>) -> String{
-        self.elements.iter().fold(String::new(), |fold, val| fold + val.render(context).as_slice())
+    fn render (&self, context: &HashMap<String, Value>) -> Option<String>{
+        Some(self.elements.iter().fold(String::new(), |fold, val| {
+                                  match val.render(context)  {
+                                      Some(x) => fold + x.as_slice(),
+                                      _ => fold
+                                  }
+                                 }))
     }
 }
 

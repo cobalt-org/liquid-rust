@@ -7,8 +7,8 @@ pub struct Text{
 }
 
 impl Renderable for Text {
-    fn render (&self, context: &HashMap<String, Value>) -> String{
-        self.text.to_string()
+    fn render (&self, context: &HashMap<String, Value>) -> Option<String>{
+        Some(self.text.to_string())
     }
 }
 
