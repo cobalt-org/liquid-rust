@@ -104,8 +104,8 @@ fn granularize(block: &str) -> Vec<Token>{
             "contains" => Comparison(Contains),
 
             x if DOTDOT.is_match(x) => DotDot,
-            x if SINGLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
-            x if DOUBLE_STRING_LITERAL.is_match(x) => StringLiteral(x.to_string()),
+            x if SINGLE_STRING_LITERAL.is_match(x) => StringLiteral(x[1..x.len() -1].to_string()),
+            x if DOUBLE_STRING_LITERAL.is_match(x) => StringLiteral(x[1..x.len() -1].to_string()),
             x if NUMBER_LITERAL.is_match(x) => NumberLiteral(from_str::<f32>(x).unwrap()),
             x if IDENTIFIER.is_match(x) => Identifier(x.to_string()),
             x => panic!("{} is not a valid identifier", x)
@@ -124,11 +124,14 @@ fn test_split_blocks() {
 #[test]
 fn test_tokenize() {
     assert_eq!(tokenize("wat\n{{hello 'world'}} test"), vec![
-               Raw("wat\n".to_string()), Output(vec![Identifier("hello".to_string()), StringLiteral("'world'".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
+               Raw("wat\n".to_string()), Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
                ]);
 }
 
 #[test]
 fn test_granularize() {
+    assert_eq!(granularize("test me"), vec![Identifier("test".to_string()), Identifier("me".to_string())]);
+    assert_eq!(granularize("test == me"), vec![Identifier("test".to_string()), Comparison(Equals), Identifier("me".to_string())]);
+    assert_eq!(granularize("'test' == \"me\""), vec![StringLiteral("test".to_string()), Comparison(Equals), StringLiteral("me".to_string())]);
 }
 
