@@ -82,8 +82,11 @@ pub fn tokenize(text: &str) -> Vec<Element> {
 }
 
 fn granularize(block: &str) -> Vec<Token>{
-    WHITESPACE.split(block).map(|el|{
-        match el {
+    WHITESPACE.split(block).filter_map(|el|{
+        if el == ""{
+            return None;
+        }
+        Some(match el {
             "|" => Pipe,
             "." => Dot,
             ":" => Colon,
@@ -109,7 +112,7 @@ fn granularize(block: &str) -> Vec<Token>{
             x if NUMBER_LITERAL.is_match(x) => NumberLiteral(from_str::<f32>(x).unwrap()),
             x if IDENTIFIER.is_match(x) => Identifier(x.to_string()),
             x => panic!("{} is not a valid identifier", x)
-        }
+        })
     }).collect()
 }
 
@@ -123,6 +126,15 @@ fn test_split_blocks() {
 
 #[test]
 fn test_tokenize() {
+    assert_eq!(tokenize("{{hello 'world'}}"), vec![
+               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string())
+               ]);
+    assert_eq!(tokenize("{{ hello 'world' }}"), vec![
+               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{ hello 'world' }}".to_string())
+               ]);
+    assert_eq!(tokenize("{{   hello   'world'    }}"), vec![
+               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{   hello   'world'    }}".to_string())
+               ]);
     assert_eq!(tokenize("wat\n{{hello 'world'}} test"), vec![
                Raw("wat\n".to_string()), Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
                ]);
