@@ -6,7 +6,9 @@
 #[phase(plugin)]
 extern crate regex_macros;
 extern crate regex;
+extern crate test;
 
+use test::Bencher;
 use std::collections::HashMap;
 use template::Template;
 use lexer::Token;
@@ -63,8 +65,8 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a
     Template::new(renderables)
 }
 
-#[test]
-fn test_liquid() {
+#[bench]
+fn simple_parse(b: &mut Bencher) {
     let mut blocks = HashMap::new();
     let mut tags = HashMap::new();
 
@@ -81,11 +83,12 @@ fn test_liquid() {
 
     let output = template.render(&data);
     assert_eq!(output.unwrap(), "wat wot".to_string());
+
+    b.iter(|| template.render(&data));
 }
 
-
-#[test]
-fn test_custom_output() {
+#[bench]
+fn custom_output(b: &mut Bencher) {
     struct Multiply{
         numbers: Vec<f32>
     }
@@ -124,5 +127,7 @@ fn test_custom_output() {
 
     let output = template.render(&data);
     assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
+
+    b.iter(|| template.render(&data));
 }
 
