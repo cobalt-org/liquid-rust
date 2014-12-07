@@ -15,7 +15,7 @@ use lexer::ComparisonOperator::{
 };
 use parser::parse;
 use lexer::Element;
-use lexer::Element::{Tag};
+use lexer::Element::{Tag, Raw};
 use std::collections::HashMap;
 
 struct If<'a>{
@@ -128,3 +128,15 @@ impl<'a> Block for IfBlock<'a>{
         } as Box<Renderable>
     }
 }
+
+#[test]
+fn test_if() {
+    let block = IfBlock;
+    let options = LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()};
+    let if_tag = block.initialize("if", vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string())], &options);
+    assert_eq!(if_tag.render(&HashMap::new()).unwrap(), "if true".to_string());
+
+    let else_tag = block.initialize("if", vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
+    assert_eq!(else_tag.render(&HashMap::new()).unwrap(), "if false".to_string());
+}
+
