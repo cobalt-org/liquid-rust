@@ -16,6 +16,7 @@ use lexer::Element;
 use tags::IfBlock;
 use tags::RawBlock;
 use std::string::ToString;
+use std::default::Default;
 
 mod template;
 mod variable;
@@ -24,10 +25,20 @@ mod lexer;
 mod parser;
 mod tags;
 
+pub enum ErrorMode{
+    Strict,
+    Warn,
+    Lax
+}
+
 pub enum Value{
     Num(f32),
     Str(String),
     Object(HashMap<String, Value>)
+}
+
+impl Default for ErrorMode {
+    fn default() -> ErrorMode { ErrorMode::Warn }
 }
 
 impl ToString for Value{
@@ -48,9 +59,11 @@ pub trait Tag {
     fn initialize(&self, tag_name: &str, arguments: &[Token], options : &LiquidOptions) -> Box<Renderable>;
 }
 
+#[deriving(Default)]
 pub struct LiquidOptions<'a> {
     blocks : HashMap<String, Box<Block + 'a>>,
-    tags : HashMap<String, Box<Tag + 'a>>
+    tags : HashMap<String, Box<Tag + 'a>>,
+    error_mode : ErrorMode
 }
 
 pub trait Renderable{
@@ -67,14 +80,7 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a
 
 #[bench]
 fn simple_parse(b: &mut Bencher) {
-    let mut blocks = HashMap::new();
-    let mut tags = HashMap::new();
-
-    let mut options = LiquidOptions {
-        blocks: blocks,
-        tags: tags,
-    };
-
+    let mut options : LiquidOptions = Default::default();
     let template = parse("{%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
 
     let mut data = HashMap::new();
@@ -112,13 +118,13 @@ fn custom_output(b: &mut Bencher) {
         }
     }
 
-    let mut blocks = HashMap::new();
     let mut tags = HashMap::new();
     tags.insert("multiply".to_string(), box MultiplyTag as Box<Tag>);
 
     let mut options = LiquidOptions {
-        blocks: blocks,
+        blocks: Default::default(),
         tags: tags,
+        error_mode: Default::default()
     };
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options);
 

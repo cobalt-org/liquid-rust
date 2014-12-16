@@ -7,6 +7,7 @@ use lexer::Token;
 use lexer::Element;
 use lexer::Element::{Output, Tag, Raw};
 use std::collections::HashMap;
+use std::default::Default;
 
 struct RawT{
     content : String
@@ -34,7 +35,7 @@ impl Block for RawBlock{
 #[test]
 fn test_raw() {
     let block = RawBlock;
-    let options = LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()};
+    let options : LiquidOptions = Default::default();
     let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &options);
     assert_eq!(raw.render(&HashMap::new()).unwrap(), "This is a test".to_string());
 }

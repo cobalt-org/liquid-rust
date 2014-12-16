@@ -17,6 +17,7 @@ use parser::parse;
 use lexer::Element;
 use lexer::Element::{Tag, Raw};
 use std::collections::HashMap;
+use std::default::Default;
 
 struct If<'a>{
     lh : Token,
@@ -132,7 +133,7 @@ impl<'a> Block for IfBlock<'a>{
 #[test]
 fn test_if() {
     let block = IfBlock;
-    let options = LiquidOptions{blocks: HashMap::new(), tags: HashMap::new()};
+    let options : LiquidOptions = Default::default();
     let if_tag = block.initialize("if", vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string())], &options);
     assert_eq!(if_tag.render(&HashMap::new()).unwrap(), "if true".to_string());
 
