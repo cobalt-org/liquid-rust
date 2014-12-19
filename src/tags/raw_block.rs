@@ -26,7 +26,7 @@ impl Block for RawBlock{
                                             &Output(_, ref text) => text,
                                             &Tag(_, ref text) => text,
                                             &Raw(ref text) => text
-                                         }.to_string() + a.to_string()
+                                         }.to_string() + a.as_slice()
                                         );
         box RawT{content: content} as Box<Renderable>
     }

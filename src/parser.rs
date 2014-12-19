@@ -37,13 +37,13 @@ fn parse_tag<'a> (iter: &mut Items<Element>, tokens: &Vec<Token>, options: &'a L
     match tokens[0] {
 
         // is a tag
-        Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
+        Identifier(ref x) if options.tags.contains_key(x) => {
             options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), options)
         },
 
         // is a block
-        Identifier(ref x) if options.blocks.contains_key(&x.to_string()) => {
-            let end_tag = Identifier("end".to_string() + *x);
+        Identifier(ref x) if options.blocks.contains_key(x) => {
+            let end_tag = Identifier("end".to_string() + x.as_slice());
             let mut children = vec![];
             loop {
                 children.push(match iter.next() {

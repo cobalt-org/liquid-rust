@@ -71,10 +71,10 @@ pub fn tokenize(text: &str) -> Vec<Element> {
     split_blocks(text).iter().map(|block| {
         if TAG.is_match(*block) {
             let caps = TAG.captures(*block).unwrap();
-            Tag(granularize(caps.at(1)), block.to_string())
+            Tag(granularize(caps.at(1).unwrap()), block.to_string())
         }else if OUTPUT.is_match(*block) {
             let caps = OUTPUT.captures(*block).unwrap();
-            Output(granularize(caps.at(1)), block.to_string())
+            Output(granularize(caps.at(1).unwrap()), block.to_string())
         }else{
             Raw(block.to_string())
         }
