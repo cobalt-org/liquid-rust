@@ -79,7 +79,7 @@ impl<'a> Renderable for If<'a>{
     }
 }
 
-impl<'a> Block for IfBlock<'a>{
+impl<'b> Block for IfBlock<'b>{
     fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Box<Renderable>{
         let mut args = arguments.iter();
 
