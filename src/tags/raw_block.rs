@@ -5,7 +5,7 @@ use LiquidOptions;
 use tags::RawBlock;
 use lexer::Token;
 use lexer::Element;
-use lexer::Element::{Output, Tag, Raw};
+use lexer::Element::{Expression, Tag, Raw};
 use std::collections::HashMap;
 use std::default::Default;
 
@@ -23,7 +23,7 @@ impl Block for RawBlock{
     fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Box<Renderable>{
         let content = tokens.iter().fold("".to_string(), |a, b|
                                          match b  {
-                                            &Output(_, ref text) => text,
+                                            &Expression(_, ref text) => text,
                                             &Tag(_, ref text) => text,
                                             &Raw(ref text) => text
                                          }.to_string() + a.as_slice()
@@ -36,6 +36,6 @@ impl Block for RawBlock{
 fn test_raw() {
     let block = RawBlock;
     let options : LiquidOptions = Default::default();
-    let raw = block.initialize("raw", vec![][0..], vec![Output(vec![], "This is a test".to_string())], &options);
+    let raw = block.initialize("raw", vec![][0..], vec![Expression(vec![], "This is a test".to_string())], &options);
     assert_eq!(raw.render(&HashMap::new()).unwrap(), "This is a test".to_string());
 }

@@ -6,7 +6,7 @@ use variable::Variable;
 use lexer::Token;
 use lexer::Token::{Identifier};
 use lexer::Element;
-use lexer::Element::{Output, Tag, Raw};
+use lexer::Element::{Expression, Tag, Raw};
 
 pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box<Renderable + 'a>> {
     let mut ret = vec![];
@@ -14,7 +14,7 @@ pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box
     let mut token = iter.next();
     while token.is_some() {
         match token.unwrap() {
-            &Output(ref tokens,_) => ret.push(parse_output(tokens, options)),
+            &Expression(ref tokens,_) => ret.push(parse_expression(tokens, options)),
             &Tag(ref tokens,_) => ret.push(parse_tag(&mut iter, tokens, options)),
             &Raw(ref x) => ret.push(box Text::new(x.as_slice()) as Box<Renderable>)
         }
@@ -23,16 +23,30 @@ pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box
     ret
 }
 
-fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+// creates an expression, which wraps everything that gets rendered
+fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
             options.tags.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), options)
         },
-        Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
-        ref x => panic!("{} not implemented", x)
+        Identifier(ref x) => parse_output(tokens, options),
+        // TODO implement warnings/errors
+        ref x => panic!("parse_expression: {} not implemented", x)
     }
 }
 
+// creates an output, basically a wrapper around values, variables and filters
+fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+    match tokens[0] {
+        Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
+        // TODO implement warnings/errors
+        ref x => panic!("parse_output: {} not implemented", x)
+    }
+}
+
+// a tag can be either a single-element tag or a block, which can contain other elements
+// and is delimited by a closing tag named {{end + the_name_of_the_tag}}
+// tags do not get rendered, but blocks may contain renderable expressions
 fn parse_tag<'a> (iter: &mut Items<Element>, tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
 
@@ -54,7 +68,9 @@ fn parse_tag<'a> (iter: &mut Items<Element>, tokens: &Vec<Token>, options: &'a L
             }
             options.blocks.get(x).unwrap().initialize(x.as_slice(), tokens.tail(), children, options)
         },
-        Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
-        ref x => panic!("{} not implemented", x)
+
+        // TODO implement warnings/errors
+        ref x => panic!("parse_tag: {} not implemented", x)
     }
 }
+

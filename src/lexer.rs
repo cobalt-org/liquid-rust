@@ -5,7 +5,7 @@ use regex::Regex;
 
 static MARKUP     : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
 static TAG        : Regex = regex!("\\{%(.*?)%\\}");
-static OUTPUT     : Regex = regex!("\\{\\{(.*?)\\}\\}");
+static EXPRESSION : Regex = regex!("\\{\\{(.*?)\\}\\}");
 static WHITESPACE : Regex = regex!(r"\s+");
 
 static IDENTIFIER            : Regex = regex!(r"[a-zA-Z_][\w-]*\??");
@@ -44,7 +44,7 @@ pub enum Token {
 
 #[deriving(Clone, Show, PartialEq)]
 pub enum Element{
-    Output(Vec<Token>, String),
+    Expression(Vec<Token>, String),
     Tag(Vec<Token>, String),
     Raw(String)
 }
@@ -72,9 +72,9 @@ pub fn tokenize(text: &str) -> Vec<Element> {
         if TAG.is_match(*block) {
             let caps = TAG.captures(*block).unwrap();
             Tag(granularize(caps.at(1).unwrap()), block.to_string())
-        }else if OUTPUT.is_match(*block) {
-            let caps = OUTPUT.captures(*block).unwrap();
-            Output(granularize(caps.at(1).unwrap()), block.to_string())
+        }else if EXPRESSION.is_match(*block) {
+            let caps = EXPRESSION.captures(*block).unwrap();
+            Expression(granularize(caps.at(1).unwrap()), block.to_string())
         }else{
             Raw(block.to_string())
         }
@@ -127,16 +127,16 @@ fn test_split_blocks() {
 #[test]
 fn test_tokenize() {
     assert_eq!(tokenize("{{hello 'world'}}"), vec![
-               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string())
+               Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string())
                ]);
     assert_eq!(tokenize("{{ hello 'world' }}"), vec![
-               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{ hello 'world' }}".to_string())
+               Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{ hello 'world' }}".to_string())
                ]);
     assert_eq!(tokenize("{{   hello   'world'    }}"), vec![
-               Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{   hello   'world'    }}".to_string())
+               Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{   hello   'world'    }}".to_string())
                ]);
     assert_eq!(tokenize("wat\n{{hello 'world'}} test"), vec![
-               Raw("wat\n".to_string()), Output(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
+               Raw("wat\n".to_string()), Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string()), Raw(" test".to_string())
                ]);
 }
 
