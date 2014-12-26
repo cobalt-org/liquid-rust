@@ -104,15 +104,19 @@ impl<'b> Block for IfBlock<'b>{
 
         let else_block = vec![Identifier("else".to_string())];
 
+        // advance until the end or an else token is reached
+        // to gather everything to be executed if the condition is true
         let if_true_tokens = tokens.iter().take_while(|&x| match x  {
             &Tag(ref eb, _) => *eb != else_block,
             _ => true
         }).map(|x| x.clone()).collect();
 
+        // gather everything after the else block
+        // to be executed if the condition is false
         let if_false_tokens : Vec<Element> = tokens.iter().skip_while(|&x| match x  {
             &Tag(ref eb, _) => *eb != else_block,
             _ => true
-        }).map(|x| x.clone()).collect();
+        }).skip(1).map(|x| x.clone()).collect();
 
         let if_false = if if_false_tokens.len() > 0 {
             Some(Template::new(parse(if_false_tokens, options)))
