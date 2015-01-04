@@ -1,5 +1,4 @@
 use Renderable;
-use Value;
 use Block;
 use Context;
 use LiquidOptions;
@@ -7,7 +6,6 @@ use tags::RawBlock;
 use lexer::Token;
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
-use std::collections::HashMap;
 use std::default::Default;
 
 struct RawT{

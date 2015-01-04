@@ -1,7 +1,5 @@
 use Renderable;
-use Value;
 use Context;
-use std::collections::HashMap;
 
 pub struct Variable{
     name: String

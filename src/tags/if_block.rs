@@ -17,7 +17,6 @@ use lexer::ComparisonOperator::{
 use parser::parse;
 use lexer::Element;
 use lexer::Element::{Tag, Raw};
-use std::collections::HashMap;
 use std::default::Default;
 
 struct If<'a>{
