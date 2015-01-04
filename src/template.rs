@@ -1,5 +1,6 @@
 use Renderable;
 use Value;
+use Context;
 use std::collections::HashMap;
 
 pub struct Template<'a>{
@@ -7,7 +8,7 @@ pub struct Template<'a>{
 }
 
 impl<'a> Renderable for Template<'a> {
-    fn render (&self, context: &HashMap<String, Value>) -> Option<String>{
+    fn render (&self, context: &Context) -> Option<String>{
         Some(self.elements.iter().fold(String::new(), |fold, val| {
                                   match val.render(context)  {
                                       Some(x) => fold + x.as_slice(),

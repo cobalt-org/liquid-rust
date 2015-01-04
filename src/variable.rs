@@ -1,5 +1,6 @@
 use Renderable;
 use Value;
+use Context;
 use std::collections::HashMap;
 
 pub struct Variable{
@@ -7,8 +8,8 @@ pub struct Variable{
 }
 
 impl Renderable for Variable {
-    fn render (&self, context: &HashMap<String, Value>) -> Option<String>{
-        match context.get(&self.name) {
+    fn render (&self, context: &Context) -> Option<String>{
+        match context.values.get(&self.name) {
             Some(val) => Some(val.to_string()),
             None => None
         }

@@ -31,14 +31,14 @@ pub enum ErrorMode{
     Lax
 }
 
+impl Default for ErrorMode {
+    fn default() -> ErrorMode { ErrorMode::Warn }
+}
+
 pub enum Value{
     Num(f32),
     Str(String),
     Object(HashMap<String, Value>)
-}
-
-impl Default for ErrorMode {
-    fn default() -> ErrorMode { ErrorMode::Warn }
 }
 
 impl ToString for Value{
@@ -59,6 +59,10 @@ pub trait Tag {
     fn initialize(&self, tag_name: &str, arguments: &[Token], options : &LiquidOptions) -> Box<Renderable>;
 }
 
+pub trait Renderable{
+    fn render(&self, context: &Context) -> Option<String>;
+}
+
 #[deriving(Default)]
 pub struct LiquidOptions<'a> {
     blocks : HashMap<String, Box<Block + 'a>>,
@@ -66,8 +70,10 @@ pub struct LiquidOptions<'a> {
     error_mode : ErrorMode
 }
 
-pub trait Renderable{
-    fn render(&self, context: &HashMap<String, Value>) -> Option<String>;
+#[deriving(Default)]
+pub struct Context<'a>{
+    values : HashMap<String, Value>,
+    filters : HashMap<String, |&str|:'a -> String>
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
@@ -83,9 +89,9 @@ fn simple_parse(b: &mut Bencher) {
     let mut options : LiquidOptions = Default::default();
     let template = parse("{%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
 
-    let mut data = HashMap::new();
-    data.insert("num".to_string(), Value::Num(5f32));
-    data.insert("numTwo".to_string(), Value::Num(6f32));
+    let mut data : Context = Default::default();
+    data.values.insert("num".to_string(), Value::Num(5f32));
+    data.values.insert("numTwo".to_string(), Value::Num(6f32));
 
     let output = template.render(&data);
     assert_eq!(output.unwrap(), "wat wot".to_string());
@@ -99,7 +105,7 @@ fn custom_output(b: &mut Bencher) {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, context: &HashMap<String, Value>) -> Option<String>{
+        fn render(&self, context: &Context) -> Option<String>{
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
             Some(x.to_string())
         }
@@ -128,8 +134,8 @@ fn custom_output(b: &mut Bencher) {
     };
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options);
 
-    let mut data = HashMap::new();
-    data.insert("hello".to_string(), Value::Str("world".to_string()));
+    let mut data : Context = Default::default();
+    data.values.insert("hello".to_string(), Value::Str("world".to_string()));
 
     let output = template.render(&data);
     assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());

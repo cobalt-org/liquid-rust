@@ -1,6 +1,7 @@
 use Renderable;
 use Block;
 use Value;
+use Context;
 use template::Template;
 use LiquidOptions;
 use tags::IfBlock;
@@ -28,23 +29,23 @@ struct If<'a>{
 }
 
 impl<'a> If<'a>{
-    fn compare(&self, context: &HashMap<String, Value>) -> Result<bool, &'static str>{
+    fn compare(&self, context: &Context) -> Result<bool, &'static str>{
         match (&self.lh, &self.rh)  {
             (&NumberLiteral(a), &NumberLiteral(b)) => Ok(compare_numbers(a, b, &self.comparison)),
             (&Identifier(ref var), &NumberLiteral(b)) => {
-                match context.get(var.as_slice()) {
+                match context.values.get(var.as_slice()) {
                     Some(&Value::Num(a)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             },
             (&NumberLiteral(a), &Identifier(ref var)) => {
-                match context.get(var.as_slice()) {
+                match context.values.get(var.as_slice()) {
                     Some(&Value::Num(b)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             }
             (&Identifier(ref var_a), &Identifier(ref var_b)) => {
-                match (context.get(var_a.as_slice()), context.get(var_b.as_slice())) {
+                match (context.values.get(var_a.as_slice()), context.values.get(var_b.as_slice())) {
                     (Some(&Value::Num(a)), Some(&Value::Num(b))) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
@@ -67,7 +68,7 @@ fn compare_numbers(a : f32, b : f32, comparison : &ComparisonOperator) -> bool{
 }
 
 impl<'a> Renderable for If<'a>{
-    fn render(&self, context: &HashMap<String, Value>) -> Option<String>{
+    fn render(&self, context: &Context) -> Option<String>{
         if self.compare(context).unwrap_or(false){
             self.if_true.render(context)
         }else{
@@ -139,9 +140,9 @@ fn test_if() {
     let block = IfBlock;
     let options : LiquidOptions = Default::default();
     let if_tag = block.initialize("if", vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string())], &options);
-    assert_eq!(if_tag.render(&HashMap::new()).unwrap(), "if true".to_string());
+    assert_eq!(if_tag.render(&Default::default()).unwrap(), "if true".to_string());
 
     let else_tag = block.initialize("if", vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
-    assert_eq!(else_tag.render(&HashMap::new()).unwrap(), "if false".to_string());
+    assert_eq!(else_tag.render(&Default::default()).unwrap(), "if false".to_string());
 }
 

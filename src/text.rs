@@ -1,5 +1,6 @@
 use Renderable;
 use Value;
+use Context;
 use std::collections::HashMap;
 
 pub struct Text{
@@ -7,7 +8,7 @@ pub struct Text{
 }
 
 impl Renderable for Text {
-    fn render (&self, context: &HashMap<String, Value>) -> Option<String>{
+    fn render (&self, _context: &Context) -> Option<String>{
         Some(self.text.to_string())
     }
 }
