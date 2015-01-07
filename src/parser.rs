@@ -1,7 +1,7 @@
 use Renderable;
 use LiquidOptions;
 use text::Text;
-use std::slice::Items;
+use std::slice::Iter;
 use variable::Variable;
 use lexer::Token;
 use lexer::Token::{Identifier};
@@ -47,7 +47,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
 // a tag can be either a single-element tag or a block, which can contain other elements
 // and is delimited by a closing tag named {{end + the_name_of_the_tag}}
 // tags do not get rendered, but blocks may contain renderable expressions
-fn parse_tag<'a> (iter: &mut Items<Element>, tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
 
         // is a tag

@@ -25,6 +25,7 @@ mod lexer;
 mod parser;
 mod tags;
 
+#[derive(Copy)]
 pub enum ErrorMode{
     Strict,
     Warn,
@@ -63,17 +64,17 @@ pub trait Renderable{
     fn render(&self, context: &Context) -> Option<String>;
 }
 
-#[deriving(Default)]
+#[derive(Default)]
 pub struct LiquidOptions<'a> {
     blocks : HashMap<String, Box<Block + 'a>>,
     tags : HashMap<String, Box<Tag + 'a>>,
     error_mode : ErrorMode
 }
 
-#[deriving(Default)]
+#[derive(Default)]
 pub struct Context<'a>{
     values : HashMap<String, Value>,
-    filters : HashMap<String, |&str|:'a -> String>
+    filters : HashMap<String, &'a (Fn(&str) -> String + 'a)>
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
