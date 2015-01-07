@@ -6,7 +6,7 @@ pub struct Output{
 }
 
 impl Renderable for Output {
-    fn render (&self, context: &Context) -> Option<String>{
+    fn render (&self, context: &mut Context) -> Option<String>{
         match context.values.get(&self.name) {
             Some(val) => Some(val.to_string()),
             None => None

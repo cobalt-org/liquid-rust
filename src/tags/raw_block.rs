@@ -13,7 +13,7 @@ struct RawT{
 }
 
 impl Renderable for RawT{
-    fn render(&self, context: &Context) -> Option<String>{
+    fn render(&self, context: &mut Context) -> Option<String>{
         Some(self.content.to_string())
     }
 }
@@ -36,5 +36,5 @@ fn test_raw() {
     let block = RawBlock;
     let options : LiquidOptions = Default::default();
     let raw = block.initialize("raw", vec![][0..], vec![Expression(vec![], "This is a test".to_string())], &options);
-    assert_eq!(raw.render(&Default::default()).unwrap(), "This is a test".to_string());
+    assert_eq!(raw.render(&mut Default::default()).unwrap(), "This is a test".to_string());
 }

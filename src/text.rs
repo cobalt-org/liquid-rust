@@ -6,7 +6,7 @@ pub struct Text{
 }
 
 impl Renderable for Text {
-    fn render (&self, _context: &Context) -> Option<String>{
+    fn render (&self, _context: &mut Context) -> Option<String>{
         Some(self.text.to_string())
     }
 }

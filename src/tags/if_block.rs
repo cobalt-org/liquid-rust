@@ -67,7 +67,7 @@ fn compare_numbers(a : f32, b : f32, comparison : &ComparisonOperator) -> bool{
 }
 
 impl<'a> Renderable for If<'a>{
-    fn render(&self, context: &Context) -> Option<String>{
+    fn render(&self, context: &mut Context) -> Option<String>{
         if self.compare(context).unwrap_or(false){
             self.if_true.render(context)
         }else{
@@ -139,9 +139,9 @@ fn test_if() {
     let block = IfBlock;
     let options : LiquidOptions = Default::default();
     let if_tag = block.initialize("if", vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string())], &options);
-    assert_eq!(if_tag.render(&Default::default()).unwrap(), "if true".to_string());
+    assert_eq!(if_tag.render(&mut Default::default()).unwrap(), "if true".to_string());
 
     let else_tag = block.initialize("if", vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
-    assert_eq!(else_tag.render(&Default::default()).unwrap(), "if false".to_string());
+    assert_eq!(else_tag.render(&mut Default::default()).unwrap(), "if false".to_string());
 }
 

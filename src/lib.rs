@@ -1,5 +1,6 @@
 #![crate_name = "liquid"]
 
+#![feature(unboxed_closures)]
 #![feature(globs)]
 #![feature(slicing_syntax)]
 #![feature(phase)]
@@ -24,6 +25,7 @@ mod text;
 mod lexer;
 mod parser;
 mod tags;
+mod filters;
 
 #[derive(Copy)]
 pub enum ErrorMode{
@@ -61,7 +63,7 @@ pub trait Tag {
 }
 
 pub trait Renderable{
-    fn render(&self, context: &Context) -> Option<String>;
+    fn render(&self, context: &mut Context) -> Option<String>;
 }
 
 #[derive(Default)]
@@ -74,7 +76,7 @@ pub struct LiquidOptions<'a> {
 #[derive(Default)]
 pub struct Context<'a>{
     values : HashMap<String, Value>,
-    filters : HashMap<String, &'a (Fn(&str) -> String + 'a)>
+    filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
@@ -94,10 +96,10 @@ fn simple_parse(b: &mut Bencher) {
     data.values.insert("num".to_string(), Value::Num(5f32));
     data.values.insert("numTwo".to_string(), Value::Num(6f32));
 
-    let output = template.render(&data);
+    let output = template.render(&mut data);
     assert_eq!(output.unwrap(), "wat wot".to_string());
 
-    b.iter(|| template.render(&data));
+    b.iter(|| template.render(&mut data));
 }
 
 #[bench]
@@ -106,7 +108,7 @@ fn custom_output(b: &mut Bencher) {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, context: &Context) -> Option<String>{
+        fn render(&self, context: &mut Context) -> Option<String>{
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
             Some(x.to_string())
         }
@@ -138,9 +140,9 @@ fn custom_output(b: &mut Bencher) {
     let mut data : Context = Default::default();
     data.values.insert("hello".to_string(), Value::Str("world".to_string()));
 
-    let output = template.render(&data);
+    let output = template.render(&mut data);
     assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
 
-    b.iter(|| template.render(&data));
+    b.iter(|| template.render(&mut data));
 }
 
