@@ -19,7 +19,7 @@ use std::string::ToString;
 use std::default::Default;
 
 mod template;
-mod variable;
+mod output;
 mod text;
 mod lexer;
 mod parser;

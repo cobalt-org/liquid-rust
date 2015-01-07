@@ -2,7 +2,7 @@ use Renderable;
 use LiquidOptions;
 use text::Text;
 use std::slice::Iter;
-use variable::Variable;
+use output::Output;
 use lexer::Token;
 use lexer::Token::{Identifier};
 use lexer::Element;
@@ -38,7 +38,7 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box
 // creates an output, basically a wrapper around values, variables and filters
 fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
-        Identifier(ref x) => box Variable::new(x.as_slice()) as Box<Renderable>,
+        Identifier(ref x) => box Output::new(x.as_slice()) as Box<Renderable>,
         // TODO implement warnings/errors
         ref x => panic!("parse_output: {} not implemented", x)
     }
