@@ -1,10 +1,9 @@
 #![crate_name = "liquid"]
 
 #![feature(unboxed_closures)]
-#![feature(globs)]
 #![feature(slicing_syntax)]
-#![feature(phase)]
-#[phase(plugin)]
+#![feature(plugin)]
+#[plugin]
 extern crate regex_macros;
 extern crate regex;
 extern crate test;
