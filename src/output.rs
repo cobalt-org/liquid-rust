@@ -1,8 +1,21 @@
 use Renderable;
 use Context;
+use Value;
+
+pub struct FilterPrototype{
+    name: String,
+    arguments: Vec<Value>
+}
+
+impl FilterPrototype {
+    pub fn new(name: &str, arguments: Vec<Value>) -> FilterPrototype {
+        FilterPrototype{name: name.to_string(), arguments: arguments}
+    }
+}
 
 pub struct Output{
-    name: String
+    name: String,
+    filters: Vec<FilterPrototype>
 }
 
 impl Renderable for Output {
@@ -15,8 +28,8 @@ impl Renderable for Output {
 }
 
 impl Output {
-    pub fn new(name: &str) -> Output {
-        Output{name: name.to_string()}
+    pub fn new(name: &str, filters: Vec<FilterPrototype>) -> Output {
+        Output{name: name.to_string(), filters: filters}
     }
 }
 

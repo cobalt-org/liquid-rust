@@ -1,10 +1,12 @@
 use Renderable;
 use LiquidOptions;
+use Value;
 use text::Text;
 use std::slice::Iter;
 use output::Output;
+use output::FilterPrototype;
 use lexer::Token;
-use lexer::Token::{Identifier};
+use lexer::Token::{Identifier, Colon, Pipe, StringLiteral};
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 
@@ -37,11 +39,44 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box
 
 // creates an output, basically a wrapper around values, variables and filters
 fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
-    match tokens[0] {
-        Identifier(ref x) => box Output::new(&x[]) as Box<Renderable>,
+    let entry = match tokens[0] {
+        Identifier(ref x) => x,
         // TODO implement warnings/errors
         ref x => panic!("parse_output: {:?} not implemented", x)
+    };
+
+    let mut filters = vec![];
+    let mut iter = tokens.iter().peekable();
+    iter.next();
+
+    while !iter.is_empty() {
+        if iter.next().unwrap() != &Pipe{
+            panic!("parse_output: expected a pipe");
+        }
+        let name = match iter.next(){
+            Some(&Identifier(ref name)) => name,
+            // TODO implement warnings/errors
+            ref x => panic!("parse_output: expected an Identifier, got {:?}", x)
+        };
+        match iter.peek()  {
+            Some(&&Pipe) => continue,
+            None => continue,
+            _ => ()
+        };
+        if iter.peek().unwrap() != &&Colon{
+            panic!("parse_output: expected a colon");
+        }
+        let mut args = vec![];
+        while !iter.is_empty() && iter.peek().unwrap() != &&Pipe{
+            match iter.next().unwrap(){
+                &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
+                ref x => panic!("parse_output: {:?} not implemented", x)
+            };
+        }
+        filters.push(FilterPrototype::new(&name[], args));
     }
+
+    box Output::new(&entry[], filters) as Box<Renderable>
 }
 
 // a tag can be either a single-element tag or a block, which can contain other elements

@@ -90,7 +90,7 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a
 #[bench]
 fn simple_parse(b: &mut Bencher) {
     let mut options : LiquidOptions = Default::default();
-    let template = parse("{%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
+    let template = parse("{{size | blabla | newt}}{%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
 
     let mut data : Context = Default::default();
     data.values.insert("num".to_string(), Value::Num(5f32));
