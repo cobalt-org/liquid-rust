@@ -11,7 +11,7 @@ impl<'a> Renderable for Template<'a> {
         context.filters.insert("size".to_string(), box Size);
         Some(self.elements.iter().fold(String::new(), |fold, val| {
                                   match val.render(context)  {
-                                      Some(x) => fold + x.as_slice(),
+                                      Some(x) => fold + &x[],
                                       _ => fold
                                   }
                                  }))

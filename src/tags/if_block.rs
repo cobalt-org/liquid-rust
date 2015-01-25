@@ -32,19 +32,19 @@ impl<'a> If<'a>{
         match (&self.lh, &self.rh)  {
             (&NumberLiteral(a), &NumberLiteral(b)) => Ok(compare_numbers(a, b, &self.comparison)),
             (&Identifier(ref var), &NumberLiteral(b)) => {
-                match context.values.get(var.as_slice()) {
+                match context.values.get(&var[]) {
                     Some(&Value::Num(a)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             },
             (&NumberLiteral(a), &Identifier(ref var)) => {
-                match context.values.get(var.as_slice()) {
+                match context.values.get(&var[]) {
                     Some(&Value::Num(b)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             }
             (&Identifier(ref var_a), &Identifier(ref var_b)) => {
-                match (context.values.get(var_a.as_slice()), context.values.get(var_b.as_slice())) {
+                match (context.values.get(&var_a[]), context.values.get(&var_b[])) {
                     (Some(&Value::Num(a)), Some(&Value::Num(b))) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
@@ -87,19 +87,19 @@ impl<'b> Block for IfBlock<'b>{
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
-            x => panic!("Expected a value, found {}", x)
+            x => panic!("Expected a value, found {:?}", x)
         };
 
         let comp = match args.next() {
             Some(&Comparison(ref x)) => x.clone(),
-            x => panic!("Expected a comparison operator, found {}", x)
+            x => panic!("Expected a comparison operator, found {:?}", x)
         };
 
         let rh = match args.next() {
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
-            x => panic!("Expected a value, found {}", x)
+            x => panic!("Expected a value, found {:?}", x)
         };
 
         let else_block = vec![Identifier("else".to_string())];
@@ -138,10 +138,10 @@ impl<'b> Block for IfBlock<'b>{
 fn test_if() {
     let block = IfBlock;
     let options : LiquidOptions = Default::default();
-    let if_tag = block.initialize("if", vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string())], &options);
+    let if_tag = block.initialize("if", &vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][], vec![Raw("if true".to_string())], &options);
     assert_eq!(if_tag.render(&mut Default::default()).unwrap(), "if true".to_string());
 
-    let else_tag = block.initialize("if", vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][0..], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
+    let else_tag = block.initialize("if", &vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
     assert_eq!(else_tag.render(&mut Default::default()).unwrap(), "if false".to_string());
 }
 

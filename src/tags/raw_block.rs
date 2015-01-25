@@ -25,7 +25,7 @@ impl Block for RawBlock{
                                             &Expression(_, ref text) => text,
                                             &Tag(_, ref text) => text,
                                             &Raw(ref text) => text
-                                         }.to_string() + a.as_slice()
+                                         }.to_string() + &a[]
                                         );
         box RawT{content: content} as Box<Renderable>
     }
@@ -35,6 +35,6 @@ impl Block for RawBlock{
 fn test_raw() {
     let block = RawBlock;
     let options : LiquidOptions = Default::default();
-    let raw = block.initialize("raw", vec![][0..], vec![Expression(vec![], "This is a test".to_string())], &options);
+    let raw = block.initialize("raw", &vec![][], vec![Expression(vec![], "This is a test".to_string())], &options);
     assert_eq!(raw.render(&mut Default::default()).unwrap(), "This is a test".to_string());
 }

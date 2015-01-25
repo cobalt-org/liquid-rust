@@ -1,5 +1,6 @@
 #![crate_name = "liquid"]
 
+#![feature(box_syntax)]
 #![feature(unboxed_closures)]
 #![feature(slicing_syntax)]
 #![feature(plugin)]
@@ -79,7 +80,7 @@ pub struct Context<'a>{
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
-    let tokens = lexer::tokenize(text.as_slice());
+    let tokens = lexer::tokenize(&text[]);
     options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
     options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
     let renderables = parser::parse(tokens, options);

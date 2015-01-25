@@ -53,14 +53,14 @@ fn split_blocks(text: &str) -> Vec<&str>{
     let mut tokens = vec![];
     let mut current = 0;
     for (begin, end) in MARKUP.find_iter(text) {
-        match text.slice(current, begin){
+        match &text[current..begin]{
             "" => {}
             t => tokens.push(t)
         };
-        tokens.push(text.slice(begin, end));
+        tokens.push(&text[begin..end]);
         current = end;
     }
-    match text.slice(current, text.len()){
+    match &text[current..text.len()]{
         "" => {}
         t => tokens.push(t)
     };
