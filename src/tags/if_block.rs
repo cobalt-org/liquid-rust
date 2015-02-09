@@ -1,6 +1,6 @@
 use Renderable;
 use Block;
-use Value;
+use value::Value;
 use Context;
 use template::Template;
 use LiquidOptions;

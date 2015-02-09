@@ -1,10 +1,16 @@
 use Renderable;
 use Context;
-use Value;
+use value::Value;
+use variable::Variable;
 
 pub struct FilterPrototype{
     name: String,
     arguments: Vec<Value>
+}
+
+pub enum VarOrVal {
+    Var(Variable),
+    Val(Value)
 }
 
 impl FilterPrototype {
@@ -14,22 +20,30 @@ impl FilterPrototype {
 }
 
 pub struct Output{
-    name: String,
+    entry: VarOrVal,
     filters: Vec<FilterPrototype>
 }
 
 impl Renderable for Output {
     fn render (&self, context: &mut Context) -> Option<String>{
-        match context.values.get(&self.name) {
-            Some(val) => Some(val.to_string()),
-            None => None
+        let mut entry = match self.entry  {
+            VarOrVal::Val(ref x) => x.render(context).unwrap(),
+            VarOrVal::Var(ref x) => x.render(context).unwrap()
+        };
+        for filter in self.filters.iter(){
+            let f = match context.filters.get(&filter.name) {
+                Some(x) => x,
+                None => panic!("Filter not implemented")
+            };
+            entry = f(&entry[]);
         }
+        Some(entry)
     }
 }
 
 impl Output {
-    pub fn new(name: &str, filters: Vec<FilterPrototype>) -> Output {
-        Output{name: name.to_string(), filters: filters}
+    pub fn new(entry: VarOrVal, filters: Vec<FilterPrototype>) -> Output {
+        Output{entry: entry, filters: filters}
     }
 }
 

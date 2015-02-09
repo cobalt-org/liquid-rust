@@ -1,10 +1,12 @@
 use Renderable;
 use LiquidOptions;
-use Value;
+use value::Value;
+use variable::Variable;
 use text::Text;
 use std::slice::Iter;
 use output::Output;
 use output::FilterPrototype;
+use output::VarOrVal;
 use lexer::Token;
 use lexer::Token::{Identifier, Colon, Pipe, StringLiteral};
 use lexer::Element;
@@ -40,7 +42,8 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box
 // creates an output, basically a wrapper around values, variables and filters
 fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     let entry = match tokens[0] {
-        Identifier(ref x) => x,
+        Identifier(ref x) => VarOrVal::Var(Variable::new(&x[])),
+        StringLiteral(ref x) => VarOrVal::Val(Value::Str(x.to_string())),
         // TODO implement warnings/errors
         ref x => panic!("parse_output: {:?} not implemented", x)
     };
@@ -76,7 +79,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
         filters.push(FilterPrototype::new(&name[], args));
     }
 
-    box Output::new(&entry[], filters) as Box<Renderable>
+    box Output::new(entry, filters) as Box<Renderable>
 }
 
 // a tag can be either a single-element tag or a block, which can contain other elements

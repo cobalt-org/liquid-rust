@@ -18,6 +18,7 @@ use tags::IfBlock;
 use tags::RawBlock;
 use std::string::ToString;
 use std::default::Default;
+use value::Value;
 
 mod template;
 mod output;
@@ -26,6 +27,8 @@ mod lexer;
 mod parser;
 mod tags;
 mod filters;
+mod value;
+mod variable;
 
 #[derive(Copy)]
 pub enum ErrorMode{
@@ -36,22 +39,6 @@ pub enum ErrorMode{
 
 impl Default for ErrorMode {
     fn default() -> ErrorMode { ErrorMode::Warn }
-}
-
-pub enum Value{
-    Num(f32),
-    Str(String),
-    Object(HashMap<String, Value>)
-}
-
-impl ToString for Value{
-    fn to_string(&self) -> String{
-        match self{
-            &Value::Num(ref x) => x.to_string(),
-            &Value::Str(ref x) => x.to_string(),
-            _ => "[Object object]".to_string() // TODO
-        }
-    }
 }
 
 pub trait Block {
@@ -95,6 +82,7 @@ fn simple_parse(b: &mut Bencher) {
     let mut data : Context = Default::default();
     data.values.insert("num".to_string(), Value::Num(5f32));
     data.values.insert("numTwo".to_string(), Value::Num(6f32));
+    data.values.insert("size".to_string(), Value::Str("abc".to_string()));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), "wat wot".to_string());
