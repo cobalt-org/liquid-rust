@@ -1,7 +1,3 @@
-//mod value;
-//mod variable;
-mod size;
-
-//pub struct Value;
-//pub struct Variable;
-pub struct Size;
+pub fn size<'a>(input : &'a str) -> String{
+    input.len().to_string()
+}

@@ -3,11 +3,13 @@ use Context;
 use value::Value;
 use variable::Variable;
 
+#[derive(Debug)]
 pub struct FilterPrototype{
     name: String,
     arguments: Vec<Value>
 }
 
+#[derive(Debug)]
 pub enum VarOrVal {
     Var(Variable),
     Val(Value)

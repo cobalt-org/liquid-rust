@@ -2,6 +2,7 @@ use Renderable;
 use Context;
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub enum Value{
     Num(f32),
     Str(String),

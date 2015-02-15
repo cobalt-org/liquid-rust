@@ -1,6 +1,6 @@
 use Renderable;
 use Context;
-use filters::Size;
+use filters::size;
 
 pub struct Template<'a>{
     pub elements: Vec<Box<Renderable +'a>>
@@ -8,7 +8,8 @@ pub struct Template<'a>{
 
 impl<'a> Renderable for Template<'a> {
     fn render (&self, context: &mut Context) -> Option<String>{
-        context.filters.insert("size".to_string(), box Size);
+        context.filters.insert("size".to_string(), box size);
+
         Some(self.elements.iter().fold(String::new(), |fold, val| {
                                   match val.render(context)  {
                                       Some(x) => fold + &x[],

@@ -33,9 +33,7 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
             options.tags.get(x).unwrap().initialize(&x[], tokens.tail(), options)
         },
-        Identifier(ref x) => parse_output(tokens, options),
-        // TODO implement warnings/errors
-        ref x => panic!("parse_expression: {:?} not implemented", x)
+        _ => parse_output(tokens, options),
     }
 }
 
@@ -48,6 +46,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
         ref x => panic!("parse_output: {:?} not implemented", x)
     };
 
+    println!("{:?}", tokens);
     let mut filters = vec![];
     let mut iter = tokens.iter().peekable();
     iter.next();
@@ -61,23 +60,31 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
             // TODO implement warnings/errors
             ref x => panic!("parse_output: expected an Identifier, got {:?}", x)
         };
+        let mut args = vec![];
+
         match iter.peek()  {
-            Some(&&Pipe) => continue,
-            None => continue,
+            Some(&&Pipe) | None => {
+                filters.push(FilterPrototype::new(&name[], args));
+                continue;
+            }
             _ => ()
         };
+
         if iter.peek().unwrap() != &&Colon{
             panic!("parse_output: expected a colon");
         }
-        let mut args = vec![];
+
         while !iter.is_empty() && iter.peek().unwrap() != &&Pipe{
             match iter.next().unwrap(){
                 &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
                 ref x => panic!("parse_output: {:?} not implemented", x)
             };
         }
+
         filters.push(FilterPrototype::new(&name[], args));
     }
+
+    println!("{:?}", filters);
 
     box Output::new(entry, filters) as Box<Renderable>
 }

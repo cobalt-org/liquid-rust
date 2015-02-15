@@ -1,6 +1,7 @@
 use Renderable;
 use Context;
 
+#[derive(Debug)]
 pub struct Variable{
     name: String
 }

@@ -4,12 +4,12 @@
 #![feature(unboxed_closures)]
 #![feature(slicing_syntax)]
 #![feature(plugin)]
-#[plugin]
+
+#![plugin(regex_macros)]
 extern crate regex_macros;
 extern crate regex;
 extern crate test;
 
-use test::Bencher;
 use std::collections::HashMap;
 use template::Template;
 use lexer::Token;
@@ -74,24 +74,21 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a
     Template::new(renderables)
 }
 
-#[bench]
-fn simple_parse(b: &mut Bencher) {
+#[test]
+fn simple_parse() {
     let mut options : LiquidOptions = Default::default();
-    let template = parse("{{size | blabla | newt}}{%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
+    let template = parse("{{'whooo' | size}} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
 
     let mut data : Context = Default::default();
     data.values.insert("num".to_string(), Value::Num(5f32));
     data.values.insert("numTwo".to_string(), Value::Num(6f32));
-    data.values.insert("size".to_string(), Value::Str("abc".to_string()));
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), "wat wot".to_string());
-
-    b.iter(|| template.render(&mut data));
+    assert_eq!(output.unwrap(), "5 wat wot".to_string());
 }
 
-#[bench]
-fn custom_output(b: &mut Bencher) {
+#[test]
+fn custom_output() {
     struct Multiply{
         numbers: Vec<f32>
     }
@@ -130,7 +127,5 @@ fn custom_output(b: &mut Bencher) {
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
-
-    b.iter(|| template.render(&mut data));
 }
 

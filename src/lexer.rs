@@ -14,7 +14,7 @@ static DOUBLE_STRING_LITERAL : Regex = regex!("\"[^\"]*\"");
 static NUMBER_LITERAL        : Regex = regex!(r"-?\d+(\.\d+)?");
 static DOTDOT                : Regex = regex!(r"\.\.");
 
-#[derive(Clone, Show, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ComparisonOperator{
     Equals, NotEquals,
     LessThan, GreaterThan,
@@ -22,7 +22,7 @@ pub enum ComparisonOperator{
     Contains
 }
 
-#[derive(Clone, Show, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Pipe,
     Dot,
@@ -42,7 +42,7 @@ pub enum Token {
     Comparison(ComparisonOperator)
 }
 
-#[derive(Clone, Show, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Element{
     Expression(Vec<Token>, String),
     Tag(Vec<Token>, String),
