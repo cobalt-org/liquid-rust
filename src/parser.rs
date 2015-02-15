@@ -46,7 +46,6 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
         ref x => panic!("parse_output: {:?} not implemented", x)
     };
 
-    println!("{:?}", tokens);
     let mut filters = vec![];
     let mut iter = tokens.iter().peekable();
     iter.next();
@@ -83,8 +82,6 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
 
         filters.push(FilterPrototype::new(&name[], args));
     }
-
-    println!("{:?}", filters);
 
     box Output::new(entry, filters) as Box<Renderable>
 }
