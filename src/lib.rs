@@ -23,11 +23,11 @@ use value::Value;
 mod template;
 mod output;
 mod text;
-mod lexer;
+pub mod lexer;
 mod parser;
 mod tags;
 mod filters;
-mod value;
+pub mod value;
 mod variable;
 
 #[derive(Copy)]
@@ -55,15 +55,15 @@ pub trait Renderable{
 
 #[derive(Default)]
 pub struct LiquidOptions<'a> {
-    blocks : HashMap<String, Box<Block + 'a>>,
-    tags : HashMap<String, Box<Tag + 'a>>,
-    error_mode : ErrorMode
+    pub blocks : HashMap<String, Box<Block + 'a>>,
+    pub tags : HashMap<String, Box<Tag + 'a>>,
+    pub error_mode : ErrorMode
 }
 
 #[derive(Default)]
 pub struct Context<'a>{
-    values : HashMap<String, Value>,
-    filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
+    pub values : HashMap<String, Value>,
+    pub filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
 }
 
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
@@ -72,60 +72,5 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a
     options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
     let renderables = parser::parse(tokens, options);
     Template::new(renderables)
-}
-
-#[test]
-fn simple_parse() {
-    let mut options : LiquidOptions = Default::default();
-    let template = parse("{{'whooo' | size}} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}", &mut options);
-
-    let mut data : Context = Default::default();
-    data.values.insert("num".to_string(), Value::Num(5f32));
-    data.values.insert("numTwo".to_string(), Value::Num(6f32));
-
-    let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), "5 wat wot".to_string());
-}
-
-#[test]
-fn custom_output() {
-    struct Multiply{
-        numbers: Vec<f32>
-    }
-    impl Renderable for Multiply{
-        fn render(&self, context: &mut Context) -> Option<String>{
-            let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
-            Some(x.to_string())
-        }
-    }
-
-    struct MultiplyTag;
-    impl Tag for MultiplyTag{
-        fn initialize(&self, tag_name: &str, arguments: &[Token], options: &LiquidOptions) -> Box<Renderable>{
-            let numbers = arguments.iter().filter_map( |x| {
-                match x {
-                    &Token::NumberLiteral(ref num) => Some(*num),
-                    _ => None
-                }
-            }).collect();
-            box Multiply{numbers: numbers} as Box<Renderable>
-        }
-    }
-
-    let mut tags = HashMap::new();
-    tags.insert("multiply".to_string(), box MultiplyTag as Box<Tag>);
-
-    let mut options = LiquidOptions {
-        blocks: Default::default(),
-        tags: tags,
-        error_mode: Default::default()
-    };
-    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options);
-
-    let mut data : Context = Default::default();
-    data.values.insert("hello".to_string(), Value::Str("world".to_string()));
-
-    let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
 }
 
