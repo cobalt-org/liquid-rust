@@ -12,7 +12,7 @@ use lexer::Token::{Identifier, Colon, Pipe, StringLiteral};
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 
-pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box<Renderable + 'a>> {
+pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Result<Vec<Box<Renderable + 'a>>, String> {
     let mut ret = vec![];
     let mut iter = elements.iter();
     let mut token = iter.next();
@@ -24,7 +24,7 @@ pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Vec<Box
         }
         token = iter.next();
     }
-    ret
+    Ok(ret)
 }
 
 // creates an expression, which wraps everything that gets rendered

@@ -42,7 +42,7 @@ impl Default for ErrorMode {
 }
 
 pub trait Block {
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Box<Renderable>;
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable>, String>;
 }
 
 pub trait Tag {
@@ -66,11 +66,27 @@ pub struct Context<'a>{
     pub filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
 }
 
-pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Template<'a>{
+/// Parses a liquid template, returning a Template object.
+/// # Examples
+/// ## Minimal Template
+/// ```
+/// use std::default::Default;
+/// use liquid::Renderable;
+/// use liquid::LiquidOptions;
+/// use liquid::Context;
+/// let mut options : LiquidOptions = Default::default();
+/// let template = liquid::parse("Liquid!", &mut options).unwrap();
+/// let mut data : Context = Default::default();
+/// let output = template.render(&mut data);
+/// assert_eq!(output.unwrap(), "Liquid!".to_string());
+/// ```
+pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Result<Template<'a>, String>{
     let tokens = lexer::tokenize(&text[]);
     options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
     options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
-    let renderables = parser::parse(tokens, options);
-    Template::new(renderables)
+    match parser::parse(tokens, options) {
+        Ok(renderables) => Ok(Template::new(renderables)),
+        Err(e) => e
+    }
 }
 

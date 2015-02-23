@@ -42,7 +42,7 @@ fn run() {
         tags: tags,
         error_mode: Default::default()
     };
-    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options);
+    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options).unwrap();
 
     let mut data : Context = Default::default();
     data.values.insert("hello".to_string(), Value::Str("world".to_string()));

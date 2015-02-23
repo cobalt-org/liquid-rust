@@ -80,7 +80,7 @@ impl<'a> Renderable for If<'a>{
 }
 
 impl<'b> Block for IfBlock<'b>{
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Box<Renderable>{
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable>, String>{
         let mut args = arguments.iter();
 
         let lh = match args.next() {
@@ -119,7 +119,7 @@ impl<'b> Block for IfBlock<'b>{
         }).skip(1).map(|x| x.clone()).collect();
 
         let if_false = if if_false_tokens.len() > 0 {
-            Some(Template::new(parse(if_false_tokens, options)))
+            Some(Template::new(try!(parse(if_false_tokens, options))))
         }else{
             None
         };
@@ -128,7 +128,7 @@ impl<'b> Block for IfBlock<'b>{
             lh : lh,
             comparison : comp,
             rh : rh,
-            if_true: Template::new(parse(if_true_tokens, options)),
+            if_true: Template::new(try!(parse(if_true_tokens, options))),
             if_false: if_false
         } as Box<Renderable>
     }

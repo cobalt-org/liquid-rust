@@ -19,7 +19,7 @@ impl Renderable for RawT{
 }
 
 impl Block for RawBlock{
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Box<Renderable>{
+    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Result<Box<Renderable>, String>{
         let content = tokens.iter().fold("".to_string(), |a, b|
                                          match b  {
                                             &Expression(_, ref text) => text,
@@ -27,7 +27,7 @@ impl Block for RawBlock{
                                             &Raw(ref text) => text
                                          }.to_string() + &a[]
                                         );
-        box RawT{content: content} as Box<Renderable>
+        Ok(box RawT{content: content} as Box<Renderable>)
     }
 }
 
