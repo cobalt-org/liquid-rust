@@ -12,7 +12,7 @@ impl<'a> Renderable for Template<'a> {
 
         Some(self.elements.iter().fold(String::new(), |fold, val| {
                                   match val.render(context)  {
-                                      Some(x) => fold + &x[],
+                                      Some(x) => fold + &x,
                                       _ => fold
                                   }
                                  }))

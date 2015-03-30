@@ -12,7 +12,7 @@ pub fn run() {
     let mut text = String::new();
     File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text);
     let mut options : LiquidOptions = Default::default();
-    let template = parse(&text[], &mut options).unwrap();
+    let template = parse(&text, &mut options).unwrap();
 
     let mut data : Context = Default::default();
     data.values.insert("num".to_string(), Value::Num(5f32));

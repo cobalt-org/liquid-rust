@@ -12,15 +12,15 @@ use lexer::Token::{Identifier, Colon, Pipe, StringLiteral};
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 
-pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Result<Vec<Box<Renderable + 'a>>, String> {
+pub fn parse<'a> (elements: &[Element], options: &'a LiquidOptions<'a>) -> Result<Vec<Box<Renderable + 'a>>, String> {
     let mut ret = vec![];
     let mut iter = elements.iter();
     let mut token = iter.next();
     while token.is_some() {
         match token.unwrap() {
             &Expression(ref tokens,_) => ret.push(parse_expression(tokens, options)),
-            &Tag(ref tokens,_) => ret.push(parse_tag(&mut iter, tokens, options)),
-            &Raw(ref x) => ret.push(box Text::new(&x[]) as Box<Renderable>)
+            &Tag(ref tokens,_) => ret.push(try!(parse_tag(&mut iter, tokens, options))),
+            &Raw(ref x) => ret.push(box Text::new(&x) as Box<Renderable>)
         }
         token = iter.next();
     }
@@ -31,7 +31,7 @@ pub fn parse<'a> (elements: Vec<Element>, options: &'a LiquidOptions) -> Result<
 fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            options.tags.get(x).unwrap().initialize(&x[], tokens.tail(), options)
+            options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options)
         },
         _ => parse_output(tokens, options),
     }
@@ -40,7 +40,7 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box
 // creates an output, basically a wrapper around values, variables and filters
 fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
     let entry = match tokens[0] {
-        Identifier(ref x) => VarOrVal::Var(Variable::new(&x[])),
+        Identifier(ref x) => VarOrVal::Var(Variable::new(&x)),
         StringLiteral(ref x) => VarOrVal::Val(Value::Str(x.to_string())),
         // TODO implement warnings/errors
         ref x => panic!("parse_output: {:?} not implemented", x)
@@ -63,7 +63,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
 
         match iter.peek()  {
             Some(&&Pipe) | None => {
-                filters.push(FilterPrototype::new(&name[], args));
+                filters.push(FilterPrototype::new(&name, args));
                 continue;
             }
             _ => ()
@@ -80,7 +80,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
             };
         }
 
-        filters.push(FilterPrototype::new(&name[], args));
+        filters.push(FilterPrototype::new(&name, args));
     }
 
     box Output::new(entry, filters) as Box<Renderable>
@@ -89,17 +89,17 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
 // a tag can be either a single-element tag or a block, which can contain other elements
 // and is delimited by a closing tag named {{end + the_name_of_the_tag}}
 // tags do not get rendered, but blocks may contain renderable expressions
-fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a LiquidOptions) -> Result<Box<Renderable + 'a>, String> {
     match tokens[0] {
 
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags.get(x).unwrap().initialize(&x[], tokens.tail(), options)
+            Ok(options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options))
         },
 
         // is a block
         Identifier(ref x) if options.blocks.contains_key(x) => {
-            let end_tag = Identifier("end".to_string() + &x[]);
+            let end_tag = Identifier("end".to_string() + &x);
             let mut children = vec![];
             loop {
                 children.push(match iter.next() {
@@ -108,11 +108,10 @@ fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a Li
                     Some(t) => t.clone(),
                 })
             }
-            options.blocks.get(x).unwrap().initialize(&x[], tokens.tail(), children, options)
+            options.blocks.get(x).unwrap().initialize(&x, tokens.tail(), children, options)
         },
 
-        // TODO implement warnings/errors
-        ref x => panic!("parse_tag: {:?} not implemented", x)
+        ref x => Err(format!("parse_tag: {:?} not implemented", x))
     }
 }
 

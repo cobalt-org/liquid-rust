@@ -2,8 +2,10 @@
 
 #![feature(box_syntax)]
 #![feature(unboxed_closures)]
-#![feature(slicing_syntax)]
 #![feature(plugin)]
+#![feature(test)]
+#![feature(collections)]
+#![feature(core)]
 
 #![plugin(regex_macros)]
 extern crate regex_macros;
@@ -42,7 +44,7 @@ impl Default for ErrorMode {
 }
 
 pub trait Block {
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable>, String>;
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>, String>;
 }
 
 pub trait Tag {
@@ -81,12 +83,12 @@ pub struct Context<'a>{
 /// assert_eq!(output.unwrap(), "Liquid!".to_string());
 /// ```
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Result<Template<'a>, String>{
-    let tokens = lexer::tokenize(&text[]);
+    let tokens = lexer::tokenize(&text);
     options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
     options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
-    match parser::parse(tokens, options) {
+    match parser::parse(&tokens, options) {
         Ok(renderables) => Ok(Template::new(renderables)),
-        Err(e) => e
+        Err(e) => Err(e)
     }
 }
 

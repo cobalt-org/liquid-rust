@@ -37,7 +37,7 @@ impl Renderable for Output {
                 Some(x) => x,
                 None => panic!("Filter not implemented")
             };
-            entry = f(&entry[]);
+            entry = f(&entry);
         }
         Some(entry)
     }

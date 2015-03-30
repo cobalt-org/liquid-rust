@@ -32,19 +32,19 @@ impl<'a> If<'a>{
         match (&self.lh, &self.rh)  {
             (&NumberLiteral(a), &NumberLiteral(b)) => Ok(compare_numbers(a, b, &self.comparison)),
             (&Identifier(ref var), &NumberLiteral(b)) => {
-                match context.values.get(&var[]) {
+                match context.values.get(var) {
                     Some(&Value::Num(a)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             },
             (&NumberLiteral(a), &Identifier(ref var)) => {
-                match context.values.get(&var[]) {
+                match context.values.get(var) {
                     Some(&Value::Num(b)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             }
             (&Identifier(ref var_a), &Identifier(ref var_b)) => {
-                match (context.values.get(&var_a[]), context.values.get(&var_b[])) {
+                match (context.values.get(var_a), context.values.get(var_b)) {
                     (Some(&Value::Num(a)), Some(&Value::Num(b))) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
@@ -79,8 +79,8 @@ impl<'a> Renderable for If<'a>{
     }
 }
 
-impl<'b> Block for IfBlock<'b>{
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable>, String>{
+impl Block for IfBlock{
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions) -> Result<Box<Renderable +'a>, String>{
         let mut args = arguments.iter();
 
         let lh = match args.next() {
@@ -106,7 +106,7 @@ impl<'b> Block for IfBlock<'b>{
 
         // advance until the end or an else token is reached
         // to gather everything to be executed if the condition is true
-        let if_true_tokens = tokens.iter().take_while(|&x| match x  {
+        let if_true_tokens : Vec<Element> = tokens.iter().take_while(|&x| match x  {
             &Tag(ref eb, _) => *eb != else_block,
             _ => true
         }).map(|x| x.clone()).collect();
@@ -118,19 +118,30 @@ impl<'b> Block for IfBlock<'b>{
             _ => true
         }).skip(1).map(|x| x.clone()).collect();
 
+        let if_false_block = match parse(&if_false_tokens, options){
+            Ok(x) => x,
+            Err(e) => return Err(e)
+        };
+
+        // if false is None if there is no block to execute
         let if_false = if if_false_tokens.len() > 0 {
-            Some(Template::new(try!(parse(if_false_tokens, options))))
+            Some(Template::new(if_false_block))
         }else{
             None
         };
 
-        box If{
+        let if_true = match parse(&if_true_tokens, options){
+            Ok(x) => Template::new(x),
+            Err(e) => return Err(e)
+        };
+
+        Ok(box If{
             lh : lh,
             comparison : comp,
             rh : rh,
-            if_true: Template::new(try!(parse(if_true_tokens, options))),
+            if_true: if_true,
             if_false: if_false
-        } as Box<Renderable>
+        } as Box<Renderable>)
     }
 }
 
@@ -138,10 +149,12 @@ impl<'b> Block for IfBlock<'b>{
 fn test_if() {
     let block = IfBlock;
     let options : LiquidOptions = Default::default();
-    let if_tag = block.initialize("if", &vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)][], vec![Raw("if true".to_string())], &options);
-    assert_eq!(if_tag.render(&mut Default::default()).unwrap(), "if true".to_string());
+    // 5 < 6 then "if true" else "if false"
+    let if_tag = block.initialize("if", &vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string())], &options);
+    assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(), "if true".to_string());
 
-    let else_tag = block.initialize("if", &vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)][], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
-    assert_eq!(else_tag.render(&mut Default::default()).unwrap(), "if false".to_string());
+    // 7 < 6 then "if true" else "if false"
+    let else_tag = block.initialize("if", &vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
+    assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(), "if false".to_string());
 }
 
