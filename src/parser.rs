@@ -18,7 +18,7 @@ pub fn parse<'a> (elements: &[Element], options: &'a LiquidOptions<'a>) -> Resul
     let mut token = iter.next();
     while token.is_some() {
         match token.unwrap() {
-            &Expression(ref tokens,_) => ret.push(parse_expression(tokens, options)),
+            &Expression(ref tokens,_) => ret.push(try!(parse_expression(tokens, options))),
             &Tag(ref tokens,_) => ret.push(try!(parse_tag(&mut iter, tokens, options))),
             &Raw(ref x) => ret.push(box Text::new(&x) as Box<Renderable>)
         }
@@ -28,22 +28,21 @@ pub fn parse<'a> (elements: &[Element], options: &'a LiquidOptions<'a>) -> Resul
 }
 
 // creates an expression, which wraps everything that gets rendered
-fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Result<Box<Renderable + 'a>, String> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options)
+            Ok(options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options))
         },
         _ => parse_output(tokens, options),
     }
 }
 
 // creates an output, basically a wrapper around values, variables and filters
-fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Renderable + 'a> {
+fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Result<Box<Renderable + 'a>, String> {
     let entry = match tokens[0] {
         Identifier(ref x) => VarOrVal::Var(Variable::new(&x)),
         StringLiteral(ref x) => VarOrVal::Val(Value::Str(x.to_string())),
-        // TODO implement warnings/errors
-        ref x => panic!("parse_output: {:?} not implemented", x)
+        ref x => return Err(format!("parse_output: {:?} not implemented", x))
     };
 
     let mut filters = vec![];
@@ -56,8 +55,7 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
         }
         let name = match iter.next(){
             Some(&Identifier(ref name)) => name,
-            // TODO implement warnings/errors
-            ref x => panic!("parse_output: expected an Identifier, got {:?}", x)
+            ref x => return Err(format!("parse_output: expected an Identifier, got {:?}", x))
         };
         let mut args = vec![];
 
@@ -76,14 +74,14 @@ fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Box<Ren
         while !iter.is_empty() && iter.peek().unwrap() != &&Pipe{
             match iter.next().unwrap(){
                 &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
-                ref x => panic!("parse_output: {:?} not implemented", x)
+                ref x => return Err(format!("parse_output: {:?} not implemented", x))
             };
         }
 
         filters.push(FilterPrototype::new(&name, args));
     }
 
-    box Output::new(entry, filters) as Box<Renderable>
+    Ok(box Output::new(entry, filters) as Box<Renderable>)
 }
 
 // a tag can be either a single-element tag or a block, which can contain other elements

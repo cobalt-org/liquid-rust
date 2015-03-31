@@ -87,19 +87,19 @@ impl Block for IfBlock{
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
-            x => panic!("Expected a value, found {:?}", x)
+            x => return Err(format!("Expected a value, found {:?}", x))
         };
 
         let comp = match args.next() {
             Some(&Comparison(ref x)) => x.clone(),
-            x => panic!("Expected a comparison operator, found {:?}", x)
+            x => return Err(format!("Expected a comparison operator, found {:?}", x))
         };
 
         let rh = match args.next() {
             Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
             Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
             Some(&Identifier(ref x)) => Identifier(x.clone()),
-            x => panic!("Expected a value, found {:?}", x)
+            x => return Err(format!("Expected a value, found {:?}", x))
         };
 
         let else_block = vec![Identifier("else".to_string())];
