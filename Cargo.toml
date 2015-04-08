@@ -10,5 +10,5 @@ keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 
 [dependencies]
-regex = "0.1.15"
-regex_macros = "0.1.8"
+regex = "0.1.26"
+regex_macros = "0.1.14"

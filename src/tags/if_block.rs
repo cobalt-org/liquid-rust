@@ -54,6 +54,7 @@ impl<'a> If<'a>{
     }
 }
 
+// TODO surely there's a nicer way for this
 fn compare_numbers(a : f32, b : f32, comparison : &ComparisonOperator) -> bool{
     match comparison {
         &Equals => a == b,

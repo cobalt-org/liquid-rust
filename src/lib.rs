@@ -31,7 +31,7 @@ mod filters;
 pub mod value;
 mod variable;
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub enum ErrorMode{
     Strict,
     Warn,

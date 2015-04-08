@@ -6,7 +6,8 @@ use std::collections::HashMap;
 pub enum Value{
     Num(f32),
     Str(String),
-    Object(HashMap<String, Value>)
+    Object(HashMap<String, Value>),
+    Array(Vec<Value>)
 }
 
 impl ToString for Value{
