@@ -69,7 +69,9 @@ pub struct Context<'a>{
 
 /// Parses a liquid template, returning a Template object.
 /// # Examples
+///
 /// ## Minimal Template
+///
 /// ```
 /// use std::default::Default;
 /// use liquid::Renderable;
@@ -81,6 +83,7 @@ pub struct Context<'a>{
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), "Liquid!".to_string());
 /// ```
+///
 pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Result<Template<'a>, String>{
     let tokens = lexer::tokenize(&text);
     options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
