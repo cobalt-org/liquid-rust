@@ -2,7 +2,7 @@ use Renderable;
 use Context;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Value{
     Num(f32),
     Str(String),
@@ -21,7 +21,7 @@ impl ToString for Value{
 }
 
 impl Renderable for Value{
-    fn render(&self, context: &mut Context) -> Option<String>{
+    fn render(&self, _context: &mut Context) -> Option<String>{
         Some(self.to_string())
     }
 }

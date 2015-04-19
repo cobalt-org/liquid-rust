@@ -5,19 +5,22 @@ use LiquidOptions;
 use tags::CommentBlock;
 use lexer::Token;
 use lexer::Element;
-use lexer::Element::{Expression, Tag, Raw};
+
+#[cfg(test)]
 use std::default::Default;
+#[cfg(test)]
+use lexer::Element::Expression;
 
 struct CommentT;
 
 impl Renderable for CommentT{
-    fn render(&self, context: &mut Context) -> Option<String>{
+    fn render(&self, _context: &mut Context) -> Option<String>{
         None
     }
 }
 
 impl Block for CommentBlock{
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Result<Box<Renderable>, String>{
+    fn initialize(&self, _tag_name: &str, _arguments: &[Token], _tokens: Vec<Element>, _options : &LiquidOptions) -> Result<Box<Renderable>, String>{
         Ok(box CommentT as Box<Renderable>)
     }
 }

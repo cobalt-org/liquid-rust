@@ -8,7 +8,6 @@
 #![feature(core)]
 
 #![plugin(regex_macros)]
-extern crate regex_macros;
 extern crate regex;
 extern crate test;
 
@@ -16,7 +15,7 @@ use std::collections::HashMap;
 use template::Template;
 use lexer::Token;
 use lexer::Element;
-use tags::{IfBlock, RawBlock, CommentBlock};
+use tags::{IfBlock, ForBlock, RawBlock, CommentBlock};
 use std::string::ToString;
 use std::default::Default;
 use value::Value;
@@ -88,6 +87,7 @@ pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Result<Temp
     let tokens = lexer::tokenize(&text);
     options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
     options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
+    options.blocks.insert("for".to_string(), box ForBlock as Box<Block>);
     options.blocks.insert("comment".to_string(), box CommentBlock as Box<Block>);
     match parser::parse(&tokens, options) {
         Ok(renderables) => Ok(Template::new(renderables)),

@@ -6,6 +6,8 @@ use tags::RawBlock;
 use lexer::Token;
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
+
+#[cfg(test)]
 use std::default::Default;
 
 struct RawT{
@@ -13,13 +15,13 @@ struct RawT{
 }
 
 impl Renderable for RawT{
-    fn render(&self, context: &mut Context) -> Option<String>{
+    fn render(&self, _context: &mut Context) -> Option<String>{
         Some(self.content.to_string())
     }
 }
 
 impl Block for RawBlock{
-    fn initialize(&self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &LiquidOptions) -> Result<Box<Renderable>, String>{
+    fn initialize(&self, _tag_name: &str, _arguments: &[Token], tokens: Vec<Element>, _options : &LiquidOptions) -> Result<Box<Renderable>, String>{
         let content = tokens.iter().fold("".to_string(), |a, b|
                                          match b  {
                                             &Expression(_, ref text) => text,

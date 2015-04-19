@@ -16,8 +16,12 @@ use lexer::ComparisonOperator::{
 };
 use parser::parse;
 use lexer::Element;
-use lexer::Element::{Tag, Raw};
+use lexer::Element::Tag;
+
+#[cfg(test)]
 use std::default::Default;
+#[cfg(test)]
+use lexer::Element::Raw;
 
 struct If<'a>{
     lh : Token,
@@ -81,7 +85,7 @@ impl<'a> Renderable for If<'a>{
 }
 
 impl Block for IfBlock{
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions) -> Result<Box<Renderable +'a>, String>{
+    fn initialize<'a>(&'a self, _tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions) -> Result<Box<Renderable +'a>, String>{
         let mut args = arguments.iter();
 
         let lh = match args.next() {
@@ -119,22 +123,14 @@ impl Block for IfBlock{
             _ => true
         }).skip(1).map(|x| x.clone()).collect();
 
-        let if_false_block = match parse(&if_false_tokens, options){
-            Ok(x) => x,
-            Err(e) => return Err(e)
-        };
-
         // if false is None if there is no block to execute
         let if_false = if if_false_tokens.len() > 0 {
-            Some(Template::new(if_false_block))
+            Some(Template::new(try!(parse(&if_false_tokens, options))))
         }else{
             None
         };
 
-        let if_true = match parse(&if_true_tokens, options){
-            Ok(x) => Template::new(x),
-            Err(e) => return Err(e)
-        };
+        let if_true = Template::new(try!(parse(&if_true_tokens, options)));
 
         Ok(box If{
             lh : lh,

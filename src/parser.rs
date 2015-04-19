@@ -33,12 +33,12 @@ fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Res
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
             Ok(options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options))
         },
-        _ => parse_output(tokens, options),
+        _ => parse_output(tokens),
     }
 }
 
 // creates an output, basically a wrapper around values, variables and filters
-fn parse_output<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Result<Box<Renderable + 'a>, String> {
+fn parse_output<'a> (tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>, String> {
     let entry = match tokens[0] {
         Identifier(ref x) => VarOrVal::Var(Variable::new(&x)),
         StringLiteral(ref x) => VarOrVal::Val(Value::Str(x.to_string())),
