@@ -1,4 +1,5 @@
 #![crate_name = "liquid"]
+#![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
 
 #![feature(box_syntax)]
 #![feature(unboxed_closures)]
