@@ -1,8 +1,8 @@
 use Renderable;
-use Context;
+use context::Context;
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Value{
     Num(f32),
     Str(String),

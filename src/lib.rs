@@ -18,7 +18,8 @@ use lexer::Element;
 use tags::{IfBlock, ForBlock, RawBlock, CommentBlock};
 use std::string::ToString;
 use std::default::Default;
-use value::Value;
+pub use value::Value;
+pub use context::Context;
 
 mod template;
 mod output;
@@ -27,9 +28,13 @@ pub mod lexer;
 mod parser;
 mod tags;
 mod filters;
-pub mod value;
+mod value;
 mod variable;
+mod context;
 
+/// The ErrorMode to use.
+/// This currently does not have an effect, until
+/// ErrorModes are properly implemented.
 #[derive(Clone, Copy)]
 pub enum ErrorMode{
     Strict,
@@ -38,17 +43,20 @@ pub enum ErrorMode{
 }
 
 impl Default for ErrorMode {
-    fn default() -> ErrorMode { ErrorMode::Warn }
+   fn default() -> ErrorMode { ErrorMode::Warn }
 }
 
-pub trait Block {
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>, String>;
-}
-
+/// A trait for creating custom tags.
 pub trait Tag {
     fn initialize(&self, tag_name: &str, arguments: &[Token], options : &LiquidOptions) -> Box<Renderable>;
 }
 
+/// The trait to use when implementing custom block-size tags ({% if something %})
+pub trait Block {
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>, String>;
+}
+
+/// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable{
     fn render(&self, context: &mut Context) -> Option<String>;
 }
@@ -58,12 +66,6 @@ pub struct LiquidOptions<'a> {
     pub blocks : HashMap<String, Box<Block + 'a>>,
     pub tags : HashMap<String, Box<Tag + 'a>>,
     pub error_mode : ErrorMode
-}
-
-#[derive(Default)]
-pub struct Context<'a>{
-    pub values : HashMap<String, Value>,
-    pub filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
 }
 
 /// Parses a liquid template, returning a Template object.
@@ -78,7 +80,7 @@ pub struct Context<'a>{
 /// use liquid::Context;
 /// let mut options : LiquidOptions = Default::default();
 /// let template = liquid::parse("Liquid!", &mut options).unwrap();
-/// let mut data : Context = Default::default();
+/// let mut data = Context::new();
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), "Liquid!".to_string());
 /// ```

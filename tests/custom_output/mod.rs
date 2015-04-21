@@ -5,7 +5,7 @@ use liquid::Tag;
 use liquid::lexer::Token;
 use liquid::Renderable;
 use liquid::Context;
-use liquid::value::Value;
+use liquid::Value;
 use liquid::parse;
 use std::default::Default;
 
@@ -44,8 +44,8 @@ fn run() {
     };
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options).unwrap();
 
-    let mut data : Context = Default::default();
-    data.values.insert("hello".to_string(), Value::Str("world".to_string()));
+    let mut data = Context::new() ;
+    data.set_val("hello", Value::Str("world".to_string()));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());

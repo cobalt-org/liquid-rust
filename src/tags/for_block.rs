@@ -1,6 +1,6 @@
 use Renderable;
 use Block;
-use Context;
+use context::Context;
 use LiquidOptions;
 use lexer::Token;
 use lexer::Element;
@@ -22,7 +22,7 @@ struct For<'a> {
 }
 
 fn get_array(context: &mut Context, array_id: &str) -> Vec<Value> {
-    match context.values.get(array_id) {
+    match context.get_val(array_id) {
         Some(&Value::Array(ref x)) => x.clone(),
         _ => panic!("TODO")
     }
@@ -33,7 +33,7 @@ impl<'a> Renderable for For<'a>{
         let arr = get_array(context, &self.array_id);
         let mut ret = String::new();
         for i in arr {
-            context.values.insert(self.var_name.clone(), i);
+            context.set_val(&self.var_name, i);
             ret = ret + &self.inner.render(context).unwrap();
         }
         Some(ret)
@@ -77,7 +77,7 @@ fn test_for() {
     let for_tag = block.initialize("for", &vec![Identifier("name".to_string()), Identifier("in".to_string()), Identifier("array".to_string())], tokenize("test {{name}} "), &options);
 
     let mut data : Context = Default::default();
-    data.values.insert("array".to_string(), Value::Array(vec![Value::Num(22f32), Value::Num(23f32), Value::Num(24f32), Value::Str("wat".to_string())]));
+    data.set_val("array", Value::Array(vec![Value::Num(22f32), Value::Num(23f32), Value::Num(24f32), Value::Str("wat".to_string())]));
     assert_eq!(for_tag.unwrap().render(&mut data).unwrap(), "test 22 test 23 test 24 test wat ".to_string());
 }
 

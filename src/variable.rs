@@ -1,5 +1,5 @@
 use Renderable;
-use Context;
+use context::Context;
 
 #[derive(Debug)]
 pub struct Variable{
@@ -8,7 +8,7 @@ pub struct Variable{
 
 impl Renderable for Variable {
     fn render (&self, context: &mut Context) -> Option<String>{
-        match context.values.get(&self.name) {
+        match context.get_val(&self.name) {
             Some(val) => Some(val.to_string()),
             None => None
         }

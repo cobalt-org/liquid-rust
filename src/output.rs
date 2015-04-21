@@ -1,5 +1,5 @@
 use Renderable;
-use Context;
+use context::Context;
 use value::Value;
 use variable::Variable;
 

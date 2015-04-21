@@ -1,6 +1,6 @@
 use Renderable;
 use Block;
-use Context;
+use context::Context;
 use LiquidOptions;
 use tags::RawBlock;
 use lexer::Token;

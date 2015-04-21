@@ -1,5 +1,5 @@
 use Renderable;
-use Context;
+use context::Context;
 
 pub struct Text{
     text: String

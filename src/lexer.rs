@@ -129,6 +129,9 @@ fn test_tokenize() {
     assert_eq!(tokenize("{{hello 'world'}}"), vec![
                Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{hello 'world'}}".to_string())
                ]);
+    assert_eq!(tokenize("{{hello.world}}"), vec![
+               Expression(vec![Identifier("hello.world".to_string())], "{{hello.world}}".to_string())
+               ]);
     assert_eq!(tokenize("{{ hello 'world' }}"), vec![
                Expression(vec![Identifier("hello".to_string()), StringLiteral("world".to_string())], "{{ hello 'world' }}".to_string())
                ]);

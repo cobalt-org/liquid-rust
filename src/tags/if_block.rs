@@ -1,7 +1,7 @@
 use Renderable;
 use Block;
 use value::Value;
-use Context;
+use context::Context;
 use template::Template;
 use LiquidOptions;
 use tags::IfBlock;
@@ -36,19 +36,19 @@ impl<'a> If<'a>{
         match (&self.lh, &self.rh)  {
             (&NumberLiteral(a), &NumberLiteral(b)) => Ok(compare_numbers(a, b, &self.comparison)),
             (&Identifier(ref var), &NumberLiteral(b)) => {
-                match context.values.get(var) {
+                match context.get_val(var) {
                     Some(&Value::Num(a)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             },
             (&NumberLiteral(a), &Identifier(ref var)) => {
-                match context.values.get(var) {
+                match context.get_val(var) {
                     Some(&Value::Num(b)) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }
             }
             (&Identifier(ref var_a), &Identifier(ref var_b)) => {
-                match (context.values.get(var_a), context.values.get(var_b)) {
+                match (context.get_val(var_a), context.get_val(var_b)) {
                     (Some(&Value::Num(a)), Some(&Value::Num(b))) => Ok(compare_numbers(a, b, &self.comparison)),
                     _ => Err("not comparable")
                 }

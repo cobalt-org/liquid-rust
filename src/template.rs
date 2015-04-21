@@ -1,5 +1,5 @@
 use Renderable;
-use Context;
+use context::Context;
 use filters::size;
 
 pub struct Template<'a>{
