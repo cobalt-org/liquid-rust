@@ -1,11 +1,16 @@
 language: rust
 rust:
-  - nightly
+- nightly
 
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/30d95aef09ac81d884bf
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: false     # default: false
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo doc --no-deps &&
+  echo "<meta http-equiv=refresh content=0;url=`echo liquid | cut -d '/' -f 2`/index.html>" > target/doc/index.html &&
+  sudo pip install ghp-import &&
+  ghp-import -n target/doc &&
+  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+
+env:
+  global:
+    secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
