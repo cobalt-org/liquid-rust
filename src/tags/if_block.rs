@@ -18,11 +18,6 @@ use parser::parse;
 use lexer::Element;
 use lexer::Element::Tag;
 
-#[cfg(test)]
-use std::default::Default;
-#[cfg(test)]
-use lexer::Element::Raw;
-
 struct If<'a>{
     lh : Token,
     comparison : ComparisonOperator,
@@ -31,43 +26,31 @@ struct If<'a>{
     if_false: Option<Template<'a>>
 }
 
-impl<'a> If<'a>{
-    fn compare(&self, context: &Context) -> Result<bool, &'static str>{
-        match (&self.lh, &self.rh)  {
-            (&NumberLiteral(a), &NumberLiteral(b)) => Ok(compare_numbers(a, b, &self.comparison)),
-            (&Identifier(ref var), &NumberLiteral(b)) => {
-                match context.get_val(var) {
-                    Some(&Value::Num(a)) => Ok(compare_numbers(a, b, &self.comparison)),
-                    _ => Err("not comparable")
-                }
-            },
-            (&NumberLiteral(a), &Identifier(ref var)) => {
-                match context.get_val(var) {
-                    Some(&Value::Num(b)) => Ok(compare_numbers(a, b, &self.comparison)),
-                    _ => Err("not comparable")
-                }
-            }
-            (&Identifier(ref var_a), &Identifier(ref var_b)) => {
-                match (context.get_val(var_a), context.get_val(var_b)) {
-                    (Some(&Value::Num(a)), Some(&Value::Num(b))) => Ok(compare_numbers(a, b, &self.comparison)),
-                    _ => Err("not comparable")
-                }
-            }
-            (_, _) => Err("not implemented yet!") // TODO
-        }
+fn token_to_val (token: &Token, context: &Context) -> Result<Value, String> {
+    match token {
+       &StringLiteral(ref x) => Ok(Value::Str(x.to_string())),
+       &NumberLiteral(x) => Ok(Value::Num(x)),
+       &Identifier(ref x) => match context.get_val(x){
+           Some(y) => Ok(y.clone()),
+           None => Err(format!("Not comparable"))
+       },
+       _ => Err(format!("Not comparable"))
     }
 }
 
-// TODO surely there's a nicer way for this
-fn compare_numbers(a : f32, b : f32, comparison : &ComparisonOperator) -> bool{
-    match comparison {
-        &Equals => a == b,
-        &NotEquals => a != b,
-        &LessThan => a < b,
-        &GreaterThan => a > b,
-        &LessThanEquals => a <= b,
-        &GreaterThanEquals => a >= b,
-        &Contains => false, // TODO!!!
+impl<'a> If<'a>{
+    fn compare(&self, context: &Context) -> Result<bool, String>{
+        let a = try!(token_to_val(&self.lh, context));
+        let b = try!(token_to_val(&self.rh, context));
+        Ok(match &self.comparison {
+            &Equals => a == b,
+            &NotEquals => a != b,
+            &LessThan => a < b,
+            &GreaterThan => a > b,
+            &LessThanEquals => a <= b,
+            &GreaterThanEquals => a >= b,
+            &Contains => false, // TODO!!!
+        })
     }
 }
 
@@ -142,16 +125,41 @@ impl Block for IfBlock{
     }
 }
 
-#[test]
-fn test_if() {
-    let block = IfBlock;
-    let options : LiquidOptions = Default::default();
-    // 5 < 6 then "if true" else "if false"
-    let if_tag = block.initialize("if", &vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string())], &options);
-    assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(), "if true".to_string());
+#[cfg(test)]
+mod test{
+    use LiquidOptions;
+    use Block;
+    use std::default::Default;
+    use tags::IfBlock;
+    use lexer::Element::Raw;
+    use lexer::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
+    use lexer::Element::Tag;
+    use lexer::ComparisonOperator::{LessThan, Equals};
 
-    // 7 < 6 then "if true" else "if false"
-    let else_tag = block.initialize("if", &vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
-    assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(), "if false".to_string());
+    #[test]
+    fn test_number_comparison() {
+        let block = IfBlock;
+        let options : LiquidOptions = Default::default();
+        // 5 < 6 then "if true" else "if false"
+        let if_tag = block.initialize("if", &vec![NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string())], &options);
+        assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(), "if true".to_string());
+
+        // 7 < 6 then "if true" else "if false"
+        let else_tag = block.initialize("if", &vec![NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)], vec![Raw("if true".to_string()), Tag(vec![Identifier("else".to_string())], "".to_string()), Raw("if false".to_string())], &options);
+        assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(), "if false".to_string());
+    }
+
+    #[test]
+    fn test_string_comparison() {
+        let block = IfBlock;
+        let options : LiquidOptions = Default::default();
+        // "one" == "one" then "if true" else "if false"
+        let if_tag = block.initialize("if", &vec![StringLiteral("one".to_string()), Comparison(Equals), StringLiteral("one".to_string())], vec![Raw("if true".to_string())], &options);
+        assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(), "if true".to_string());
+
+        // "one" == "two"
+        let else_tag = block.initialize("if", &vec![StringLiteral("one".to_string()), Comparison(Equals), StringLiteral("two".to_string())], vec![Raw("if true".to_string())], &options);
+        assert_eq!(else_tag.unwrap().render(&mut Default::default()), None);
+    }
 }
 
