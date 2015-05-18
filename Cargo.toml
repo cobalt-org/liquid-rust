@@ -1,7 +1,7 @@
 [package]
 
 name = "liquid"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust"
