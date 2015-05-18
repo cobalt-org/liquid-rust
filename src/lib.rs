@@ -1,16 +1,7 @@
 #![crate_name = "liquid"]
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
 
-#![feature(box_syntax)]
-#![feature(unboxed_closures)]
-#![feature(plugin)]
-#![feature(test)]
-#![feature(collections)]
-#![feature(core)]
-
-#![plugin(regex_macros)]
 extern crate regex;
-extern crate test;
 
 use std::collections::HashMap;
 use template::Template;
@@ -86,12 +77,12 @@ pub struct LiquidOptions<'a> {
 /// assert_eq!(output.unwrap(), "Liquid!".to_string());
 /// ```
 ///
-pub fn parse<'a> (text: &str, options: &'a mut LiquidOptions<'a>) -> Result<Template<'a>, String>{
+pub fn parse<'a, 'b> (text: &str, options: &'b mut LiquidOptions<'a>) -> Result<Template<'b>, String>{
     let tokens = lexer::tokenize(&text);
-    options.blocks.insert("raw".to_string(), box RawBlock as Box<Block>);
-    options.blocks.insert("if".to_string(), box IfBlock as Box<Block>);
-    options.blocks.insert("for".to_string(), box ForBlock as Box<Block>);
-    options.blocks.insert("comment".to_string(), box CommentBlock as Box<Block>);
+    options.blocks.insert("raw".to_string(), Box::new(RawBlock) as Box<Block>);
+    options.blocks.insert("if".to_string(), Box::new(IfBlock) as Box<Block>);
+    options.blocks.insert("for".to_string(), Box::new(ForBlock) as Box<Block>);
+    options.blocks.insert("comment".to_string(), Box::new(CommentBlock) as Box<Block>);
     match parser::parse(&tokens, options) {
         Ok(renderables) => Ok(Template::new(renderables)),
         Err(e) => Err(e)

@@ -1,4 +1,3 @@
-#![feature(box_syntax)]
 extern crate liquid;
 
 mod simple;

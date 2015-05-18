@@ -29,7 +29,7 @@ impl Block for RawBlock{
                                             &Raw(ref text) => text
                                          }.to_string() + &a
                                         );
-        Ok(box RawT{content: content} as Box<Renderable>)
+        Ok(Box::new(RawT{content: content}) as Box<Renderable>)
     }
 }
 

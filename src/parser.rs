@@ -20,7 +20,7 @@ pub fn parse<'a> (elements: &[Element], options: &'a LiquidOptions<'a>) -> Resul
         match token.unwrap() {
             &Expression(ref tokens,_) => ret.push(try!(parse_expression(tokens, options))),
             &Tag(ref tokens,_) => ret.push(try!(parse_tag(&mut iter, tokens, options))),
-            &Raw(ref x) => ret.push(box Text::new(&x) as Box<Renderable>)
+            &Raw(ref x) => ret.push(Box::new(Text::new(&x)) as Box<Renderable>)
         }
         token = iter.next();
     }
@@ -31,7 +31,7 @@ pub fn parse<'a> (elements: &[Element], options: &'a LiquidOptions<'a>) -> Resul
 fn parse_expression<'a> (tokens: &Vec<Token>, options: &'a LiquidOptions) -> Result<Box<Renderable + 'a>, String> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            Ok(options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options))
+            Ok(options.tags.get(x).unwrap().initialize(&x, &tokens[1..], options))
         },
         _ => parse_output(tokens),
     }
@@ -49,7 +49,7 @@ fn parse_output<'a> (tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>, String
     let mut iter = tokens.iter().peekable();
     iter.next();
 
-    while !iter.is_empty() {
+    while iter.peek() != None {
         if iter.next().unwrap() != &Pipe{
             panic!("parse_output: expected a pipe");
         }
@@ -71,7 +71,7 @@ fn parse_output<'a> (tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>, String
             panic!("parse_output: expected a colon");
         }
 
-        while !iter.is_empty() && iter.peek().unwrap() != &&Pipe{
+        while iter.peek() != None && iter.peek().unwrap() != &&Pipe{
             match iter.next().unwrap(){
                 &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
                 ref x => return Err(format!("parse_output: {:?} not implemented", x))
@@ -81,7 +81,7 @@ fn parse_output<'a> (tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>, String
         filters.push(FilterPrototype::new(&name, args));
     }
 
-    Ok(box Output::new(entry, filters) as Box<Renderable>)
+    Ok(Box::new(Output::new(entry, filters)) as Box<Renderable>)
 }
 
 // a tag can be either a single-element tag or a block, which can contain other elements
@@ -92,7 +92,7 @@ fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a Li
 
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            Ok(options.tags.get(x).unwrap().initialize(&x, tokens.tail(), options))
+            Ok(options.tags.get(x).unwrap().initialize(&x, &tokens[1..], options))
         },
 
         // is a block
@@ -106,7 +106,7 @@ fn parse_tag<'a> (iter: &mut Iter<Element>, tokens: &Vec<Token>, options: &'a Li
                     Some(t) => t.clone(),
                 })
             }
-            options.blocks.get(x).unwrap().initialize(&x, tokens.tail(), children, options)
+            options.blocks.get(x).unwrap().initialize(&x, &tokens[1..], children, options)
         },
 
         ref x => Err(format!("parse_tag: {:?} not implemented", x))

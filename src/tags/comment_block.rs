@@ -21,7 +21,7 @@ impl Renderable for CommentT{
 
 impl Block for CommentBlock{
     fn initialize(&self, _tag_name: &str, _arguments: &[Token], _tokens: Vec<Element>, _options : &LiquidOptions) -> Result<Box<Renderable>, String>{
-        Ok(box CommentT as Box<Renderable>)
+        Ok(Box::new(CommentT) as Box<Renderable>)
     }
 }
 

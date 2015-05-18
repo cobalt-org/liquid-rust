@@ -3,17 +3,6 @@ use self::Element::*;
 use self::ComparisonOperator::*;
 use regex::Regex;
 
-static MARKUP     : Regex = regex!("\\{%.*?%\\}|\\{\\{.*?\\}\\}");
-static TAG        : Regex = regex!("\\{%(.*?)%\\}");
-static EXPRESSION : Regex = regex!("\\{\\{(.*?)\\}\\}");
-static WHITESPACE : Regex = regex!(r"\s+");
-
-static IDENTIFIER            : Regex = regex!(r"[a-zA-Z_][\w-]*\??");
-static SINGLE_STRING_LITERAL : Regex = regex!(r"'[^']*'");
-static DOUBLE_STRING_LITERAL : Regex = regex!("\"[^\"]*\"");
-static NUMBER_LITERAL        : Regex = regex!(r"-?\d+(\.\d+)?");
-static DOTDOT                : Regex = regex!(r"\.\.");
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum ComparisonOperator{
     Equals, NotEquals,
@@ -50,6 +39,7 @@ pub enum Element{
 }
 
 fn split_blocks(text: &str) -> Vec<&str>{
+    let MARKUP = Regex::new("\\{%.*?%\\}|\\{\\{.*?\\}\\}").unwrap();
     let mut tokens = vec![];
     let mut current = 0;
     for (begin, end) in MARKUP.find_iter(text) {
@@ -68,6 +58,9 @@ fn split_blocks(text: &str) -> Vec<&str>{
 }
 
 pub fn tokenize(text: &str) -> Vec<Element> {
+    let EXPRESSION = Regex::new("\\{\\{(.*?)\\}\\}").unwrap();
+    let TAG = Regex::new("\\{%(.*?)%\\}").unwrap();
+
     split_blocks(text).iter().map(|block| {
         if TAG.is_match(*block) {
             let caps = TAG.captures(*block).unwrap();
@@ -82,6 +75,14 @@ pub fn tokenize(text: &str) -> Vec<Element> {
 }
 
 fn granularize(block: &str) -> Vec<Token>{
+    let WHITESPACE            = Regex::new(r"\s+").unwrap();
+    let IDENTIFIER            = Regex::new(r"[a-zA-Z_][\w-]*\??").unwrap();
+    let SINGLE_STRING_LITERAL = Regex::new(r"'[^']*'").unwrap();
+    let DOUBLE_STRING_LITERAL = Regex::new("\"[^\"]*\"").unwrap();
+    let NUMBER_LITERAL        = Regex::new(r"-?\d+(\.\d+)?").unwrap();
+    let DOTDOT                = Regex::new(r"\.\.").unwrap();
+
+
     WHITESPACE.split(block).filter_map(|el|{
         if el == ""{
             return None;

@@ -8,7 +8,7 @@ pub struct Template<'a>{
 
 impl<'a> Renderable for Template<'a> {
     fn render (&self, context: &mut Context) -> Option<String>{
-        context.filters.insert("size".to_string(), box size);
+        context.filters.insert("size".to_string(), Box::new(size));
 
         Some(self.elements.iter().fold(String::new(), |fold, val| {
                                   match val.render(context)  {

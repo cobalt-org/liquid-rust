@@ -115,13 +115,13 @@ impl Block for IfBlock{
 
         let if_true = Template::new(try!(parse(&if_true_tokens, options)));
 
-        Ok(box If{
+        Ok(Box::new(If{
             lh : lh,
             comparison : comp,
             rh : rh,
             if_true: if_true,
             if_false: if_false
-        } as Box<Renderable>)
+        }) as Box<Renderable>)
     }
 }
 

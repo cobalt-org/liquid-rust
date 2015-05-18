@@ -30,12 +30,12 @@ fn run() {
                     _ => None
                 }
             }).collect();
-            box Multiply{numbers: numbers} as Box<Renderable>
+            Box::new(Multiply{numbers: numbers}) as Box<Renderable>
         }
     }
 
     let mut tags = HashMap::new();
-    tags.insert("multiply".to_string(), box MultiplyTag as Box<Tag>);
+    tags.insert("multiply".to_string(), Box::new(MultiplyTag) as Box<Tag>);
 
     let mut options = LiquidOptions {
         blocks: Default::default(),

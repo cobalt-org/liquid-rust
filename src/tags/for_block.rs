@@ -62,11 +62,11 @@ impl Block for ForBlock{
             x => return Err(format!("Expected an identifier, found {:?}", x))
         };
 
-        Ok(box For{
+        Ok(Box::new(For{
             var_name: var_name,
             array_id: array_id,
             inner: Template::new(inner)
-        } as Box<Renderable>)
+        }) as Box<Renderable>)
     }
 }
 
