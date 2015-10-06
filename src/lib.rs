@@ -12,6 +12,7 @@ use std::string::ToString;
 use std::default::Default;
 pub use value::Value;
 pub use context::Context;
+pub use template::Template;
 
 mod template;
 mod output;
