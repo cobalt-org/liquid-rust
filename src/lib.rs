@@ -4,7 +4,6 @@
 extern crate regex;
 
 use std::collections::HashMap;
-use template::Template;
 use lexer::Token;
 use lexer::Element;
 use tags::{IfBlock, ForBlock, RawBlock, CommentBlock};
