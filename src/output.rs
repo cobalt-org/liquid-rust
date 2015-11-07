@@ -29,8 +29,8 @@ pub struct Output{
 impl Renderable for Output {
     fn render (&self, context: &mut Context) -> Option<String>{
         let mut entry = match self.entry  {
-            VarOrVal::Val(ref x) => x.render(context).unwrap(),
-            VarOrVal::Var(ref x) => x.render(context).unwrap()
+            VarOrVal::Val(ref x) => x.render(context).expect(&format!("Could not render {:?}", x)),
+            VarOrVal::Var(ref x) => x.render(context).expect(&format!("Could not render {:?}", x))
         };
         for filter in self.filters.iter(){
             let f = match context.filters.get(&filter.name) {

@@ -64,10 +64,10 @@ pub fn tokenize(text: &str) -> Vec<Element> {
     split_blocks(text).iter().map(|block| {
         if TAG.is_match(*block) {
             let caps = TAG.captures(*block).unwrap();
-            Tag(granularize(caps.at(1).unwrap()), block.to_string())
+            Tag(granularize(caps.at(1).expect("Empty tag")), block.to_string())
         }else if EXPRESSION.is_match(*block) {
             let caps = EXPRESSION.captures(*block).unwrap();
-            Expression(granularize(caps.at(1).unwrap()), block.to_string())
+            Expression(granularize(caps.at(1).expect("Empty expression")), block.to_string())
         }else{
             Raw(block.to_string())
         }
@@ -110,7 +110,7 @@ fn granularize(block: &str) -> Vec<Token>{
             x if DOTDOT.is_match(x) => DotDot,
             x if SINGLE_STRING_LITERAL.is_match(x) => StringLiteral(x[1..x.len() -1].to_string()),
             x if DOUBLE_STRING_LITERAL.is_match(x) => StringLiteral(x[1..x.len() -1].to_string()),
-            x if NUMBER_LITERAL.is_match(x) => NumberLiteral(x.parse::<f32>().unwrap()),
+            x if NUMBER_LITERAL.is_match(x) => NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x))),
             x if IDENTIFIER.is_match(x) => Identifier(x.to_string()),
             x => panic!("{} is not a valid identifier", x)
         })
