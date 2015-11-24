@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use liquid::LiquidOptions;
 use liquid::Tag;
@@ -7,6 +6,7 @@ use liquid::Renderable;
 use liquid::Context;
 use liquid::Value;
 use liquid::parse;
+use liquid::Error;
 use std::default::Default;
 
 #[test]
@@ -15,9 +15,9 @@ fn run() {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, context: &mut Context) -> Option<String>{
+        fn render(&self, context: &mut Context) -> Result<Option<String>, Error>{
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
-            Some(x.to_string())
+            Ok(Some(x.to_string()))
         }
     }
 
@@ -48,6 +48,6 @@ fn run() {
     data.set_val("hello", Value::Str("world".to_string()));
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), "wat\nworld\n15{{multiply 5 3}} test".to_string());
+    assert_eq!(output.unwrap(), Some("wat\nworld\n15{{multiply 5 3}} test".to_string()));
 }
 

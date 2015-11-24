@@ -1,6 +1,8 @@
 #![crate_name = "liquid"]
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
 
+#![deny(warnings)]
+
 extern crate regex;
 
 use std::collections::HashMap;
@@ -12,7 +14,10 @@ use std::default::Default;
 pub use value::Value;
 pub use context::Context;
 pub use template::Template;
+pub use error::Error;
+use error::Result;
 
+mod error;
 mod template;
 mod output;
 mod text;
@@ -45,12 +50,12 @@ pub trait Tag {
 
 /// The trait to use when implementing custom block-size tags ({% if something %})
 pub trait Block {
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>, String>;
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>>;
 }
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable{
-    fn render(&self, context: &mut Context) -> Option<String>;
+    fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
 #[derive(Default)]
@@ -74,18 +79,16 @@ pub struct LiquidOptions<'a> {
 /// let template = liquid::parse("Liquid!", &mut options).unwrap();
 /// let mut data = Context::new();
 /// let output = template.render(&mut data);
-/// assert_eq!(output.unwrap(), "Liquid!".to_string());
+/// assert_eq!(output.unwrap(), Some("Liquid!".to_string()));
 /// ```
 ///
-pub fn parse<'a, 'b> (text: &str, options: &'b mut LiquidOptions<'a>) -> Result<Template<'b>, String>{
-    let tokens = lexer::tokenize(&text);
+pub fn parse<'a, 'b> (text: &str, options: &'b mut LiquidOptions<'a>) -> Result<Template<'b>>{
+    let tokens = try!(lexer::tokenize(&text));
     options.blocks.insert("raw".to_string(), Box::new(RawBlock) as Box<Block>);
     options.blocks.insert("if".to_string(), Box::new(IfBlock) as Box<Block>);
     options.blocks.insert("for".to_string(), Box::new(ForBlock) as Box<Block>);
     options.blocks.insert("comment".to_string(), Box::new(CommentBlock) as Box<Block>);
-    match parser::parse(&tokens, options) {
-        Ok(renderables) => Ok(Template::new(renderables)),
-        Err(e) => Err(e)
-    }
+
+    parser::parse(&tokens, options).map(|renderables| Template::new(renderables))
 }
 

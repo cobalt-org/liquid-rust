@@ -19,6 +19,6 @@ pub fn run() {
     data.set_val("numTwo", Value::Num(6f32));
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), "5 wat wot\n".to_string());
+    assert_eq!(output.unwrap(), Some("5 wat wot\n".to_string()));
 }
 

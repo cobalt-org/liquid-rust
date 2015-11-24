@@ -1,27 +1,28 @@
 use Renderable;
 use context::Context;
 use filters::size;
+use error::Result;
 
-pub struct Template<'a>{
-    pub elements: Vec<Box<Renderable +'a>>
+pub struct Template<'a> {
+    pub elements: Vec<Box<Renderable + 'a>>,
 }
 
 impl<'a> Renderable for Template<'a> {
-    fn render (&self, context: &mut Context) -> Option<String>{
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         context.filters.insert("size".to_string(), Box::new(size));
 
-        Some(self.elements.iter().fold(String::new(), |fold, val| {
-                                  match val.render(context)  {
-                                      Some(x) => fold + &x,
-                                      _ => fold
-                                  }
-                                 }))
+        let mut buf = String::new();
+        for el in self.elements.iter() {
+            if let Some(ref x) = try!(el.render(context)) {
+                buf = buf + x;
+            }
+        }
+        Ok(Some(buf))
     }
 }
 
 impl<'a> Template<'a> {
-    pub fn new(elements: Vec<Box<Renderable +'a>>) -> Template<'a> {
-        Template{elements: elements}
+    pub fn new(elements: Vec<Box<Renderable + 'a>>) -> Template<'a> {
+        Template { elements: elements }
     }
 }
-
