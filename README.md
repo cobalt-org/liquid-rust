@@ -26,7 +26,7 @@ Standard Filters
 - [ ] *date* - reformat a date (syntax reference)
 - [ ] *capitalize* - capitalize words in the input sentence
 - [ ] *downcase* - convert an input string to lowercase
-- [ ] *upcase* - convert an input string to uppercase
+- [x] *upcase* - convert an input string to uppercase
 - [ ] *first* - get the first element of the passed in array
 - [ ] *last* - get the last element of the passed in array
 - [ ] *join* - join elements of the array with certain character between them
