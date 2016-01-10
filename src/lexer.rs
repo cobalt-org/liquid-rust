@@ -173,4 +173,7 @@ fn test_granularize() {
                vec![StringLiteral("test".to_string()),
                     Comparison(Equals),
                     StringLiteral("me".to_string())]);
+    assert_eq!(granularize("test | me : arg").unwrap(),
+               vec![Identifier("test".to_string()), Pipe,
+               Identifier("me".to_string()), Colon, Identifier("arg".to_string())]);
 }

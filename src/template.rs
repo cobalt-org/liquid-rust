@@ -1,6 +1,6 @@
 use Renderable;
 use context::Context;
-use filters::{size, upcase};
+use filters::{size, upcase, minus};
 use error::Result;
 
 pub struct Template<'a> {
@@ -11,6 +11,7 @@ impl<'a> Renderable for Template<'a> {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         context.filters.insert("size".to_string(), Box::new(size));
         context.filters.insert("upcase".to_string(), Box::new(upcase));
+        context.filters.insert("minus".to_string(), Box::new(minus));
 
         let mut buf = String::new();
         for el in self.elements.iter() {

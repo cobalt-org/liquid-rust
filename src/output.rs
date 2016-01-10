@@ -41,7 +41,7 @@ impl Renderable for Output {
                 Some(x) => x,
                 None => return Err(Error::Render(format!("Filter {} not implemented", &filter.name))),
             };
-            entry = f(&entry);
+            entry = f(&entry, &filter.arguments);
         }
         Ok(Some(entry))
     }

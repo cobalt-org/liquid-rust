@@ -48,7 +48,7 @@ Standard Filters
 - [ ] *pluralize* - return the second word if the input is not 1, otherwise return the first word e.g. {{ 3 | pluralize: 'item', 'items' }} #=> 'items'
 - [ ] *append* - append a string e.g. {{ 'foo' | append:'bar' }} #=> 'foobar'
 - [ ] *slice* - slice a string. Takes an offset and length, e.g. {{ "hello" | slice: -3, 3 }} #=> llo
-- [ ] *minus* - subtraction e.g. {{ 4 | minus:2 }} #=> 2
+- [x] *minus* - subtraction e.g. {{ 4 | minus:2 }} #=> 2
 - [ ] *plus* - addition e.g. {{ '1' | plus:'1' }} #=> 2, {{ 1 | plus:1 }} #=> 2
 - [ ] *times* - multiplication e.g {{ 5 | times:4 }} #=> 20
 - [ ] *divided_by* - integer division e.g. {{ 10 | divided_by:3 }} #=> 3

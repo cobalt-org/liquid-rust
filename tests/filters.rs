@@ -9,7 +9,7 @@ use std::default::Default;
 
 #[test]
 pub fn upcase() {
-    let mut text = "{{ text | upcase}}";
+    let text = "{{ text | upcase}}";
     let mut options : LiquidOptions = Default::default();
     let template = parse(&text, &mut options).unwrap();
 
@@ -18,4 +18,17 @@ pub fn upcase() {
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("HELLO".to_string()));
+}
+
+#[test]
+pub fn minus() {
+    let text = "{{ num | minus : 2 }}";
+    let mut options : LiquidOptions = Default::default();
+    let template = parse(&text, &mut options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("num", Value::Num(4f32));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("2".to_string()));
 }

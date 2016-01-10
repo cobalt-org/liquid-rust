@@ -8,7 +8,7 @@ use output::Output;
 use output::FilterPrototype;
 use output::VarOrVal;
 use lexer::Token;
-use lexer::Token::{Identifier, Colon, Pipe, StringLiteral};
+use lexer::Token::{Identifier, Colon, Pipe, StringLiteral, NumberLiteral};
 use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 use error::{Error, Result};
@@ -76,9 +76,12 @@ fn parse_output<'a>(tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>> {
             return Err(Error::Parser("parse_output: expected a colon".to_owned()));
         }
 
+        iter.next(); // skip colon
+
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
             match iter.next().unwrap() {
                 &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
+                &NumberLiteral(x) => args.push(Value::Num(x)),
                 ref x => return Err(Error::Parser(format!("parse_output: {:?} not implemented", x))),
             }
         }
