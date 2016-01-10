@@ -17,3 +17,42 @@ Now you can use the crate in your code
 ```rust
 extern crate liquid;
 ```
+
+TODO
+---------
+
+Standard Filters
+
+- [ ] *date* - reformat a date (syntax reference)
+- [ ] *capitalize* - capitalize words in the input sentence
+- [ ] *downcase* - convert an input string to lowercase
+- [ ] *upcase* - convert an input string to uppercase
+- [ ] *first* - get the first element of the passed in array
+- [ ] *last* - get the last element of the passed in array
+- [ ] *join* - join elements of the array with certain character between them
+- [ ] *sort* - sort elements of the array
+- [ ] *map* - map/collect an array on a given property
+- [x] *size* - return the size of an array or string
+- [ ] *escape* - escape a string
+- [ ] *escape_once* - returns an escaped version of html without affecting existing escaped entities
+- [ ] *strip_html* - strip html from string
+- [ ] *strip_newlines* - strip all newlines (\n) from string
+- [ ] *newline_to_br* - replace each newline (\n) with html break
+- [ ] *replace* - replace each occurrence e.g. {{ 'foofoo' | replace:'foo','bar' }} #=> 'barbar'
+- [ ] *replace_first* - replace the first occurrence e.g. {{ 'barbar' | replace_first:'bar','foo' }} #=> 'foobar'
+- [ ] *remove* - remove each occurrence e.g. {{ 'foobarfoobar' | remove:'foo' }} #=> 'barbar'
+- [ ] *remove_first* - remove the first occurrence e.g. {{ 'barbar' | remove_first:'bar' }} #=> 'bar'
+- [ ] *truncate* - truncate a string down to x characters. It also accepts a second parameter that will append to the string e.g. {{ 'foobarfoobar' | truncate: 5, '.' }} #=> 'foob.'
+- [ ] *truncatewords* - truncate a string down to x words
+- [ ] *prepend* - prepend a string e.g. {{ 'bar' | prepend:'foo' }} #=> 'foobar'
+- [ ] *pluralize* - return the second word if the input is not 1, otherwise return the first word e.g. {{ 3 | pluralize: 'item', 'items' }} #=> 'items'
+- [ ] *append* - append a string e.g. {{ 'foo' | append:'bar' }} #=> 'foobar'
+- [ ] *slice* - slice a string. Takes an offset and length, e.g. {{ "hello" | slice: -3, 3 }} #=> llo
+- [ ] *minus* - subtraction e.g. {{ 4 | minus:2 }} #=> 2
+- [ ] *plus* - addition e.g. {{ '1' | plus:'1' }} #=> 2, {{ 1 | plus:1 }} #=> 2
+- [ ] *times* - multiplication e.g {{ 5 | times:4 }} #=> 20
+- [ ] *divided_by* - integer division e.g. {{ 10 | divided_by:3 }} #=> 3
+- [ ] *round* - rounds input to the nearest integer or specified number of decimals
+- [ ] *split* - split a string on a matching pattern e.g. {{ "a~b" | split:"~" }} #=> ['a','b']
+- [ ] *modulo* - remainder, e.g. {{ 3 | modulo:2 }} #=> 1
+- [ ] *reverse* - reverse sort the passed in array
