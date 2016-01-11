@@ -50,7 +50,7 @@ pub trait Tag {
 
 /// The trait to use when implementing custom block-size tags ({% if something %})
 pub trait Block {
-    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>>;
+    fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions) -> Result<Box<Renderable +'a>>;
 }
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
@@ -59,9 +59,9 @@ pub trait Renderable{
 }
 
 #[derive(Default)]
-pub struct LiquidOptions<'a> {
-    pub blocks : HashMap<String, Box<Block + 'a>>,
-    pub tags : HashMap<String, Box<Tag + 'a>>,
+pub struct LiquidOptions {
+    pub blocks : HashMap<String, Box<Block>>,
+    pub tags : HashMap<String, Box<Tag>>,
     pub error_mode : ErrorMode
 }
 
@@ -82,7 +82,7 @@ pub struct LiquidOptions<'a> {
 /// assert_eq!(output.unwrap(), Some("Liquid!".to_string()));
 /// ```
 ///
-pub fn parse<'a, 'b> (text: &str, options: &'b mut LiquidOptions<'a>) -> Result<Template<'b>>{
+pub fn parse<'b> (text: &str, options: &'b mut LiquidOptions) -> Result<Template<'b>>{
     let tokens = try!(lexer::tokenize(&text));
     options.blocks.insert("raw".to_string(), Box::new(RawBlock) as Box<Block>);
     options.blocks.insert("if".to_string(), Box::new(IfBlock) as Box<Block>);

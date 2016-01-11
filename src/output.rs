@@ -45,7 +45,11 @@ impl Renderable for Output {
                 Some(x) => x,
                 None => return Err(Error::Render(format!("Filter {} not implemented", &filter.name))),
             };
-            entry = f(&filter_entry.unwrap_or(&Value::Str("".to_string())), &filter.arguments);
+            let fresult = f(&filter_entry.unwrap_or(&Value::Str("".to_string())), &filter.arguments);
+            entry = match fresult {
+                Ok(s) => s,
+                Err(e) => return Err(Error::Filter(e))
+            };
         }
         Ok(Some(entry))
     }

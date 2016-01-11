@@ -34,6 +34,19 @@ pub fn minus() {
 }
 
 #[test]
+pub fn minus_error() {
+    let text = "{{ num | minus }}";
+    let mut options : LiquidOptions = Default::default();
+    let template = parse(&text, &mut options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("num", Value::Num(4f32));
+
+    let output = template.render(&mut data);
+    assert!(output.is_err());
+}
+
+#[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
     let mut options : LiquidOptions = Default::default();

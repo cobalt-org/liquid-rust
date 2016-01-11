@@ -10,7 +10,7 @@ use std::io::Read;
 #[test]
 pub fn run() {
     let mut text = String::new();
-    File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text);
+    File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text).unwrap();
     let mut options : LiquidOptions = Default::default();
     let template = parse(&text, &mut options).unwrap();
 

@@ -17,6 +17,23 @@ Now you can use the crate in your code
 ```rust
 extern crate liquid;
 ```
+Exemple:
+```rust
+let mut text = String::new();
+File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text);
+let mut options : LiquidOptions = Default::default();
+let template = parse(&text, &mut options).unwrap();
+
+let mut data = Context::new();
+data.set_val("num", Value::Num(5f32));
+data.set_val("numTwo", Value::Num(6f32));
+
+let output = template.render(&mut data);
+```
+
+Plugins
+--------
+Cache block ( File and Redis ) : https://github.com/FerarDuanSednan/liquid-rust-cache
 
 TODO
 ---------

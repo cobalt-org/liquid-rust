@@ -15,7 +15,7 @@ fn run() {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, context: &mut Context) -> Result<Option<String>, Error>{
+        fn render(&self, _context: &mut Context) -> Result<Option<String>, Error>{
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
             Ok(Some(x.to_string()))
         }
@@ -23,7 +23,7 @@ fn run() {
 
     struct MultiplyTag;
     impl Tag for MultiplyTag{
-        fn initialize(&self, tag_name: &str, arguments: &[Token], options: &LiquidOptions) -> Box<Renderable>{
+        fn initialize(&self, _tag_name: &str, arguments: &[Token], _options: &LiquidOptions) -> Box<Renderable>{
             let numbers = arguments.iter().filter_map( |x| {
                 match x {
                     &Token::NumberLiteral(ref num) => Some(*num),

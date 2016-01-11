@@ -14,7 +14,7 @@ use lexer::Element::{Expression, Tag, Raw};
 use error::{Error, Result};
 
 pub fn parse<'a>(elements: &[Element],
-                 options: &'a LiquidOptions<'a>)
+                 options: &'a LiquidOptions)
                  -> Result<Vec<Box<Renderable + 'a>>> {
     let mut ret = vec![];
     let mut iter = elements.iter();
