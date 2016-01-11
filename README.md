@@ -38,7 +38,7 @@ Standard Filters
 - [ ] *strip_html* - strip html from string
 - [ ] *strip_newlines* - strip all newlines (\n) from string
 - [ ] *newline_to_br* - replace each newline (\n) with html break
-- [ ] *replace* - replace each occurrence e.g. {{ 'foofoo' | replace:'foo','bar' }} #=> 'barbar'
+- [x] *replace* - replace each occurrence e.g. {{ 'foofoo' | replace:'foo','bar' }} #=> 'barbar'
 - [ ] *replace_first* - replace the first occurrence e.g. {{ 'barbar' | replace_first:'bar','foo' }} #=> 'foobar'
 - [ ] *remove* - remove each occurrence e.g. {{ 'foobarfoobar' | remove:'foo' }} #=> 'barbar'
 - [ ] *remove_first* - remove the first occurrence e.g. {{ 'barbar' | remove_first:'bar' }} #=> 'bar'
