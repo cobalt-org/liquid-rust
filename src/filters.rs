@@ -1,44 +1,66 @@
 
-use std::str::FromStr;
-
 use value::Value;
+use value::Value::*;
 
-pub fn size<'a>(input : &'a str, _args: &Vec<Value>) -> String{
-    input.len().to_string()
+pub fn size<'a>(input : &Value, _args: &Vec<Value>) -> String {
+    match input {
+        &Str(ref s) => s.len().to_string(),
+        &Array(ref x) => x.len().to_string(),
+        &Object(ref x) => x.len().to_string(),
+        _ => "Unknown length".to_string()
+    }
 }
 
-pub fn upcase<'a>(input: &'a str, _args: &Vec<Value>) -> String {
-    let str = String::from(input);
-    str.to_uppercase()
+pub fn upcase<'a>(input: &Value, _args: &Vec<Value>) -> String {
+    match input {
+        &Str(ref s) => s.to_uppercase(),
+        _ => input.to_string()
+    }
 }
 
-pub fn minus<'a>(input: &'a str, args: &Vec<Value>) -> String {
-    let num = match f32::from_str(input) {
-        Ok(n) => n,
-        Err(_) => return input.to_string()
+pub fn minus<'a>(input: &Value, args: &Vec<Value>) -> String {
+
+    let num = match input {
+        &Num(n) => n,
+        _ => return input.to_string()
     };
     match args.first() {
-        Some(&Value::Num(x)) => (num - x).to_string(),
+        Some(&Num(x)) => (num - x).to_string(),
         _ => num.to_string()
     }
 }
 
+macro_rules! unit {
+    ( $a:ident, $b:expr ) => {{
+        unit!($a, $b, &vec![])
+    }};
+    ( $a:ident, $b:expr , $c:expr) => {{
+        $a(&$b, $c)
+    }};
+}
+
+macro_rules! tos {
+    ( $a:expr ) => {{
+        Str($a.to_string())
+    }};
+}
+
 #[test]
 fn unit_size(){
-    assert_eq!(size("abc", &vec![]), "3");
-    assert_eq!(size("this has 22 characters", &vec![]), "22");
+    assert_eq!(unit!(size, tos!("abc")), "3");
+    assert_eq!(unit!(size, tos!("this has 22 characters")), "22");
 }
 
 #[test]
 fn unit_upcase() {
-    assert_eq!(upcase("abc", &vec![]), "ABC");
-    assert_eq!(upcase("Hello World 21", &vec![]), "HELLO WORLD 21");
+    assert_eq!(unit!(upcase, tos!("abc")), "ABC");
+    assert_eq!(unit!(upcase, tos!("Hello World 21")), "HELLO WORLD 21");
 }
 
 #[test]
 fn unit_minus() {
-    assert_eq!(minus("2", &vec![Value::Num(1f32)]), "1");
-    assert_eq!(minus("21.5", &vec![Value::Num(1.25)]), "20.25");
-    assert_eq!(minus("invalid", &vec![Value::Num(1.25)]), "invalid");
-    assert_eq!(minus("25", &vec![]), "25");
+    assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), "1");
+    assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), "20.25");
+    assert_eq!(unit!(minus, tos!("invalid"), &vec![Num(1.25)]), "invalid");
+    assert_eq!(unit!(minus, Num(25f32)), "25");
 }

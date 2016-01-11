@@ -36,12 +36,16 @@ impl Renderable for Output {
             VarOrVal::Val(ref x) => try!(x.render(context)).unwrap_or("".to_owned()),
             VarOrVal::Var(ref x) => try!(x.render(context)).unwrap_or("".to_owned()),
         };
+        let filter_entry : Option<&Value> = match self.entry {
+            VarOrVal::Val(ref x) => Some(x),
+            VarOrVal::Var(ref x) => context.get_val(&*x.name())
+        };
         for filter in self.filters.iter() {
             let f = match context.filters.get(&filter.name) {
                 Some(x) => x,
                 None => return Err(Error::Render(format!("Filter {} not implemented", &filter.name))),
             };
-            entry = f(&entry, &filter.arguments);
+            entry = f(&filter_entry.unwrap_or(&Value::Str("".to_string())), &filter.arguments);
         }
         Ok(Some(entry))
     }
