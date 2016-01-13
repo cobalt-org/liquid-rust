@@ -17,7 +17,7 @@ Now you can use the crate in your code
 ```rust
 extern crate liquid;
 ```
-Exemple:
+Example:
 ```rust
 let mut text = String::new();
 File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text);
