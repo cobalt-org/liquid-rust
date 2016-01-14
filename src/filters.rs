@@ -82,40 +82,48 @@ pub fn replace(input: &Value, args: &Vec<Value>) -> FilterResult {
     }
 }
 
-macro_rules! unit {
-    ( $a:ident, $b:expr ) => {{
-        unit!($a, $b, &vec![])
-    }};
-    ( $a:ident, $b:expr , $c:expr) => {{
-        $a(&$b, $c).unwrap()
-    }};
-}
+#[cfg(test)]
+mod tests {
 
-macro_rules! tos {
-    ( $a:expr ) => {{
-        Str($a.to_string())
-    }};
-}
+    use value::Value::*;
+    use super::*;
 
-#[test]
-fn unit_size(){
-    assert_eq!(unit!(size, tos!("abc")), "3");
-    assert_eq!(unit!(size, tos!("this has 22 characters")), "22");
-}
+    macro_rules! unit {
+        ( $a:ident, $b:expr ) => {{
+            unit!($a, $b, &vec![])
+        }};
+        ( $a:ident, $b:expr , $c:expr) => {{
+            $a(&$b, $c).unwrap()
+        }};
+    }
 
-#[test]
-fn unit_upcase() {
-    assert_eq!(unit!(upcase, tos!("abc")), "ABC");
-    assert_eq!(unit!(upcase, tos!("Hello World 21")), "HELLO WORLD 21");
-}
+    macro_rules! tos {
+        ( $a:expr ) => {{
+            Str($a.to_string())
+        }};
+    }
 
-#[test]
-fn unit_minus() {
-    assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), "1");
-    assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), "20.25");
-}
+    #[test]
+    fn unit_size(){
+        assert_eq!(unit!(size, tos!("abc")), "3");
+        assert_eq!(unit!(size, tos!("this has 22 characters")), "22");
+    }
 
-#[test]
-fn unit_replace() {
-    assert_eq!( unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]), "foofoo" );
+    #[test]
+    fn unit_upcase() {
+        assert_eq!(unit!(upcase, tos!("abc")), "ABC");
+        assert_eq!(unit!(upcase, tos!("Hello World 21")), "HELLO WORLD 21");
+    }
+
+    #[test]
+    fn unit_minus() {
+        assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), "1");
+        assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), "20.25");
+    }
+
+    #[test]
+    fn unit_replace() {
+        assert_eq!( unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]), "foofoo" );
+    }
+
 }
