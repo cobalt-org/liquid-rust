@@ -22,7 +22,7 @@ mod template;
 mod output;
 mod text;
 pub mod lexer;
-mod parser;
+pub mod parser;
 mod tags;
 mod filters;
 mod value;
