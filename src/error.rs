@@ -2,6 +2,8 @@ use std::result;
 use std::error;
 use std::fmt;
 
+use filters::FilterError;
+
 // type alias because we always want to deal with CobaltErrors
 pub type Result<T> = result::Result<T, Error>;
 
@@ -10,6 +12,7 @@ pub enum Error {
     Lexer(String),
     Parser(String),
     Render(String),
+    Filter(FilterError),
     Other(String),
 }
 
@@ -31,6 +34,7 @@ impl fmt::Display for Error {
             Error::Lexer(ref err) => write!(f, "Syntax error: {}", err),
             Error::Parser(ref err) => write!(f, "Parsing error: {}", err),
             Error::Render(ref err) => write!(f, "Rendering error: {}", err),
+            Error::Filter(ref err) => write!(f, "Filtering error: {}", err),
             Error::Other(ref err) => write!(f, "Error: {}", err),
         }
     }
@@ -42,6 +46,7 @@ impl error::Error for Error {
             Error::Lexer(ref err) => err,
             Error::Parser(ref err) => err,
             Error::Render(ref err) => err,
+            Error::Filter(ref err) => err.description(),
             Error::Other(ref err) => err,
         }
     }

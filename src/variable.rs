@@ -22,5 +22,8 @@ impl Variable {
     pub fn new(name: &str) -> Variable {
         Variable{name: name.to_string()}
     }
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
 }
 

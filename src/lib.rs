@@ -44,12 +44,12 @@ impl Default for ErrorMode {
 }
 
 /// A trait for creating custom tags.
-pub trait Tag {
+pub trait Tag: Sync + Send {
     fn initialize(&self, tag_name: &str, arguments: &[Token], options : &LiquidOptions) -> Box<Renderable>;
 }
 
 /// The trait to use when implementing custom block-size tags ({% if something %})
-pub trait Block {
+pub trait Block: Sync + Send  {
     fn initialize<'a>(&'a self, tag_name: &str, arguments: &[Token], tokens: Vec<Element>, options : &'a LiquidOptions<'a>) -> Result<Box<Renderable +'a>>;
 }
 
@@ -84,10 +84,10 @@ pub struct LiquidOptions<'a> {
 ///
 pub fn parse<'a, 'b> (text: &str, options: &'b mut LiquidOptions<'a>) -> Result<Template<'b>>{
     let tokens = try!(lexer::tokenize(&text));
-    options.blocks.insert("raw".to_string(), Box::new(RawBlock) as Box<Block>);
-    options.blocks.insert("if".to_string(), Box::new(IfBlock) as Box<Block>);
-    options.blocks.insert("for".to_string(), Box::new(ForBlock) as Box<Block>);
-    options.blocks.insert("comment".to_string(), Box::new(CommentBlock) as Box<Block>);
+    options.blocks.insert("raw".to_string(), Box::new(RawBlock) as Box<Block + 'a >);
+    options.blocks.insert("if".to_string(), Box::new(IfBlock) as Box<Block + 'a>);
+    options.blocks.insert("for".to_string(), Box::new(ForBlock) as Box<Block + 'a>);
+    options.blocks.insert("comment".to_string(), Box::new(CommentBlock) as Box<Block + 'a>);
 
     parser::parse(&tokens, options).map(|renderables| Template::new(renderables))
 }

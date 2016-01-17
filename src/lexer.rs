@@ -82,21 +82,42 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
     Ok(blocks)
 }
 
+fn split_atom(block: &str) -> Vec<String> {
+
+    let mut vec = vec![];
+    let mut buff = String::new();
+    for c in block.chars() {
+        if c == ' ' {
+            if !buff.is_empty() {
+                vec.push(buff.clone());
+                buff.clear();
+            }
+        } else if c == ',' || c == ':' {
+            if !buff.is_empty() { vec.push(buff.clone()) };
+            vec.push(c.to_string());
+            buff.clear();
+        } else {
+            buff.push(c);
+        }
+    }
+    vec.push(buff.clone());
+    vec
+}
+
 fn granularize(block: &str) -> Result<Vec<Token>> {
-    let whitespace = Regex::new(r"\s+").unwrap();
     let identifier = Regex::new(r"[a-zA-Z_][\w-]*\??").unwrap();
     let single_string_literal = Regex::new(r"'[^']*'").unwrap();
     let double_string_literal = Regex::new("\"[^\"]*\"").unwrap();
-    let number_literal = Regex::new(r"-?\d+(\.\d+)?").unwrap();
+    let number_literal = Regex::new(r"^-?\d+(\.\d+)?$").unwrap();
     let dotdot = Regex::new(r"\.\.").unwrap();
 
     let mut result = vec![];
 
-    for el in whitespace.split(block) {
+    for el in split_atom(block) {
         if el == "" {
             continue;
         }
-        result.push(match el {
+        result.push(match &*el {
             "|" => Pipe,
             "." => Dot,
             ":" => Colon,
@@ -137,6 +158,12 @@ fn test_split_blocks() {
 }
 
 #[test]
+fn test_split_atom() {
+    assert_eq!(split_atom("truc | arg:val"), vec!["truc", "|", "arg", ":", "val"]);
+    assert_eq!(split_atom("truc | filter:arg1,arg2"), vec!["truc", "|", "filter", ":", "arg1", ",", "arg2"]);
+}
+
+#[test]
 fn test_tokenize() {
     assert_eq!(tokenize("{{hello 'world'}}").unwrap(),
                vec![Expression(vec![Identifier("hello".to_string()),
@@ -173,4 +200,15 @@ fn test_granularize() {
                vec![StringLiteral("test".to_string()),
                     Comparison(Equals),
                     StringLiteral("me".to_string())]);
+    assert_eq!(granularize("test | me:arg").unwrap(),
+               vec![Identifier("test".to_string()), Pipe,
+               Identifier("me".to_string()), Colon, Identifier("arg".to_string())]);
+    assert_eq!(granularize("test | me:arg1,arg2").unwrap(),
+               vec![Identifier("test".to_string()), Pipe,
+               Identifier("me".to_string()), Colon, Identifier("arg1".to_string()),
+               Comma, Identifier("arg2".to_string())]);
+    assert_eq!(granularize("test | me : arg1, arg2").unwrap(),
+               vec![Identifier("test".to_string()), Pipe,
+               Identifier("me".to_string()), Colon, Identifier("arg1".to_string()),
+               Comma, Identifier("arg2".to_string())]);
 }

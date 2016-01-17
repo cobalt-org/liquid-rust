@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use value::Value;
+use filters::FilterResult;
+
 
 #[derive(Default)]
 pub struct Context<'a>{
     values : HashMap<String, Value>,
-    pub filters : HashMap<String, Box<Fn(&str) -> String + 'a>>
+    pub filters : HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>
 }
 
 impl<'a> Context<'a> {
@@ -26,11 +28,11 @@ impl<'a> Context<'a> {
         Context::with_values_and_filters(values, HashMap::new())
     }
 
-    pub fn with_filters(filters: HashMap<String, Box<Fn(&str) -> String + 'a>>) -> Context<'a> {
+    pub fn with_filters(filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>) -> Context<'a> {
         Context::with_values_and_filters(HashMap::new(), filters)
     }
 
-    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Fn(&str) -> String + 'a>>) -> Context<'a> {
+    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>) -> Context<'a> {
         Context {
             values: values,
             filters: filters
