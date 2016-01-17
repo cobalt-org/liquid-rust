@@ -78,7 +78,6 @@ fn parse_output<'a>(tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>> {
 
         iter.next(); // skip colon
 
-        println!("{:?}", tokens);
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
             match iter.next().unwrap() {
                 &Comma => continue, // next argument
