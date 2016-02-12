@@ -21,28 +21,25 @@ fn run() {
         }
     }
 
-    struct MultiplyTag;
-    impl Tag for MultiplyTag{
-        fn initialize(&self, _tag_name: &str, arguments: &[Token], _options: &LiquidOptions) -> Box<Renderable>{
-            let numbers = arguments.iter().filter_map( |x| {
-                match x {
-                    &Token::NumberLiteral(ref num) => Some(*num),
-                    _ => None
-                }
-            }).collect();
-            Box::new(Multiply{numbers: numbers}) as Box<Renderable>
-        }
+    fn multiply_tag(_tag_name: &str, arguments: &[Token], _options: &LiquidOptions) -> Box<Renderable>{
+        let numbers = arguments.iter().filter_map( |x| {
+            match x {
+                &Token::NumberLiteral(ref num) => Some(*num),
+                _ => None
+            }
+        }).collect();
+        Box::new(Multiply{numbers: numbers}) as Box<Renderable>
     }
 
     let mut tags = HashMap::new();
-    tags.insert("multiply".to_string(), Box::new(MultiplyTag) as Box<Tag>);
+    tags.insert("multiply".to_string(), Box::new(multiply_tag) as Box<Tag>);
 
-    let mut options = LiquidOptions {
+    let options = LiquidOptions {
         blocks: Default::default(),
         tags: tags,
         error_mode: Default::default()
     };
-    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", &mut options).unwrap();
+    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", options).unwrap();
 
     let mut data = Context::new() ;
     data.set_val("hello", Value::Str("world".to_string()));

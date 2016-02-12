@@ -13,9 +13,9 @@ use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 use error::{Error, Result};
 
-pub fn parse<'a>(elements: &[Element],
-                 options: &'a LiquidOptions)
-                 -> Result<Vec<Box<Renderable + 'a>>> {
+pub fn parse(elements: &[Element],
+                 options: &LiquidOptions)
+                 -> Result<Vec<Box<Renderable>>> {
     let mut ret = vec![];
     let mut iter = elements.iter();
     let mut token = iter.next();
@@ -31,19 +31,19 @@ pub fn parse<'a>(elements: &[Element],
 }
 
 // creates an expression, which wraps everything that gets rendered
-fn parse_expression<'a>(tokens: &Vec<Token>,
-                        options: &'a LiquidOptions)
-                        -> Result<Box<Renderable + 'a>> {
+fn parse_expression(tokens: &Vec<Token>,
+                        options: &LiquidOptions)
+                        -> Result<Box<Renderable>> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
-            Ok(options.tags.get(x).unwrap().initialize(&x, &tokens[1..], options))
+            Ok(options.tags.get(x).unwrap()(&x, &tokens[1..], options))
         }
         _ => parse_output(tokens),
     }
 }
 
 // creates an output, basically a wrapper around values, variables and filters
-fn parse_output<'a>(tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>> {
+fn parse_output(tokens: &Vec<Token>) -> Result<Box<Renderable>> {
     let entry = match tokens[0] {
         Identifier(ref x) => VarOrVal::Var(Variable::new(&x)),
         StringLiteral(ref x) => VarOrVal::Val(Value::Str(x.to_string())),
@@ -97,15 +97,15 @@ fn parse_output<'a>(tokens: &Vec<Token>) -> Result<Box<Renderable + 'a>> {
 // elements
 // and is delimited by a closing tag named {{end + the_name_of_the_tag}}
 // tags do not get rendered, but blocks may contain renderable expressions
-fn parse_tag<'a>(iter: &mut Iter<Element>,
+fn parse_tag(iter: &mut Iter<Element>,
                  tokens: &Vec<Token>,
-                 options: &'a LiquidOptions)
-                 -> Result<Box<Renderable + 'a>> {
+                 options: &LiquidOptions)
+                 -> Result<Box<Renderable>> {
     match tokens[0] {
 
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            Ok(options.tags.get(x).unwrap().initialize(&x, &tokens[1..], options))
+            Ok(options.tags.get(x).unwrap()(&x, &tokens[1..], options))
         }
 
         // is a block
@@ -119,7 +119,7 @@ fn parse_tag<'a>(iter: &mut Iter<Element>,
                     Some(t) => t.clone(),
                 })
             }
-            options.blocks.get(x).unwrap().initialize(&x, &tokens[1..], children, options)
+            options.blocks.get(x).unwrap()(&x, &tokens[1..], children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),

@@ -17,18 +17,23 @@ Now you can use the crate in your code
 ```rust
 extern crate liquid;
 ```
+
 Example:
 ```rust
-let mut text = String::new();
-File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text);
+use std::default::Default;
+use liquid::Renderable;
+use liquid::LiquidOptions;
+use liquid::Context;
+
 let mut options : LiquidOptions = Default::default();
-let template = parse(&text, &mut options).unwrap();
+let template = liquid::parse("Liquid! {{num | minus: numTwo}} ", options).unwrap();
 
 let mut data = Context::new();
-data.set_val("num", Value::Num(5f32));
+data.set_val("num", Value::Num(4f32));
 data.set_val("numTwo", Value::Num(6f32));
 
 let output = template.render(&mut data);
+assert_eq!(output.unwrap(), Some("2".to_string()));
 ```
 
 Plugins

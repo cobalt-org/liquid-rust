@@ -1,10 +1,8 @@
 use Renderable;
-use Block;
 use context::Context;
 use LiquidOptions;
 use lexer::Token;
 use lexer::Element;
-use tags::ForBlock;
 use parser::parse;
 use template::Template;
 use lexer::Token::Identifier;
@@ -42,46 +40,42 @@ impl<'a> Renderable for For<'a>{
 }
 
 
-impl Block for ForBlock{
-    fn initialize<'a>(&'a self,
-                      _tag_name: &str,
-                      arguments: &[Token],
-                      tokens: Vec<Element>,
-                      options: &'a LiquidOptions)
-                      -> Result<Box<Renderable + 'a>> {
-        let mut args = arguments.iter();
+pub fn for_block(_tag_name: &str,
+                  arguments: &[Token],
+                  tokens: Vec<Element>,
+                  options: &LiquidOptions)
+                  -> Result<Box<Renderable>> {
+    let mut args = arguments.iter();
 
-        let inner = try!(parse(&tokens, options));
+    let inner = try!(parse(&tokens, options));
 
-        let var_name = match args.next() {
-            Some(&Identifier(ref x)) => x.clone(),
-            x => return Err(Error::Parser(format!("Expected an identifier, found {:?}", x))),
-        };
+    let var_name = match args.next() {
+        Some(&Identifier(ref x)) => x.clone(),
+        x => return Err(Error::Parser(format!("Expected an identifier, found {:?}", x))),
+    };
 
-        match args.next() {
-            Some(&Identifier(ref x)) if x == "in" => (),
-            x => return Err(Error::Parser(format!("Expected 'in', found {:?}", x))),
-        }
-
-        // TODO implement ranges
-        let array_id = match args.next() {
-            Some(&Identifier(ref x)) => x.clone(),
-            x => return Err(Error::Parser(format!("Expected an identifier, found {:?}", x))),
-        };
-
-        Ok(Box::new(For {
-            var_name: var_name,
-            array_id: array_id,
-            inner: Template::new(inner),
-        }) as Box<Renderable>)
+    match args.next() {
+        Some(&Identifier(ref x)) if x == "in" => (),
+        x => return Err(Error::Parser(format!("Expected 'in', found {:?}", x))),
     }
+
+    // TODO implement ranges
+    let array_id = match args.next() {
+        Some(&Identifier(ref x)) => x.clone(),
+        x => return Err(Error::Parser(format!("Expected an identifier, found {:?}", x))),
+    };
+
+    Ok(Box::new(For {
+        var_name: var_name,
+        array_id: array_id,
+        inner: Template::new(inner),
+    }) as Box<Renderable>)
 }
 
 #[test]
 fn test_for() {
-    let block = ForBlock;
     let options: LiquidOptions = Default::default();
-    let for_tag = block.initialize("for",
+    let for_tag = for_block("for",
                                    &vec![Identifier("name".to_string()),
                                          Identifier("in".to_string()),
                                          Identifier("array".to_string())],

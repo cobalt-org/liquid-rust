@@ -10,8 +10,8 @@ use std::default::Default;
 #[test]
 pub fn upcase() {
     let text = "{{ text | upcase}}";
-    let mut options : LiquidOptions = Default::default();
-    let template = parse(&text, &mut options).unwrap();
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("hello".to_string()));
@@ -23,8 +23,8 @@ pub fn upcase() {
 #[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";
-    let mut options : LiquidOptions = Default::default();
-    let template = parse(&text, &mut options).unwrap();
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(4f32));
@@ -36,8 +36,8 @@ pub fn minus() {
 #[test]
 pub fn minus_error() {
     let text = "{{ num | minus }}";
-    let mut options : LiquidOptions = Default::default();
-    let template = parse(&text, &mut options).unwrap();
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(4f32));
@@ -49,8 +49,8 @@ pub fn minus_error() {
 #[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
-    let mut options : LiquidOptions = Default::default();
-    let template = parse(&text, &mut options).unwrap();
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));

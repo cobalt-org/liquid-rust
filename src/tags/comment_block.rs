@@ -1,8 +1,6 @@
 use Renderable;
-use Block;
 use context::Context;
 use LiquidOptions;
-use tags::CommentBlock;
 use lexer::Token;
 use lexer::Element;
 use error::Result;
@@ -12,32 +10,29 @@ use std::default::Default;
 #[cfg(test)]
 use lexer::Element::Expression;
 
-struct CommentT;
+struct Comment;
 
-impl Renderable for CommentT{
+impl Renderable for Comment {
     fn render(&self, _context: &mut Context) -> Result<Option<String>> {
         Ok(None)
     }
 }
 
-impl Block for CommentBlock{
-    fn initialize(&self,
-                  _tag_name: &str,
-                  _arguments: &[Token],
-                  _tokens: Vec<Element>,
-                  _options: &LiquidOptions)
-                  -> Result<Box<Renderable>> {
-        Ok(Box::new(CommentT) as Box<Renderable>)
-    }
+pub fn comment_block(_tag_name: &str,
+                    _arguments: &[Token],
+                    _tokens: Vec<Element>,
+                    _options: &LiquidOptions)
+                    -> Result<Box<Renderable>> {
+    Ok(Box::new(Comment) as Box<Renderable>)
 }
 
 #[test]
 fn test_comment() {
-    let block = CommentBlock;
     let options: LiquidOptions = Default::default();
-    let comment = block.initialize("comment",
+    let comment = comment_block("comment",
                                    &vec![],
                                    vec![Expression(vec![], "This is a test".to_string())],
                                    &options);
-    assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(), None);
+    assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
+               None);
 }

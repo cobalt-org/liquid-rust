@@ -11,8 +11,8 @@ use std::io::Read;
 pub fn run() {
     let mut text = String::new();
     File::open("./tests/simple/template.txt").unwrap().read_to_string(&mut text).unwrap();
-    let mut options : LiquidOptions = Default::default();
-    let template = parse(&text, &mut options).unwrap();
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(5f32));
