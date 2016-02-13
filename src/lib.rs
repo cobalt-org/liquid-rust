@@ -16,6 +16,8 @@ pub use value::Value;
 pub use context::Context;
 pub use template::Template;
 pub use error::Error;
+pub use filters::FilterResult;
+pub use filters::FilterError;
 
 pub mod lexer;
 pub mod parser;
