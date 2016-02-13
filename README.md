@@ -14,7 +14,7 @@ liquid = "0.4"
 ```
 
 Now you can use the crate in your code
-```rust
+```rust,ignore
 extern crate liquid;
 ```
 
@@ -24,16 +24,16 @@ use std::default::Default;
 use liquid::Renderable;
 use liquid::LiquidOptions;
 use liquid::Context;
+use liquid::Value;
 
-let mut options : LiquidOptions = Default::default();
-let template = liquid::parse("Liquid! {{num | minus: numTwo}} ", options).unwrap();
+let options : LiquidOptions = Default::default();
+let template = liquid::parse("Liquid! {{num | minus: 2}}", options).unwrap();
 
 let mut data = Context::new();
 data.set_val("num", Value::Num(4f32));
-data.set_val("numTwo", Value::Num(6f32));
 
 let output = template.render(&mut data);
-assert_eq!(output.unwrap(), Some("2".to_string()));
+assert_eq!(output.unwrap(), Some("Liquid! 2".to_string()));
 ```
 
 Plugins
@@ -78,3 +78,7 @@ Standard Filters
 - [ ] *split* - split a string on a matching pattern e.g. {{ "a~b" | split:"~" }} #=> ['a','b']
 - [ ] *modulo* - remainder, e.g. {{ 3 | modulo:2 }} #=> 1
 - [ ] *reverse* - reverse sort the passed in array
+
+```rust,skeptic-template
+#![allow(unused_imports)] extern crate skeptic; extern crate liquid; fn main() {{ {} }}
+```

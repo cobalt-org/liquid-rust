@@ -10,5 +10,13 @@ readme = "README.md"
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 
+build = "build.rs"
+
 [dependencies]
 regex = "0.1.30"
+
+[build-dependencies]
+skeptic = "*"
+
+[dev-dependencies]
+skeptic = "*"
