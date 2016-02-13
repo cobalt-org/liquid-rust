@@ -5,11 +5,6 @@ use lexer::Token;
 use lexer::Element;
 use error::Result;
 
-#[cfg(test)]
-use std::default::Default;
-#[cfg(test)]
-use lexer::Element::Expression;
-
 struct Comment;
 
 impl Renderable for Comment {
@@ -19,20 +14,28 @@ impl Renderable for Comment {
 }
 
 pub fn comment_block(_tag_name: &str,
-                    _arguments: &[Token],
-                    _tokens: Vec<Element>,
-                    _options: &LiquidOptions)
-                    -> Result<Box<Renderable>> {
-    Ok(Box::new(Comment) as Box<Renderable>)
+                     _arguments: &[Token],
+                     _tokens: Vec<Element>,
+                     _options: &LiquidOptions)
+                     -> Result<Box<Renderable>> {
+    Ok(Box::new(Comment))
 }
 
-#[test]
-fn test_comment() {
-    let options: LiquidOptions = Default::default();
-    let comment = comment_block("comment",
-                                   &vec![],
-                                   vec![Expression(vec![], "This is a test".to_string())],
-                                   &options);
-    assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
-               None);
+#[cfg(test)]
+mod test {
+    use LiquidOptions;
+    use super::comment_block;
+    use std::default::Default;
+    use lexer::Element::Expression;
+
+    #[test]
+    fn test_comment() {
+        let options: LiquidOptions = Default::default();
+        let comment = comment_block("comment",
+                                    &vec![],
+                                    vec![Expression(vec![], "This is a test".to_string())],
+                                    &options);
+        assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
+                   None);
+    }
 }

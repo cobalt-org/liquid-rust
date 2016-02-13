@@ -15,7 +15,7 @@ pub enum Value {
 
 // TODO implement for object and array
 // TODO clean this up
-impl PartialOrd<Value> for Value{
+impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
@@ -53,7 +53,7 @@ impl PartialOrd<Value> for Value{
     }
 }
 
-impl ToString for Value{
+impl ToString for Value {
     fn to_string(&self) -> String {
         match self {
             &Value::Num(ref x) => x.to_string(),
@@ -63,7 +63,7 @@ impl ToString for Value{
     }
 }
 
-impl Renderable for Value{
+impl Renderable for Value {
     fn render(&self, _context: &mut Context) -> Result<Option<String>> {
         Ok(Some(self.to_string()))
     }

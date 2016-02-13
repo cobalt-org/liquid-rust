@@ -27,7 +27,7 @@ fn get_array(context: &mut Context, array_id: &str) -> Result<Vec<Value>> {
     }
 }
 
-impl<'a> Renderable for For<'a>{
+impl<'a> Renderable for For<'a> {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let arr = try!(get_array(context, &self.array_id));
         let mut ret = String::new();
@@ -41,10 +41,10 @@ impl<'a> Renderable for For<'a>{
 
 
 pub fn for_block(_tag_name: &str,
-                  arguments: &[Token],
-                  tokens: Vec<Element>,
-                  options: &LiquidOptions)
-                  -> Result<Box<Renderable>> {
+                 arguments: &[Token],
+                 tokens: Vec<Element>,
+                 options: &LiquidOptions)
+                 -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
     let inner = try!(parse(&tokens, options));
@@ -69,18 +69,18 @@ pub fn for_block(_tag_name: &str,
         var_name: var_name,
         array_id: array_id,
         inner: Template::new(inner),
-    }) as Box<Renderable>)
+    }))
 }
 
 #[test]
 fn test_for() {
     let options: LiquidOptions = Default::default();
     let for_tag = for_block("for",
-                                   &vec![Identifier("name".to_string()),
-                                         Identifier("in".to_string()),
-                                         Identifier("array".to_string())],
-                                   tokenize("test {{name}} ").unwrap(),
-                                   &options);
+                            &vec![Identifier("name".to_string()),
+                                  Identifier("in".to_string()),
+                                  Identifier("array".to_string())],
+                            tokenize("test {{name}} ").unwrap(),
+                            &options);
 
     let mut data: Context = Default::default();
     data.set_val("array",

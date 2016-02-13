@@ -13,9 +13,7 @@ use lexer::Element;
 use lexer::Element::{Expression, Tag, Raw};
 use error::{Error, Result};
 
-pub fn parse(elements: &[Element],
-                 options: &LiquidOptions)
-                 -> Result<Vec<Box<Renderable>>> {
+pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {
     let mut ret = vec![];
     let mut iter = elements.iter();
     let mut token = iter.next();
@@ -23,7 +21,7 @@ pub fn parse(elements: &[Element],
         match token.unwrap() {
             &Expression(ref tokens, _) => ret.push(try!(parse_expression(tokens, options))),
             &Tag(ref tokens, _) => ret.push(try!(parse_tag(&mut iter, tokens, options))),
-            &Raw(ref x) => ret.push(Box::new(Text::new(&x)) as Box<Renderable>),
+            &Raw(ref x) => ret.push(Box::new(Text::new(&x))),
         }
         token = iter.next();
     }
@@ -31,9 +29,7 @@ pub fn parse(elements: &[Element],
 }
 
 // creates an expression, which wraps everything that gets rendered
-fn parse_expression(tokens: &Vec<Token>,
-                        options: &LiquidOptions)
-                        -> Result<Box<Renderable>> {
+fn parse_expression(tokens: &Vec<Token>, options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_string()) => {
             Ok(options.tags.get(x).unwrap()(&x, &tokens[1..], options))
@@ -60,7 +56,10 @@ fn parse_output(tokens: &Vec<Token>) -> Result<Box<Renderable>> {
         }
         let name = match iter.next() {
             Some(&Identifier(ref name)) => name,
-            ref x => return Err(Error::Parser(format!("parse_output: expected an Identifier, got {:?}", x))),
+            ref x => {
+                return Err(Error::Parser(format!("parse_output: expected an Identifier, got {:?}",
+                                                 x)))
+            }
         };
         let mut args = vec![];
 
@@ -83,14 +82,16 @@ fn parse_output(tokens: &Vec<Token>) -> Result<Box<Renderable>> {
                 &Comma => continue, // next argument
                 &StringLiteral(ref x) => args.push(Value::Str(x.to_string())),
                 &NumberLiteral(x) => args.push(Value::Num(x)),
-                ref x => return Err(Error::Parser(format!("parse_output: {:?} not implemented", x))),
+                ref x => {
+                    return Err(Error::Parser(format!("parse_output: {:?} not implemented", x)))
+                }
             }
         }
 
         filters.push(FilterPrototype::new(&name, args));
     }
 
-    Ok(Box::new(Output::new(entry, filters)) as Box<Renderable>)
+    Ok(Box::new(Output::new(entry, filters)))
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
@@ -98,9 +99,9 @@ fn parse_output(tokens: &Vec<Token>) -> Result<Box<Renderable>> {
 // and is delimited by a closing tag named {{end + the_name_of_the_tag}}
 // tags do not get rendered, but blocks may contain renderable expressions
 fn parse_tag(iter: &mut Iter<Element>,
-                 tokens: &Vec<Token>,
-                 options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+             tokens: &Vec<Token>,
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
     match tokens[0] {
 
         // is a tag

@@ -32,7 +32,7 @@ pub fn raw_block(_tag_name: &str,
         }
         .to_string() + &a
     });
-    Ok(Box::new(RawT { content: content }) as Box<Renderable>)
+    Ok(Box::new(RawT { content: content }))
 }
 
 #[test]

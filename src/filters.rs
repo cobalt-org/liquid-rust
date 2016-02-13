@@ -10,7 +10,7 @@ use self::FilterError::*;
 pub enum FilterError {
     InvalidType(String),
     InvalidArgumentCount(String),
-    InvalidArgument(u16, String) // (position, "expected / given ")
+    InvalidArgument(u16, String), // (position, "expected / given ")
 }
 
 impl fmt::Display for FilterError {
@@ -18,8 +18,9 @@ impl fmt::Display for FilterError {
         match *self {
             InvalidType(ref e) => write!(f, "Invalid type : {}", e),
             InvalidArgumentCount(ref e) => write!(f, "Invalid number of arguments : {}", e),
-            InvalidArgument(ref pos, ref e) => 
+            InvalidArgument(ref pos, ref e) => {
                 write!(f, "Invalid argument given at position {} : {}", pos, e)
+            }
         }
     }
 }
@@ -29,26 +30,26 @@ impl Error for FilterError {
         match *self {
             InvalidType(ref e) => e,
             InvalidArgumentCount(ref e) => e,
-            InvalidArgument(_, ref e) => e
+            InvalidArgument(_, ref e) => e,
         }
     }
 }
 
 pub type FilterResult = Result<String, FilterError>;
 
-pub fn size(input : &Value, _args: &Vec<Value>) -> FilterResult {
+pub fn size(input: &Value, _args: &Vec<Value>) -> FilterResult {
     match input {
-        &Str(ref s)    => Ok(s.len().to_string()),
-        &Array(ref x)  => Ok(x.len().to_string()),
+        &Str(ref s) => Ok(s.len().to_string()),
+        &Array(ref x) => Ok(x.len().to_string()),
         &Object(ref x) => Ok(x.len().to_string()),
-        _ => Err(InvalidType("String, Array or Object expected".to_string()))
+        _ => Err(InvalidType("String, Array or Object expected".to_string())),
     }
 }
 
 pub fn upcase(input: &Value, _args: &Vec<Value>) -> FilterResult {
     match input {
         &Str(ref s) => Ok(s.to_uppercase()),
-        _ => Err(InvalidType("String expected".to_string()))
+        _ => Err(InvalidType("String expected".to_string())),
     }
 }
 
@@ -56,11 +57,11 @@ pub fn minus(input: &Value, args: &Vec<Value>) -> FilterResult {
 
     let num = match input {
         &Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_string()))
+        _ => return Err(InvalidType("Num expected".to_string())),
     };
     match args.first() {
         Some(&Num(x)) => Ok((num - x).to_string()),
-        _ => Err(InvalidArgument(0, "Num expected".to_string()))
+        _ => Err(InvalidArgument(0, "Num expected".to_string())),
     }
 }
 
@@ -71,14 +72,16 @@ pub fn replace(input: &Value, args: &Vec<Value>) -> FilterResult {
     match input {
         &Str(ref x) => {
             let arg1 = match &args[0] {
-                &Str(ref a) => a, _ => return Err(InvalidArgument(0, "Str expected".to_string()))
+                &Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_string())),
             };
             let arg2 = match &args[1] {
-                &Str(ref a) => a, _ => return Err(InvalidArgument(1, "Str expected".to_string()))
+                &Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_string())),
             };
             Ok(x.replace(arg1, arg2))
-        },
-        _ => Err(InvalidType("String expected".to_string()))
+        }
+        _ => Err(InvalidType("String expected".to_string())),
     }
 }
 
@@ -104,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_size(){
+    fn unit_size() {
         assert_eq!(unit!(size, tos!("abc")), "3");
         assert_eq!(unit!(size, tos!("this has 22 characters")), "22");
     }
@@ -123,7 +126,8 @@ mod tests {
 
     #[test]
     fn unit_replace() {
-        assert_eq!( unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]), "foofoo" );
+        assert_eq!(unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]),
+                   "foofoo");
     }
 
 }

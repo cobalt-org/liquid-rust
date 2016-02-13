@@ -36,14 +36,16 @@ mod context;
 /// This currently does not have an effect, until
 /// ErrorModes are properly implemented.
 #[derive(Clone, Copy)]
-pub enum ErrorMode{
+pub enum ErrorMode {
     Strict,
     Warn,
-    Lax
+    Lax,
 }
 
 impl Default for ErrorMode {
-   fn default() -> ErrorMode { ErrorMode::Warn }
+    fn default() -> ErrorMode {
+        ErrorMode::Warn
+    }
 }
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
@@ -70,12 +72,10 @@ impl Default for ErrorMode {
 ///     }
 /// }
 ///
-/// fn hw_block(tag_name: &str, arguments: &[Token], options: &LiquidOptions) -> Box<Renderable> {
-///      Box::new(HelloWorld) as Box<Renderable>
-/// }
-///
 /// let mut options : LiquidOptions = Default::default();
-/// options.tags.insert("hello_world".to_owned(), Box::new(hw_block) as Box<Tag>);
+/// options.tags.insert("hello_world".to_owned(), Box::new(|tag_name, arguments, options| {
+///      Box::new(HelloWorld)
+/// }));
 ///
 /// let template = liquid::parse("{{hello_world}}", options).unwrap();
 /// let mut data = Context::new();
@@ -99,9 +99,9 @@ pub trait Renderable{
 
 #[derive(Default)]
 pub struct LiquidOptions {
-    pub blocks : HashMap<String, Box<Block>>,
-    pub tags : HashMap<String, Box<Tag>>,
-    pub error_mode : ErrorMode
+    pub blocks: HashMap<String, Box<Block>>,
+    pub tags: HashMap<String, Box<Tag>>,
+    pub error_mode: ErrorMode,
 }
 
 /// Parses a liquid template, returning a Template object.
@@ -122,7 +122,7 @@ pub struct LiquidOptions {
 /// assert_eq!(output.unwrap(), Some("Liquid!".to_owned()));
 /// ```
 ///
-pub fn parse (text: &str, options: LiquidOptions) -> Result<Template>{
+pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     let mut options = options;
     let tokens = try!(lexer::tokenize(&text));
     options.blocks.insert("raw".to_owned(), Box::new(raw_block));
@@ -132,4 +132,3 @@ pub fn parse (text: &str, options: LiquidOptions) -> Result<Template>{
 
     parser::parse(&tokens, &options).map(|renderables| Template::new(renderables))
 }
-

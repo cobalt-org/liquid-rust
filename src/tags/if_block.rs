@@ -138,7 +138,7 @@ pub fn if_block(_tag_name: &str,
         rh: rh,
         if_true: if_true,
         if_false: if_false,
-    }) as Box<Renderable>)
+    }))
 }
 
 #[cfg(test)]
