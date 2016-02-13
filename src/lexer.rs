@@ -3,6 +3,7 @@ use self::Element::*;
 use self::ComparisonOperator::*;
 use regex::Regex;
 use error::{Error, Result};
+use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ComparisonOperator {
@@ -33,6 +34,36 @@ pub enum Token {
     NumberLiteral(f32),
     DotDot,
     Comparison(ComparisonOperator),
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let out = match *self {
+            Pipe => "|".to_owned(),
+            Dot => ".".to_owned(),
+            Colon => ":".to_owned(),
+            Comma => ",".to_owned(),
+            OpenSquare => "[".to_owned(),
+            CloseSquare => "]".to_owned(),
+            OpenRound => "(".to_owned(),
+            CloseRound => ")".to_owned(),
+            Question => "?".to_owned(),
+            Dash => "-".to_owned(),
+            DotDot => "..".to_owned(),
+
+            Comparison(Equals) => "==".to_owned(),
+            Comparison(NotEquals) => "!=".to_owned(),
+            Comparison(LessThanEquals) => "<=".to_owned(),
+            Comparison(GreaterThanEquals) => ">=".to_owned(),
+            Comparison(LessThan) => "<".to_owned(),
+            Comparison(GreaterThan) => ">".to_owned(),
+            Comparison(Contains) => "contains".to_owned(),
+            Identifier(ref x) => x.clone(),
+            StringLiteral(ref x) => x.clone(),
+            NumberLiteral(ref x) => x.to_string(),
+        };
+        write!(f, "{}", out)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
