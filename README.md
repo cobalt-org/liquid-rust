@@ -36,6 +36,8 @@ let output = template.render(&mut data);
 assert_eq!(output.unwrap(), Some("Liquid! 2".to_string()));
 ```
 
+You can find a reference on Liquid syntax [here](https://github.com/Shopify/liquid/wiki/Liquid-for-Designers).
+
 Plugins
 --------
 Cache block ( File and Redis ) : https://github.com/FerarDuanSednan/liquid-rust-cache
