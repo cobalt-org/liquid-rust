@@ -29,10 +29,10 @@ use liquid::Value;
 let options : LiquidOptions = Default::default();
 let template = liquid::parse("Liquid! {{num | minus: 2}}", options).unwrap();
 
-let mut data = Context::new();
-data.set_val("num", Value::Num(4f32));
+let mut context = Context::new();
+context.set_val("num", Value::Num(4f32));
 
-let output = template.render(&mut data);
+let output = template.render(&mut context);
 assert_eq!(output.unwrap(), Some("Liquid! 2".to_string()));
 ```
 
@@ -42,8 +42,90 @@ Plugins
 --------
 Cache block ( File and Redis ) : https://github.com/FerarDuanSednan/liquid-rust-cache
 
+Extending Liquid
+--------
 
+### Create your own filters
 
+Creating your own filters is very easy. Filters are simply functions or
+closures that take an input `Value` and a `Vec<Value>` of optional arguments
+and return a `String` to be rendered.
+
+```rust
+use std::default::Default;
+use liquid::Renderable;
+use liquid::Context;
+use liquid::Value;
+use liquid::FilterError::InvalidType;
+
+let template = liquid::parse("{{'hello' | shout}}", Default::default()).unwrap();
+
+let mut context = Context::new();
+
+// create our custom shout filter
+context.filters.insert("shout".to_owned(), Box::new(|input, _args| {
+    if let &Value::Str(ref s) = input {
+      Ok(s.to_uppercase())
+    } else {
+      Err(InvalidType("Expected a string".to_owned()))
+    }
+}));
+
+let output = template.render(&mut context);
+assert_eq!(output.unwrap(), Some("HELLO".to_owned()));
+```
+
+### Create your own tags
+
+Tags are made up of two parts, the initialization and the rendering.
+
+Initialization happens when the parser hits a Liquid tag that has your
+designated name. You will have to specify a function or closure that will
+then return a `Renderable` object to do the rendering.
+
+```rust
+use std::default::Default;
+use liquid::LiquidOptions;
+use liquid::Renderable;
+use liquid::Context;
+use liquid::Error;
+
+// our renderable object
+struct Shout {
+    text: String
+}
+impl Renderable for Shout {
+    fn render(&self, _context: &mut Context) -> Result<Option<String>, Error>{
+        Ok(Some(self.text.to_uppercase()))
+    }
+}
+
+let mut options : LiquidOptions = Default::default();
+
+// initialize the tag and pass a closure that will return a new Shout renderable
+options.tags.insert("shout".to_owned(), Box::new(|_tag_name, arguments, _options| {
+    Box::new(Shout{text: arguments[0].to_string()})
+}));
+
+// use our new tag
+let template = liquid::parse("{{shout 'hello'}}", options).unwrap();
+
+let mut context = Context::new();
+let output = template.render(&mut context);
+assert_eq!(output.unwrap(), Some("HELLO".to_owned()));
+```
+
+### Create your own tag blocks
+
+Blocks work very similar to Tags. The only difference is that blocks contain other
+markup, which is why block initialization functions take another argument, a list
+of `Element`s that are inside the specified block.
+
+For an implementation of a `Shout` block, see [this example](https://github.com/johannhof/liquid-plugin-example/blob/master/src/lib.rs).
+
+----------
+
+Ignore this:
 ```rust,skeptic-template
-#![allow(unused_imports)] extern crate skeptic; extern crate liquid; fn main() {{ {} }}
+extern crate skeptic; extern crate liquid; fn main() {{ {} }}
 ```
