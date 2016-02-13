@@ -16,7 +16,7 @@ build = "build.rs"
 regex = "0.1.30"
 
 [build-dependencies]
-skeptic = "*"
+skeptic = "0.4"
 
 [dev-dependencies]
-skeptic = "*"
+skeptic = "0.4"
