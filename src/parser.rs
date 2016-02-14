@@ -4,13 +4,9 @@ use value::Value;
 use variable::Variable;
 use text::Text;
 use std::slice::Iter;
-use output::Output;
-use output::FilterPrototype;
-use output::VarOrVal;
-use lexer::Token;
-use lexer::Token::{Identifier, Colon, Comma, Pipe, StringLiteral, NumberLiteral};
-use lexer::Element;
-use lexer::Element::{Expression, Tag, Raw};
+use output::{Output, FilterPrototype, VarOrVal};
+use lexer::Token::{self, Identifier, Colon, Comma, Pipe, StringLiteral, NumberLiteral};
+use lexer::Element::{self, Expression, Tag, Raw};
 use error::{Error, Result};
 
 pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {

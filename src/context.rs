@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use value::Value;
 use filters::FilterResult;
 
-
 #[derive(Default)]
 pub struct Context<'a> {
     values: HashMap<String, Value>,
@@ -15,8 +14,7 @@ impl<'a> Context<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use liquid::Value;
-    /// # use liquid::Context;
+    /// # use liquid::{Value, Context};
     /// let mut ctx = Context::new();
     /// assert_eq!(ctx.get_val("test"), None);
     /// ```
@@ -45,8 +43,7 @@ impl<'a> Context<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use liquid::Value;
-    /// # use liquid::Context;
+    /// # use liquid::{Value, Context};
     /// let mut ctx = Context::new();
     /// ctx.set_val("test", Value::Num(42f32));
     /// assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
@@ -69,8 +66,7 @@ impl<'a> Context<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use liquid::Value;
-    /// # use liquid::Context;
+    /// # use liquid::{Value, Context};
     /// let mut ctx = Context::new();
     /// ctx.set_val("test", Value::Num(42f32));
     /// assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));

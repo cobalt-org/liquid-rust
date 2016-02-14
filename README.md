@@ -21,13 +21,9 @@ extern crate liquid;
 Example:
 ```rust
 use std::default::Default;
-use liquid::Renderable;
-use liquid::LiquidOptions;
-use liquid::Context;
-use liquid::Value;
+use liquid::{Renderable, Context, Value};
 
-let options : LiquidOptions = Default::default();
-let template = liquid::parse("Liquid! {{num | minus: 2}}", options).unwrap();
+let template = liquid::parse("Liquid! {{num | minus: 2}}", Default::default()).unwrap();
 
 let mut context = Context::new();
 context.set_val("num", Value::Num(4f32));
@@ -53,10 +49,7 @@ and return a `String` to be rendered.
 
 ```rust
 use std::default::Default;
-use liquid::Renderable;
-use liquid::Context;
-use liquid::Value;
-use liquid::FilterError::InvalidType;
+use liquid::{Renderable, Context, Value, FilterError};
 
 let template = liquid::parse("{{'hello' | shout}}", Default::default()).unwrap();
 
@@ -67,7 +60,7 @@ context.filters.insert("shout".to_owned(), Box::new(|input, _args| {
     if let &Value::Str(ref s) = input {
       Ok(s.to_uppercase())
     } else {
-      Err(InvalidType("Expected a string".to_owned()))
+      Err(FilterError::InvalidType("Expected a string".to_owned()))
     }
 }));
 
@@ -85,10 +78,7 @@ then return a `Renderable` object to do the rendering.
 
 ```rust
 use std::default::Default;
-use liquid::LiquidOptions;
-use liquid::Renderable;
-use liquid::Context;
-use liquid::Error;
+use liquid::{LiquidOptions, Renderable, Context, Error};
 
 // our renderable object
 struct Shout {

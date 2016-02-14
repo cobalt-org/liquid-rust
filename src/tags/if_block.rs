@@ -3,14 +3,11 @@ use value::Value;
 use context::Context;
 use template::Template;
 use LiquidOptions;
-use lexer::Token;
-use lexer::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
-use lexer::ComparisonOperator;
-use lexer::ComparisonOperator::{Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
+use lexer::Token::{self, Identifier, StringLiteral, NumberLiteral, Comparison};
+use lexer::ComparisonOperator::{self, Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
                                 GreaterThanEquals, Contains};
 use parser::parse;
-use lexer::Element;
-use lexer::Element::Tag;
+use lexer::Element::{self, Tag};
 use error::{Error, Result};
 
 struct If<'a> {
@@ -146,9 +143,8 @@ mod test {
     use LiquidOptions;
     use std::default::Default;
     use tags::if_block;
-    use lexer::Element::Raw;
+    use lexer::Element::{Raw, Tag};
     use lexer::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
-    use lexer::Element::Tag;
     use lexer::ComparisonOperator::{LessThan, Equals};
 
     #[test]

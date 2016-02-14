@@ -2,12 +2,8 @@ use Renderable;
 use context::Context;
 use LiquidOptions;
 use lexer::Token;
-use lexer::Element;
-use lexer::Element::{Expression, Tag, Raw};
+use lexer::Element::{self, Expression, Tag, Raw};
 use error::Result;
-
-#[cfg(test)]
-use std::default::Default;
 
 struct RawT {
     content: String,
@@ -37,6 +33,8 @@ pub fn raw_block(_tag_name: &str,
 
 #[test]
 fn test_raw() {
+    use std::default::Default;
+
     let options: LiquidOptions = Default::default();
     let raw = raw_block("raw",
                         &vec![],

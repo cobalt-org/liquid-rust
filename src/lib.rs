@@ -16,8 +16,7 @@ pub use value::Value;
 pub use context::Context;
 pub use template::Template;
 pub use error::Error;
-pub use filters::FilterResult;
-pub use filters::FilterError;
+pub use filters::{FilterResult, FilterError};
 
 pub mod lexer;
 pub mod parser;
@@ -58,11 +57,7 @@ impl Default for ErrorMode {
 /// ## Minimal Example
 /// ```
 /// # use std::default::Default;
-/// # use liquid::Renderable;
-/// # use liquid::LiquidOptions;
-/// # use liquid::Context;
-/// # use liquid::Error;
-/// # use liquid::Tag;
+/// # use liquid::{Renderable, LiquidOptions, Context, Error, Tag};
 /// # use liquid::lexer::Token;
 /// struct HelloWorld;
 ///
@@ -111,12 +106,9 @@ pub struct LiquidOptions {
 ///
 /// ```
 /// use std::default::Default;
-/// use liquid::Renderable;
-/// use liquid::LiquidOptions;
-/// use liquid::Context;
+/// use liquid::{Renderable, LiquidOptions, Context};
 ///
-/// let mut options : LiquidOptions = Default::default();
-/// let template = liquid::parse("Liquid!", options).unwrap();
+/// let template = liquid::parse("Liquid!", Default::default()).unwrap();
 /// let mut data = Context::new();
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Liquid!".to_owned()));

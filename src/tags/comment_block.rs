@@ -1,8 +1,7 @@
 use Renderable;
 use context::Context;
 use LiquidOptions;
-use lexer::Token;
-use lexer::Element;
+use lexer::{Token, Element};
 use error::Result;
 
 struct Comment;
