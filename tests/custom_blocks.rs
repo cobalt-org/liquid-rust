@@ -1,3 +1,5 @@
+extern crate liquid;
+
 use std::collections::HashMap;
 use liquid::LiquidOptions;
 use liquid::Tag;

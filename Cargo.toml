@@ -19,4 +19,5 @@ regex = "0.1.30"
 skeptic = "0.4"
 
 [dev-dependencies]
+difference = "0.4"
 skeptic = "0.4"
