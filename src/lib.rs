@@ -56,7 +56,6 @@ impl Default for ErrorMode {
 ///
 /// ## Minimal Example
 /// ```
-/// # use std::default::Default;
 /// # use liquid::{Renderable, LiquidOptions, Context, Error, Tag};
 /// # use liquid::lexer::Token;
 /// struct HelloWorld;
@@ -105,7 +104,6 @@ pub struct LiquidOptions {
 /// ## Minimal Template
 ///
 /// ```
-/// use std::default::Default;
 /// use liquid::{Renderable, LiquidOptions, Context};
 ///
 /// let template = liquid::parse("Liquid!", Default::default()).unwrap();

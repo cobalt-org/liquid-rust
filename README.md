@@ -20,7 +20,6 @@ extern crate liquid;
 
 Example:
 ```rust
-use std::default::Default;
 use liquid::{Renderable, Context, Value};
 
 let template = liquid::parse("Liquid! {{num | minus: 2}}", Default::default()).unwrap();
@@ -48,7 +47,6 @@ closures that take an input `Value` and a `Vec<Value>` of optional arguments
 and return a `String` to be rendered.
 
 ```rust
-use std::default::Default;
 use liquid::{Renderable, Context, Value, FilterError};
 
 let template = liquid::parse("{{'hello' | shout}}", Default::default()).unwrap();
@@ -77,7 +75,6 @@ designated name. You will have to specify a function or closure that will
 then return a `Renderable` object to do the rendering.
 
 ```rust
-use std::default::Default;
 use liquid::{LiquidOptions, Renderable, Context, Error};
 
 // our renderable object
