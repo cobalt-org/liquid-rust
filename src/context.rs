@@ -3,12 +3,12 @@ use value::Value;
 use filters::FilterResult;
 
 #[derive(Default)]
-pub struct Context<'a> {
+pub struct Context {
     values: HashMap<String, Value>,
-    pub filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>,
+    pub filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>,
 }
 
-impl<'a> Context<'a> {
+impl Context {
     /// Creates a new, empty rendering context.
     ///
     /// # Examples
@@ -18,20 +18,20 @@ impl<'a> Context<'a> {
     /// let mut ctx = Context::new();
     /// assert_eq!(ctx.get_val("test"), None);
     /// ```
-    pub fn new() -> Context<'a> {
+    pub fn new() -> Context {
         Context::with_values_and_filters(HashMap::new(), HashMap::new())
     }
 
-    pub fn with_values(values: HashMap<String, Value>) -> Context<'a> {
+    pub fn with_values(values: HashMap<String, Value>) -> Context {
         Context::with_values_and_filters(values, HashMap::new())
     }
 
-    pub fn with_filters(filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>)
-                        -> Context<'a> {
+    pub fn with_filters(filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>)
+                        -> Context {
         Context::with_values_and_filters(HashMap::new(), filters)
     }
 
-    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult + 'a>>) -> Context<'a> {
+    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>) -> Context {
         Context {
             values: values,
             filters: filters,

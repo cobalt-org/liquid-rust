@@ -3,11 +3,11 @@ use context::Context;
 use filters::{size, upcase, minus, replace};
 use error::Result;
 
-pub struct Template<'a> {
-    pub elements: Vec<Box<Renderable + 'a>>,
+pub struct Template {
+    pub elements: Vec<Box<Renderable>>,
 }
 
-impl<'a> Renderable for Template<'a> {
+impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         context.filters.insert("size".to_string(), Box::new(size));
         context.filters.insert("upcase".to_string(), Box::new(upcase));
@@ -24,8 +24,8 @@ impl<'a> Renderable for Template<'a> {
     }
 }
 
-impl<'a> Template<'a> {
-    pub fn new(elements: Vec<Box<Renderable + 'a>>) -> Template<'a> {
+impl Template {
+    pub fn new(elements: Vec<Box<Renderable>>) -> Template {
         Template { elements: elements }
     }
 }

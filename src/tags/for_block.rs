@@ -13,10 +13,10 @@ use std::default::Default;
 #[cfg(test)]
 use lexer::tokenize;
 
-struct For<'a> {
+struct For {
     var_name: String,
     array_id: String,
-    inner: Template<'a>,
+    inner: Template,
 }
 
 fn get_array(context: &mut Context, array_id: &str) -> Result<Vec<Value>> {
@@ -26,7 +26,7 @@ fn get_array(context: &mut Context, array_id: &str) -> Result<Vec<Value>> {
     }
 }
 
-impl<'a> Renderable for For<'a> {
+impl Renderable for For {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let arr = try!(get_array(context, &self.array_id));
         let mut ret = String::new();

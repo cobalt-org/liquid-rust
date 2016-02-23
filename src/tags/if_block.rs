@@ -10,12 +10,12 @@ use parser::parse;
 use lexer::Element::{self, Tag};
 use error::{Error, Result};
 
-struct If<'a> {
+struct If {
     lh: Token,
     comparison: ComparisonOperator,
     rh: Token,
-    if_true: Template<'a>,
-    if_false: Option<Template<'a>>,
+    if_true: Template,
+    if_false: Option<Template>,
 }
 
 fn token_to_val(token: &Token, context: &Context) -> Option<Value> {
@@ -32,7 +32,7 @@ fn token_to_val(token: &Token, context: &Context) -> Option<Value> {
     }
 }
 
-impl<'a> If<'a> {
+impl If {
     fn compare(&self, context: &Context) -> bool {
         let a = token_to_val(&self.lh, context);
         if let None = a {
@@ -54,7 +54,7 @@ impl<'a> If<'a> {
     }
 }
 
-impl<'a> Renderable for If<'a> {
+impl Renderable for If {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         if self.compare(context) {
             self.if_true.render(context)
