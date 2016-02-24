@@ -14,6 +14,7 @@ build = "build.rs"
 
 [dependencies]
 regex = "0.1.30"
+clippy = {version = "*", optional = true}
 
 [build-dependencies]
 skeptic = "0.4"
@@ -21,3 +22,7 @@ skeptic = "0.4"
 [dev-dependencies]
 difference = "0.4"
 skeptic = "0.4"
+
+[features]
+default=[]
+dev=[]

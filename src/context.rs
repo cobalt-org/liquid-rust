@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use value::Value;
-use filters::FilterResult;
+use filters::Filter;
 
 #[derive(Default)]
 pub struct Context {
     values: HashMap<String, Value>,
-    pub filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>,
+    pub filters: HashMap<String, Box<Filter>>,
 }
 
 impl Context {
@@ -26,12 +26,12 @@ impl Context {
         Context::with_values_and_filters(values, HashMap::new())
     }
 
-    pub fn with_filters(filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>)
+    pub fn with_filters(filters: HashMap<String, Box<Filter>>)
                         -> Context {
         Context::with_values_and_filters(HashMap::new(), filters)
     }
 
-    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Fn(&Value, &Vec<Value>) -> FilterResult>>) -> Context {
+    pub fn with_values_and_filters(values: HashMap<String, Value>, filters: HashMap<String, Box<Filter>>) -> Context {
         Context {
             values: values,
             filters: filters,
@@ -72,7 +72,7 @@ impl Context {
     /// assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
     /// ```
     pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
-        self.values.insert(name.to_string(), val)
+        self.values.insert(name.to_owned(), val)
     }
 }
 
@@ -80,7 +80,7 @@ impl Context {
 fn test_get_val() {
     let mut ctx = Context::new();
     let mut post = HashMap::new();
-    post.insert("number".to_string(), Value::Num(42f32));
+    post.insert("number".to_owned(), Value::Num(42f32));
     ctx.set_val("post", Value::Object(post));
     assert_eq!(ctx.get_val("post.number").unwrap(), &Value::Num(42f32));
 }

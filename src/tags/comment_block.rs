@@ -31,7 +31,7 @@ mod test {
     fn test_comment() {
         let options: LiquidOptions = Default::default();
         let comment = comment_block("comment",
-                                    &vec![],
+                                    &[],
                                     vec![Expression(vec![], "This is a test".to_string())],
                                     &options);
         assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),

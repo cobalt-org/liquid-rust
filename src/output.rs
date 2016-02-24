@@ -19,7 +19,7 @@ pub enum VarOrVal {
 impl FilterPrototype {
     pub fn new(name: &str, arguments: Vec<Value>) -> FilterPrototype {
         FilterPrototype {
-            name: name.to_string(),
+            name: name.to_owned(),
             arguments: arguments,
         }
     }
@@ -40,14 +40,14 @@ impl Renderable for Output {
             VarOrVal::Val(ref x) => Some(x),
             VarOrVal::Var(ref x) => context.get_val(&*x.name()),
         };
-        for filter in self.filters.iter() {
+        for filter in &self.filters {
             let f = match context.filters.get(&filter.name) {
                 Some(x) => x,
                 None => {
                     return Err(Error::Render(format!("Filter {} not implemented", &filter.name)))
                 }
             };
-            let fresult = f(&filter_entry.unwrap_or(&Value::Str("".to_string())),
+            let fresult = f(&filter_entry.unwrap_or(&Value::Str("".to_owned())),
                             &filter.arguments);
             entry = match fresult {
                 Ok(s) => s.to_string(),

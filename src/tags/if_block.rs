@@ -19,10 +19,10 @@ struct If {
 }
 
 fn token_to_val(token: &Token, context: &Context) -> Option<Value> {
-    match token {
-        &StringLiteral(ref x) => Some(Value::Str(x.to_string())),
-        &NumberLiteral(x) => Some(Value::Num(x)),
-        &Identifier(ref x) => {
+    match *token {
+        StringLiteral(ref x) => Some(Value::Str(x.to_owned())),
+        NumberLiteral(x) => Some(Value::Num(x)),
+        Identifier(ref x) => {
             match context.get_val(x) {
                 Some(y) => Some(y.clone()),
                 None => None,
@@ -42,14 +42,14 @@ impl If {
         if let None = b {
             return false;
         }
-        match &self.comparison {
-            &Equals => a == b,
-            &NotEquals => a != b,
-            &LessThan => a < b,
-            &GreaterThan => a > b,
-            &LessThanEquals => a <= b,
-            &GreaterThanEquals => a >= b,
-            &Contains => false, // TODO!!!
+        match self.comparison {
+            Equals => a == b,
+            NotEquals => a != b,
+            LessThan => a < b,
+            GreaterThan => a > b,
+            LessThanEquals => a <= b,
+            GreaterThanEquals => a >= b,
+            Contains => false, // TODO!!!
         }
     }
 }
@@ -76,7 +76,7 @@ pub fn if_block(_tag_name: &str,
 
     let lh = match args.next() {
         Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
-        Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
+        Some(&NumberLiteral(x)) => NumberLiteral(x),
         Some(&Identifier(ref x)) => Identifier(x.clone()),
         x => return Err(Error::Parser(format!("Expected a value, found {:?}", x))),
     };
@@ -88,40 +88,40 @@ pub fn if_block(_tag_name: &str,
 
     let rh = match args.next() {
         Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
-        Some(&NumberLiteral(ref x)) => NumberLiteral(x.clone()),
+        Some(&NumberLiteral(x)) => NumberLiteral(x),
         Some(&Identifier(ref x)) => Identifier(x.clone()),
         x => return Err(Error::Parser(format!("Expected a value, found {:?}", x))),
     };
 
-    let else_block = vec![Identifier("else".to_string())];
+    let else_block = vec![Identifier("else".to_owned())];
 
     // advance until the end or an else token is reached
     // to gather everything to be executed if the condition is true
     let if_true_tokens: Vec<Element> = tokens.iter()
                                              .take_while(|&x| {
-                                                 match x {
-                                                     &Tag(ref eb, _) => *eb != else_block,
+                                                 match *x {
+                                                     Tag(ref eb, _) => *eb != else_block,
                                                      _ => true,
                                                  }
                                              })
-                                             .map(|x| x.clone())
+                                             .cloned()
                                              .collect();
 
     // gather everything after the else block
     // to be executed if the condition is false
     let if_false_tokens: Vec<Element> = tokens.iter()
                                               .skip_while(|&x| {
-                                                  match x {
-                                                      &Tag(ref eb, _) => *eb != else_block,
+                                                  match *x {
+                                                      Tag(ref eb, _) => *eb != else_block,
                                                       _ => true,
                                                   }
                                               })
                                               .skip(1)
-                                              .map(|x| x.clone())
+                                              .cloned()
                                               .collect();
 
     // if false is None if there is no block to execute
-    let if_false = if if_false_tokens.len() > 0 {
+    let if_false = if !if_false_tokens.is_empty() {
         Some(Template::new(try!(parse(&if_false_tokens, options))))
     } else {
         None
@@ -152,25 +152,21 @@ mod test {
         let options: LiquidOptions = Default::default();
         // 5 < 6 then "if true" else "if false"
         let if_tag = if_block("if",
-                              &vec![NumberLiteral(5f32),
-                                    Comparison(LessThan),
-                                    NumberLiteral(6f32)],
-                              vec![Raw("if true".to_string())],
+                              &[NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)],
+                              vec![Raw("if true".to_owned())],
                               &options);
         assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if true".to_string()));
+                   Some("if true".to_owned()));
 
         // 7 < 6 then "if true" else "if false"
         let else_tag = if_block("if",
-                                &vec![NumberLiteral(7f32),
-                                      Comparison(LessThan),
-                                      NumberLiteral(6f32)],
-                                vec![Raw("if true".to_string()),
-                                     Tag(vec![Identifier("else".to_string())], "".to_string()),
-                                     Raw("if false".to_string())],
+                                &[NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)],
+                                vec![Raw("if true".to_owned()),
+                                     Tag(vec![Identifier("else".to_owned())], "".to_owned()),
+                                     Raw("if false".to_owned())],
                                 &options);
         assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if false".to_string()));
+                   Some("if false".to_owned()));
     }
 
     #[test]
@@ -178,20 +174,20 @@ mod test {
         let options: LiquidOptions = Default::default();
         // "one" == "one" then "if true" else "if false"
         let if_tag = if_block("if",
-                              &vec![StringLiteral("one".to_string()),
-                                    Comparison(Equals),
-                                    StringLiteral("one".to_string())],
-                              vec![Raw("if true".to_string())],
+                              &[StringLiteral("one".to_owned()),
+                                Comparison(Equals),
+                                StringLiteral("one".to_owned())],
+                              vec![Raw("if true".to_owned())],
                               &options);
         assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if true".to_string()));
+                   Some("if true".to_owned()));
 
         // "one" == "two"
         let else_tag = if_block("if",
-                                &vec![StringLiteral("one".to_string()),
-                                      Comparison(Equals),
-                                      StringLiteral("two".to_string())],
-                                vec![Raw("if true".to_string())],
+                                &[StringLiteral("one".to_owned()),
+                                  Comparison(Equals),
+                                  StringLiteral("two".to_owned())],
+                                vec![Raw("if true".to_owned())],
                                 &options);
         assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(),
                    None);

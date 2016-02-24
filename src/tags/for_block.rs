@@ -38,7 +38,6 @@ impl Renderable for For {
     }
 }
 
-
 pub fn for_block(_tag_name: &str,
                  arguments: &[Token],
                  tokens: Vec<Element>,
@@ -75,9 +74,9 @@ pub fn for_block(_tag_name: &str,
 fn test_for() {
     let options: LiquidOptions = Default::default();
     let for_tag = for_block("for",
-                            &vec![Identifier("name".to_string()),
-                                  Identifier("in".to_string()),
-                                  Identifier("array".to_string())],
+                            &[Identifier("name".to_owned()),
+                              Identifier("in".to_owned()),
+                              Identifier("array".to_owned())],
                             tokenize("test {{name}} ").unwrap(),
                             &options);
 
@@ -86,7 +85,7 @@ fn test_for() {
                  Value::Array(vec![Value::Num(22f32),
                                    Value::Num(23f32),
                                    Value::Num(24f32),
-                                   Value::Str("wat".to_string())]));
+                                   Value::Str("wat".to_owned())]));
     assert_eq!(for_tag.unwrap().render(&mut data).unwrap(),
-               Some("test 22 test 23 test 24 test wat ".to_string()));
+               Some("test 22 test 23 test 24 test wat ".to_owned()));
 }

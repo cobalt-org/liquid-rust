@@ -58,8 +58,7 @@ impl fmt::Display for Token {
             Comparison(LessThan) => "<".to_owned(),
             Comparison(GreaterThan) => ">".to_owned(),
             Comparison(Contains) => "contains".to_owned(),
-            Identifier(ref x) => x.clone(),
-            StringLiteral(ref x) => x.clone(),
+            Identifier(ref x) | StringLiteral(ref x) => x.clone(),
             NumberLiteral(ref x) => x.to_string(),
         };
         write!(f, "{}", out)
@@ -101,12 +100,12 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
     for block in split_blocks(text) {
         if let Some(caps) = tag.captures(block) {
             blocks.push(Tag(try!(granularize(caps.at(1).unwrap_or(""))),
-                            block.to_string()));
+                            block.to_owned()));
         } else if let Some(caps) = expression.captures(block) {
             blocks.push(Expression(try!(granularize(caps.at(1).unwrap_or(""))),
-                                   block.to_string()));
+                                   block.to_owned()));
         } else {
-            blocks.push(Raw(block.to_string()));
+            blocks.push(Raw(block.to_owned()));
         }
     }
 
@@ -171,12 +170,13 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
             "contains" => Comparison(Contains),
 
             x if dotdot.is_match(x) => DotDot,
-            x if single_string_literal.is_match(x) => StringLiteral(x[1..x.len() - 1].to_string()),
-            x if double_string_literal.is_match(x) => StringLiteral(x[1..x.len() - 1].to_string()),
+            x if single_string_literal.is_match(x) || double_string_literal.is_match(x) => {
+                StringLiteral(x[1..x.len() - 1].to_owned())
+            }
             x if number_literal.is_match(x) => {
                 NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x)))
             }
-            x if identifier.is_match(x) => Identifier(x.to_string()),
+            x if identifier.is_match(x) => Identifier(x.to_owned()),
             x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
         });
     }
@@ -203,60 +203,60 @@ fn test_split_atom() {
 #[test]
 fn test_tokenize() {
     assert_eq!(tokenize("{{hello 'world'}}").unwrap(),
-               vec![Expression(vec![Identifier("hello".to_string()),
-                                    StringLiteral("world".to_string())],
-                               "{{hello 'world'}}".to_string())]);
+               vec![Expression(vec![Identifier("hello".to_owned()),
+                                    StringLiteral("world".to_owned())],
+                               "{{hello 'world'}}".to_owned())]);
     assert_eq!(tokenize("{{hello.world}}").unwrap(),
-               vec![Expression(vec![Identifier("hello.world".to_string())],
-                               "{{hello.world}}".to_string())]);
+               vec![Expression(vec![Identifier("hello.world".to_owned())],
+                               "{{hello.world}}".to_owned())]);
     assert_eq!(tokenize("{{ hello 'world' }}").unwrap(),
-               vec![Expression(vec![Identifier("hello".to_string()),
-                                    StringLiteral("world".to_string())],
-                               "{{ hello 'world' }}".to_string())]);
+               vec![Expression(vec![Identifier("hello".to_owned()),
+                                    StringLiteral("world".to_owned())],
+                               "{{ hello 'world' }}".to_owned())]);
     assert_eq!(tokenize("{{   hello   'world'    }}").unwrap(),
-               vec![Expression(vec![Identifier("hello".to_string()),
-                                    StringLiteral("world".to_string())],
-                               "{{   hello   'world'    }}".to_string())]);
+               vec![Expression(vec![Identifier("hello".to_owned()),
+                                    StringLiteral("world".to_owned())],
+                               "{{   hello   'world'    }}".to_owned())]);
     assert_eq!(tokenize("wat\n{{hello 'world'}} test").unwrap(),
-               vec![Raw("wat\n".to_string()),
-                    Expression(vec![Identifier("hello".to_string()),
-                                    StringLiteral("world".to_string())],
-                               "{{hello 'world'}}".to_string()),
-                    Raw(" test".to_string())]);
+               vec![Raw("wat\n".to_owned()),
+                    Expression(vec![Identifier("hello".to_owned()),
+                                    StringLiteral("world".to_owned())],
+                               "{{hello 'world'}}".to_owned()),
+                    Raw(" test".to_owned())]);
 }
 
 #[test]
 fn test_granularize() {
     assert_eq!(granularize("test me").unwrap(),
-               vec![Identifier("test".to_string()), Identifier("me".to_string())]);
+               vec![Identifier("test".to_owned()), Identifier("me".to_owned())]);
     assert_eq!(granularize("test == me").unwrap(),
-               vec![Identifier("test".to_string()),
+               vec![Identifier("test".to_owned()),
                     Comparison(Equals),
-                    Identifier("me".to_string())]);
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("'test' == \"me\"").unwrap(),
-               vec![StringLiteral("test".to_string()),
+               vec![StringLiteral("test".to_owned()),
                     Comparison(Equals),
-                    StringLiteral("me".to_string())]);
+                    StringLiteral("me".to_owned())]);
     assert_eq!(granularize("test | me:arg").unwrap(),
-               vec![Identifier("test".to_string()),
+               vec![Identifier("test".to_owned()),
                     Pipe,
-                    Identifier("me".to_string()),
+                    Identifier("me".to_owned()),
                     Colon,
-                    Identifier("arg".to_string())]);
+                    Identifier("arg".to_owned())]);
     assert_eq!(granularize("test | me:arg1,arg2").unwrap(),
-               vec![Identifier("test".to_string()),
+               vec![Identifier("test".to_owned()),
                     Pipe,
-                    Identifier("me".to_string()),
+                    Identifier("me".to_owned()),
                     Colon,
-                    Identifier("arg1".to_string()),
+                    Identifier("arg1".to_owned()),
                     Comma,
-                    Identifier("arg2".to_string())]);
+                    Identifier("arg2".to_owned())]);
     assert_eq!(granularize("test | me : arg1, arg2").unwrap(),
-               vec![Identifier("test".to_string()),
+               vec![Identifier("test".to_owned()),
                     Pipe,
-                    Identifier("me".to_string()),
+                    Identifier("me".to_owned()),
                     Colon,
-                    Identifier("arg1".to_string()),
+                    Identifier("arg1".to_owned()),
                     Comma,
-                    Identifier("arg2".to_string())]);
+                    Identifier("arg2".to_owned())]);
 }

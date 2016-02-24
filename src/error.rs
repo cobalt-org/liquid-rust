@@ -43,11 +43,11 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Lexer(ref err) => err,
-            Error::Parser(ref err) => err,
-            Error::Render(ref err) => err,
-            Error::Filter(ref err) => err.description(),
+            Error::Lexer(ref err) |
+            Error::Parser(ref err) |
+            Error::Render(ref err) |
             Error::Other(ref err) => err,
+            Error::Filter(ref err) => err.description(),
         }
     }
 

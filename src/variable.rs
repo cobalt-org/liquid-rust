@@ -20,7 +20,7 @@ impl Renderable for Variable {
 
 impl Variable {
     pub fn new(name: &str) -> Variable {
-        Variable { name: name.to_string() }
+        Variable { name: name.to_owned() }
     }
     pub fn name(&self) -> String {
         self.name.clone()

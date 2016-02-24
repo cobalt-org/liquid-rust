@@ -55,14 +55,14 @@ impl PartialOrd<Value> for Value {
 
 impl ToString for Value {
     fn to_string(&self) -> String {
-        match self {
-            &Value::Num(ref x) => x.to_string(),
-            &Value::Str(ref x) => x.to_owned(),
-            &Value::Array(ref x) => {
+        match *self {
+            Value::Num(ref x) => x.to_string(),
+            Value::Str(ref x) => x.to_owned(),
+            Value::Array(ref x) => {
                 let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
                 arr.join(", ")
             },
-            &Value::Object(ref x) => {
+            Value::Object(ref x) => {
                 let arr: Vec<String> = x.iter().map(|(k, v)| k.clone() + ": " + &v.to_string()).collect();
                 arr.join(", ")
             }

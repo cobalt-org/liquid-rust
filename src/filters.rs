@@ -28,60 +28,61 @@ impl fmt::Display for FilterError {
 impl Error for FilterError {
     fn description(&self) -> &str {
         match *self {
-            InvalidType(ref e) => e,
-            InvalidArgumentCount(ref e) => e,
+            InvalidType(ref e) |
+            InvalidArgumentCount(ref e) |
             InvalidArgument(_, ref e) => e,
         }
     }
 }
 
 pub type FilterResult = Result<Value, FilterError>;
+pub type Filter = Fn(&Value, &[Value]) -> FilterResult;
 
-pub fn size(input: &Value, _args: &Vec<Value>) -> FilterResult {
-    match input {
-        &Str(ref x) => Ok(Num(x.len() as f32)),
-        &Array(ref x) => Ok(Num(x.len() as f32)),
-        &Object(ref x) => Ok(Num(x.len() as f32)),
-        _ => Err(InvalidType("String, Array or Object expected".to_string())),
+pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => Ok(Num(x.len() as f32)),
+        Array(ref x) => Ok(Num(x.len() as f32)),
+        Object(ref x) => Ok(Num(x.len() as f32)),
+        _ => Err(InvalidType("String, Array or Object expected".to_owned())),
     }
 }
 
-pub fn upcase(input: &Value, _args: &Vec<Value>) -> FilterResult {
-    match input {
-        &Str(ref s) => Ok(Str(s.to_uppercase())),
-        _ => Err(InvalidType("String expected".to_string())),
+pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.to_uppercase())),
+        _ => Err(InvalidType("String expected".to_owned())),
     }
 }
 
-pub fn minus(input: &Value, args: &Vec<Value>) -> FilterResult {
+pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
-    let num = match input {
-        &Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_string())),
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
     };
     match args.first() {
         Some(&Num(x)) => Ok(Num(num - x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_string())),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
     }
 }
 
-pub fn replace(input: &Value, args: &Vec<Value>) -> FilterResult {
+pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 2 {
         return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
     }
-    match input {
-        &Str(ref x) => {
-            let arg1 = match &args[0] {
-                &Str(ref a) => a,
-                _ => return Err(InvalidArgument(0, "Str expected".to_string())),
+    match *input {
+        Str(ref x) => {
+            let arg1 = match args[0] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
             };
-            let arg2 = match &args[1] {
-                &Str(ref a) => a,
-                _ => return Err(InvalidArgument(1, "Str expected".to_string())),
+            let arg2 = match args[1] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
             };
             Ok(Str(x.replace(arg1, arg2)))
         }
-        _ => Err(InvalidType("String expected".to_string())),
+        _ => Err(InvalidType("String expected".to_owned())),
     }
 }
 
@@ -93,7 +94,7 @@ mod tests {
 
     macro_rules! unit {
         ( $a:ident, $b:expr ) => {{
-            unit!($a, $b, &vec![])
+            unit!($a, $b, &[])
         }};
         ( $a:ident, $b:expr , $c:expr) => {{
             $a(&$b, $c).unwrap()
@@ -102,7 +103,7 @@ mod tests {
 
     macro_rules! tos {
         ( $a:expr ) => {{
-            Str($a.to_string())
+            Str($a.to_owned())
         }};
     }
 
@@ -121,13 +122,13 @@ mod tests {
 
     #[test]
     fn unit_minus() {
-        assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), Num(1f32));
-        assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), Num(20.25));
+        assert_eq!(unit!(minus, Num(2f32), &[Num(1f32)]), Num(1f32));
+        assert_eq!(unit!(minus, Num(21.5), &[Num(1.25)]), Num(20.25));
     }
 
     #[test]
     fn unit_replace() {
-        assert_eq!(unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]),
+        assert_eq!(unit!(replace, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
                    tos!("foofoo"));
     }
 

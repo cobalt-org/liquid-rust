@@ -1,7 +1,29 @@
 #![crate_name = "liquid"]
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
 
+// This library uses Clippy!
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
+// Deny warnings, except in dev mode
 #![deny(warnings)]
+#![cfg_attr(feature="dev", warn(warnings))]
+
+// Ignore clippy, except in dev mode
+#![cfg_attr(feature="clippy", allow(clippy))]
+#![cfg_attr(feature="dev", warn(clippy))]
+
+// Stuff we want clippy to fail on
+#![cfg_attr(feature="clippy", deny(
+        string_to_string,
+        str_to_string,
+        ptr_arg,
+        useless_vec,
+        redundant_closure,
+        clone_on_copy,
+        len_zero,
+        explicit_iter_loop
+        ))]
 
 extern crate regex;
 
@@ -120,5 +142,5 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     options.blocks.insert("for".to_owned(), Box::new(for_block));
     options.blocks.insert("comment".to_owned(), Box::new(comment_block));
 
-    parser::parse(&tokens, &options).map(|renderables| Template::new(renderables))
+    parser::parse(&tokens, &options).map(Template::new)
 }
