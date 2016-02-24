@@ -30,6 +30,6 @@ after_success:
 
 env:
   global:
-  - TRAVIS_CARGO_NIGHTLY_FEATURE="dev clippy"
+  - TRAVIS_CARGO_NIGHTLY_FEATURE="clippy"
   - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 
