@@ -25,6 +25,8 @@
         explicit_iter_loop
         ))]
 
+#[macro_use]
+extern crate lazy_static;
 extern crate regex;
 
 use std::collections::HashMap;

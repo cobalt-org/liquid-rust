@@ -72,11 +72,14 @@ pub enum Element {
     Raw(String),
 }
 
+lazy_static! {
+    static ref MARKUP: Regex = Regex::new("\\{%.*?%\\}|\\{\\{.*?\\}\\}").unwrap();
+}
+
 fn split_blocks(text: &str) -> Vec<&str> {
-    let markup = Regex::new("\\{%.*?%\\}|\\{\\{.*?\\}\\}").unwrap();
     let mut tokens = vec![];
     let mut current = 0;
-    for (begin, end) in markup.find_iter(text) {
+    for (begin, end) in MARKUP.find_iter(text) {
         match &text[current..begin] {
             "" => {}
             t => tokens.push(t),
@@ -91,17 +94,19 @@ fn split_blocks(text: &str) -> Vec<&str> {
     tokens
 }
 
-pub fn tokenize(text: &str) -> Result<Vec<Element>> {
-    let expression = Regex::new("\\{\\{(.*?)\\}\\}").unwrap();
-    let tag = Regex::new("\\{%(.*?)%\\}").unwrap();
+lazy_static! {
+    static ref EXPRESSION: Regex = Regex::new("\\{\\{(.*?)\\}\\}").unwrap();
+    static ref TAG: Regex = Regex::new("\\{%(.*?)%\\}").unwrap();
+}
 
+pub fn tokenize(text: &str) -> Result<Vec<Element>> {
     let mut blocks = vec![];
 
     for block in split_blocks(text) {
-        if let Some(caps) = tag.captures(block) {
+        if let Some(caps) = TAG.captures(block) {
             blocks.push(Tag(try!(granularize(caps.at(1).unwrap_or(""))),
                             block.to_owned()));
-        } else if let Some(caps) = expression.captures(block) {
+        } else if let Some(caps) = EXPRESSION.captures(block) {
             blocks.push(Expression(try!(granularize(caps.at(1).unwrap_or(""))),
                                    block.to_owned()));
         } else {
@@ -112,41 +117,37 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
     Ok(blocks)
 }
 
-fn split_atom(block: &str) -> Vec<String> {
+lazy_static! {
+    static ref SPLIT: Regex = Regex::new(r"\||\.\.|:|,|\[|\]|\(|\)|\?|-|==|!=|<=|>=|<|>|\s").unwrap();
+}
 
-    let mut vec = vec![];
-    let mut buff = String::new();
-    for c in block.chars() {
-        if c == ' ' {
-            if !buff.is_empty() {
-                vec.push(buff.clone());
-                buff.clear();
-            }
-        } else if c == ',' || c == ':' {
-            if !buff.is_empty() {
-                vec.push(buff.clone())
-            };
-            vec.push(c.to_string());
-            buff.clear();
-        } else {
-            buff.push(c);
-        }
+fn split_atom(block: &str) -> Vec<&str> {
+    let mut tokens = vec![];
+    let mut current = 0;
+    for (begin, end) in SPLIT.find_iter(block) {
+        // insert the stuff between identifiers
+        tokens.push(&block[current..begin]);
+        // insert the identifier
+        tokens.push(&block[begin..end]);
+        current = end;
     }
-    vec.push(buff.clone());
-    vec
+    // insert remaining things
+    tokens.push(&block[current..block.len()]);
+    tokens
+}
+
+lazy_static! {
+    static ref IDENTIFIER: Regex = Regex::new(r"[a-zA-Z_][\w-]*\??").unwrap();
+    static ref SINGLE_STRING_LITERAL: Regex = Regex::new(r"'[^']*'").unwrap();
+    static ref DOUBLE_STRING_LITERAL: Regex = Regex::new("\"[^\"]*\"").unwrap();
+    static ref NUMBER_LITERAL: Regex = Regex::new(r"^-?\d+(\.\d+)?$").unwrap();
 }
 
 fn granularize(block: &str) -> Result<Vec<Token>> {
-    let identifier = Regex::new(r"[a-zA-Z_][\w-]*\??").unwrap();
-    let single_string_literal = Regex::new(r"'[^']*'").unwrap();
-    let double_string_literal = Regex::new("\"[^\"]*\"").unwrap();
-    let number_literal = Regex::new(r"^-?\d+(\.\d+)?$").unwrap();
-    let dotdot = Regex::new(r"\.\.").unwrap();
-
     let mut result = vec![];
 
     for el in split_atom(block) {
-        if el == "" {
+        if el == "" || el == " " {
             continue;
         }
         result.push(match &*el {
@@ -168,15 +169,15 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
             "<" => Comparison(LessThan),
             ">" => Comparison(GreaterThan),
             "contains" => Comparison(Contains),
+            ".." => DotDot,
 
-            x if dotdot.is_match(x) => DotDot,
-            x if single_string_literal.is_match(x) || double_string_literal.is_match(x) => {
+            x if SINGLE_STRING_LITERAL.is_match(x) || DOUBLE_STRING_LITERAL.is_match(x) => {
                 StringLiteral(x[1..x.len() - 1].to_owned())
             }
-            x if number_literal.is_match(x) => {
+            x if NUMBER_LITERAL.is_match(x) => {
                 NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x)))
             }
-            x if identifier.is_match(x) => Identifier(x.to_owned()),
+            x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
             x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
         });
     }
@@ -195,9 +196,9 @@ fn test_split_blocks() {
 #[test]
 fn test_split_atom() {
     assert_eq!(split_atom("truc | arg:val"),
-               vec!["truc", "|", "arg", ":", "val"]);
+               vec!["truc", " ", "", "|", "", " ", "arg", ":", "val"]);
     assert_eq!(split_atom("truc | filter:arg1,arg2"),
-               vec!["truc", "|", "filter", ":", "arg1", ",", "arg2"]);
+               vec!["truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2"]);
 }
 
 #[test]
@@ -259,4 +260,13 @@ fn test_granularize() {
                     Identifier("arg1".to_owned()),
                     Comma,
                     Identifier("arg2".to_owned())]);
+    assert_eq!(granularize("for i in (1..5)").unwrap(),
+               vec![Identifier("for".to_owned()),
+                    Identifier("i".to_owned()),
+                    Identifier("in".to_owned()),
+                    OpenRound,
+                    NumberLiteral(1f32),
+                    DotDot,
+                    NumberLiteral(5f32),
+                    CloseRound]);
 }

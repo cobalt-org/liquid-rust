@@ -14,6 +14,7 @@ build = "build.rs"
 
 [dependencies]
 regex = "0.1.30"
+lazy_static = "0.1.15"
 clippy = {version = "*", optional = true}
 
 [build-dependencies]
