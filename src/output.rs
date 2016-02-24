@@ -50,7 +50,7 @@ impl Renderable for Output {
             let fresult = f(&filter_entry.unwrap_or(&Value::Str("".to_string())),
                             &filter.arguments);
             entry = match fresult {
-                Ok(s) => s,
+                Ok(s) => s.to_string(),
                 Err(e) => return Err(Error::Filter(e)),
             };
         }

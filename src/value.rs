@@ -57,8 +57,15 @@ impl ToString for Value {
     fn to_string(&self) -> String {
         match self {
             &Value::Num(ref x) => x.to_string(),
-            &Value::Str(ref x) => x.to_string(),
-            _ => "[Object object]".to_string(), // TODO
+            &Value::Str(ref x) => x.to_owned(),
+            &Value::Array(ref x) => {
+                let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
+                arr.join(", ")
+            },
+            &Value::Object(ref x) => {
+                let arr: Vec<String> = x.iter().map(|(k, v)| k.clone() + ": " + &v.to_string()).collect();
+                arr.join(", ")
+            }
         }
     }
 }
@@ -67,4 +74,32 @@ impl Renderable for Value {
     fn render(&self, _context: &mut Context) -> Result<Option<String>> {
         Ok(Some(self.to_string()))
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_num_to_string() {
+        let val = Value::Num(42f32);
+        assert_eq!(&val.to_string(), "42");
+
+        let val = Value::Num(42.34);
+        assert_eq!(&val.to_string(), "42.34");
+    }
+
+    #[test]
+    fn test_str_to_string() {
+        let val = Value::Str("foobar".to_owned());
+        assert_eq!(&val.to_string(), "foobar");
+    }
+
+    #[test]
+    fn test_array_to_string() {
+        let val = Value::Array(vec![Value::Num(3f32), Value::Str("test".to_owned()), Value::Num(5.3)]);
+        assert_eq!(&val.to_string(), "3, test, 5.3");
+    }
+
+    // TODO make a test for object, remember values are in arbitrary orders in HashMaps
 }

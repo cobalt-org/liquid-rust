@@ -44,7 +44,7 @@ Extending Liquid
 
 Creating your own filters is very easy. Filters are simply functions or
 closures that take an input `Value` and a `Vec<Value>` of optional arguments
-and return a `String` to be rendered.
+and return a `Value` to be rendered or consumed by chained filters.
 
 ```rust
 use liquid::{Renderable, Context, Value, FilterError};
@@ -56,7 +56,7 @@ let mut context = Context::new();
 // create our custom shout filter
 context.filters.insert("shout".to_owned(), Box::new(|input, _args| {
     if let &Value::Str(ref s) = input {
-      Ok(s.to_uppercase())
+      Ok(Value::Str(s.to_uppercase()))
     } else {
       Err(FilterError::InvalidType("Expected a string".to_owned()))
     }

@@ -35,20 +35,20 @@ impl Error for FilterError {
     }
 }
 
-pub type FilterResult = Result<String, FilterError>;
+pub type FilterResult = Result<Value, FilterError>;
 
 pub fn size(input: &Value, _args: &Vec<Value>) -> FilterResult {
     match input {
-        &Str(ref s) => Ok(s.len().to_string()),
-        &Array(ref x) => Ok(x.len().to_string()),
-        &Object(ref x) => Ok(x.len().to_string()),
+        &Str(ref x) => Ok(Num(x.len() as f32)),
+        &Array(ref x) => Ok(Num(x.len() as f32)),
+        &Object(ref x) => Ok(Num(x.len() as f32)),
         _ => Err(InvalidType("String, Array or Object expected".to_string())),
     }
 }
 
 pub fn upcase(input: &Value, _args: &Vec<Value>) -> FilterResult {
     match input {
-        &Str(ref s) => Ok(s.to_uppercase()),
+        &Str(ref s) => Ok(Str(s.to_uppercase())),
         _ => Err(InvalidType("String expected".to_string())),
     }
 }
@@ -60,7 +60,7 @@ pub fn minus(input: &Value, args: &Vec<Value>) -> FilterResult {
         _ => return Err(InvalidType("Num expected".to_string())),
     };
     match args.first() {
-        Some(&Num(x)) => Ok((num - x).to_string()),
+        Some(&Num(x)) => Ok(Num(num - x)),
         _ => Err(InvalidArgument(0, "Num expected".to_string())),
     }
 }
@@ -79,7 +79,7 @@ pub fn replace(input: &Value, args: &Vec<Value>) -> FilterResult {
                 &Str(ref a) => a,
                 _ => return Err(InvalidArgument(1, "Str expected".to_string())),
             };
-            Ok(x.replace(arg1, arg2))
+            Ok(Str(x.replace(arg1, arg2)))
         }
         _ => Err(InvalidType("String expected".to_string())),
     }
@@ -108,26 +108,27 @@ mod tests {
 
     #[test]
     fn unit_size() {
-        assert_eq!(unit!(size, tos!("abc")), "3");
-        assert_eq!(unit!(size, tos!("this has 22 characters")), "22");
+        assert_eq!(unit!(size, tos!("abc")), Num(3f32));
+        assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
     }
 
     #[test]
     fn unit_upcase() {
-        assert_eq!(unit!(upcase, tos!("abc")), "ABC");
-        assert_eq!(unit!(upcase, tos!("Hello World 21")), "HELLO WORLD 21");
+        assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
+        assert_eq!(unit!(upcase, tos!("Hello World 21")),
+                   tos!("HELLO WORLD 21"));
     }
 
     #[test]
     fn unit_minus() {
-        assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), "1");
-        assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), "20.25");
+        assert_eq!(unit!(minus, Num(2f32), &vec![Num(1f32)]), Num(1f32));
+        assert_eq!(unit!(minus, Num(21.5), &vec![Num(1.25)]), Num(20.25));
     }
 
     #[test]
     fn unit_replace() {
         assert_eq!(unit!(replace, tos!("barbar"), &vec![tos!("bar"), tos!("foo")]),
-                   "foofoo");
+                   tos!("foofoo"));
     }
 
 }
