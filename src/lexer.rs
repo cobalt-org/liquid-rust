@@ -118,7 +118,7 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 }
 
 lazy_static! {
-    static ref SPLIT: Regex = Regex::new(r"\||\.\.|:|,|\[|\]|\(|\)|\?|-|==|!=|<=|>=|<|>|\s").unwrap();
+    static ref SPLIT: Regex = Regex::new(r"\s+|[\|:,\[\]\(\)\?-]|\.\.|==|!=|<=|>=|[<>]").unwrap();
 }
 
 fn split_atom(block: &str) -> Vec<&str> {
@@ -147,10 +147,9 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
     let mut result = vec![];
 
     for el in split_atom(block) {
-        if el == "" || el == " " {
-            continue;
-        }
-        result.push(match &*el {
+        result.push(match &*el.trim() {
+            "" => continue,
+
             "|" => Pipe,
             "." => Dot,
             ":" => Colon,
@@ -228,12 +227,54 @@ fn test_tokenize() {
 
 #[test]
 fn test_granularize() {
+    assert_eq!(granularize("test | me").unwrap(),
+               vec![Identifier("test".to_owned()), Pipe, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test .. me").unwrap(),
+               vec![Identifier("test".to_owned()), DotDot, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test : me").unwrap(),
+               vec![Identifier("test".to_owned()), Colon, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test , me").unwrap(),
+               vec![Identifier("test".to_owned()), Comma, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test [ me").unwrap(),
+               vec![Identifier("test".to_owned()), OpenSquare, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test ] me").unwrap(),
+               vec![Identifier("test".to_owned()), CloseSquare, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test ( me").unwrap(),
+               vec![Identifier("test".to_owned()), OpenRound, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test ) me").unwrap(),
+               vec![Identifier("test".to_owned()), CloseRound, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test ? me").unwrap(),
+               vec![Identifier("test".to_owned()), Question, Identifier("me".to_owned())]);
+    assert_eq!(granularize("test - me").unwrap(),
+               vec![Identifier("test".to_owned()), Dash, Identifier("me".to_owned())]);
     assert_eq!(granularize("test me").unwrap(),
                vec![Identifier("test".to_owned()), Identifier("me".to_owned())]);
     assert_eq!(granularize("test == me").unwrap(),
                vec![Identifier("test".to_owned()),
                     Comparison(Equals),
                     Identifier("me".to_owned())]);
+    assert_eq!(granularize("test >= me").unwrap(),
+               vec![Identifier("test".to_owned()),
+                    Comparison(GreaterThanEquals),
+                    Identifier("me".to_owned())]);
+    assert_eq!(granularize("test > me").unwrap(),
+               vec![Identifier("test".to_owned()),
+                    Comparison(GreaterThan),
+                    Identifier("me".to_owned())]);
+    assert_eq!(granularize("test < me").unwrap(),
+               vec![Identifier("test".to_owned()),
+                    Comparison(LessThan),
+                    Identifier("me".to_owned())]);
+    assert_eq!(granularize("test != me").unwrap(),
+               vec![Identifier("test".to_owned()),
+                    Comparison(NotEquals),
+                    Identifier("me".to_owned())]);
+    assert_eq!(granularize("test <= me").unwrap(),
+               vec![Identifier("test".to_owned()),
+                    Comparison(LessThanEquals),
+                    Identifier("me".to_owned())]);
+    assert_eq!(granularize("test.me").unwrap(),
+               vec![Identifier("test.me".to_owned())]);
     assert_eq!(granularize("'test' == \"me\"").unwrap(),
                vec![StringLiteral("test".to_owned()),
                     Comparison(Equals),
@@ -260,6 +301,8 @@ fn test_granularize() {
                     Identifier("arg1".to_owned()),
                     Comma,
                     Identifier("arg2".to_owned())]);
+    assert_eq!(granularize("multiply 5 3").unwrap(),
+               vec![Identifier("multiply".to_owned()), NumberLiteral(5f32), NumberLiteral(3f32)]);
     assert_eq!(granularize("for i in (1..5)").unwrap(),
                vec![Identifier("for".to_owned()),
                     Identifier("i".to_owned()),

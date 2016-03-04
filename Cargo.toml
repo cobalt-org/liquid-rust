@@ -13,7 +13,7 @@ license = "MIT"
 build = "build.rs"
 
 [dependencies]
-regex = "0.1.30"
+regex = "0.1"
 lazy_static = "0.1.15"
 clippy = {version = "*", optional = true}
 
