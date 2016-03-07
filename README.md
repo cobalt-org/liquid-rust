@@ -54,7 +54,7 @@ let template = liquid::parse("{{'hello' | shout}}", Default::default()).unwrap()
 let mut context = Context::new();
 
 // create our custom shout filter
-context.filters.insert("shout".to_owned(), Box::new(|input, _args| {
+context.add_filter("shout", Box::new(|input, _args| {
     if let &Value::Str(ref s) = input {
       Ok(Value::Str(s.to_uppercase()))
     } else {

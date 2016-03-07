@@ -11,7 +11,26 @@ pub enum Value {
     Str(String),
     Object(HashMap<String, Value>),
     Array(Vec<Value>),
+    Bool(bool)
 }
+
+impl Value {
+    pub fn str(val: &str) -> Value {
+        Value::Str(val.to_owned())
+    }
+
+    pub fn is_truthy(&self) -> bool {
+        match *self {
+            Value::Bool(x) => x,
+            _ => true
+        }
+    }
+
+    pub fn is_falsey(&self) -> bool {
+        !self.is_truthy()
+    }
+}
+
 
 // TODO implement for object and array
 // TODO clean this up
@@ -20,6 +39,7 @@ impl PartialOrd<Value> for Value {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
+            (&Value::Bool(x), &Value::Bool(y)) => x.partial_cmp(&y),
             _ => None,
         }
     }
@@ -27,6 +47,7 @@ impl PartialOrd<Value> for Value {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.lt(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.lt(y),
+            (&Value::Bool(x), &Value::Bool(y)) => x.lt(&y),
             _ => false,
         }
     }
@@ -34,6 +55,7 @@ impl PartialOrd<Value> for Value {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.le(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.le(y),
+            (&Value::Bool(x), &Value::Bool(y)) => x.le(&y),
             _ => false,
         }
     }
@@ -41,6 +63,7 @@ impl PartialOrd<Value> for Value {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.gt(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.gt(y),
+            (&Value::Bool(x), &Value::Bool(y)) => x.gt(&y),
             _ => false,
         }
     }
@@ -48,6 +71,7 @@ impl PartialOrd<Value> for Value {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.ge(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.ge(y),
+            (&Value::Bool(x), &Value::Bool(y)) => x.ge(&y),
             _ => false,
         }
     }
@@ -56,6 +80,7 @@ impl PartialOrd<Value> for Value {
 impl ToString for Value {
     fn to_string(&self) -> String {
         match *self {
+            Value::Bool(ref x) => x.to_string(),
             Value::Num(ref x) => x.to_string(),
             Value::Str(ref x) => x.to_owned(),
             Value::Array(ref x) => {
@@ -99,6 +124,27 @@ mod test {
     fn test_array_to_string() {
         let val = Value::Array(vec![Value::Num(3f32), Value::Str("test".to_owned()), Value::Num(5.3)]);
         assert_eq!(&val.to_string(), "3, test, 5.3");
+    }
+
+    #[test]
+    fn booleans_have_ruby_truthiness() {
+        assert_eq!(true, Value::Bool(true).is_truthy());
+        assert_eq!(true, Value::Bool(false).is_falsey());
+
+        assert_eq!(false, Value::Bool(true).is_falsey());
+        assert_eq!(false, Value::Bool(false).is_truthy());
+    }
+
+    #[test]
+    fn strings_have_ruby_truthiness() {
+        assert_eq!(true, Value::str("All strings are truthy").is_truthy());
+        assert_eq!(true, Value::str("").is_truthy());
+    }
+
+    #[test]
+    fn numbers_have_ruby_truthiness() {
+        assert_eq!(true, Value::Num(42f32).is_truthy());
+        assert_eq!(true, Value::Num(0f32).is_truthy());
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps

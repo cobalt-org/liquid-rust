@@ -80,8 +80,7 @@ impl Default for ErrorMode {
 ///
 /// ## Minimal Example
 /// ```
-/// # use liquid::{Renderable, LiquidOptions, Context, Error, Tag};
-/// # use liquid::lexer::Token;
+/// # use liquid::{Renderable, LiquidOptions, Context, Error};
 /// struct HelloWorld;
 ///
 /// impl Renderable for HelloWorld {
@@ -91,7 +90,7 @@ impl Default for ErrorMode {
 /// }
 ///
 /// let mut options : LiquidOptions = Default::default();
-/// options.tags.insert("hello_world".to_owned(), Box::new(|tag_name, arguments, options| {
+/// options.tags.insert("hello_world".to_owned(), Box::new(|_tag_name, _arguments, _options| {
 ///      Box::new(HelloWorld)
 /// }));
 ///
@@ -130,7 +129,7 @@ pub struct LiquidOptions {
 /// ```
 /// use liquid::{Renderable, LiquidOptions, Context};
 ///
-/// let template = liquid::parse("Liquid!", Default::default()).unwrap();
+/// let template = liquid::parse("Liquid!", LiquidOptions::default()).unwrap();
 /// let mut data = Context::new();
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Liquid!".to_owned()));

@@ -13,6 +13,12 @@ pub enum FilterError {
     InvalidArgument(u16, String), // (position, "expected / given ")
 }
 
+impl FilterError {
+    pub fn invalid_type<T>(s: &str) -> Result<T, FilterError> {
+        Err(FilterError::InvalidType(s.to_owned()))
+    }
+}
+
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
