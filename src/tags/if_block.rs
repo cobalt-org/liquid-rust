@@ -1,10 +1,9 @@
 use Renderable;
-use value::Value;
 use context::Context;
 use template::Template;
 use LiquidOptions;
-use lexer::Token::{self, Identifier, StringLiteral, NumberLiteral, Comparison};
-use lexer::ComparisonOperator::{self, Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
+use token::Token::{self, Identifier, StringLiteral, NumberLiteral, Comparison};
+use token::ComparisonOperator::{self, Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
                                 GreaterThanEquals, Contains};
 use parser::parse;
 use lexer::Element::{self, Tag};
@@ -18,31 +17,16 @@ struct If {
     if_false: Option<Template>,
 }
 
-fn token_to_val(token: &Token, context: &Context) -> Option<Value> {
-    match *token {
-        StringLiteral(ref x) => Some(Value::Str(x.to_owned())),
-        NumberLiteral(x) => Some(Value::Num(x)),
-        Identifier(ref x) => {
-            match context.get_val(x) {
-                Some(y) => Some(y.clone()),
-                None => None,
-            }
-        }
-        _ => None,
-    }
-}
-
 impl If {
-    fn compare(&self, context: &Context) -> bool {
-        let a = token_to_val(&self.lh, context);
-        if let None = a {
-            return false;
+    fn compare(&self, context: &Context) -> Result<bool> {
+        let a = try!(context.evaluate(&self.lh));
+        let b = try!(context.evaluate(&self.rh));
+
+        if a == None || b == None {
+            return Ok(false);
         }
-        let b = token_to_val(&self.rh, context);
-        if let None = b {
-            return false;
-        }
-        match self.comparison {
+
+        let result = match self.comparison {
             Equals => a == b,
             NotEquals => a != b,
             LessThan => a < b,
@@ -50,13 +34,15 @@ impl If {
             LessThanEquals => a <= b,
             GreaterThanEquals => a >= b,
             Contains => false, // TODO!!!
-        }
+        };
+
+        Ok(result)
     }
 }
 
 impl Renderable for If {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        if self.compare(context) {
+        if try!(self.compare(context)) {
             self.if_true.render(context)
         } else {
             match self.if_false {
@@ -81,17 +67,23 @@ pub fn if_block(_tag_name: &str,
         x => return Err(Error::Parser(format!("Expected a value, found {:?}", x))),
     };
 
-    let comp = match args.next() {
-        Some(&Comparison(ref x)) => x.clone(),
-        x => return Err(Error::Parser(format!("Expected a comparison operator, found {:?}", x))),
+    let (comp, rh) = match args.next() {
+        Some(&Comparison(ref x)) => {
+            let rhs = match args.next() {
+                Some(&StringLiteral(ref y)) => StringLiteral(y.clone()),
+                Some(&NumberLiteral(y)) => NumberLiteral(y),
+                Some(&Identifier(ref y)) => Identifier(y.clone()),
+                y => return Error::parser("value", y),
+            };
+            (x.clone(), rhs)
+        },
+        None => {
+            // no trailing operator or RHS value implies "== true"
+            (ComparisonOperator::Equals, Token::BooleanLiteral(true))
+        },
+        x @ Some(_) => return Error::parser("comparison operator", x)
     };
 
-    let rh = match args.next() {
-        Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
-        Some(&NumberLiteral(x)) => NumberLiteral(x),
-        Some(&Identifier(ref x)) => Identifier(x.clone()),
-        x => return Err(Error::Parser(format!("Expected a value, found {:?}", x))),
-    };
 
     let else_block = vec![Identifier("else".to_owned())];
 
@@ -144,8 +136,8 @@ mod test {
     use std::default::Default;
     use tags::if_block;
     use lexer::Element::{Raw, Tag};
-    use lexer::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
-    use lexer::ComparisonOperator::{LessThan, Equals};
+    use token::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
+    use token::ComparisonOperator::{LessThan, Equals};
 
     #[test]
     fn test_number_comparison() {
@@ -191,5 +183,35 @@ mod test {
                                 &options);
         assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(),
                    None);
+    }
+
+    #[test]
+    fn test_implicit_comparison() {
+        use context::Context;
+        use parse;
+        use LiquidOptions;
+        use Renderable;
+        use value::Value;
+
+        let text = concat!(
+            "{% if truthy %}",
+            "yep",
+            "{% else %}",
+            "nope",
+            "{% endif %}");
+
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+
+        // first pass, "truthy" == false
+        context.set_val("truthy", Value::Bool(false));
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some("nope".to_string()));
+
+        // second pass, "truthy" == true
+        context.set_val("truthy", Value::Bool(true));
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some("yep".to_string()));
+
     }
 }

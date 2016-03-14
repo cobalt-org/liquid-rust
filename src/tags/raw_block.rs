@@ -1,7 +1,7 @@
 use Renderable;
 use context::Context;
 use LiquidOptions;
-use lexer::Token;
+use token::Token;
 use lexer::Element::{self, Expression, Tag, Raw};
 use error::Result;
 

@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-use value::Value;
+use error::{Result, Error};
 use filters::Filter;
+use std::collections::HashMap;
+use token::Token::{self, Identifier, StringLiteral, NumberLiteral, BooleanLiteral};
+use value::Value;
 
 type ValueMap = HashMap<String, Value>;
 
@@ -155,6 +157,23 @@ impl Context {
         self.globals.insert(name.to_owned(), val)
     }
 
+    /// Translates a Token to a Value, looking it up in the context if
+    /// necessary
+    pub fn evaluate(&self, t: &Token) -> Result<Option<Value>> {
+        match t {
+            &NumberLiteral(f)     => Ok(Some(Value::Num(f))),
+            &StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
+            &BooleanLiteral(b)    => Ok(Some(Value::Bool(b))),
+            &Identifier(ref id)   => {
+                Ok(self.get_val(id).map(|v| v.clone()))
+            },
+            _ => {
+                let msg = format!("Cannot evaluate {}", t);
+                Err(Error::Other(msg))
+            }
+        }
+    }
+
     /// Sets a value to the rendering context.
     /// Note that it needs to be wrapped in a liquid::Value.
     ///
@@ -223,6 +242,55 @@ mod test {
         // assert that the value has reverted to the old one
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
         assert_eq!(ctx.get_val("global").unwrap(), &Value::str("some value"));
+    }
+
+    #[test]
+    fn evaluate_handles_string_literals() {
+        use token::Token::StringLiteral;
+
+        let ctx = Context::new();
+        let t = StringLiteral("hello".to_owned());
+        assert_eq!( ctx.evaluate(&t).unwrap(), Some(Value::str("hello")) );
+    }
+
+    #[test]
+    fn evaluate_handles_number_literals() {
+        use token::Token::NumberLiteral;
+
+        let ctx = Context::new();
+        assert_eq!( ctx.evaluate(&NumberLiteral(42f32)).unwrap(),
+                    Some(Value::Num(42f32)) );
+    }
+
+    #[test]
+    fn evaluate_handles_boolean_literals() {
+        use token::Token::BooleanLiteral;
+
+        let ctx = Context::new();
+        assert_eq!(ctx.evaluate(&BooleanLiteral(true)).unwrap(),
+                   Some(Value::Bool(true)) );
+
+        assert_eq!(ctx.evaluate(&BooleanLiteral(false)).unwrap(),
+                   Some(Value::Bool(false)) );
+    }
+
+    #[test]
+    fn evaluate_handles_identifiers() {
+        use token::Token::Identifier;
+
+        let mut ctx = Context::new();
+        ctx.set_val("var0", Value::Num(42f32));
+        assert_eq!(ctx.evaluate(&Identifier("var0".to_owned())).unwrap(),
+                   Some(Value::Num(42f32)));
+        assert_eq!(ctx.evaluate(&Identifier("nope".to_owned())).unwrap(),
+                   None);
+    }
+
+    #[test]
+    fn evaluate_returns_none_on_invalid_token() {
+        use token::Token::DotDot;
+        let ctx = Context::new();
+        assert!(ctx.evaluate(&DotDot).is_err());
     }
 }
 

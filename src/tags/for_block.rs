@@ -2,8 +2,8 @@ use Renderable;
 use context::Context;
 use LiquidOptions;
 use lexer::Element;
-use lexer::Token::{self, Identifier, OpenRound, CloseRound, NumberLiteral, DotDot, Colon};
-use parser::parse;
+use token::Token::{self, Identifier, OpenRound, CloseRound, NumberLiteral, DotDot, Colon};
+use parser::{parse, expect};
 use template::Template;
 use value::Value;
 use error::{Error, Result};
@@ -34,23 +34,13 @@ fn get_array(context: &Context, array_id: &str) -> Result<Vec<Value>> {
     }
 }
 
-fn get_number(context: &Context, id: &str) -> Result<f32> {
-    match context.get_val(id) {
-        Some(&Value::Num(ref x)) => Ok(*x),
-        Some(ref x) => Err(Error::Render(format!("{:?} is not a number.", x))),
-        None => Err(Error::Render(format!("No such variable {}.", id)))
-    }
-}
-
 fn token_as_int(token: &Token, context: &Context) -> Result<isize> {
-    let value = match token {
-        &Identifier(ref id) => try!(get_number(context, id)),
-        &NumberLiteral(ref n) => *n,
-        _ => {
-            let msg = format!("Expecting identifier or number, found {:?}", token);
-            return Err(Error::Render(msg));
-        }
+    let value = match try!(context.evaluate(token)) {
+        Some(Value::Num(ref n)) => *n,
+        Some(_) => return Error::renderer(&format!("{} is not a number.", token)),
+        None => return Error::renderer(&format!("No such value: {}", token))
     };
+
     Ok(value as isize)
 }
 
@@ -114,20 +104,13 @@ impl Renderable for For {
     }
 }
 
-fn parser_err<T>(expected: &str, actual: Option<&Token>) -> Result<T> {
-  Err(Error::Parser(format!("Expected {}, found {:?}", expected, actual)))
-}
 
-/// Extracts an attribute with an integer value from the token stream 
+/// Extracts an attribute with an integer value from the token stream
 fn int_attr<'a>(args: &mut Iter<'a, Token>) -> Result<Option<usize>> {
-    match args.next() {
-        Some(&Colon) => (),
-        x => return parser_err(":", x)
-    };
-
+    try!(expect(args, Colon));
     match args.next() {
         Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => return parser_err("number", x)
+        x => return Error::parser("number", x)
     }
 }
 
@@ -135,7 +118,7 @@ fn range_end_point<'a>(args: &mut Iter<'a, Token>) -> Result<Token> {
     let t = match args.next() {
         Some(id @ &NumberLiteral(_)) => id.clone(),
         Some(id @ &Identifier(_)) => id.clone(),
-        x => return parser_err("number | Identifier", x)
+        x => return Error::parser("number | Identifier", x)
     };
     Ok(t)
 }
@@ -148,13 +131,10 @@ pub fn for_block(_tag_name: &str,
     let mut args = arguments.iter();
     let var_name = match args.next() {
         Some(&Identifier(ref x)) => x.clone(),
-        x => return parser_err("Identifier", x)
+        x => return Error::parser("Identifier", x)
     };
 
-    match args.next() {
-        Some(&Identifier(ref x)) if x == "in" => (),
-        x => return parser_err("\'in\'", x),
-    };
+    try!(expect(&mut args, Identifier("in".to_owned())));
 
     let range = match args.next() {
         Some(&Identifier(ref x)) => Range::Array(x.clone()),
@@ -162,21 +142,15 @@ pub fn for_block(_tag_name: &str,
             // this might be a range, let's try and see
             let start = try!(range_end_point(&mut args));
 
-            match args.next() {
-                Some(&DotDot) => (),
-                x => return parser_err("..", x)
-            };
+            try!(expect(&mut args, DotDot));
 
             let stop = try!(range_end_point(&mut args));
 
-            match args.next() {
-                Some(&CloseRound) => (),
-                x => return parser_err(")", x)
-            };
+            try!(expect(&mut args, CloseRound));
 
             Range::Counted (start, stop)
         },
-        x => return parser_err("Identifier or (", x),
+        x => return Error::parser("Identifier or (", x),
     };
 
     // now we get to check for parameters...
@@ -191,11 +165,11 @@ pub fn for_block(_tag_name: &str,
                     "limit" => limit = try!(int_attr(&mut args)),
                     "offset" => offset = try!(int_attr(&mut args)).unwrap_or(0),
                     "reversed" => reversed = true,
-                    _ => return parser_err("limit | offset | reversed", Some(token))
+                    _ => return Error::parser("limit | offset | reversed", Some(token))
                 }
             },
             _ => {
-                return parser_err("Identifier", Some(token))
+                return Error::parser("Identifier", Some(token))
             }
         }
     }
@@ -243,7 +217,7 @@ mod test{
     use parse;
     use LiquidOptions;
     use Renderable;
-    use lexer::Token::{Identifier, OpenRound, CloseRound, NumberLiteral, DotDot};
+    use token::Token::{Identifier, OpenRound, CloseRound, NumberLiteral, DotDot};
     use lexer::tokenize;
     use value::Value;
     use std::default::Default;

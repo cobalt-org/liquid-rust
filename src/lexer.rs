@@ -1,69 +1,9 @@
-use self::Token::*;
+use token::Token;
+use token::Token::*;
+use token::ComparisonOperator::*;
 use self::Element::*;
-use self::ComparisonOperator::*;
 use regex::Regex;
 use error::{Error, Result};
-use std::fmt;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ComparisonOperator {
-    Equals,
-    NotEquals,
-    LessThan,
-    GreaterThan,
-    LessThanEquals,
-    GreaterThanEquals,
-    Contains,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    Pipe,
-    Dot,
-    Colon,
-    Comma,
-    OpenSquare,
-    CloseSquare,
-    OpenRound,
-    CloseRound,
-    Question,
-    Dash,
-
-    Identifier(String),
-    StringLiteral(String),
-    NumberLiteral(f32),
-    DotDot,
-    Comparison(ComparisonOperator),
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let out = match *self {
-            Pipe => "|".to_owned(),
-            Dot => ".".to_owned(),
-            Colon => ":".to_owned(),
-            Comma => ",".to_owned(),
-            OpenSquare => "[".to_owned(),
-            CloseSquare => "]".to_owned(),
-            OpenRound => "(".to_owned(),
-            CloseRound => ")".to_owned(),
-            Question => "?".to_owned(),
-            Dash => "-".to_owned(),
-            DotDot => "..".to_owned(),
-
-            Comparison(Equals) => "==".to_owned(),
-            Comparison(NotEquals) => "!=".to_owned(),
-            Comparison(LessThanEquals) => "<=".to_owned(),
-            Comparison(GreaterThanEquals) => ">=".to_owned(),
-            Comparison(LessThan) => "<".to_owned(),
-            Comparison(GreaterThan) => ">".to_owned(),
-            Comparison(Contains) => "contains".to_owned(),
-            Identifier(ref x) | StringLiteral(ref x) => x.clone(),
-            NumberLiteral(ref x) => x.to_string(),
-        };
-        write!(f, "{}", out)
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Element {
@@ -118,7 +58,8 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 }
 
 lazy_static! {
-    static ref SPLIT: Regex = Regex::new(r"\s+|[\|:,\[\]\(\)\?-]|\.\.|==|!=|<=|>=|[<>]").unwrap();
+    static ref SPLIT: Regex = Regex::new(
+        r"\s+|[\|:,\[\]\(\)\?-]|\.\.|={1,2}|!=|<=|>=|[<>]").unwrap();
 }
 
 fn split_atom(block: &str) -> Vec<&str> {
@@ -141,6 +82,7 @@ lazy_static! {
     static ref SINGLE_STRING_LITERAL: Regex = Regex::new(r"'[^']*'").unwrap();
     static ref DOUBLE_STRING_LITERAL: Regex = Regex::new("\"[^\"]*\"").unwrap();
     static ref NUMBER_LITERAL: Regex = Regex::new(r"^-?\d+(\.\d+)?$").unwrap();
+    static ref BOOLEAN_LITERAL: Regex = Regex::new(r"^true|false$").unwrap();
 }
 
 fn granularize(block: &str) -> Result<Vec<Token>> {
@@ -160,6 +102,7 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
             ")" => CloseRound,
             "?" => Question,
             "-" => Dash,
+            "=" => Assignment,
 
             "==" => Comparison(Equals),
             "!=" => Comparison(NotEquals),
@@ -175,6 +118,9 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
             }
             x if NUMBER_LITERAL.is_match(x) => {
                 NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x)))
+            }
+            x if BOOLEAN_LITERAL.is_match(x) => {
+                BooleanLiteral(x.parse::<bool>().expect(&format!("Could not parse {:?} as bool", x)))
             }
             x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
             x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
@@ -249,6 +195,10 @@ fn test_granularize() {
                vec![Identifier("test".to_owned()), Dash, Identifier("me".to_owned())]);
     assert_eq!(granularize("test me").unwrap(),
                vec![Identifier("test".to_owned()), Identifier("me".to_owned())]);
+    assert_eq!(granularize("test = me").unwrap(),
+           vec![Identifier("test".to_owned()),
+                Assignment,
+                Identifier("me".to_owned())]);
     assert_eq!(granularize("test == me").unwrap(),
                vec![Identifier("test".to_owned()),
                     Comparison(Equals),
