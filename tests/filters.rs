@@ -20,6 +20,20 @@ pub fn upcase() {
     assert_eq!(output.unwrap(), Some("HELLO".to_string()));
 }
 
+
+#[test]
+pub fn capitalize() {
+    let text = "{{ text | capitalize}}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("hello world".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("Hello World".to_string()));
+}
+
 #[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";

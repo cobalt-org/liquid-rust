@@ -1,6 +1,6 @@
 use Renderable;
 use context::Context;
-use filters::{size, upcase, minus, plus, replace, times, divided_by, ceil, floor, round};
+use filters::{size, upcase, capitalize, minus, plus, replace};
 use error::Result;
 
 pub struct Template {
@@ -11,6 +11,7 @@ impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         context.add_filter("size", Box::new(size));
         context.add_filter("upcase", Box::new(upcase));
+        context.filters.insert("capitalize".to_owned(), Box::new(capitalize));
         context.add_filter("minus", Box::new(minus));
         context.add_filter("plus", Box::new(plus));
         context.add_filter("times", Box::new(times));

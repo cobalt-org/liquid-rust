@@ -60,6 +60,23 @@ pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+
+pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
+            let next_char = match word.chars().last() {
+                Some(last) => match last.is_whitespace() {
+                    true => chr.to_uppercase().next().unwrap(),
+                    false => chr,
+                },
+                _ => chr.to_uppercase().next().unwrap(),
+            }.to_string();
+            word + &next_char
+        }))),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let num = match *input {
@@ -180,6 +197,22 @@ mod tests {
         assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
         assert_eq!(unit!(upcase, tos!("Hello World 21")),
                    tos!("HELLO WORLD 21"));
+    }
+
+    #[test]
+    fn unit_capitalize() {
+        assert_eq!(unit!(capitalize, tos!("abc")), tos!("Abc"));
+        assert_eq!(unit!(capitalize, tos!("hello world 21")),
+                   tos!("Hello World 21"));
+
+        // sure that Umlauts work
+        assert_eq!(unit!(capitalize, tos!("über ètat, y̆es?")),
+                    tos!("Über Ètat, Y\u{306}es?"));
+
+        // Weird UTF-8 White space is kept – this is a no-break whitespace!
+        assert_eq!(unit!(capitalize, tos!("hello world​")),
+                   tos!("Hello World​"));
+
     }
 
     #[test]
