@@ -33,6 +33,20 @@ pub fn minus() {
     assert_eq!(output.unwrap(), Some("2".to_string()));
 }
 
+
+#[test]
+pub fn plus() {
+    let text = "{{ num | plus : 2 }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("num", Value::Num(4f32));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("6".to_string()));
+}
+
 #[test]
 pub fn minus_error() {
     let text = "{{ num | minus }}";
