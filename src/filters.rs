@@ -66,6 +66,18 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
+
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num + x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 2 {
         return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
@@ -124,6 +136,13 @@ mod tests {
     fn unit_minus() {
         assert_eq!(unit!(minus, Num(2f32), &[Num(1f32)]), Num(1f32));
         assert_eq!(unit!(minus, Num(21.5), &[Num(1.25)]), Num(20.25));
+    }
+
+
+    #[test]
+    fn unit_plus() {
+        assert_eq!(unit!(plus, Num(2f32), &[Num(1f32)]), Num(3f32));
+        assert_eq!(unit!(plus, Num(21.5), &[Num(2.25)]), Num(23.75));
     }
 
     #[test]
