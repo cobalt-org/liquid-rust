@@ -117,6 +117,34 @@ pub fn first() {
 
 
 #[test]
+pub fn last() {
+    let text = "{{ list | last }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    // array of numbers
+    let mut data = Context::new();
+    data.set_val("list", Value::Array(vec![Value::Num(12f32), Value::Num(100f32)]));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("100".to_string()));
+
+    // array of strings
+    let mut data = Context::new();
+    data.set_val("list", Value::Array(vec![Value::Str("first".to_owned()), Value::Str("second".to_owned())]));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("second".to_string()));
+
+    let mut data = Context::new();
+    data.set_val("list", Value::Str("last".to_owned()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("t".to_string()));
+}
+
+
+#[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
     let options : LiquidOptions = Default::default();

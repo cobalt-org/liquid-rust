@@ -184,6 +184,18 @@ pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+
+pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match x.chars().last() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned()))
+            },
+        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -308,4 +320,10 @@ mod tests {
         assert_eq!(unit!(first, Array(vec![])), tos!(""));
     }
 
+    #[test]
+    fn unit_last() {
+        assert_eq!(unit!(last, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(4f32));
+        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])), tos!("last"));
+        assert_eq!(unit!(last, Array(vec![])), tos!(""));
+    }
 }
