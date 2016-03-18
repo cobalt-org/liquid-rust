@@ -89,6 +89,34 @@ pub fn minus_error() {
 }
 
 #[test]
+pub fn first() {
+    let text = "{{ nums | first }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    // array of numbers
+    let mut data = Context::new();
+    data.set_val("nums", Value::Array(vec![Value::Num(12f32), Value::Num(1f32)]));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("12".to_string()));
+
+    // array of strings
+    let mut data = Context::new();
+    data.set_val("nums", Value::Array(vec![Value::Str("first".to_owned())]));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("first".to_string()));
+
+    let mut data = Context::new();
+    data.set_val("nums", Value::Str("first".to_owned()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("f".to_string()));
+}
+
+
+#[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
     let options : LiquidOptions = Default::default();

@@ -173,6 +173,17 @@ pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match x.chars().next() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned()))
+            },
+        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -288,6 +299,13 @@ mod tests {
     fn unit_replace() {
         assert_eq!(unit!(replace, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
                    tos!("foofoo"));
+    }
+
+    #[test]
+    fn unit_first() {
+        assert_eq!(unit!(first, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(0f32));
+        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])), tos!("test"));
+        assert_eq!(unit!(first, Array(vec![])), tos!(""));
     }
 
 }
