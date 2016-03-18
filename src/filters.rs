@@ -61,6 +61,14 @@ pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
 }
 
 
+pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.to_lowercase())),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
 pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref s) => Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
@@ -197,6 +205,13 @@ mod tests {
         assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
         assert_eq!(unit!(upcase, tos!("Hello World 21")),
                    tos!("HELLO WORLD 21"));
+    }
+
+    #[test]
+    fn unit_downcase() {
+        assert_eq!(unit!(downcase, tos!("Abc")), tos!("abc"));
+        assert_eq!(unit!(downcase, tos!("Hello World 21")),
+                   tos!("hello world 21"));
     }
 
     #[test]
