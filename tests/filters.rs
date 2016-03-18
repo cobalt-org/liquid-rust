@@ -170,3 +170,17 @@ pub fn prepend() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("fifobar2bar".to_string()));
 }
+
+
+#[test]
+pub fn append() {
+    let text = "{{ text | append: 'lifo' }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("roobarb".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("roobarblifo".to_string()));
+}

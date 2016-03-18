@@ -183,6 +183,17 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+
+pub fn append(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match args.first() {
+                        Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
+                        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+                    },
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => match x.chars().next() {
@@ -323,11 +334,16 @@ mod tests {
                    tos!("foofoo"));
     }
 
-
     #[test]
     fn unit_prepend() {
         assert_eq!(unit!(prepend, tos!("barbar"), &[tos!("foo")]),
                    tos!("foobarbar"));
+    }
+
+    #[test]
+    fn unit_append() {
+        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]),
+                   tos!("samson"));
     }
 
     #[test]
