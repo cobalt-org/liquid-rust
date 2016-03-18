@@ -48,6 +48,33 @@ pub fn capitalize() {
     assert_eq!(output.unwrap(), Some("Hello World".to_string()));
 }
 
+
+#[test]
+pub fn pluralize() {
+    let text = "{{ count | pluralize: 'one', 'many'}}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("count", Value::Num(1f32));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("one".to_string()));
+
+
+    let mut data = Context::new();
+    data.set_val("count", Value::Num(0f32));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("many".to_string()));
+
+    let mut data = Context::new();
+    data.set_val("count", Value::Num(10f32));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("many".to_string()));
+}
+
 #[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";

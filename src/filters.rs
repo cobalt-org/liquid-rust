@@ -85,6 +85,19 @@ pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+
+pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
+
+    if args.len() != 2 {
+        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
+    }
+    match *input {
+        Num(1f32) => Ok(args[0].clone()),
+        Num(_) => Ok(args[1].clone()),
+        _ => Err(InvalidType("Number expected".to_owned())),
+    }
+}
+
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let num = match *input {
@@ -273,6 +286,15 @@ mod tests {
         assert_eq!(unit!(capitalize, tos!("hello world​")),
                    tos!("Hello World​"));
 
+    }
+
+    #[test]
+    fn unit_pluralize() {
+        assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
+                   tos!("one"));
+
+       assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
+                  tos!("many"));
     }
 
     #[test]
