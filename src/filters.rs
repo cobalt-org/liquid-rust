@@ -198,6 +198,7 @@ mod tests {
     fn unit_size() {
         assert_eq!(unit!(size, tos!("abc")), Num(3f32));
         assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
+        assert_eq!(unit!(size, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(5f32));
     }
 
     #[test]
