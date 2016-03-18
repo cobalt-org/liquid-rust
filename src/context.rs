@@ -54,8 +54,8 @@ impl Context {
     }
 
     /// Creates a new variable scope chained to a parent scope.
-    pub fn push_scope(&mut self) {
-        self.stack.push(HashMap::new())
+    fn push_scope(&mut self) {
+        self.stack.push(HashMap::new());
     }
 
     /// Removes the topmost stack frame from the local variable stack.
@@ -66,10 +66,10 @@ impl Context {
     /// empty stack. Given that a context is created with a top-level stack
     /// frame already in place, empyting the stack should never happen in a
     /// well-formed program.
-    pub fn pop_scope(&mut self) {
+    fn pop_scope(&mut self) {
         if let None = self.stack.pop() {
             panic!("Pop leaves empty stack")
-        }
+        };
     }
 
     /// Sets up a new stack frame, executes the supplied function and then
@@ -81,7 +81,7 @@ impl Context {
     /// # use liquid::{Value, Context};
     /// let mut ctx = Context::new();
     /// ctx.set_val("test", Value::Num(42f32));
-    /// ctx.with_new_scope(|mut stack_frame| {
+    /// ctx.run_in_scope(|mut stack_frame| {
     ///   // stack_frame inherits values from its parent context
     ///   assert_eq!(stack_frame.get_val("test"), Some(&Value::Num(42f32)));
     ///
@@ -92,7 +92,7 @@ impl Context {
     /// // the original value is unchanged once the scope exits
     /// assert_eq!(ctx.get_val("test"), Some(&Value::Num(42f32)));
     /// ```
-    pub fn with_new_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
+    pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
         where FnT : FnOnce(&mut Context) -> RvalT {
         self.push_scope();
         let result = f(self);
@@ -105,10 +105,10 @@ impl Context {
     fn get<'a>(&'a self, name: &str) -> Option<&'a Value> {
         for frame in self.stack.iter().rev() {
             if let rval @ Some(_) = frame.get(name) {
-                return rval
+                return rval;
             }
         }
-        return self.globals.get(name)
+        self.globals.get(name)
     }
 
     /// Gets a value from the rendering context. The name value can be a
@@ -142,6 +142,15 @@ impl Context {
     }
 
     /// Sets a value in the global context.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use liquid::{Value, Context};
+    /// let mut ctx = Context::new();
+    /// ctx.set_val("test", Value::Num(42f32));
+    /// assert_eq!(ctx.get_val("test"), Some(&Value::Num(42f32)));
+    /// ```
     pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
         self.globals.insert(name.to_owned(), val)
     }
@@ -160,8 +169,15 @@ impl Context {
     /// ```
     /// # use liquid::{Value, Context};
     /// let mut ctx = Context::new();
-    /// ctx.set_val("test", Value::Num(42f32));
-    /// assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
+    /// ctx.run_in_scope(|mut local_scope| {
+    ///   local_scope.set_val("global", Value::Num(42f32));
+    ///   local_scope.set_local_val("local", Value::Num(163f32));
+    ///
+    ///   assert_eq!(local_scope.get_val("global"), Some(&Value::Num(42f32)));
+    ///   assert_eq!(local_scope.get_val("local"), Some(&Value::Num(163f32)));
+    /// });
+    /// assert_eq!(ctx.get_val("global"), Some(&Value::Num(42f32)));
+    /// assert_eq!(ctx.get_val("local"), None);
     /// ```
     pub fn set_local_val(&mut self, name: &str, val: Value) -> Option<Value> {
         match self.stack.last_mut() {
@@ -192,7 +208,7 @@ mod test {
         ctx.set_val("test", Value::Num(42f32));
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
 
-        ctx.with_new_scope(|mut new_scope|{
+        ctx.run_in_scope(|mut new_scope|{
             // assert that values are chained to the parent scope
             assert_eq!(new_scope.get_val("test").unwrap(), &Value::Num(42f32));
 

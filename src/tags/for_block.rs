@@ -89,7 +89,7 @@ impl Renderable for For {
 
             range_len => {
                 let mut ret = String::default();
-                context.with_new_scope(|mut scope| {
+                context.run_in_scope(|mut scope| {
                     let mut helper_vars : HashMap<String, Value> = HashMap::new();
                     helper_vars.insert("length".to_owned(), Value::Num(range_len as f32));
 
@@ -305,6 +305,21 @@ mod test{
         assert_eq!(
             output.unwrap(),
             Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
+    }
+
+    #[test]
+    fn degenerate_range_is_safe() {
+        // make sure that a degenerate range (i.e. where max < min)
+        // doesn't result in an infinte loop
+        let text = concat!(
+            "{% for x in (10 .. 0) %}",
+            "{{x}}",
+            "{% endfor %}"
+        );
+        let template = parse(text, Default::default()).unwrap();
+        let mut context = Context::new();
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some("".to_string()));
     }
 
     #[test]
