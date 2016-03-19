@@ -17,7 +17,7 @@ fn run() {
         numbers: Vec<f32>
     }
     impl Renderable for Multiply{
-        fn render(&self, _context: &mut Context) -> Result<Option<String>, Error>{
+        fn render(&self, _context: &mut Context) -> Result<Option<String>, Error> {
             let x = self.numbers.iter().fold(1f32, |a, &b| a * b);
             Ok(Some(x.to_string()))
         }
@@ -49,4 +49,3 @@ fn run() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("wat\nworld\n15{{multiply 5 3}} test".to_string()));
 }
-

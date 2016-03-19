@@ -9,11 +9,11 @@ pub struct Template {
 
 impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        context.filters.insert("size".to_owned(), Box::new(size));
-        context.filters.insert("upcase".to_owned(), Box::new(upcase));
-        context.filters.insert("minus".to_owned(), Box::new(minus));
-        context.filters.insert("plus".to_owned(), Box::new(plus));
-        context.filters.insert("replace".to_owned(), Box::new(replace));
+        context.add_filter("size",    Box::new(size));
+        context.add_filter("upcase",  Box::new(upcase));
+        context.add_filter("minus",   Box::new(minus));
+        context.add_filter("plus",    Box::new(plus));
+        context.add_filter("replace", Box::new(replace));
 
         let mut buf = String::new();
         for el in &self.elements {

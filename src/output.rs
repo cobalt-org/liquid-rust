@@ -41,7 +41,7 @@ impl Renderable for Output {
             VarOrVal::Var(ref x) => context.get_val(&*x.name()),
         };
         for filter in &self.filters {
-            let f = match context.filters.get(&filter.name) {
+            let f = match context.get_filter(&filter.name) {
                 Some(x) => x,
                 None => {
                     return Err(Error::Render(format!("Filter {} not implemented", &filter.name)))
