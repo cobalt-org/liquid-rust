@@ -25,7 +25,7 @@ addons:
 
 after_success:
 - travis-cargo --only stable doc-upload
-- travis-cargo coveralls --no-sudo
+- travis-cargo coveralls --no-sudo --exclude-pattern=skeptic
 
 env:
   global:
