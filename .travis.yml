@@ -25,7 +25,8 @@ addons:
 
 after_success:
 - travis-cargo --only stable doc-upload
-- travis-cargo coveralls --no-sudo --exclude-pattern=skeptic
+- rm tests/skeptic.rs # "skip" skeptic doctests for coverage
+- travis-cargo coveralls --no-sudo
 
 env:
   global:
