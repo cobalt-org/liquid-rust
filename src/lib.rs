@@ -31,7 +31,7 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, comment_block, raw_block, for_block, if_block};
+use tags::{assign_tag, comment_block, raw_block, for_block, if_block, capture_block};
 use std::default::Default;
 use error::Result;
 
@@ -156,6 +156,7 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     options.register_block("if",      Box::new(if_block));
     options.register_block("for",     Box::new(for_block));
     options.register_block("comment", Box::new(comment_block));
+    options.register_block("capture", Box::new(capture_block));
 
     parser::parse(&tokens, &options).map(Template::new)
 }
