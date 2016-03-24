@@ -90,8 +90,8 @@ impl Renderable for Shout {
 let mut options : LiquidOptions = Default::default();
 
 // initialize the tag and pass a closure that will return a new Shout renderable
-options.tags.insert("shout".to_owned(), Box::new(|_tag_name, arguments, _options| {
-    Box::new(Shout{text: arguments[0].to_string()})
+options.register_tag("shout", Box::new(|_tag_name, arguments, _options| {
+    Ok(Box::new(Shout{text: arguments[0].to_string()}))
 }));
 
 // use our new tag

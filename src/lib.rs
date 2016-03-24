@@ -30,9 +30,8 @@ extern crate lazy_static;
 extern crate regex;
 
 use std::collections::HashMap;
-use lexer::Token;
 use lexer::Element;
-use tags::{comment_block, raw_block, for_block, if_block};
+use tags::{assign_tag, comment_block, raw_block, for_block, if_block};
 use std::default::Default;
 use error::Result;
 
@@ -41,10 +40,12 @@ pub use context::Context;
 pub use template::Template;
 pub use error::Error;
 pub use filters::{FilterResult, FilterError};
+pub use token::Token;
 
 pub mod lexer;
 pub mod parser;
 
+mod token;
 mod error;
 mod template;
 mod output;
@@ -81,6 +82,7 @@ impl Default for ErrorMode {
 /// ## Minimal Example
 /// ```
 /// # use liquid::{Renderable, LiquidOptions, Context, Error};
+///
 /// struct HelloWorld;
 ///
 /// impl Renderable for HelloWorld {
@@ -91,7 +93,7 @@ impl Default for ErrorMode {
 ///
 /// let mut options : LiquidOptions = Default::default();
 /// options.tags.insert("hello_world".to_owned(), Box::new(|_tag_name, _arguments, _options| {
-///      Box::new(HelloWorld)
+///      Ok(Box::new(HelloWorld))
 /// }));
 ///
 /// let template = liquid::parse("{{hello_world}}", options).unwrap();
@@ -99,7 +101,7 @@ impl Default for ErrorMode {
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Hello World!".to_owned()));
 /// ```
-pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Box<Renderable>;
+pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`). This is a simple type alias for a function.
 ///
@@ -121,6 +123,15 @@ pub struct LiquidOptions {
     pub error_mode: ErrorMode,
 }
 
+impl LiquidOptions {
+    pub fn register_block(&mut self, name: &str, block: Box<Block>) {
+        self.blocks.insert(name.to_owned(), block);
+    }
+
+    pub fn register_tag(&mut self, name: &str, tag: Box<Tag>) {
+        self.tags.insert(name.to_owned(), tag);
+    }}
+
 /// Parses a liquid template, returning a Template object.
 /// # Examples
 ///
@@ -138,10 +149,13 @@ pub struct LiquidOptions {
 pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     let mut options = options;
     let tokens = try!(lexer::tokenize(&text));
-    options.blocks.insert("raw".to_owned(), Box::new(raw_block));
-    options.blocks.insert("if".to_owned(), Box::new(if_block));
-    options.blocks.insert("for".to_owned(), Box::new(for_block));
-    options.blocks.insert("comment".to_owned(), Box::new(comment_block));
+
+    options.register_tag("assign", Box::new(assign_tag));
+
+    options.register_block("raw",     Box::new(raw_block));
+    options.register_block("if",      Box::new(if_block));
+    options.register_block("for",     Box::new(for_block));
+    options.register_block("comment", Box::new(comment_block));
 
     parser::parse(&tokens, &options).map(Template::new)
 }

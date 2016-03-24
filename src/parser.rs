@@ -5,7 +5,7 @@ use variable::Variable;
 use text::Text;
 use std::slice::Iter;
 use output::{Output, FilterPrototype, VarOrVal};
-use lexer::Token::{self, Identifier, Colon, Comma, Pipe, StringLiteral, NumberLiteral};
+use token::Token::{self, Identifier, Colon, Comma, Pipe, StringLiteral, NumberLiteral};
 use lexer::Element::{self, Expression, Tag, Raw};
 use error::{Error, Result};
 
@@ -28,7 +28,7 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(&x.to_owned()) => {
-            Ok(options.tags.get(x).unwrap()(&x, &tokens[1..], options))
+            options.tags.get(x).unwrap()(&x, &tokens[1..], options)
         }
         _ => parse_output(tokens),
     }
@@ -91,18 +91,17 @@ fn parse_output(tokens: &[Token]) -> Result<Box<Renderable>> {
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
-// elements
-// and is delimited by a closing tag named {{end + the_name_of_the_tag}}
-// tags do not get rendered, but blocks may contain renderable expressions
+// elements and is delimited by a closing tag named {{end +
+// the_name_of_the_tag}}. Tags do not get rendered, but blocks may contain
+// renderable expressions
 fn parse_tag(iter: &mut Iter<Element>,
              tokens: &[Token],
              options: &LiquidOptions)
              -> Result<Box<Renderable>> {
     match tokens[0] {
-
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            Ok(options.tags.get(x).unwrap()(&x, &tokens[1..], options))
+            options.tags.get(x).unwrap()(&x, &tokens[1..], options)
         }
 
         // is a block
@@ -120,5 +119,29 @@ fn parse_tag(iter: &mut Iter<Element>,
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
+    }
+}
+
+/// Confirm that the next token in a token stream is what you want it
+/// to be. The token iterator is moved to the next token in the stream.
+pub fn expect<'a>(tokens: &mut Iter<'a, Token>, expected: Token) -> Result<()> {
+    match tokens.next() {
+        Some(x) if *x == expected => Ok(()),
+        x => Error::parser(&expected.to_string(), x)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn expect_rejects_unexpected_token() {
+        use super::expect;
+        use token::Token::{Pipe, Dot, Colon, Comma};
+        let token_vec = vec!(Pipe, Dot, Colon);
+        let mut tokens = token_vec.iter();
+
+        assert!(expect(&mut tokens, Pipe).is_ok());
+        assert!(expect(&mut tokens, Dot).is_ok());
+        assert!(expect(&mut tokens, Comma).is_err());
     }
 }

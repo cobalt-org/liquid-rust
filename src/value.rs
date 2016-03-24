@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use error::Result;
 
 /// An enum to represent different value types
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Num(f32),
     Str(String),
@@ -18,19 +18,27 @@ impl Value {
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
     }
-
-    pub fn is_truthy(&self) -> bool {
-        match *self {
-            Value::Bool(x) => x,
-            _ => true
-        }
-    }
-
-    pub fn is_falsey(&self) -> bool {
-        !self.is_truthy()
-    }
 }
 
+impl PartialEq<Value> for Value {
+    fn eq(&self, other: &Value) -> bool {
+        match (self, other) {
+            (&Value::Num(x), &Value::Num(y)) => x == y,
+            (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
+            (&Value::Bool(x), &Value::Bool(y)) => x == y,
+            (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
+            (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
+
+            // encode Ruby truthiness; all values except false and nil
+            // are true, and we don't have a notion of nil
+            (_, &Value::Bool(b)) | (&Value::Bool(b), _) => {
+                b == true
+            },
+
+            _ => false
+        }
+    }
+}
 
 // TODO implement for object and array
 // TODO clean this up
@@ -104,6 +112,10 @@ impl Renderable for Value {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::collections::HashMap;
+
+    static TRUE : Value = Value::Bool(true);
+    static FALSE : Value = Value::Bool(false);
 
     #[test]
     fn test_num_to_string() {
@@ -126,26 +138,107 @@ mod test {
         assert_eq!(&val.to_string(), "3, test, 5.3");
     }
 
+    // TODO make a test for object, remember values are in arbitrary orders in HashMaps
+
+    #[test]
+    fn boolean_equality() {
+        assert_eq!(Value::Bool(true), Value::Bool(true));
+        assert_eq!(Value::Bool(false), Value::Bool(false));
+        assert!(Value::Bool(false) != Value::Bool(true));
+        assert!(Value::Bool(true) != Value::Bool(false));
+    }
+
     #[test]
     fn booleans_have_ruby_truthiness() {
-        assert_eq!(true, Value::Bool(true).is_truthy());
-        assert_eq!(true, Value::Bool(false).is_falsey());
+        assert_eq!(TRUE, Value::Bool(true));
+        assert_eq!(FALSE, Value::Bool(false));
+    }
 
-        assert_eq!(false, Value::Bool(true).is_falsey());
-        assert_eq!(false, Value::Bool(false).is_truthy());
+    #[test]
+    fn string_equality() {
+        assert_eq!(Value::str("alpha"), Value::str("alpha"));
+        assert_eq!(Value::str(""), Value::str(""));
+        assert!(Value::str("alpha") != Value::str("beta"));
+        assert!(Value::str("beta") != Value::str("alpha"));
     }
 
     #[test]
     fn strings_have_ruby_truthiness() {
-        assert_eq!(true, Value::str("All strings are truthy").is_truthy());
-        assert_eq!(true, Value::str("").is_truthy());
+        // all strings in ruby are true
+        assert_eq!(TRUE, Value::str("All strings are truthy"));
+        assert_eq!(TRUE, Value::str(""));
+    }
+
+    #[test]
+    fn number_equality() {
+        assert_eq!(Value::Num(42f32), Value::Num(42f32));
+        assert_eq!(Value::Num(0f32), Value::Num(0f32));
+        assert!(Value::Num(1f32) != Value::Num(2f32));
+        assert!(Value::Num(2f32) != Value::Num(1f32));
     }
 
     #[test]
     fn numbers_have_ruby_truthiness() {
-        assert_eq!(true, Value::Num(42f32).is_truthy());
-        assert_eq!(true, Value::Num(0f32).is_truthy());
+        assert_eq!(TRUE, Value::Num(42f32));
+        assert_eq!(TRUE, Value::Num(0f32));
     }
 
-    // TODO make a test for object, remember values are in arbitrary orders in HashMaps
+    #[test]
+    fn object_equality() {
+        let mut values = HashMap::<String, Value>::new();
+        values.insert("alpha".to_owned(), Value::str("1"));
+        values.insert("beta".to_owned(), Value::Num(2f32));
+
+        let a = Value::Object(values.clone());
+
+        values.insert("gamma".to_owned(), Value::Array(vec!()));
+        let b = Value::Object(values);
+
+        assert_eq!(a, a);
+        assert!(a != b);
+        assert!(b != a);
+    }
+
+    #[test]
+    fn objects_have_ruby_truthiness() {
+        assert_eq!(TRUE, Value::Object(HashMap::new()));
+    }
+
+
+    #[test]
+    fn array_equality() {
+        let a = Value::Array(vec!(Value::str("one"), Value::str("two")));
+        let b = Value::Array(vec!(Value::str("alpha"), Value::str("beta")));
+
+        assert_eq!(a, a);
+        assert!(a != b);
+        assert!(b != a);
+    }
+
+    #[test]
+    fn arrays_have_ruby_truthiness() {
+        assert_eq!(TRUE, Value::Array(Vec::new()));
+    }
+
+    #[test]
+    fn mixed_comparisons_are_false() {
+        // assers that all comparisons between different types of values
+        // are false
+        let mut values = HashMap::<String, Value>::new();
+        values.insert("alpha".to_owned(), Value::str("1"));
+
+        let terms = vec!(Value::Num(1f32),
+                         Value::str("1"),
+                         Value::Object(values),
+                         Value::Array(vec!(Value::Num(1f32))));
+
+        for (x, a) in terms.iter().enumerate() {
+            for (y, b) in terms.iter().enumerate() {
+                if x != y {
+                    assert!(a != b);
+                    assert!(b != a);
+                }
+            }
+        }
+    }
 }
