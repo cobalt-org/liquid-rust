@@ -4,12 +4,22 @@ use std::collections::HashMap;
 use token::Token::{self, Identifier, StringLiteral, NumberLiteral, BooleanLiteral};
 use value::Value;
 
+#[derive(Clone)]
+pub enum Interrupt { Continue, Break }
+
 type ValueMap = HashMap<String, Value>;
 
 #[derive(Default)]
 pub struct Context {
     stack: Vec<ValueMap>,
     globals: ValueMap,
+
+    /// The current interrupt state. The interrupt state is used by
+    /// the `break` and `continue` tags to halt template rendering
+    /// at a given point and unwind the `render` call stack until
+    /// it reaches an enclosing `for_loop`. At that point the interrupt
+    /// is cleared, and the `for_loop` carries on processing as directed.
+    interrupt: Option<Interrupt>,
 
     // Public for backwards compatability
     pub filters: HashMap<String, Box<Filter>>
@@ -42,6 +52,7 @@ impl Context {
                                    filters: HashMap<String, Box<Filter>>) -> Context {
         Context {
             stack: vec!(HashMap::new()),
+            interrupt: None,
             globals: values,
             filters: filters
         }
@@ -53,6 +64,22 @@ impl Context {
 
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b Box<Filter>> {
         self.filters.get(name)
+    }
+
+    pub fn interrupted(&self) -> bool {
+        self.interrupt.is_some()
+    }
+
+    /// Sets the interrupt state. Any previous state is obliterated.
+    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
+        self.interrupt = Some(interrupt);
+    }
+
+    /// Fetches and clears the interrupt state.
+    pub fn pop_interrupt(&mut self) -> Option<Interrupt> {
+        let rval = self.interrupt.clone();
+        self.interrupt = None;
+        rval
     }
 
     /// Creates a new variable scope chained to a parent scope.

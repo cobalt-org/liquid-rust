@@ -42,7 +42,8 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, comment_block, raw_block, for_block, if_block, capture_block};
+use tags::{assign_tag, break_tag, continue_tag,
+           comment_block, raw_block, for_block, if_block, capture_block};
 use std::default::Default;
 use error::Result;
 
@@ -162,6 +163,8 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     let tokens = try!(lexer::tokenize(&text));
 
     options.register_tag("assign", Box::new(assign_tag));
+    options.register_tag("break", Box::new(break_tag));
+    options.register_tag("continue", Box::new(continue_tag));
 
     options.register_block("raw",     Box::new(raw_block));
     options.register_block("if",      Box::new(if_block));

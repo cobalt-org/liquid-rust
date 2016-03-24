@@ -98,7 +98,8 @@ fn parse_tag(iter: &mut Iter<Element>,
              tokens: &[Token],
              options: &LiquidOptions)
              -> Result<Box<Renderable>> {
-    match tokens[0] {
+    let tag = &tokens[0];
+    match *tag {
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
             options.tags.get(x).unwrap()(&x, &tokens[1..], options)
@@ -106,14 +107,35 @@ fn parse_tag(iter: &mut Iter<Element>,
 
         // is a block
         Identifier(ref x) if options.blocks.contains_key(x) => {
+            // Collect all the inner elements of this block until we find a
+            // matching "end<blockname>" tag. Note that there may be nested blocks
+            // of the same type (and hence have the same closing delimiter) *inside*
+            // the body of the block, which would premauturely stop the element
+            // collection early if we did a nesting-unaware search for the
+            // closing tag.
+            //
+            // The whole nesting count machinery below is to ensure we only stop
+            // collecting elements when we have an un-nested closing tag.
+
             let end_tag = Identifier("end".to_owned() + &x);
             let mut children = vec![];
-            loop {
-                children.push(match iter.next() {
-                    Some(&Tag(ref tokens, _)) if tokens[0] == end_tag => break,
-                    None => break,
-                    Some(t) => t.clone(),
-                })
+            let mut nesting_depth = 0;
+            for t in iter {
+                if let &Tag(ref tokens, _) = t {
+                    match tokens[0] {
+                        ref n if n == tag => {
+                            nesting_depth += 1;
+                        },
+                        ref n if n == &end_tag && nesting_depth > 0 => {
+                            nesting_depth -= 1;
+                        },
+                        ref n if n == &end_tag && nesting_depth == 0 => {
+                            break
+                        },
+                        _ => {}
+                    }
+                };
+                children.push(t.clone())
             }
             options.blocks.get(x).unwrap()(&x, &tokens[1..], children, options)
         }
