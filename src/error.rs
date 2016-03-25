@@ -20,8 +20,11 @@ pub enum Error {
 
 impl Error {
     pub fn parser<T>(expected: &str, actual: Option<&Token>) -> Result<T> {
-        Err(Error::Parser(
-            format!("Expected {}, found {:?}", expected, actual)))
+        Err(Error::Parser(format!("Expected {}, found {:?}", expected, actual)))
+    }
+
+    pub fn parser_msg<T>(msg: &str) -> Result<T> {
+        Err(Error::Parser(msg.to_owned()))
     }
 
     pub fn renderer<T>(msg: &str) -> Result<T> {

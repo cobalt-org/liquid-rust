@@ -3,6 +3,9 @@ use Renderable;
 use context::Context;
 use token::Token;
 use LiquidOptions;
+use template::Template;
+use parser;
+use lexer;
 use error::{Result, Error};
 
 use std::fs::File;
@@ -10,42 +13,49 @@ use std::io::Read;
 use std::path::Path;
 
 struct Include {
-    partial_path: String,
+    partial: Template,
 }
 
 impl Renderable for Include {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        let path_str = self.partial_path.clone();
-        let path = Path::new(&path_str);
-
-        // check if file exists
-        if !path.exists() {
-            return Error::renderer(&format!("{:?} does not exist", path));
-        }
-
-        let mut file = match File::open(path) {
-            Ok(file) => file,
-            Err(e) => return Error::renderer(&format!("[std::io::Error] {}", e)),
-        };
-
-        let mut content = String::new();
-        match file.read_to_string(&mut content) {
-            Ok(_) => Ok(Some(content)),
-            Err(e) => Error::renderer(&format!("[std::io::Error] {}", e)),
-        }
+    fn render(&self, mut context: &mut Context) -> Result<Option<String>> {
+        self.partial.render(&mut context)
     }
+}
+
+fn parse_partial(path: &str, options: &LiquidOptions) -> Result<Template> {
+    let path = Path::new(&path);
+
+    // check if file exists
+    if !path.exists() {
+        return Error::parser_msg(&format!("{:?} does not exist", path));
+    }
+
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(e) => return Error::parser_msg(&format!("[std::io::Error] {}", e)),
+    };
+
+    let mut content = String::new();
+    if let Err(e) = file.read_to_string(&mut content) {
+        return Error::parser_msg(&format!("[std::io::Error] {}", e));
+    }
+
+    let tokens = try!(lexer::tokenize(&content));
+    parser::parse(&tokens, &options).map(Template::new)
 }
 
 pub fn include_tag(_tag_name: &str,
                    arguments: &[Token],
-                   _options: &LiquidOptions)
+                   options: &LiquidOptions)
                    -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
-    match args.next() {
-        Some(&Token::Identifier(ref path)) => Ok(Box::new(Include { partial_path: path.clone() })),
-        arg => Error::parser("Token::Identifier", arg),
-    }
+    let path = match args.next() {
+        Some(&Token::Identifier(ref path)) => path,
+        arg => return Error::parser("Identifier", arg),
+    };
+
+    Ok(Box::new(Include { partial: try!(parse_partial(&path, &options)) }))
 }
 
 #[cfg(test)]
