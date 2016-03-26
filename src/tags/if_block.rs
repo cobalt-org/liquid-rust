@@ -5,28 +5,33 @@ use LiquidOptions;
 use token::Token::{self, Identifier, StringLiteral, NumberLiteral, Comparison};
 use token::ComparisonOperator::{self, Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
                                 GreaterThanEquals, Contains};
-use parser::parse;
-use lexer::Element::{self, Tag};
+use parser::{parse, split_block};
+use lexer::Element;
 use error::{Error, Result};
 
-struct If {
+struct Condition {
     lh: Token,
     comparison: ComparisonOperator,
-    rh: Token,
+    rh: Token
+}
+
+struct Conditional {
+    condition: Condition,
+    mode: bool,
     if_true: Template,
     if_false: Option<Template>,
 }
 
-impl If {
+impl Conditional {
     fn compare(&self, context: &Context) -> Result<bool> {
-        let a = try!(context.evaluate(&self.lh));
-        let b = try!(context.evaluate(&self.rh));
+        let a = try!(context.evaluate(&self.condition.lh));
+        let b = try!(context.evaluate(&self.condition.rh));
 
         if a == None || b == None {
             return Ok(false);
         }
 
-        let result = match self.comparison {
+        let result = match self.condition.comparison {
             Equals => a == b,
             NotEquals => a != b,
             LessThan => a < b,
@@ -36,11 +41,11 @@ impl If {
             Contains => false, // TODO!!!
         };
 
-        Ok(result)
+        Ok(result == self.mode)
     }
 }
 
-impl Renderable for If {
+impl Renderable for Conditional {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         if try!(self.compare(context)) {
             self.if_true.render(context)
@@ -53,18 +58,15 @@ impl Renderable for If {
     }
 }
 
-pub fn if_block(_tag_name: &str,
-                arguments: &[Token],
-                tokens: Vec<Element>,
-                options: &LiquidOptions)
-                -> Result<Box<Renderable>> {
+/// Common parsing for "if" and "unless" condition
+fn condition(arguments: &[Token]) -> Result<Condition> {
     let mut args = arguments.iter();
 
     let lh = match args.next() {
         Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
         Some(&NumberLiteral(x)) => NumberLiteral(x),
         Some(&Identifier(ref x)) => Identifier(x.clone()),
-        x => return Err(Error::Parser(format!("Expected a value, found {:?}", x))),
+        x => return Error::parser("value", x),
     };
 
     let (comp, rh) = match args.next() {
@@ -84,47 +86,58 @@ pub fn if_block(_tag_name: &str,
         x @ Some(_) => return Error::parser("comparison operator", x)
     };
 
+    Ok(Condition {lh: lh, comparison: comp, rh: rh})
+}
 
-    let else_block = vec![Identifier("else".to_owned())];
+pub fn unless_block(_tag_name: &str,
+                    arguments: &[Token],
+                    tokens: Vec<Element>,
+                    options: &LiquidOptions)
+                            -> Result<Box<Renderable>> {
+    let cond = try!(condition(arguments));
+    Ok(Box::new(Conditional {
+        condition: cond,
+        mode: false,
+        if_true: Template::new(try!(parse(&tokens[..], options))),
+        if_false: None,
+    }))
+}
 
-    // advance until the end or an else token is reached
-    // to gather everything to be executed if the condition is true
-    let if_true_tokens: Vec<Element> = tokens.iter()
-                                             .take_while(|&x| {
-                                                 match *x {
-                                                     Tag(ref eb, _) => *eb != else_block,
-                                                     _ => true,
-                                                 }
-                                             })
-                                             .cloned()
-                                             .collect();
+pub fn if_block(_tag_name: &str,
+                arguments: &[Token],
+                tokens: Vec<Element>,
+                options: &LiquidOptions)
+                            -> Result<Box<Renderable>> {
+    let cond = try!(condition(arguments));
 
-    // gather everything after the else block
-    // to be executed if the condition is false
-    let if_false_tokens: Vec<Element> = tokens.iter()
-                                              .skip_while(|&x| {
-                                                  match *x {
-                                                      Tag(ref eb, _) => *eb != else_block,
-                                                      _ => true,
-                                                  }
-                                              })
-                                              .skip(1)
-                                              .cloned()
-                                              .collect();
+    let (leading_tokens, trailing_tokens) = split_block(&tokens[..],
+                                                        &["else", "elsif"],
+                                                        options);
+    let if_false = match trailing_tokens {
+        None => None,
 
-    // if false is None if there is no block to execute
-    let if_false = if !if_false_tokens.is_empty() {
-        Some(Template::new(try!(parse(&if_false_tokens, options))))
-    } else {
-        None
+        Some(ref split) if split.delimiter == "else" => {
+            let parsed = try!(parse(&split.trailing[1..], options));
+            Some(Template::new(parsed))
+        },
+
+        Some(ref split) if split.delimiter == "elsif" => {
+            let child_tokens : Vec<Element> = split.trailing.iter()
+                                                            .skip(1)
+                                                            .cloned()
+                                                            .collect();
+            let parsed = try!(if_block("if", &split.args[1..], child_tokens, options));
+            Some(Template::new(vec!(parsed)))
+        },
+
+        Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter)
     };
 
-    let if_true = Template::new(try!(parse(&if_true_tokens, options)));
+    let if_true = Template::new(try!(parse(leading_tokens, options)));
 
-    Ok(Box::new(If {
-        lh: lh,
-        comparison: comp,
-        rh: rh,
+    Ok(Box::new(Conditional {
+        condition: cond,
+        mode: true,
         if_true: if_true,
         if_false: if_false,
     }))
@@ -133,60 +146,41 @@ pub fn if_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use LiquidOptions;
+    use Renderable;
+    use context::Context;
     use std::default::Default;
-    use tags::if_block;
-    use lexer::Element::{Raw, Tag};
-    use token::Token::{Identifier, StringLiteral, NumberLiteral, Comparison};
-    use token::ComparisonOperator::{LessThan, Equals};
+    use parse;
 
     #[test]
-    fn test_number_comparison() {
-        let options: LiquidOptions = Default::default();
-        // 5 < 6 then "if true" else "if false"
-        let if_tag = if_block("if",
-                              &[NumberLiteral(5f32), Comparison(LessThan), NumberLiteral(6f32)],
-                              vec![Raw("if true".to_owned())],
-                              &options);
-        assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if true".to_owned()));
+    fn number_comparison() {
+        let a = parse("{% if 6 < 7  %}if true{% endif %}",
+                      LiquidOptions::default()).unwrap()
+                                               .render(&mut Context::new());
+        assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
-        // 7 < 6 then "if true" else "if false"
-        let else_tag = if_block("if",
-                                &[NumberLiteral(7f32), Comparison(LessThan), NumberLiteral(6f32)],
-                                vec![Raw("if true".to_owned()),
-                                     Tag(vec![Identifier("else".to_owned())], "".to_owned()),
-                                     Raw("if false".to_owned())],
-                                &options);
-        assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if false".to_owned()));
+        let b = parse("{% if 7 < 6  %}if true{% else %}if false{% endif %}",
+                      LiquidOptions::default()).unwrap()
+                                               .render(&mut Context::new());
+        assert_eq!(b.unwrap(), Some("if false".to_owned()));
     }
 
     #[test]
-    fn test_string_comparison() {
-        let options: LiquidOptions = Default::default();
+    fn string_comparison() {
         // "one" == "one" then "if true" else "if false"
-        let if_tag = if_block("if",
-                              &[StringLiteral("one".to_owned()),
-                                Comparison(Equals),
-                                StringLiteral("one".to_owned())],
-                              vec![Raw("if true".to_owned())],
-                              &options);
-        assert_eq!(if_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   Some("if true".to_owned()));
+        let a = parse("{% if \"one\" == \"one\" %}if true{% endif %}",
+                      LiquidOptions::default()).unwrap()
+                                               .render(&mut Context::new());
+        assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         // "one" == "two"
-        let else_tag = if_block("if",
-                                &[StringLiteral("one".to_owned()),
-                                  Comparison(Equals),
-                                  StringLiteral("two".to_owned())],
-                                vec![Raw("if true".to_owned())],
-                                &options);
-        assert_eq!(else_tag.unwrap().render(&mut Default::default()).unwrap(),
-                   None);
+        let b = parse("{% if \"one\" == \"two\" %}if true{% endif %}",
+                      LiquidOptions::default()).unwrap()
+                                               .render(&mut Context::new());
+        assert_eq!(b.unwrap(), Some("".to_owned()));
     }
 
     #[test]
-    fn test_implicit_comparison() {
+    fn implicit_comparison() {
         use context::Context;
         use parse;
         use LiquidOptions;
@@ -212,6 +206,80 @@ mod test {
         context.set_val("truthy", Value::Bool(true));
         let output = template.render(&mut context);
         assert_eq!(output.unwrap(), Some("yep".to_string()));
+    }
 
+    #[test]
+    fn unless() {
+        use value::Value;
+        let text = concat!(
+            "{% unless some_value == 1 %}",
+                "unless body",
+            "{% endunless %}");
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+
+        context.set_val("some_value", Value::Num(1f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("".to_string()));
+
+        context.set_val("some_value", Value::Num(42f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("unless body".to_string()));
+    }
+
+    #[test]
+    fn nested_if_else() {
+        use value::Value;
+        let text = concat!(
+            "{% if truthy %}",
+                "yep, ",
+                "{% if also_truthy %}",
+                    "also truthy",
+                "{% else %}",
+                    "not also truthy",
+                "{% endif %}",
+            "{% else %}",
+            "nope",
+            "{% endif %}");
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+        context.set_val("truthy", Value::Bool(true));
+        context.set_val("also_truthy", Value::Bool(false));
+
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some("yep, not also truthy".to_string()));
+    }
+
+    #[test]
+    fn multiple_elif_blocks() {
+        use value::Value;
+        let text = concat!(
+            "{% if a == 1 %}",
+            "first",
+            "{% elsif a == 2 %}",
+            "second",
+            "{% elsif a == 3 %}",
+            "third",
+            "{% else %}",
+            "fourth",
+            "{% endif %}");
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+
+        context.set_val("a", Value::Num(1f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("first".to_string()));
+
+        context.set_val("a", Value::Num(2f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("second".to_string()));
+
+        context.set_val("a", Value::Num(3f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("third".to_string()));
+
+        context.set_val("a", Value::str("else"));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("fourth".to_string()));
     }
 }

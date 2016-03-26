@@ -3,11 +3,14 @@ use LiquidOptions;
 use value::Value;
 use variable::Variable;
 use text::Text;
-use std::slice::Iter;
 use output::{Output, FilterPrototype, VarOrVal};
 use token::Token::{self, Identifier, Colon, Comma, Pipe, StringLiteral, NumberLiteral};
 use lexer::Element::{self, Expression, Tag, Raw};
 use error::{Error, Result};
+
+use std::slice::Iter;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {
     let mut ret = vec![];
@@ -153,6 +156,58 @@ pub fn expect(tokens: &mut Iter<Token>, expected: Token) -> Result<()> {
     }
 }
 
+/// Describes the optional trailing part of a block split.
+pub struct BlockSplit<'a> {
+    pub delimiter: String,
+    pub args: &'a [Token],
+    pub trailing: &'a [Element]
+}
+
+/// A sub-block aware splitter that will only split the token stream
+/// when it finds a delimter at the top level of the token stream,
+/// ignoring any it finds in nested blocks.
+///
+/// Returns a slice contaiing all elements before the delimiter, and
+/// an optional BlockSplit struct describing the delimiter and
+/// trailing elements.
+pub fn split_block<'a>(tokens: &'a[Element],
+                       delimiters: &[&str],
+                       options: &LiquidOptions) ->
+                            (&'a[Element], Option<BlockSplit<'a>>) {
+    // construct a fast-lookup cache of the delimiters, as we're going to be
+    // consulting the delimiter list a *lot*.
+    let delims : HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x|*x));
+    let mut stack : Vec<String> = Vec::new();
+
+    for (i, t) in tokens.iter().enumerate() {
+        if let Tag(ref args, _) = *t {
+            match args[0] {
+                Identifier(ref name) if options.blocks.contains_key(name) => {
+                    stack.push("end".to_owned() + name);
+                },
+
+                Identifier(ref name) if Some(name) == stack.last() => {
+                    stack.pop();
+                },
+
+                Identifier(ref name) if stack.is_empty() &&
+                                        delims.contains(name.as_str()) => {
+                    let leading = &tokens[0..i];
+                    let split = BlockSplit {
+                        delimiter: name.clone(),
+                        args: args,
+                        trailing: &tokens[i..]
+                    };
+                    return (leading, Some(split));
+                },
+                _ => {}
+            }
+        }
+    }
+
+    (&tokens[..], None)
+}
+
 #[cfg(test)]
 mod test {
     #[test]
@@ -165,5 +220,67 @@ mod test {
         assert!(expect(&mut tokens, Pipe).is_ok());
         assert!(expect(&mut tokens, Dot).is_ok());
         assert!(expect(&mut tokens, Comma).is_err());
+    }
+
+    #[test]
+    fn token_split_handles_nonmatching_stream() {
+        use lexer::tokenize;
+        use super::split_block;
+        use LiquidOptions;
+
+        // A stream of tokens with lots of `else`s in it, but only one at the
+        // top level, which is where it should split.
+        let tokens = tokenize(
+            "{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} else tag"
+        ).unwrap();
+
+        // note that we need an options block that has been initilaised with
+        // the supported block list; otherwise the split_tag function won't know
+        // which things start a nested block.
+        let options = LiquidOptions::with_known_blocks();
+        let (_, trailing) = split_block(&tokens[..], &["else"], &options);
+        assert!(trailing.is_none());
+    }
+
+
+    #[test]
+    fn token_split_honours_nesting() {
+        use lexer::tokenize;
+        use token::Token::Identifier;
+        use lexer::Element::{Tag, Raw};
+        use super::split_block;
+        use LiquidOptions;
+
+        // A stream of tokens with lots of `else`s in it, but only one at the
+        // top level, which is where it should split.
+        let tokens = tokenize(concat!(
+            "{% for x in (1..10) %}",
+                "{% if x == 2 %}",
+                    "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
+                "{% else %}",
+                    "c",
+                "{% endif %}",
+            "{% else %}",
+                "something",
+            "{% endfor %}",
+            "{% else %}",
+            "trailing tags"
+            )).unwrap();
+
+        // note that we need an options block that has been initilaised with
+        // the supported block list; otherwise the split_tag function won't know
+        // which things start a nested block.
+        let options = LiquidOptions::with_known_blocks();
+        let (_, trailing) = split_block(&tokens[..], &["else"], &options);
+        match trailing {
+            Some(split) => {
+                assert_eq!(split.delimiter, "else");
+                assert_eq!(split.args, &[Identifier("else".to_owned())]);
+                assert_eq!(split.trailing, &[
+                    Tag(vec![Identifier("else".to_owned())], "{% else %}".to_owned()),
+                    Raw("trailing tags".to_owned())]);
+            },
+            None => panic!("split failed")
+        }
     }
 }

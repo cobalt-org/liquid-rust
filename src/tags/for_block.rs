@@ -3,11 +3,10 @@ use context::{Context, Interrupt};
 use LiquidOptions;
 use lexer::Element;
 use token::Token::{self, Identifier, OpenRound, CloseRound, NumberLiteral, DotDot, Colon};
-use parser::{parse, expect};
+use parser::{parse, expect, split_block};
 use template::Template;
 use value::Value;
 use error::{Error, Result};
-use lexer::Element::Tag;
 
 use std::collections::HashMap;
 use std::slice::Iter;
@@ -182,30 +181,15 @@ pub fn for_block(_tag_name: &str,
         }
     }
 
-    let else_tag = vec![Identifier("else".to_owned())];
-    let is_not_else = |x : &&Element| {
-        match *x {
-            &Tag(ref tokens, _) => *tokens != else_tag,
-            _ => true
-        }
-    };
+    let (leading, trailing) = split_block(&tokens, &["else"], options);
+    let item_template = Template::new(try!(parse(leading, options)));
 
-    // finally, collect the templates for the item, and the optional "else"
-    // block
-    let item_tokens : Vec<Element> = tokens.iter()
-                                           .take_while(&is_not_else)
-                                           .cloned()
-                                           .collect();
-    let item_template = Template::new(try!(parse(&item_tokens, options)));
-
-    let else_tokens : Vec<Element> = tokens.iter()
-                                           .skip_while(&is_not_else)
-                                           .skip(1)
-                                           .cloned()
-                                           .collect();
-    let else_template = match &else_tokens {
-        ts if ts.is_empty() => None,
-        ts => Some(Template::new(try!(parse(ts, options))))
+    let else_template = match trailing {
+        Some(split) => {
+            let parsed = try!(parse(&split.trailing[1..], options));
+            Some(Template::new(parsed))
+        },
+        None => None
     };
 
     Ok(Box::new(For {
@@ -312,6 +296,30 @@ mod test{
             ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n").to_owned()
         ));
     }
+
+    #[test]
+    fn nested_for_loops_with_else() {
+        // test that nested for loops parse their `else` blocks correctly
+        let text = concat!(
+            "{% for x in (0..i) %}",
+                "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
+            "{% else %}",
+                "empty outer",
+            "{% endfor %}");
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+
+        context.set_val("i", Value::Num(0f32));
+        context.set_val("j", Value::Num(0f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("empty outer".to_owned()));
+
+        context.set_val("i", Value::Num(1f32));
+        context.set_val("j", Value::Num(0f32));
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("empty inner".to_owned()));
+    }
+
 
     #[test]
     fn degenerate_range_is_safe() {
