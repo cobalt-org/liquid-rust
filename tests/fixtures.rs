@@ -12,7 +12,7 @@ fn compare(name: &str, context: &mut Context) {
     let mut input = String::new();
     File::open(Path::new(&input_file)).unwrap().read_to_string(&mut input).unwrap();
 
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&input, options).unwrap();
 
     let output = template.render(context).unwrap();
@@ -31,3 +31,8 @@ pub fn example() {
     compare("example", &mut context)
 }
 
+#[test]
+pub fn include() {
+    let mut context = Context::new();
+    compare("include", &mut context);
+}
