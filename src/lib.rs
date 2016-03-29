@@ -15,14 +15,25 @@
 
 // Stuff we want clippy to fail on
 #![cfg_attr(feature="clippy", deny(
-        string_to_string,
-        str_to_string,
-        ptr_arg,
-        useless_vec,
-        redundant_closure,
+        explicit_iter_loop,
         clone_on_copy,
         len_zero,
-        explicit_iter_loop
+        map_clone,
+        map_entry,
+        match_bool,
+        match_same_arms,
+        new_ret_no_self,
+        new_without_default,
+        needless_lifetimes,
+        needless_range_loop,
+        no_effect,
+        ok_expect,
+        out_of_bounds_indexing,
+        ptr_arg,
+        redundant_closure,
+        single_char_pattern,
+        unused_collect,
+        useless_vec,
         ))]
 
 #[macro_use]
