@@ -106,7 +106,7 @@ impl Renderable for For {
 
 
 /// Extracts an attribute with an integer value from the token stream
-fn int_attr<'a>(args: &mut Iter<'a, Token>) -> Result<Option<usize>> {
+fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     try!(expect(args, Colon));
     match args.next() {
         Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
@@ -114,9 +114,9 @@ fn int_attr<'a>(args: &mut Iter<'a, Token>) -> Result<Option<usize>> {
     }
 }
 
-fn range_end_point<'a>(args: &mut Iter<'a, Token>) -> Result<Token> {
+fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     let t = match args.next() {
-        Some(id @ &NumberLiteral(_)) => id.clone(),
+        Some(id @ &NumberLiteral(_)) |
         Some(id @ &Identifier(_)) => id.clone(),
         x => return Error::parser("number | Identifier", x)
     };

@@ -165,7 +165,7 @@ impl Context {
             &StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
             &BooleanLiteral(b)    => Ok(Some(Value::Bool(b))),
             &Identifier(ref id)   => {
-                Ok(self.get_val(id).map(|v| v.clone()))
+                Ok(self.get_val(id).cloned())
             },
             _ => {
                 let msg = format!("Cannot evaluate {}", t);

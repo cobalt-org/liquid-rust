@@ -124,7 +124,7 @@ fn parse_tag(iter: &mut Iter<Element>,
 
 /// Confirm that the next token in a token stream is what you want it
 /// to be. The token iterator is moved to the next token in the stream.
-pub fn expect<'a>(tokens: &mut Iter<'a, Token>, expected: Token) -> Result<()> {
+pub fn expect(tokens: &mut Iter<Token>, expected: Token) -> Result<()> {
     match tokens.next() {
         Some(x) if *x == expected => Ok(()),
         x => Error::parser(&expected.to_string(), x)
