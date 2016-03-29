@@ -84,6 +84,50 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn times(input: &Value, args: &[Value]) -> FilterResult {
+
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num * x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num((num / x).floor())),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+pub fn floor(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.floor())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+pub fn ceil(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.ceil())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.round())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 2 {
         return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
@@ -149,6 +193,37 @@ mod tests {
     fn unit_plus() {
         assert_eq!(unit!(plus, Num(2f32), &[Num(1f32)]), Num(3f32));
         assert_eq!(unit!(plus, Num(21.5), &[Num(2.25)]), Num(23.75));
+    }
+
+    #[test]
+    fn unit_times() {
+        assert_eq!(unit!(times, Num(2f32), &[Num(3f32)]), Num(6f32));
+        assert_eq!(unit!(times, Num(8.5), &[Num(0.5)]), Num(4.25));
+    }
+
+    #[test]
+    fn unit_divided_by() {
+        assert_eq!(unit!(divided_by, Num(4f32), &[Num(2f32)]), Num(2f32));
+        assert_eq!(unit!(divided_by, Num(5f32), &[Num(2f32)]), Num(2f32));
+    }
+
+    #[test]
+    fn unit_floor() {
+        assert_eq!(unit!(floor, Num(1.1f32), &[]), Num(1f32));
+        assert_eq!(unit!(floor, Num(1f32), &[]), Num(1f32));
+    }
+
+    #[test]
+    fn unit_ceil() {
+        assert_eq!(unit!(ceil, Num(1.1f32), &[]), Num(2f32));
+        assert_eq!(unit!(ceil, Num(1f32), &[]), Num(1f32));
+    }
+
+    #[test]
+    fn unit_round() {
+        assert_eq!(unit!(round, Num(1.1f32), &[]), Num(1f32));
+        assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
+        assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
     }
 
     #[test]

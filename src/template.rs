@@ -1,6 +1,6 @@
 use Renderable;
 use context::Context;
-use filters::{size, upcase, minus, plus, replace};
+use filters::{size, upcase, minus, plus, replace, times, divided_by, ceil, floor, round};
 use error::Result;
 
 pub struct Template {
@@ -13,6 +13,11 @@ impl Renderable for Template {
         context.add_filter("upcase", Box::new(upcase));
         context.add_filter("minus", Box::new(minus));
         context.add_filter("plus", Box::new(plus));
+        context.add_filter("times", Box::new(times));
+        context.add_filter("divided_by", Box::new(divided_by));
+        context.add_filter("ceil", Box::new(ceil));
+        context.add_filter("floor", Box::new(floor));
+        context.add_filter("round", Box::new(round));
         context.add_filter("replace", Box::new(replace));
 
         let mut buf = String::new();
