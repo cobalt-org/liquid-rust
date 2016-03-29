@@ -20,6 +20,14 @@ impl Renderable for Template {
             if let Some(ref x) = try!(el.render(context)) {
                 buf = buf + x;
             }
+
+            // Did the last element we processed set an interrupt? If so, we
+            // need to abandon the rest of our child elements and just
+            // return what we've got. This is usually in response to a
+            // `break` or `continue` tag being rendered.
+            if context.interrupted() {
+                break;
+            }
         }
         Ok(Some(buf))
     }

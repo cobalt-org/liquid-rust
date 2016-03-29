@@ -1,5 +1,5 @@
 use Renderable;
-use context::Context;
+use context::{Context, Interrupt};
 use LiquidOptions;
 use lexer::Element;
 use token::Token::{self, Identifier, OpenRound, CloseRound, NumberLiteral, DotDot, Colon};
@@ -95,6 +95,14 @@ impl Renderable for For {
                         scope.set_local_val(&self.var_name, v.clone());
                         let inner = try!(self.item_template.render(&mut scope)).unwrap_or("".to_owned());
                         ret = ret + &inner;
+
+                        // given that we're at the end of the loop body
+                        // already, dealing with a `continue` signal is just
+                        // clearing the interrupt and carrying on as normal. A
+                        // `break` requires some special handling, though.
+                        if let Some(Interrupt::Break) = scope.pop_interrupt() {
+                            break;
+                        }
                     }
 
                     Ok(Some(ret))
@@ -279,6 +287,30 @@ mod test{
         assert_eq!(
             output.unwrap(),
             Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
+    }
+
+    #[test]
+    fn nested_for_loops() {
+        // test that nest nested for loops work, and that the
+        // variable scopes between the inner and outer variable
+        // scopes do not overlap.
+        let text = concat!(
+            "{% for outer in (1..5) %}",
+                ">>{{for_loop.index0}}:{{outer}}>>",
+                "{% for inner in (6..10) %}",
+                    "{{outer}}:{{for_loop.index0}}:{{inner}},",
+                "{% endfor %}",
+                ">>{{outer}}>>\n",
+            "{% endfor %}");
+        let template = parse(text, LiquidOptions::default()).unwrap();
+        let mut context = Context::new();
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some(concat!(
+            ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
+            ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
+            ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
+            ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n").to_owned()
+        ));
     }
 
     #[test]
