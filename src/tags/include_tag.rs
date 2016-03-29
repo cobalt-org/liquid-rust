@@ -62,12 +62,12 @@ mod test {
 
     #[test]
     fn include_tag() {
-        let text = "{% include tests/fixtures/additional/default.liquid %}";
+        let text = "{% include tests/fixtures/input/example.txt %}";
         let template = parse(text, Default::default()).unwrap();
 
         let mut context = Context::new();
         assert_eq!(template.render(&mut context).unwrap(),
-                   Some("hello, world!\n".to_owned()));
+                   Some("5 wot wot\n".to_owned()));
     }
 
     #[test]
