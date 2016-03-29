@@ -25,10 +25,6 @@ impl Error {
         Err(Error::Parser(format!("Expected {}, found {:?}", expected, actual)))
     }
 
-    pub fn parser_msg<T>(msg: &str) -> Result<T> {
-        Err(Error::Parser(msg.to_owned()))
-    }
-
     pub fn renderer<T>(msg: &str) -> Result<T> {
         Err(Error::Render(msg.to_owned()))
     }

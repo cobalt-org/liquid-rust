@@ -27,7 +27,7 @@ fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Tem
 
     // check if file exists
     if !path.exists() {
-        return Error::parser_msg(&format!("{:?} does not exist", path));
+        return Err(Error::from(&*format!("{:?} does not exist", path)));
     }
 
     let mut file = try!(File::open(path));
@@ -76,7 +76,7 @@ mod test {
         let output = parse(text, Default::default());
 
         assert!(output.is_err());
-        if let Err(Error::Parser(val)) = output {
+        if let Err(Error::Other(val)) = output {
             assert_eq!(format!("{}", val),
                        "\"file_does_not_exist.liquid\" does not exist".to_owned());
         } else {
