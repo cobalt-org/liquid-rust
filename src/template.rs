@@ -9,10 +9,10 @@ pub struct Template {
 
 impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        context.add_filter("size",    Box::new(size));
-        context.add_filter("upcase",  Box::new(upcase));
-        context.add_filter("minus",   Box::new(minus));
-        context.add_filter("plus",    Box::new(plus));
+        context.add_filter("size", Box::new(size));
+        context.add_filter("upcase", Box::new(upcase));
+        context.add_filter("minus", Box::new(minus));
+        context.add_filter("plus", Box::new(plus));
         context.add_filter("replace", Box::new(replace));
 
         let mut buf = String::new();

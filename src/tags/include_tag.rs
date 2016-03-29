@@ -22,23 +22,18 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial(path: &str, options: &LiquidOptions) -> Result<Template> {
-    let path = Path::new(&path);
+fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
+    let path = path.as_ref();
 
     // check if file exists
     if !path.exists() {
         return Error::parser_msg(&format!("{:?} does not exist", path));
     }
 
-    let mut file = match File::open(path) {
-        Ok(file) => file,
-        Err(e) => return Error::parser_msg(&format!("[std::io::Error] {}", e)),
-    };
+    let mut file = try!(File::open(path));
 
     let mut content = String::new();
-    if let Err(e) = file.read_to_string(&mut content) {
-        return Error::parser_msg(&format!("[std::io::Error] {}", e));
-    }
+    try!(file.read_to_string(&mut content));
 
     let tokens = try!(lexer::tokenize(&content));
     parser::parse(&tokens, &options).map(Template::new)
@@ -63,6 +58,7 @@ mod test {
     use context::Context;
     use Renderable;
     use parse;
+    use error::Error;
 
     #[test]
     fn include_tag() {
@@ -72,5 +68,19 @@ mod test {
         let mut context = Context::new();
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("hello, world!\n".to_owned()));
+    }
+
+    #[test]
+    fn no_file() {
+        let text = "{% include file_does_not_exsist.liquid %}";
+        let output = parse(text, Default::default());
+
+        assert!(output.is_err());
+        if let Err(Error::Parser(val)) = output {
+            assert_eq!(format!("{}", val),
+                       "\"file_does_not_exsist.liquid\" does not exist".to_owned());
+        } else {
+            assert!(false);
+        }
     }
 }
