@@ -1,4 +1,4 @@
-liquid-rust [![](https://travis-ci.org/cobalt-org/liquid-rust.svg?branch=master)](https://travis-ci.org/cobalt-org/liquid-rust) [![](https://img.shields.io/crates/v/liquid.svg)](https://crates.io/crates/liquid)[![](https://coveralls.io/repos/github/cobalt-org/liquid-rust/badge.svg?branch=master)](https://coveralls.io/github/cobalt-org/liquid-rust?branch=master)
+liquid-rust [![](https://travis-ci.org/cobalt-org/liquid-rust.svg?branch=master)](https://travis-ci.org/cobalt-org/liquid-rust) [![](https://img.shields.io/crates/v/liquid.svg)](https://crates.io/crates/liquid) [![](https://coveralls.io/repos/github/cobalt-org/liquid-rust/badge.svg?branch=master)](https://coveralls.io/github/cobalt-org/liquid-rust?branch=master)
 ===========
 
 [Liquid templating](http://liquidmarkup.org/) for Rust
