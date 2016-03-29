@@ -72,13 +72,13 @@ mod test {
 
     #[test]
     fn no_file() {
-        let text = "{% include file_does_not_exsist.liquid %}";
+        let text = "{% include file_does_not_exist.liquid %}";
         let output = parse(text, Default::default());
 
         assert!(output.is_err());
         if let Err(Error::Parser(val)) = output {
             assert_eq!(format!("{}", val),
-                       "\"file_does_not_exsist.liquid\" does not exist".to_owned());
+                       "\"file_does_not_exist.liquid\" does not exist".to_owned());
         } else {
             assert!(false);
         }
