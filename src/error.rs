@@ -3,6 +3,7 @@ use token::Token;
 use std::result;
 use std::error;
 use std::fmt;
+use std::io;
 
 use filters::FilterError;
 
@@ -16,12 +17,12 @@ pub enum Error {
     Render(String),
     Filter(FilterError),
     Other(String),
+    Io(io::Error),
 }
 
 impl Error {
     pub fn parser<T>(expected: &str, actual: Option<&Token>) -> Result<T> {
-        Err(Error::Parser(
-            format!("Expected {}, found {:?}", expected, actual)))
+        Err(Error::Parser(format!("Expected {}, found {:?}", expected, actual)))
     }
 
     pub fn renderer<T>(msg: &str) -> Result<T> {
@@ -41,6 +42,12 @@ impl<'a> From<&'a str> for Error {
     }
 }
 
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -49,6 +56,7 @@ impl fmt::Display for Error {
             Error::Render(ref err) => write!(f, "Rendering error: {}", err),
             Error::Filter(ref err) => write!(f, "Filtering error: {}", err),
             Error::Other(ref err) => write!(f, "Error: {}", err),
+            Error::Io(ref err) => write!(f, "Io::Error: {}", err),
         }
     }
 }
@@ -61,6 +69,7 @@ impl error::Error for Error {
             Error::Render(ref err) |
             Error::Other(ref err) => err,
             Error::Filter(ref err) => err.description(),
+            Error::Io(ref err) => err.description(),
         }
     }
 

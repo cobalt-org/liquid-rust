@@ -42,8 +42,8 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, break_tag, continue_tag,
-           comment_block, raw_block, for_block, if_block, capture_block};
+use tags::{assign_tag, include_tag, break_tag, continue_tag, comment_block, raw_block, for_block,
+           if_block, capture_block};
 use std::default::Default;
 use error::Result;
 
@@ -142,7 +142,8 @@ impl LiquidOptions {
 
     pub fn register_tag(&mut self, name: &str, tag: Box<Tag>) {
         self.tags.insert(name.to_owned(), tag);
-    }}
+    }
+}
 
 /// Parses a liquid template, returning a Template object.
 /// # Examples
@@ -165,10 +166,11 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     options.register_tag("assign", Box::new(assign_tag));
     options.register_tag("break", Box::new(break_tag));
     options.register_tag("continue", Box::new(continue_tag));
+    options.register_tag("include", Box::new(include_tag));
 
-    options.register_block("raw",     Box::new(raw_block));
-    options.register_block("if",      Box::new(if_block));
-    options.register_block("for",     Box::new(for_block));
+    options.register_block("raw", Box::new(raw_block));
+    options.register_block("if", Box::new(if_block));
+    options.register_block("for", Box::new(for_block));
     options.register_block("comment", Box::new(comment_block));
     options.register_block("capture", Box::new(capture_block));
 
