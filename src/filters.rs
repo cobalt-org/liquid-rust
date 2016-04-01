@@ -199,24 +199,32 @@ mod tests {
     fn unit_times() {
         assert_eq!(unit!(times, Num(2f32), &[Num(3f32)]), Num(6f32));
         assert_eq!(unit!(times, Num(8.5), &[Num(0.5)]), Num(4.25));
+        assert!(times(&Bool(true), &[Num(8.5)]).is_err());
+        assert!(times(&Num(2.5), &[Bool(true)]).is_err());
+        assert!(times(&Num(2.5), &[]).is_err());
     }
 
     #[test]
     fn unit_divided_by() {
         assert_eq!(unit!(divided_by, Num(4f32), &[Num(2f32)]), Num(2f32));
         assert_eq!(unit!(divided_by, Num(5f32), &[Num(2f32)]), Num(2f32));
+        assert!(divided_by(&Bool(true), &[Num(8.5)]).is_err());
+        assert!(divided_by(&Num(2.5), &[Bool(true)]).is_err());
+        assert!(divided_by(&Num(2.5), &[]).is_err());
     }
 
     #[test]
     fn unit_floor() {
         assert_eq!(unit!(floor, Num(1.1f32), &[]), Num(1f32));
         assert_eq!(unit!(floor, Num(1f32), &[]), Num(1f32));
+        assert!(floor(&Bool(true), &[]).is_err());
     }
 
     #[test]
     fn unit_ceil() {
         assert_eq!(unit!(ceil, Num(1.1f32), &[]), Num(2f32));
         assert_eq!(unit!(ceil, Num(1f32), &[]), Num(1f32));
+        assert!(ceil(&Bool(true), &[]).is_err());
     }
 
     #[test]
@@ -224,6 +232,7 @@ mod tests {
         assert_eq!(unit!(round, Num(1.1f32), &[]), Num(1f32));
         assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
         assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
+        assert!(round(&Bool(true), &[]).is_err());
     }
 
     #[test]
