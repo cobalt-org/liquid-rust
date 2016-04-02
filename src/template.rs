@@ -12,8 +12,8 @@ impl Renderable for Template {
 
         context.add_filter("size", Box::new(size));
         context.add_filter("upcase", Box::new(upcase));
-        context.add_filter("downcase".to_owned(), Box::new(downcase));
-        context.add_filter("capitalize".to_owned(), Box::new(capitalize));
+        context.add_filter("downcase", Box::new(downcase));
+        context.add_filter("capitalize", Box::new(capitalize));
         context.add_filter("minus", Box::new(minus));
         context.add_filter("plus", Box::new(plus));
         context.add_filter("times", Box::new(times));
@@ -21,12 +21,12 @@ impl Renderable for Template {
         context.add_filter("ceil", Box::new(ceil));
         context.add_filter("floor", Box::new(floor));
         context.add_filter("round", Box::new(round));
-        context.add_filter("first".to_owned(), Box::new(first));
-        context.add_filter("last".to_owned(), Box::new(last));
-        context.add_filter("prepend".to_owned(), Box::new(prepend));
-        context.add_filter("append".to_owned(), Box::new(append));
+        context.add_filter("first", Box::new(first));
+        context.add_filter("last", Box::new(last));
+        context.add_filter("prepend", Box::new(prepend));
+        context.add_filter("append", Box::new(append));
         context.add_filter("replace", Box::new(replace));
-        context.add_filter("pluralize".to_owned(), Box::new(pluralize));
+        context.add_filter("pluralize", Box::new(pluralize));
 
         let mut buf = String::new();
         for el in &self.elements {
