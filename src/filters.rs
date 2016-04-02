@@ -73,10 +73,12 @@ pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref s) => Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
             let next_char = match word.chars().last() {
-                Some(last) => match last.is_whitespace() {
-                    true => chr.to_uppercase().next().unwrap(),
-                    false => chr,
-                },
+                Some(last) =>
+                    if last.is_whitespace() {
+                        chr.to_uppercase().next().unwrap()
+                    } else {
+                        chr
+                    },
                 _ => chr.to_uppercase().next().unwrap(),
             }.to_string();
             word + &next_char
