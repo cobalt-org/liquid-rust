@@ -156,6 +156,31 @@ pub fn expect(tokens: &mut Iter<Token>, expected: Token) -> Result<()> {
     }
 }
 
+/// Extracts a token from the token stream that can be used to express a
+/// value. For our purposes, this is either a string literal, number literal
+/// or an identifier that might refer to a variable.
+pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
+    match tokens.next() {
+        Some(t) => value_token(t.clone()),
+        None => Error::parser("string | number | identifier", None)
+    }
+}
+
+/// Recognises a value token, returning an error if a non-value token
+/// is presented.
+pub fn value_token(t: Token) -> Result<Token> {
+    match t {
+        v @ StringLiteral(_) |
+        v @ NumberLiteral(_) |
+        v @ Identifier(_) => {
+            Ok(v)
+        },
+        x => {
+            Error::parser("string | number | identifier", Some(&x))
+        }
+    }
+}
+
 /// Describes the optional trailing part of a block split.
 pub struct BlockSplit<'a> {
     pub delimiter: String,

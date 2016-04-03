@@ -2,10 +2,10 @@ use Renderable;
 use context::Context;
 use template::Template;
 use LiquidOptions;
-use token::Token::{self, Identifier, StringLiteral, NumberLiteral, Comparison};
+use token::Token::{self, Comparison};
 use token::ComparisonOperator::{self, Equals, NotEquals, LessThan, GreaterThan, LessThanEquals,
                                 GreaterThanEquals, Contains};
-use parser::{parse, split_block};
+use parser::{parse, split_block, consume_value_token};
 use lexer::Element;
 use error::{Error, Result};
 
@@ -62,21 +62,11 @@ impl Renderable for Conditional {
 fn condition(arguments: &[Token]) -> Result<Condition> {
     let mut args = arguments.iter();
 
-    let lh = match args.next() {
-        Some(&StringLiteral(ref x)) => StringLiteral(x.clone()),
-        Some(&NumberLiteral(x)) => NumberLiteral(x),
-        Some(&Identifier(ref x)) => Identifier(x.clone()),
-        x => return Error::parser("value", x),
-    };
+    let lh = try!(consume_value_token(&mut args));
 
     let (comp, rh) = match args.next() {
         Some(&Comparison(ref x)) => {
-            let rhs = match args.next() {
-                Some(&StringLiteral(ref y)) => StringLiteral(y.clone()),
-                Some(&NumberLiteral(y)) => NumberLiteral(y),
-                Some(&Identifier(ref y)) => Identifier(y.clone()),
-                y => return Error::parser("value", y),
-            };
+            let rhs = try!(consume_value_token(&mut args));
             (x.clone(), rhs)
         },
         None => {

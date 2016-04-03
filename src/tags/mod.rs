@@ -6,10 +6,12 @@ mod if_block;
 mod include_tag;
 mod interrupt_tags;
 mod raw_block;
+mod cycle_tag;
 
 pub use self::assign_tag::assign_tag;
 pub use self::capture_block::capture_block;
 pub use self::comment_block::comment_block;
+pub use self::cycle_tag::cycle_tag;
 pub use self::for_block::for_block;
 pub use self::if_block::if_block;
 pub use self::if_block::unless_block;
