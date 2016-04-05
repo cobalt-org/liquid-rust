@@ -1,1 +1,0 @@
-{% include tests/fixtures/input/example_with_context.txt %}
