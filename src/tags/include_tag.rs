@@ -83,4 +83,14 @@ mod test {
             assert!(false);
         }
     }
+
+    #[test]
+    fn with_content() {
+        let text = "{% include tests/fixtures/input/example.txt %}";
+        let template = parse(text, Default::default()).unwrap();
+
+        let mut context = Context::new();
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("5 wot wot\n".to_owned()));
+    }
 }

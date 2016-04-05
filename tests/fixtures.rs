@@ -36,3 +36,11 @@ pub fn include() {
     let mut context = Context::new();
     compare("include", &mut context);
 }
+
+#[test]
+pub fn include_with_context() {
+    let mut context = Context::new();
+    context.set_val("content", Value::Str("hello, world!".to_owned()));
+
+    compare("include_with_context", &mut context);
+}
