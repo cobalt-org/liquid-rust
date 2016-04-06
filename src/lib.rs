@@ -42,8 +42,8 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, include_tag, break_tag, continue_tag, comment_block, raw_block, for_block,
-           if_block, capture_block};
+use tags::{assign_tag, include_tag, break_tag, continue_tag,
+           comment_block, raw_block, for_block, if_block, unless_block, capture_block};
 use std::default::Default;
 use error::Result;
 
@@ -136,6 +136,30 @@ pub struct LiquidOptions {
 }
 
 impl LiquidOptions {
+    /// Creates a LiquidOptions instance, pre-seeded with all known
+    /// tags and blocks.
+    pub fn with_known_blocks() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.register_known_blocks();
+        options
+    }
+
+    /// Registers all known tags and blocks in an existing options
+    /// struct
+    pub fn register_known_blocks(&mut self) {
+        self.register_tag("assign",   Box::new(assign_tag));
+        self.register_tag("break",    Box::new(break_tag));
+        self.register_tag("continue", Box::new(continue_tag));
+        self.register_tag("include",  Box::new(include_tag));
+
+        self.register_block("raw",     Box::new(raw_block));
+        self.register_block("if",      Box::new(if_block));
+        self.register_block("unless",  Box::new(unless_block));
+        self.register_block("for",     Box::new(for_block));
+        self.register_block("comment", Box::new(comment_block));
+        self.register_block("capture", Box::new(capture_block));
+    }
+
     pub fn register_block(&mut self, name: &str, block: Box<Block>) {
         self.blocks.insert(name.to_owned(), block);
     }
@@ -161,18 +185,8 @@ impl LiquidOptions {
 ///
 pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     let mut options = options;
+    options.register_known_blocks();
+
     let tokens = try!(lexer::tokenize(&text));
-
-    options.register_tag("assign", Box::new(assign_tag));
-    options.register_tag("break", Box::new(break_tag));
-    options.register_tag("continue", Box::new(continue_tag));
-    options.register_tag("include", Box::new(include_tag));
-
-    options.register_block("raw", Box::new(raw_block));
-    options.register_block("if", Box::new(if_block));
-    options.register_block("for", Box::new(for_block));
-    options.register_block("comment", Box::new(comment_block));
-    options.register_block("capture", Box::new(capture_block));
-
     parser::parse(&tokens, &options).map(Template::new)
 }
