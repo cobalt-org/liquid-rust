@@ -39,7 +39,8 @@ fn run() {
     let mut options = LiquidOptions {
         blocks: Default::default(),
         tags: Default::default(),
-        error_mode: Default::default()
+        relative_path: Default::default(),
+        error_mode: Default::default(),
     };
     options.register_tag("multiply", Box::new(multiply_tag));
 

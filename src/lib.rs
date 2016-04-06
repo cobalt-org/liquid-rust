@@ -132,6 +132,7 @@ pub trait Renderable{
 pub struct LiquidOptions {
     pub blocks: HashMap<String, Box<Block>>,
     pub tags: HashMap<String, Box<Tag>>,
+    pub relative_path: String,
     pub error_mode: ErrorMode,
 }
 
