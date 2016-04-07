@@ -43,7 +43,7 @@ extern crate regex;
 use std::collections::HashMap;
 use lexer::Element;
 use tags::{assign_tag, cycle_tag, include_tag, break_tag, continue_tag,
-           comment_block, raw_block, for_block, if_block, unless_block, capture_block};
+           comment_block, raw_block, for_block, if_block, unless_block, capture_block, case_block};
 use std::default::Default;
 use std::path::PathBuf;
 use error::Result;
@@ -161,6 +161,7 @@ impl LiquidOptions {
         self.register_block("for",     Box::new(for_block));
         self.register_block("comment", Box::new(comment_block));
         self.register_block("capture", Box::new(capture_block));
+        self.register_block("case",    Box::new(case_block));
     }
 
     pub fn register_block(&mut self, name: &str, block: Box<Block>) {

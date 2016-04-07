@@ -26,13 +26,13 @@ pub enum Token {
     Question,
     Dash,
     Assignment,
-
     Identifier(String),
     StringLiteral(String),
     NumberLiteral(f32),
     BooleanLiteral(bool),
     DotDot,
-    Comparison(ComparisonOperator),
+    Comparison(ComparisonOperator),	
+    Or
 }
 
 impl fmt::Display for Token {
@@ -50,6 +50,7 @@ impl fmt::Display for Token {
             Dash => "-".to_owned(),
             DotDot => "..".to_owned(),
             Assignment => "=".to_owned(),
+            Or => "or".to_owned(),
 
             Comparison(Equals) => "==".to_owned(),
             Comparison(NotEquals) => "!=".to_owned(),

@@ -103,6 +103,7 @@ fn granularize(block: &str) -> Result<Vec<Token>> {
             "?" => Question,
             "-" => Dash,
             "=" => Assignment,
+            "or" => Or,
 
             "==" => Comparison(Equals),
             "!=" => Comparison(NotEquals),

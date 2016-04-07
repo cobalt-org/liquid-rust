@@ -1,5 +1,6 @@
 mod assign_tag;
 mod capture_block;
+mod case_block;
 mod comment_block;
 mod for_block;
 mod if_block;
@@ -9,6 +10,7 @@ mod raw_block;
 mod cycle_tag;
 
 pub use self::assign_tag::assign_tag;
+pub use self::case_block::case_block;
 pub use self::capture_block::capture_block;
 pub use self::comment_block::comment_block;
 pub use self::cycle_tag::cycle_tag;
