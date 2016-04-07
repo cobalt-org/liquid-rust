@@ -23,7 +23,7 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let file_system = &options.file_system.clone().unwrap_or(PathBuf::new());
+    let file_system = options.file_system.clone().unwrap_or(PathBuf::new());
     let path = file_system.join(path);
 
     // check if file exists
