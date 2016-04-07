@@ -45,6 +45,7 @@ use lexer::Element;
 use tags::{assign_tag, include_tag, break_tag, continue_tag, comment_block, raw_block, for_block,
            if_block, capture_block};
 use std::default::Default;
+use std::path::PathBuf;
 use error::Result;
 
 pub use value::Value;
@@ -124,7 +125,7 @@ pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
-pub trait Renderable{
+pub trait Renderable {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
@@ -132,7 +133,7 @@ pub trait Renderable{
 pub struct LiquidOptions {
     pub blocks: HashMap<String, Box<Block>>,
     pub tags: HashMap<String, Box<Tag>>,
-    pub relative_path: String,
+    pub file_system: Option<PathBuf>,
     pub error_mode: ErrorMode,
 }
 

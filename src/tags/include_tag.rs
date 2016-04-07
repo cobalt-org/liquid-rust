@@ -10,7 +10,7 @@ use error::{Result, Error};
 
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 struct Include {
     partial: Template,
@@ -23,8 +23,8 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let relative_path = Path::new(&options.relative_path);
-    let path = relative_path.join(path);
+    let file_system = &options.file_system.clone().unwrap_or(PathBuf::new());
+    let path = file_system.join(path);
 
     // check if file exists
     if !path.exists() {
@@ -61,13 +61,12 @@ mod test {
     use parse;
     use error::Error;
     use LiquidOptions;
+    use std::path::PathBuf;
 
-    fn options () -> LiquidOptions {
+    fn options() -> LiquidOptions {
         LiquidOptions {
-            blocks: Default::default(),
-            tags: Default::default(),
-            relative_path: "tests/fixtures/input".to_owned(),
-            error_mode: Default::default(),
+            file_system: Some(PathBuf::from("tests/fixtures/input")),
+            ..Default::default()
         }
     }
 
@@ -89,7 +88,8 @@ mod test {
         assert!(output.is_err());
         if let Err(Error::Other(val)) = output {
             assert_eq!(format!("{}", val),
-                       "\"tests/fixtures/input/file_does_not_exist.liquid\" does not exist".to_owned());
+                       "\"tests/fixtures/input/file_does_not_exist.liquid\" does not exist"
+                           .to_owned());
         } else {
             assert!(false);
         }

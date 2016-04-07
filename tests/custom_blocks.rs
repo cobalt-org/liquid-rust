@@ -12,7 +12,7 @@ use std::default::Default;
 #[test]
 fn run() {
     struct Multiply {
-        numbers: Vec<f32>
+        numbers: Vec<f32>,
     }
 
     impl Renderable for Multiply {
@@ -24,31 +24,36 @@ fn run() {
 
     fn multiply_tag(_tag_name: &str,
                     arguments: &[Token],
-                    _options: &LiquidOptions) ->
-        Result<Box<Renderable>, Error> {
+                    _options: &LiquidOptions)
+                    -> Result<Box<Renderable>, Error> {
 
-        let numbers = arguments.iter().filter_map( |x| {
-            match x {
-                &Token::NumberLiteral(ref num) => Some(*num),
-                _ => None
-            }
-        }).collect();
-        Ok(Box::new(Multiply{numbers: numbers}))
+        let numbers = arguments.iter()
+                               .filter_map(|x| {
+                                   match x {
+                                       &Token::NumberLiteral(ref num) => Some(*num),
+                                       _ => None,
+                                   }
+                               })
+                               .collect();
+        Ok(Box::new(Multiply { numbers: numbers }))
     }
 
     let mut options = LiquidOptions {
         blocks: Default::default(),
         tags: Default::default(),
-        relative_path: Default::default(),
+        file_system: Default::default(),
         error_mode: Default::default(),
     };
     options.register_tag("multiply", Box::new(multiply_tag));
 
-    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test", options).unwrap();
+    let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test",
+                         options)
+                       .unwrap();
 
-    let mut data = Context::new() ;
+    let mut data = Context::new();
     data.set_val("hello", Value::Str("world".to_string()));
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("wat\nworld\n15{{multiply 5 3}} test".to_string()));
+    assert_eq!(output.unwrap(),
+               Some("wat\nworld\n15{{multiply 5 3}} test".to_string()));
 }
