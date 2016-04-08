@@ -10,7 +10,7 @@ use error::{Result, Error};
 
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 struct Include {
     partial: Template,
@@ -23,7 +23,8 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let path = path.as_ref();
+    let file_system = options.file_system.clone().unwrap_or(PathBuf::new());
+    let path = file_system.join(path);
 
     // check if file exists
     if !path.exists() {
@@ -59,11 +60,20 @@ mod test {
     use Renderable;
     use parse;
     use error::Error;
+    use LiquidOptions;
+    use std::path::PathBuf;
+
+    fn options() -> LiquidOptions {
+        LiquidOptions {
+            file_system: Some(PathBuf::from("tests/fixtures/input")),
+            ..Default::default()
+        }
+    }
 
     #[test]
     fn include_tag() {
-        let text = "{% include tests/fixtures/input/example.txt %}";
-        let template = parse(text, Default::default()).unwrap();
+        let text = "{% include example.txt %}";
+        let template = parse(text, options()).unwrap();
 
         let mut context = Context::new();
         assert_eq!(template.render(&mut context).unwrap(),
@@ -73,12 +83,13 @@ mod test {
     #[test]
     fn no_file() {
         let text = "{% include file_does_not_exist.liquid %}";
-        let output = parse(text, Default::default());
+        let output = parse(text, options());
 
         assert!(output.is_err());
         if let Err(Error::Other(val)) = output {
             assert_eq!(format!("{}", val),
-                       "\"file_does_not_exist.liquid\" does not exist".to_owned());
+                       "\"tests/fixtures/input/file_does_not_exist.liquid\" does not exist"
+                           .to_owned());
         } else {
             assert!(false);
         }
