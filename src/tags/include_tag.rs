@@ -48,12 +48,7 @@ pub fn include_tag(_tag_name: &str,
 
     let path = match args.next() {
         Some(&Token::StringLiteral(ref path)) => path,
-
-        Some(&Token::Identifier(_)) => {
-            return Err(Error::from("This should be a string literal")); // TODO: better error message
-        }
-
-        arg => return Error::parser("Identifier", arg),
+        arg => return Error::parser("String Literal", arg),
     };
 
 
