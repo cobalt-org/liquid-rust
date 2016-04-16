@@ -47,9 +47,10 @@ pub fn include_tag(_tag_name: &str,
     let mut args = arguments.iter();
 
     let path = match args.next() {
-        Some(&Token::Identifier(ref path)) => path,
-        arg => return Error::parser("Identifier", arg),
+        Some(&Token::StringLiteral(ref path)) => path,
+        arg => return Error::parser("String Literal", arg),
     };
+
 
     Ok(Box::new(Include { partial: try!(parse_partial(&path, &options)) }))
 }
@@ -72,7 +73,7 @@ mod test {
 
     #[test]
     fn include_tag() {
-        let text = "{% include example.txt %}";
+        let text = "{% include 'example.txt' %}";
         let template = parse(text, options()).unwrap();
 
         let mut context = Context::new();
@@ -82,7 +83,7 @@ mod test {
 
     #[test]
     fn no_file() {
-        let text = "{% include file_does_not_exist.liquid %}";
+        let text = "{% include 'file_does_not_exist.liquid' %}";
         let output = parse(text, options());
 
         assert!(output.is_err());

@@ -1,1 +1,1 @@
-{% include tests/fixtures/input/example.txt %}
+{% include 'tests/fixtures/input/example.txt' %}
