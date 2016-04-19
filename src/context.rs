@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use token::Token::{self, Identifier, StringLiteral, NumberLiteral, BooleanLiteral};
 use value::Value;
 
+
 #[derive(Clone)]
 pub enum Interrupt { Continue, Break }
 
@@ -20,6 +21,9 @@ pub struct Context {
     /// it reaches an enclosing `for_loop`. At that point the interrupt
     /// is cleared, and the `for_loop` carries on processing as directed.
     interrupt: Option<Interrupt>,
+
+    /// The indices of all the cycles encountered during rendering.
+    cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
     pub filters: HashMap<String, Box<Filter>>
@@ -53,9 +57,28 @@ impl Context {
         Context {
             stack: vec!(HashMap::new()),
             interrupt: None,
+            cycles: HashMap::new(),
             globals: values,
             filters: filters
         }
+    }
+
+    pub fn cycle_element(&mut self, name: &str, values: &[Token]) ->
+            Result<Option<Value>> {
+        let index = {
+            let i = self.cycles.entry(name.to_owned()).or_insert(0);
+            let j = *i;
+            *i = (*i + 1) % values.len();
+            j
+        };
+
+        if index >= values.len() {
+            return Err(Error::Render(
+                format!("cycle index {} out of bounds {}", index, values.len()
+            )));
+        }
+
+        self.evaluate(&values[index])
     }
 
     pub fn add_filter(&mut self, name: &str, filter: Box<Filter>) {

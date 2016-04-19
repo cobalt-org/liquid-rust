@@ -42,7 +42,7 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, include_tag, break_tag, continue_tag,
+use tags::{assign_tag, cycle_tag, include_tag, break_tag, continue_tag,
            comment_block, raw_block, for_block, if_block, unless_block, capture_block};
 use std::default::Default;
 use std::path::PathBuf;
@@ -152,6 +152,7 @@ impl LiquidOptions {
         self.register_tag("assign",   Box::new(assign_tag));
         self.register_tag("break",    Box::new(break_tag));
         self.register_tag("continue", Box::new(continue_tag));
+        self.register_tag("cycle",    Box::new(cycle_tag));
         self.register_tag("include",  Box::new(include_tag));
 
         self.register_block("raw",     Box::new(raw_block));
