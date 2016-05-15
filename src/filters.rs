@@ -60,6 +60,46 @@ pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+
+pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.to_lowercase())),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
+pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
+            let next_char = match word.chars().last() {
+                Some(last) =>
+                    if last.is_whitespace() {
+                        chr.to_uppercase().next().unwrap()
+                    } else {
+                        chr
+                    },
+                _ => chr.to_uppercase().next().unwrap(),
+            }.to_string();
+            word + &next_char
+        }))),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
+pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
+
+    if args.len() != 2 {
+        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
+    }
+    match *input {
+        Num(1f32) => Ok(args[0].clone()),
+        Num(_) => Ok(args[1].clone()),
+        _ => Err(InvalidType("Number expected".to_owned())),
+    }
+}
+
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let num = match *input {
@@ -148,6 +188,50 @@ pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match args.first() {
+                        Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
+                        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+                    },
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
+pub fn append(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match args.first() {
+                        Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
+                        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+                    },
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match x.chars().next() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned()))
+            },
+        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
+
+pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => match x.chars().last() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned()))
+            },
+        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -173,6 +257,7 @@ mod tests {
     fn unit_size() {
         assert_eq!(unit!(size, tos!("abc")), Num(3f32));
         assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
+        assert_eq!(unit!(size, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(5f32));
     }
 
     #[test]
@@ -180,6 +265,38 @@ mod tests {
         assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
         assert_eq!(unit!(upcase, tos!("Hello World 21")),
                    tos!("HELLO WORLD 21"));
+    }
+
+    #[test]
+    fn unit_downcase() {
+        assert_eq!(unit!(downcase, tos!("Abc")), tos!("abc"));
+        assert_eq!(unit!(downcase, tos!("Hello World 21")),
+                   tos!("hello world 21"));
+    }
+
+    #[test]
+    fn unit_capitalize() {
+        assert_eq!(unit!(capitalize, tos!("abc")), tos!("Abc"));
+        assert_eq!(unit!(capitalize, tos!("hello world 21")),
+                   tos!("Hello World 21"));
+
+        // sure that Umlauts work
+        assert_eq!(unit!(capitalize, tos!("über ètat, y̆es?")),
+                    tos!("Über Ètat, Y\u{306}es?"));
+
+        // Weird UTF-8 White space is kept – this is a no-break whitespace!
+        assert_eq!(unit!(capitalize, tos!("hello world​")),
+                   tos!("Hello World​"));
+
+    }
+
+    #[test]
+    fn unit_pluralize() {
+        assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
+                   tos!("one"));
+
+       assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
+                  tos!("many"));
     }
 
     #[test]
@@ -241,4 +358,29 @@ mod tests {
                    tos!("foofoo"));
     }
 
+    #[test]
+    fn unit_prepend() {
+        assert_eq!(unit!(prepend, tos!("barbar"), &[tos!("foo")]),
+                   tos!("foobarbar"));
+    }
+
+    #[test]
+    fn unit_append() {
+        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]),
+                   tos!("samson"));
+    }
+
+    #[test]
+    fn unit_first() {
+        assert_eq!(unit!(first, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(0f32));
+        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])), tos!("test"));
+        assert_eq!(unit!(first, Array(vec![])), tos!(""));
+    }
+
+    #[test]
+    fn unit_last() {
+        assert_eq!(unit!(last, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(4f32));
+        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])), tos!("last"));
+        assert_eq!(unit!(last, Array(vec![])), tos!(""));
+    }
 }
