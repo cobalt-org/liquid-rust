@@ -1,3 +1,24 @@
+//! The Liquid templating language for Rust
+//!
+//! __http://liquidmarkup.org/__
+//!
+//! ```toml
+//! [dependencies]
+//! liquid = "0.8"
+//! ```
+//!
+//! ## Example
+//! ```rust
+//! use liquid::{Renderable, Context, Value};
+//!
+//! let template = liquid::parse("Liquid! {{num | minus: 2}}", Default::default()).unwrap();
+//!
+//! let mut context = Context::new();
+//! context.set_val("num", Value::Num(4f32));
+//!
+//! let output = template.render(&mut context);
+//! assert_eq!(output.unwrap(), Some("Liquid! 2".to_string()));
+//! ```
 #![crate_name = "liquid"]
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
 
@@ -7,6 +28,7 @@
 
 // Deny warnings, except in dev mode
 #![deny(warnings)]
+//#![deny(missing_docs)]
 #![cfg_attr(feature="dev", warn(warnings))]
 
 // Ignore clippy, except in dev mode
@@ -52,7 +74,7 @@ pub use value::Value;
 pub use context::Context;
 pub use template::Template;
 pub use error::Error;
-pub use filters::{FilterResult, FilterError};
+pub use filters::FilterError;
 pub use token::Token;
 
 pub mod lexer;
@@ -68,22 +90,6 @@ mod filters;
 mod value;
 mod variable;
 mod context;
-
-/// The ErrorMode to use.
-/// This currently does not have an effect, until
-/// ErrorModes are properly implemented.
-#[derive(Clone, Copy)]
-pub enum ErrorMode {
-    Strict,
-    Warn,
-    Lax,
-}
-
-impl Default for ErrorMode {
-    fn default() -> ErrorMode {
-        ErrorMode::Warn
-    }
-}
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///
@@ -126,15 +132,22 @@ pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable {
+    /// Renders the Renderable instance given a Liquid context.
+    /// The Result that is returned signals if there was an error rendering,
+    /// the Option<String> that is wrapped by the Result will be None if
+    /// the render has run successfully but there is no content to render.
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
+/// Options that liquid::parse takes
 #[derive(Default)]
 pub struct LiquidOptions {
+    /// Holds all custom block-size tags
     pub blocks: HashMap<String, Box<Block>>,
+    /// Holds all custom tags
     pub tags: HashMap<String, Box<Tag>>,
+    /// The path to which paths in include tags should be relative to
     pub file_system: Option<PathBuf>,
-    pub error_mode: ErrorMode,
 }
 
 impl LiquidOptions {
@@ -164,10 +177,12 @@ impl LiquidOptions {
         self.register_block("case",    Box::new(case_block));
     }
 
+    /// Inserts a new custom block into the options object
     pub fn register_block(&mut self, name: &str, block: Box<Block>) {
         self.blocks.insert(name.to_owned(), block);
     }
 
+    /// Inserts a new custom tag into the options object
     pub fn register_tag(&mut self, name: &str, tag: Box<Tag>) {
         self.tags.insert(name.to_owned(), tag);
     }

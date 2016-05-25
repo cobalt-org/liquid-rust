@@ -1,3 +1,8 @@
+//! Parser
+//!
+//! This module contains elements than can be used for writing plugins
+//! but can be ignored for simple usage.
+
 use Renderable;
 use LiquidOptions;
 use value::Value;

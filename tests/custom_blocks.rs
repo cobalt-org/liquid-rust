@@ -42,7 +42,6 @@ fn run() {
         blocks: Default::default(),
         tags: Default::default(),
         file_system: Default::default(),
-        error_mode: Default::default(),
     };
     options.register_tag("multiply", Box::new(multiply_tag));
 

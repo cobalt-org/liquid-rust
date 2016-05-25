@@ -1,3 +1,8 @@
+//! Lexer
+//!
+//! This module contains elements than can be used for writing plugins
+//! but can be ignored for simple usage.
+
 use token::Token;
 use token::Token::*;
 use token::ComparisonOperator::*;
