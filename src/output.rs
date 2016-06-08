@@ -32,29 +32,23 @@ pub struct Output {
 
 impl Renderable for Output {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
+        // take either the provided value or the value from the provided variable
         let mut entry = match self.entry {
-            VarOrVal::Val(ref x) => try!(x.render(context)).unwrap_or("".to_owned()),
-            VarOrVal::Var(ref x) => try!(x.render(context)).unwrap_or("".to_owned()),
+            VarOrVal::Val(ref x) => x.clone(),
+            VarOrVal::Var(ref x) => {
+                context.get_val(&*x.name()).cloned().unwrap_or(Value::Str("".to_owned()))
+            }
         };
-        let filter_entry: Option<&Value> = match self.entry {
-            VarOrVal::Val(ref x) => Some(x),
-            VarOrVal::Var(ref x) => context.get_val(&*x.name()),
-        };
+
+        // apply all specified filters
         for filter in &self.filters {
-            let f = match context.get_filter(&filter.name) {
-                Some(x) => x,
-                None => {
-                    return Err(Error::Render(format!("Filter {} not implemented", &filter.name)))
-                }
-            };
-            let fresult = f(&filter_entry.unwrap_or(&Value::Str("".to_owned())),
-                            &filter.arguments);
-            entry = match fresult {
-                Ok(s) => s.to_string(),
-                Err(e) => return Err(Error::Filter(e)),
-            };
+            let f = try!(context.get_filter(&filter.name)
+                                .ok_or(Error::Render(format!("Filter {} not implemented",
+                                                             &filter.name))));
+            entry = try!(f(&entry, &filter.arguments));
         }
-        Ok(Some(entry))
+
+        entry.render(context)
     }
 }
 
