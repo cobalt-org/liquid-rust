@@ -23,10 +23,11 @@ addons:
     - libelf-dev
     - libdw-dev
 
-after_success:
-- travis-cargo --only stable doc-upload
-- rm tests/skeptic.rs # "skip" skeptic doctests for coverage
-- [ $TRAVIS_RUST_VERSION = stable ] && travis-cargo coveralls --no-sudo
+after_success: |
+   && travis-cargo --only stable doc-upload
+   && rm tests/skeptic.rs
+   && [ $TRAVIS_RUST_VERSION = stable ]
+   && travis-cargo coveralls --no-sudo
 
 env:
   global:
