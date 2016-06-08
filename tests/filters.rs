@@ -211,3 +211,31 @@ pub fn append() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("roobarblifo".to_string()));
 }
+
+#[test]
+// Got this test from example at https://shopify.github.io/liquid/filters/split/
+// This is an additional test to verify the comma/space parsing is also working
+// from https://github.com/cobalt-org/liquid-rust/issues/41
+pub fn split_with_comma() {
+    let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member in beatles %}{{ member }}\n{% endfor %}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("John\nPaul\nGeorge\nRingo\n".to_string()));
+}
+
+#[test]
+// This test verifies that issue https://github.com/cobalt-org/liquid-rust/issues/40 is fixed (that split works)
+pub fn split_no_comma() {
+    let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: {{ letter }}\n{% endfor %}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("LETTER: a\nLETTER: b\nLETTER: c\n".to_string()));
+}
