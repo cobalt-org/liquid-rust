@@ -42,6 +42,12 @@ impl<'a> From<&'a str> for Error {
     }
 }
 
+impl From<FilterError> for Error {
+    fn from(err: FilterError) -> Error {
+        Error::Filter(err)
+    }
+}
+
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::Io(err)

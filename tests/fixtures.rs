@@ -24,6 +24,13 @@ fn compare(name: &str, context: &mut Context) {
 }
 
 #[test]
+pub fn chained_filters() {
+    let mut context = Context::new();
+    context.set_val("foo", Value::Str("foofoo".to_owned()));
+    compare("chained_filters", &mut context)
+}
+
+#[test]
 pub fn example() {
     let mut context = Context::new();
     context.set_val("num", Value::Num(5f32));
