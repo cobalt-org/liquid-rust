@@ -90,7 +90,7 @@ lazy_static! {
     static ref BOOLEAN_LITERAL: Regex = Regex::new(r"^true|false$").unwrap();
 }
 
-fn granularize(block: &str) -> Result<Vec<Token>> {
+pub fn granularize(block: &str) -> Result<Vec<Token>> {
     let mut result = vec![];
 
     for el in split_atom(block) {

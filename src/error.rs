@@ -22,7 +22,7 @@ pub enum Error {
 
 impl Error {
     pub fn parser<T>(expected: &str, actual: Option<&Token>) -> Result<T> {
-        Err(Error::Parser(format!("Expected {}, found {:?}", expected, actual)))
+        Err(Error::Parser(format!("Expected {}, found {}", expected, actual.map(|x| x.to_string()).unwrap_or("nothing".to_owned()))))
     }
 
     pub fn renderer<T>(msg: &str) -> Result<T> {

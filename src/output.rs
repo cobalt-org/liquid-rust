@@ -4,13 +4,13 @@ use value::Value;
 use variable::Variable;
 use error::{Error, Result};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
     arguments: Vec<Value>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum VarOrVal {
     Var(Variable),
     Val(Value),
@@ -25,6 +25,7 @@ impl FilterPrototype {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Output {
     entry: VarOrVal,
     filters: Vec<FilterPrototype>,
@@ -32,6 +33,20 @@ pub struct Output {
 
 impl Renderable for Output {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
+        let entry = try!(self.apply_filters(context));
+        entry.render(context)
+    }
+}
+
+impl Output {
+    pub fn new(entry: VarOrVal, filters: Vec<FilterPrototype>) -> Output {
+        Output {
+            entry: entry,
+            filters: filters,
+        }
+    }
+
+    pub fn apply_filters(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
         let mut entry = match self.entry {
             VarOrVal::Val(ref x) => x.clone(),
@@ -48,15 +63,6 @@ impl Renderable for Output {
             entry = try!(f(&entry, &filter.arguments));
         }
 
-        entry.render(context)
-    }
-}
-
-impl Output {
-    pub fn new(entry: VarOrVal, filters: Vec<FilterPrototype>) -> Output {
-        Output {
-            entry: entry,
-            filters: filters,
-        }
+        Ok(entry)
     }
 }

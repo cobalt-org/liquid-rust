@@ -2,7 +2,9 @@ use Renderable;
 use context::Context;
 use std::collections::HashMap;
 use std::cmp::Ordering;
-use error::Result;
+use error::{Result, Error};
+use token::Token;
+use token::Token::*;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
@@ -15,8 +17,21 @@ pub enum Value {
 }
 
 impl Value {
+    /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
+    }
+
+    /// Parses a token that can possibly represent a Value
+    /// to said Value. Returns an Err if the token can not
+    /// be interpreted as a Value.
+    pub fn from_token(t: &Token) -> Result<Value> {
+        match t {
+            &StringLiteral(ref x) => Ok(Value::Str(x.to_owned())),
+            &NumberLiteral(x) => Ok(Value::Num(x)),
+            &BooleanLiteral(x) => Ok(Value::Bool(x)),
+            x => Error::parser("Value", Some(x)),
+        }
     }
 }
 
@@ -31,9 +46,7 @@ impl PartialEq<Value> for Value {
 
             // encode Ruby truthiness; all values except false and nil
             // are true, and we don't have a notion of nil
-            (_, &Value::Bool(b)) | (&Value::Bool(b), _) => {
-                b == true
-            },
+            (_, &Value::Bool(b)) | (&Value::Bool(b), _) => b,
 
             _ => false
         }

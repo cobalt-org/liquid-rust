@@ -23,7 +23,7 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let file_system = options.file_system.clone().unwrap_or(PathBuf::new());
+    let file_system = options.file_system.clone().unwrap_or_else(PathBuf::new);
     let path = file_system.join(path);
 
     // check if file exists
@@ -37,7 +37,7 @@ fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Tem
     try!(file.read_to_string(&mut content));
 
     let tokens = try!(lexer::tokenize(&content));
-    parser::parse(&tokens, &options).map(Template::new)
+    parser::parse(&tokens, options).map(Template::new)
 }
 
 pub fn include_tag(_tag_name: &str,
@@ -88,7 +88,7 @@ mod test {
 
         assert!(output.is_err());
         if let Err(Error::Other(val)) = output {
-            assert_eq!(format!("{}", val),
+            assert_eq!(val,
                        "\"tests/fixtures/input/file_does_not_exist.liquid\" does not exist"
                            .to_owned());
         } else {

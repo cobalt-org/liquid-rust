@@ -85,7 +85,7 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
                 return Ok(Conditional::Cond(values));
             },
 
-            ref x => return Error::parser("else | when", Some(&x))
+            ref x => return Error::parser("else | when", Some(x))
         }
     } else {
         Err(Error::Parser("Expected else | when".to_owned()))
