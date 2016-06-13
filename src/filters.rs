@@ -4,6 +4,8 @@ use std::error::Error;
 use value::Value;
 use value::Value::*;
 
+use chrono::DateTime;
+
 use self::FilterError::*;
 
 #[derive(Debug)]
@@ -297,6 +299,25 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn date(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() != 1 {
+        return Err(FilterError::InvalidArgumentCount(format!("expected 1, {} given", args.len())));
+    }
+
+    let date = match input {
+        &Value::Str(ref s) => try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+                                   .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))),
+        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
+    };
+
+    let format = match args[0] {
+        Value::Str(ref s) => s,
+        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+    };
+
+    Ok(Value::Str(format!("{}", date.format(format))))
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -528,4 +549,8 @@ mod tests {
         assert_eq!(result.unwrap(), tos!("a,1,c"));
     }
 
+    #[test]
+    fn unit_date() {
+        assert_eq!(unit!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[tos!("%Y-%m-%d")]), tos!("2016-06-13"));
+    }
 }
