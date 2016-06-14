@@ -1,23 +1,19 @@
 use Renderable;
 use context::Context;
 use LiquidOptions;
-use parser::expect;
-use token::Token::{self, Identifier, Assignment, StringLiteral, NumberLiteral, BooleanLiteral};
+use output::Output;
+use parser::{parse_output, expect};
+use token::Token::{self, Identifier, Assignment};
 use error::{Error, Result};
 
 struct Assign {
     dst: String,
-    src: Token
+    src: Output
 }
 
 impl Renderable for Assign {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = match try!(context.evaluate(&self.src)) {
-            Some(v) => v,
-            None => return Error::renderer(
-                &format!("No such value {:?}", self.src))
-        };
-
+        let value = try!(self.src.apply_filters(context));
         context.set_val(&self.dst, value);
         Ok(None)
     }
@@ -34,14 +30,7 @@ pub fn assign_tag(_tag_name: &str,
 
     try!(expect(&mut args, Assignment));
 
-    let src = match args.next() {
-        x @ Some(&Identifier(_)) |
-        x @ Some(&StringLiteral(_)) |
-        x @ Some(&NumberLiteral(_)) |
-        x @ Some(&BooleanLiteral(_)) => { x.unwrap().clone() },
-        x @ Some(_) | x @ None =>
-            return Error::parser("Identifier | String | Number | Boolean", x)
-    };
+    let src = try!(parse_output(&arguments[2..]));
 
     Ok(Box::new(Assign {
         dst: dst,

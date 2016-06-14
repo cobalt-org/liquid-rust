@@ -192,7 +192,7 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => match args.first() {
                         Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
-                        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+                        _ => Err(InvalidArgument(0, "Str expected".to_owned())),
                     },
         _ => Err(InvalidType("String expected".to_owned())),
     }
@@ -203,7 +203,7 @@ pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => match args.first() {
                         Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
-                        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+                        _ => Err(InvalidArgument(0, "Str expected".to_owned())),
                     },
         _ => Err(InvalidType("String expected".to_owned())),
     }

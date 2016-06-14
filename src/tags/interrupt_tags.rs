@@ -21,7 +21,7 @@ pub fn break_tag(_tag_name: &str,
     if arguments.len() > 0 {
         return Error::parser("%}", arguments.first());
     }
-    return Ok(Box::new(Break));
+    Ok(Box::new(Break))
 }
 
 struct Continue;
@@ -40,7 +40,7 @@ pub fn continue_tag(_tag_name: &str,
     if arguments.len() > 0 {
         return Error::parser("%}", arguments.first());
     }
-    return Ok(Box::new(Continue));
+    Ok(Box::new(Continue))
 }
 
 

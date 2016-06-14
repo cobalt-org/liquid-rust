@@ -2,7 +2,7 @@ use Renderable;
 use context::Context;
 use error::Result;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Variable {
     name: String,
 }

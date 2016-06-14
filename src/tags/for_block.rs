@@ -117,17 +117,16 @@ fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     try!(expect(args, Colon));
     match args.next() {
         Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => return Error::parser("number", x)
+        x => Error::parser("number", x)
     }
 }
 
 fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
-    let t = match args.next() {
+    match args.next() {
         Some(id @ &NumberLiteral(_)) |
-        Some(id @ &Identifier(_)) => id.clone(),
-        x => return Error::parser("number | Identifier", x)
-    };
-    Ok(t)
+        Some(id @ &Identifier(_)) => Ok(id.clone()),
+        x => Error::parser("number | Identifier", x)
+    }
 }
 
 pub fn for_block(_tag_name: &str,
