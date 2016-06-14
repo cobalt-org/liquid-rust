@@ -28,7 +28,7 @@
 
 // Deny warnings, except in dev mode
 #![deny(warnings)]
-//#![deny(missing_docs)]
+// #![deny(missing_docs)]
 #![cfg_attr(feature="dev", warn(warnings))]
 
 // Ignore clippy, except in dev mode
@@ -66,8 +66,8 @@ extern crate regex;
 
 use std::collections::HashMap;
 use lexer::Element;
-use tags::{assign_tag, cycle_tag, include_tag, break_tag, continue_tag,
-           comment_block, raw_block, for_block, if_block, unless_block, capture_block, case_block};
+use tags::{assign_tag, cycle_tag, include_tag, break_tag, continue_tag, comment_block, raw_block,
+           for_block, if_block, unless_block, capture_block, case_block};
 use std::default::Default;
 use std::path::PathBuf;
 use error::Result;
@@ -164,19 +164,19 @@ impl LiquidOptions {
     /// Registers all known tags and blocks in an existing options
     /// struct
     pub fn register_known_blocks(&mut self) {
-        self.register_tag("assign",   Box::new(assign_tag));
-        self.register_tag("break",    Box::new(break_tag));
+        self.register_tag("assign", Box::new(assign_tag));
+        self.register_tag("break", Box::new(break_tag));
         self.register_tag("continue", Box::new(continue_tag));
-        self.register_tag("cycle",    Box::new(cycle_tag));
-        self.register_tag("include",  Box::new(include_tag));
+        self.register_tag("cycle", Box::new(cycle_tag));
+        self.register_tag("include", Box::new(include_tag));
 
-        self.register_block("raw",     Box::new(raw_block));
-        self.register_block("if",      Box::new(if_block));
-        self.register_block("unless",  Box::new(unless_block));
-        self.register_block("for",     Box::new(for_block));
+        self.register_block("raw", Box::new(raw_block));
+        self.register_block("if", Box::new(if_block));
+        self.register_block("unless", Box::new(unless_block));
+        self.register_block("for", Box::new(for_block));
         self.register_block("comment", Box::new(comment_block));
         self.register_block("capture", Box::new(capture_block));
-        self.register_block("case",    Box::new(case_block));
+        self.register_block("case", Box::new(case_block));
     }
 
     /// Inserts a new custom block into the options object

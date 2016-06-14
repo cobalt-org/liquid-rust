@@ -58,8 +58,7 @@ impl Output {
         // apply all specified filters
         for filter in &self.filters {
             let f = try!(context.get_filter(&filter.name)
-                                .ok_or(Error::Render(format!("Filter {} not implemented",
-                                                             &filter.name))));
+                .ok_or(Error::Render(format!("Filter {} not implemented", &filter.name))));
             entry = try!(f(&entry, &filter.arguments));
         }
 

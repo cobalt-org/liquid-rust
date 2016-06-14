@@ -8,7 +8,7 @@ use error::{Error, Result};
 
 struct Assign {
     dst: String,
-    src: Output
+    src: Output,
 }
 
 impl Renderable for Assign {
@@ -21,11 +21,12 @@ impl Renderable for Assign {
 
 pub fn assign_tag(_tag_name: &str,
                   arguments: &[Token],
-                  _options: &LiquidOptions) -> Result<Box<Renderable>> {
+                  _options: &LiquidOptions)
+                  -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let dst = match args.next() {
         Some(&Identifier(ref id)) => id.clone(),
-        x => return Error::parser("Identifier", x)
+        x => return Error::parser("Identifier", x),
     };
 
     try!(expect(&mut args, Assignment));
@@ -34,7 +35,7 @@ pub fn assign_tag(_tag_name: &str,
 
     Ok(Box::new(Assign {
         dst: dst,
-        src: src
+        src: src,
     }))
 }
 
@@ -47,37 +48,36 @@ mod test {
 
     #[test]
     fn assignment_in_loop_persists_on_loop_exit() {
-        let text = concat!(
-            "{% assign freestyle = false %}",
-            "{% for t in tags %}{% if t == 'freestyle' %}",
-            "{% assign freestyle = true %}",
-            "{% endif %}{% endfor %}",
-            "{% if freestyle %}",
-            "<p>Freestyle!</p>",
-            "{% endif %}");
+        let text = concat!("{% assign freestyle = false %}",
+                           "{% for t in tags %}{% if t == 'freestyle' %}",
+                           "{% assign freestyle = true %}",
+                           "{% endif %}{% endfor %}",
+                           "{% if freestyle %}",
+                           "<p>Freestyle!</p>",
+                           "{% endif %}");
         let template = parse(text, Default::default()).unwrap();
 
-        /* test one: no matching value in `tags` */ {
+        // test one: no matching value in `tags`
+        {
             let mut context = Context::new();
-            context.set_val("tags", Value::Array(vec!(
-                Value::str("alpha"),
-                Value::str("beta"),
-                Value::str("gamma")
-            )));
+            context.set_val("tags",
+                            Value::Array(vec![Value::str("alpha"),
+                                              Value::str("beta"),
+                                              Value::str("gamma")]));
 
             let output = template.render(&mut context);
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(false)));
             assert_eq!(output.unwrap(), Some("".to_string()));
         }
 
-        /* test two: matching value in `tags` */ {
+        // test two: matching value in `tags`
+        {
             let mut context = Context::new();
-            context.set_val("tags", Value::Array(vec!(
-                Value::str("alpha"),
-                Value::str("beta"),
-                Value::str("freestyle"),
-                Value::str("gamma")
-            )));
+            context.set_val("tags",
+                            Value::Array(vec![Value::str("alpha"),
+                                              Value::str("beta"),
+                                              Value::str("freestyle"),
+                                              Value::str("gamma")]));
 
             let output = template.render(&mut context);
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(true)));

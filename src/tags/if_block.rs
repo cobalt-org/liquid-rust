@@ -12,7 +12,7 @@ use error::{Error, Result};
 struct Condition {
     lh: Token,
     comparison: ComparisonOperator,
-    rh: Token
+    rh: Token,
 }
 
 struct Conditional {
@@ -68,22 +68,26 @@ fn condition(arguments: &[Token]) -> Result<Condition> {
         Some(&Comparison(ref x)) => {
             let rhs = try!(consume_value_token(&mut args));
             (x.clone(), rhs)
-        },
+        }
         None => {
             // no trailing operator or RHS value implies "== true"
             (ComparisonOperator::Equals, Token::BooleanLiteral(true))
-        },
-        x @ Some(_) => return Error::parser("comparison operator", x)
+        }
+        x @ Some(_) => return Error::parser("comparison operator", x),
     };
 
-    Ok(Condition {lh: lh, comparison: comp, rh: rh})
+    Ok(Condition {
+        lh: lh,
+        comparison: comp,
+        rh: rh,
+    })
 }
 
 pub fn unless_block(_tag_name: &str,
                     arguments: &[Token],
                     tokens: Vec<Element>,
                     options: &LiquidOptions)
-                            -> Result<Box<Renderable>> {
+                    -> Result<Box<Renderable>> {
     let cond = try!(condition(arguments));
     Ok(Box::new(Conditional {
         condition: cond,
@@ -97,30 +101,29 @@ pub fn if_block(_tag_name: &str,
                 arguments: &[Token],
                 tokens: Vec<Element>,
                 options: &LiquidOptions)
-                            -> Result<Box<Renderable>> {
+                -> Result<Box<Renderable>> {
     let cond = try!(condition(arguments));
 
-    let (leading_tokens, trailing_tokens) = split_block(&tokens[..],
-                                                        &["else", "elsif"],
-                                                        options);
+    let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
     let if_false = match trailing_tokens {
         None => None,
 
         Some(ref split) if split.delimiter == "else" => {
             let parsed = try!(parse(&split.trailing[1..], options));
             Some(Template::new(parsed))
-        },
+        }
 
         Some(ref split) if split.delimiter == "elsif" => {
-            let child_tokens : Vec<Element> = split.trailing.iter()
-                                                            .skip(1)
-                                                            .cloned()
-                                                            .collect();
+            let child_tokens: Vec<Element> = split.trailing
+                .iter()
+                .skip(1)
+                .cloned()
+                .collect();
             let parsed = try!(if_block("if", &split.args[1..], child_tokens, options));
-            Some(Template::new(vec!(parsed)))
-        },
+            Some(Template::new(vec![parsed]))
+        }
 
-        Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter)
+        Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter),
     };
 
     let if_true = Template::new(try!(parse(leading_tokens, options)));
@@ -144,13 +147,15 @@ mod test {
     #[test]
     fn number_comparison() {
         let a = parse("{% if 6 < 7  %}if true{% endif %}",
-                      LiquidOptions::default()).unwrap()
-                                               .render(&mut Context::new());
+                      LiquidOptions::default())
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         let b = parse("{% if 7 < 6  %}if true{% else %}if false{% endif %}",
-                      LiquidOptions::default()).unwrap()
-                                               .render(&mut Context::new());
+                      LiquidOptions::default())
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("if false".to_owned()));
     }
 
@@ -158,14 +163,16 @@ mod test {
     fn string_comparison() {
         // "one" == "one" then "if true" else "if false"
         let a = parse("{% if \"one\" == \"one\" %}if true{% endif %}",
-                      LiquidOptions::default()).unwrap()
-                                               .render(&mut Context::new());
+                      LiquidOptions::default())
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         // "one" == "two"
         let b = parse("{% if \"one\" == \"two\" %}if true{% endif %}",
-                      LiquidOptions::default()).unwrap()
-                                               .render(&mut Context::new());
+                      LiquidOptions::default())
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("".to_owned()));
     }
 
@@ -177,12 +184,11 @@ mod test {
         use Renderable;
         use value::Value;
 
-        let text = concat!(
-            "{% if truthy %}",
-            "yep",
-            "{% else %}",
-            "nope",
-            "{% endif %}");
+        let text = concat!("{% if truthy %}",
+                           "yep",
+                           "{% else %}",
+                           "nope",
+                           "{% endif %}");
 
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
@@ -201,16 +207,14 @@ mod test {
     #[test]
     fn unless() {
         use value::Value;
-        let text = concat!(
-            "{% unless some_value == 1 %}",
-                "unless body",
-            "{% endunless %}");
+        let text = concat!("{% unless some_value == 1 %}",
+                           "unless body",
+                           "{% endunless %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
 
         context.set_val("some_value", Value::Num(1f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("".to_string()));
+        assert_eq!(template.render(&mut context).unwrap(), Some("".to_string()));
 
         context.set_val("some_value", Value::Num(42f32));
         assert_eq!(template.render(&mut context).unwrap(),
@@ -220,17 +224,16 @@ mod test {
     #[test]
     fn nested_if_else() {
         use value::Value;
-        let text = concat!(
-            "{% if truthy %}",
-                "yep, ",
-                "{% if also_truthy %}",
-                    "also truthy",
-                "{% else %}",
-                    "not also truthy",
-                "{% endif %}",
-            "{% else %}",
-            "nope",
-            "{% endif %}");
+        let text = concat!("{% if truthy %}",
+                           "yep, ",
+                           "{% if also_truthy %}",
+                           "also truthy",
+                           "{% else %}",
+                           "not also truthy",
+                           "{% endif %}",
+                           "{% else %}",
+                           "nope",
+                           "{% endif %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
         context.set_val("truthy", Value::Bool(true));
@@ -243,16 +246,15 @@ mod test {
     #[test]
     fn multiple_elif_blocks() {
         use value::Value;
-        let text = concat!(
-            "{% if a == 1 %}",
-            "first",
-            "{% elsif a == 2 %}",
-            "second",
-            "{% elsif a == 3 %}",
-            "third",
-            "{% else %}",
-            "fourth",
-            "{% endif %}");
+        let text = concat!("{% if a == 1 %}",
+                           "first",
+                           "{% elsif a == 2 %}",
+                           "second",
+                           "{% elsif a == 3 %}",
+                           "third",
+                           "{% else %}",
+                           "fourth",
+                           "{% endif %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
 

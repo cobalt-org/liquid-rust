@@ -57,7 +57,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
     let entry = match tokens[0] {
         Identifier(ref x) => VarOrVal::Var(Variable::new(x)),
-        ref x => VarOrVal::Val(try!(Value::from_token(x)))
+        ref x => VarOrVal::Val(try!(Value::from_token(x))),
     };
 
     let mut filters = vec![];
@@ -139,13 +139,11 @@ fn parse_tag(iter: &mut Iter<Element>,
                     match tokens[0] {
                         ref n if n == tag => {
                             nesting_depth += 1;
-                        },
+                        }
                         ref n if n == &end_tag && nesting_depth > 0 => {
                             nesting_depth -= 1;
-                        },
-                        ref n if n == &end_tag && nesting_depth == 0 => {
-                            break
-                        },
+                        }
+                        ref n if n == &end_tag && nesting_depth == 0 => break,
                         _ => {}
                     }
                 };
@@ -160,10 +158,12 @@ fn parse_tag(iter: &mut Iter<Element>,
 
 /// Confirm that the next token in a token stream is what you want it
 /// to be. The token iterator is moved to the next token in the stream.
-pub fn expect<'a, T>(tokens: &mut T, expected: Token) -> Result<&'a Token> where T: Iterator<Item=&'a Token> {
+pub fn expect<'a, T>(tokens: &mut T, expected: Token) -> Result<&'a Token>
+    where T: Iterator<Item = &'a Token>
+{
     match tokens.next() {
         Some(x) if *x == expected => Ok(x),
-        x => Error::parser(&expected.to_string(), x)
+        x => Error::parser(&expected.to_string(), x),
     }
 }
 
@@ -173,7 +173,7 @@ pub fn expect<'a, T>(tokens: &mut T, expected: Token) -> Result<&'a Token> where
 pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
     match tokens.next() {
         Some(t) => value_token(t.clone()),
-        None => Error::parser("string | number | identifier", None)
+        None => Error::parser("string | number | identifier", None),
     }
 }
 
@@ -184,12 +184,8 @@ pub fn value_token(t: Token) -> Result<Token> {
         v @ StringLiteral(_) |
         v @ NumberLiteral(_) |
         v @ BooleanLiteral(_) |
-        v @ Identifier(_) => {
-            Ok(v)
-        },
-        x => {
-            Error::parser("string | number | boolean | identifier", Some(&x))
-        }
+        v @ Identifier(_) => Ok(v),
+        x => Error::parser("string | number | boolean | identifier", Some(&x)),
     }
 }
 
@@ -197,7 +193,7 @@ pub fn value_token(t: Token) -> Result<Token> {
 pub struct BlockSplit<'a> {
     pub delimiter: String,
     pub args: &'a [Token],
-    pub trailing: &'a [Element]
+    pub trailing: &'a [Element],
 }
 
 /// A sub-block aware splitter that will only split the token stream
@@ -207,36 +203,35 @@ pub struct BlockSplit<'a> {
 /// Returns a slice contaiing all elements before the delimiter, and
 /// an optional BlockSplit struct describing the delimiter and
 /// trailing elements.
-pub fn split_block<'a>(tokens: &'a[Element],
+pub fn split_block<'a>(tokens: &'a [Element],
                        delimiters: &[&str],
-                       options: &LiquidOptions) ->
-                            (&'a[Element], Option<BlockSplit<'a>>) {
+                       options: &LiquidOptions)
+                       -> (&'a [Element], Option<BlockSplit<'a>>) {
     // construct a fast-lookup cache of the delimiters, as we're going to be
     // consulting the delimiter list a *lot*.
-    let delims : HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x|*x));
-    let mut stack : Vec<String> = Vec::new();
+    let delims: HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x| *x));
+    let mut stack: Vec<String> = Vec::new();
 
     for (i, t) in tokens.iter().enumerate() {
         if let Tag(ref args, _) = *t {
             match args[0] {
                 Identifier(ref name) if options.blocks.contains_key(name) => {
                     stack.push("end".to_owned() + name);
-                },
+                }
 
                 Identifier(ref name) if Some(name) == stack.last() => {
                     stack.pop();
-                },
+                }
 
-                Identifier(ref name) if stack.is_empty() &&
-                                        delims.contains(name.as_str()) => {
+                Identifier(ref name) if stack.is_empty() && delims.contains(name.as_str()) => {
                     let leading = &tokens[0..i];
                     let split = BlockSplit {
                         delimiter: name.clone(),
                         args: args,
-                        trailing: &tokens[i..]
+                        trailing: &tokens[i..],
                     };
                     return (leading, Some(split));
-                },
+                }
                 _ => {}
             }
         }
@@ -256,29 +251,24 @@ mod test {
 
         #[test]
         fn parses_filters() {
-            let tokens = granularize(
-                "abc | def:'1',2,'3' | blabla"
-            ).unwrap();
+            let tokens = granularize("abc | def:'1',2,'3' | blabla").unwrap();
 
             let result = parse_output(&tokens);
-            assert_eq!(result.unwrap(), Output::new(
-                VarOrVal::Var(Variable::new("abc")),
-                vec![
+            assert_eq!(result.unwrap(),
+                       Output::new(VarOrVal::Var(Variable::new("abc")),
+                                   vec![
                     FilterPrototype::new("def", vec![
                                          Value::str("1"),
                                          Value::Num(2.0),
                                          Value::str("3"),
                     ]),
                     FilterPrototype::new("blabla", vec![]),
-                ],
-            ));
+                ]));
         }
 
         #[test]
         fn requires_filter_names() {
-            let tokens = granularize(
-                "abc | '1','2','3' | blabla"
-            ).unwrap();
+            let tokens = granularize("abc | '1','2','3' | blabla").unwrap();
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
@@ -287,9 +277,7 @@ mod test {
 
         #[test]
         fn fails_on_missing_pipes() {
-            let tokens = granularize(
-                "abc | def:'1',2,'3' blabla"
-            ).unwrap();
+            let tokens = granularize("abc | def:'1',2,'3' blabla").unwrap();
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
@@ -298,9 +286,7 @@ mod test {
 
         #[test]
         fn fails_on_missing_colons() {
-            let tokens = granularize(
-                "abc | def '1',2,'3' | blabla"
-            ).unwrap();
+            let tokens = granularize("abc | def '1',2,'3' | blabla").unwrap();
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
@@ -314,7 +300,7 @@ mod test {
         #[test]
         fn rejects_unexpected_token() {
             use token::Token::{Pipe, Dot, Colon, Comma};
-            let token_vec = vec!(Pipe, Dot, Colon);
+            let token_vec = vec![Pipe, Dot, Colon];
             let mut tokens = token_vec.iter();
 
             assert!(expect(&mut tokens, Pipe).is_ok());
@@ -332,9 +318,9 @@ mod test {
         fn handles_nonmatching_stream() {
             // A stream of tokens with lots of `else`s in it, but only one at the
             // top level, which is where it should split.
-            let tokens = tokenize(
-                "{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} else tag"
-            ).unwrap();
+            let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
+                                   else tag")
+                .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know
@@ -352,19 +338,18 @@ mod test {
 
             // A stream of tokens with lots of `else`s in it, but only one at the
             // top level, which is where it should split.
-            let tokens = tokenize(concat!(
-                "{% for x in (1..10) %}",
-                    "{% if x == 2 %}",
-                        "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
-                    "{% else %}",
-                        "c",
-                    "{% endif %}",
-                "{% else %}",
-                    "something",
-                "{% endfor %}",
-                "{% else %}",
-                "trailing tags"
-                )).unwrap();
+            let tokens = tokenize(concat!("{% for x in (1..10) %}",
+                                          "{% if x == 2 %}",
+                                          "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
+                                          "{% else %}",
+                                          "c",
+                                          "{% endif %}",
+                                          "{% else %}",
+                                          "something",
+                                          "{% endfor %}",
+                                          "{% else %}",
+                                          "trailing tags"))
+                .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know
@@ -375,11 +360,12 @@ mod test {
                 Some(split) => {
                     assert_eq!(split.delimiter, "else");
                     assert_eq!(split.args, &[Identifier("else".to_owned())]);
-                    assert_eq!(split.trailing, &[
-                        Tag(vec![Identifier("else".to_owned())], "{% else %}".to_owned()),
-                        Raw("trailing tags".to_owned())]);
-                },
-                None => panic!("split failed")
+                    assert_eq!(split.trailing,
+                               &[Tag(vec![Identifier("else".to_owned())],
+                                     "{% else %}".to_owned()),
+                                 Raw("trailing tags".to_owned())]);
+                }
+                None => panic!("split failed"),
             }
         }
     }

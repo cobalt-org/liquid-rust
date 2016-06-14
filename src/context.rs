@@ -6,7 +6,10 @@ use value::Value;
 
 
 #[derive(Clone)]
-pub enum Interrupt { Continue, Break }
+pub enum Interrupt {
+    Continue,
+    Break,
+}
 
 type ValueMap = HashMap<String, Value>;
 
@@ -26,7 +29,7 @@ pub struct Context {
     cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
-    pub filters: HashMap<String, Box<Filter>>
+    pub filters: HashMap<String, Box<Filter>>,
 }
 
 impl Context {
@@ -47,24 +50,23 @@ impl Context {
         Context::with_values_and_filters(values, HashMap::new())
     }
 
-    pub fn with_filters(filters: HashMap<String, Box<Filter>>)
-                        -> Context {
+    pub fn with_filters(filters: HashMap<String, Box<Filter>>) -> Context {
         Context::with_values_and_filters(HashMap::new(), filters)
     }
 
     pub fn with_values_and_filters(values: HashMap<String, Value>,
-                                   filters: HashMap<String, Box<Filter>>) -> Context {
+                                   filters: HashMap<String, Box<Filter>>)
+                                   -> Context {
         Context {
-            stack: vec!(HashMap::new()),
+            stack: vec![HashMap::new()],
             interrupt: None,
             cycles: HashMap::new(),
             globals: values,
-            filters: filters
+            filters: filters,
         }
     }
 
-    pub fn cycle_element(&mut self, name: &str, values: &[Token]) ->
-            Result<Option<Value>> {
+    pub fn cycle_element(&mut self, name: &str, values: &[Token]) -> Result<Option<Value>> {
         let index = {
             let i = self.cycles.entry(name.to_owned()).or_insert(0);
             let j = *i;
@@ -73,9 +75,9 @@ impl Context {
         };
 
         if index >= values.len() {
-            return Err(Error::Render(
-                format!("cycle index {} out of bounds {}", index, values.len()
-            )));
+            return Err(Error::Render(format!("cycle index {} out of bounds {}",
+                                             index,
+                                             values.len())));
         }
 
         self.evaluate(&values[index])
@@ -145,7 +147,8 @@ impl Context {
     /// assert_eq!(ctx.get_val("test"), Some(&Value::Num(42f32)));
     /// ```
     pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
-        where FnT : FnOnce(&mut Context) -> RvalT {
+        where FnT: FnOnce(&mut Context) -> RvalT
+    {
         self.push_scope();
         let result = f(self);
         self.pop_scope();
@@ -211,12 +214,10 @@ impl Context {
     /// necessary
     pub fn evaluate(&self, t: &Token) -> Result<Option<Value>> {
         match t {
-            &NumberLiteral(f)     => Ok(Some(Value::Num(f))),
+            &NumberLiteral(f) => Ok(Some(Value::Num(f))),
             &StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
-            &BooleanLiteral(b)    => Ok(Some(Value::Bool(b))),
-            &Identifier(ref id)   => {
-                Ok(self.get_val(id).cloned())
-            },
+            &BooleanLiteral(b) => Ok(Some(Value::Bool(b))),
+            &Identifier(ref id) => Ok(self.get_val(id).cloned()),
             _ => {
                 let msg = format!("Cannot evaluate {}", t);
                 Err(Error::Other(msg))
@@ -251,7 +252,7 @@ impl Context {
     pub fn set_local_val(&mut self, name: &str, val: Value) -> Option<Value> {
         match self.stack.last_mut() {
             Some(frame) => frame.insert(name.to_owned(), val),
-            None => panic!("Cannot insert into an empty stack")
+            None => panic!("Cannot insert into an empty stack"),
         }
     }
 }
@@ -277,7 +278,7 @@ mod test {
         ctx.set_val("test", Value::Num(42f32));
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
 
-        ctx.run_in_scope(|mut new_scope|{
+        ctx.run_in_scope(|mut new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(new_scope.get_val("test").unwrap(), &Value::Num(42f32));
 
@@ -300,7 +301,7 @@ mod test {
 
         let ctx = Context::new();
         let t = StringLiteral("hello".to_owned());
-        assert_eq!( ctx.evaluate(&t).unwrap(), Some(Value::str("hello")) );
+        assert_eq!(ctx.evaluate(&t).unwrap(), Some(Value::str("hello")));
     }
 
     #[test]
@@ -308,8 +309,8 @@ mod test {
         use token::Token::NumberLiteral;
 
         let ctx = Context::new();
-        assert_eq!( ctx.evaluate(&NumberLiteral(42f32)).unwrap(),
-                    Some(Value::Num(42f32)) );
+        assert_eq!(ctx.evaluate(&NumberLiteral(42f32)).unwrap(),
+                   Some(Value::Num(42f32)));
     }
 
     #[test]
@@ -318,10 +319,10 @@ mod test {
 
         let ctx = Context::new();
         assert_eq!(ctx.evaluate(&BooleanLiteral(true)).unwrap(),
-                   Some(Value::Bool(true)) );
+                   Some(Value::Bool(true)));
 
         assert_eq!(ctx.evaluate(&BooleanLiteral(false)).unwrap(),
-                   Some(Value::Bool(false)) );
+                   Some(Value::Bool(false)));
     }
 
     #[test]
@@ -332,8 +333,7 @@ mod test {
         ctx.set_val("var0", Value::Num(42f32));
         assert_eq!(ctx.evaluate(&Identifier("var0".to_owned())).unwrap(),
                    Some(Value::Num(42f32)));
-        assert_eq!(ctx.evaluate(&Identifier("nope".to_owned())).unwrap(),
-                   None);
+        assert_eq!(ctx.evaluate(&Identifier("nope".to_owned())).unwrap(), None);
     }
 
     #[test]
@@ -343,4 +343,3 @@ mod test {
         assert!(ctx.evaluate(&DotDot).is_err());
     }
 }
-

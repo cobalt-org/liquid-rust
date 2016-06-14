@@ -71,18 +71,22 @@ pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
 
 pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref s) => Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
-            let next_char = match word.chars().last() {
-                Some(last) =>
-                    if last.is_whitespace() {
-                        chr.to_uppercase().next().unwrap()
-                    } else {
-                        chr
-                    },
-                _ => chr.to_uppercase().next().unwrap(),
-            }.to_string();
-            word + &next_char
-        }))),
+        Str(ref s) => {
+            Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
+                let next_char = match word.chars().last() {
+                        Some(last) => {
+                            if last.is_whitespace() {
+                                chr.to_uppercase().next().unwrap()
+                            } else {
+                                chr
+                            }
+                        }
+                        _ => chr.to_uppercase().next().unwrap(),
+                    }
+                    .to_string();
+                word + &next_char
+            })))
+        }
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
@@ -190,10 +194,12 @@ pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
 
 pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref x) => match args.first() {
-                        Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
-                        _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-                    },
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
@@ -201,20 +207,24 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
 
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref x) => match args.first() {
-                        Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
-                        _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-                    },
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
 
 pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref x) => match x.chars().next() {
+        Str(ref x) => {
+            match x.chars().next() {
                 Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned()))
-            },
+                _ => Ok(Str("".to_owned())),
+            }
+        }
         Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
         _ => Err(InvalidType("String or Array expected".to_owned())),
     }
@@ -223,10 +233,12 @@ pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
 
 pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref x) => match x.chars().last() {
+        Str(ref x) => {
+            match x.chars().last() {
                 Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned()))
-            },
+                _ => Ok(Str("".to_owned())),
+            }
+        }
         Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
         _ => Err(InvalidType("String or Array expected".to_owned())),
     }
@@ -257,7 +269,9 @@ mod tests {
     fn unit_size() {
         assert_eq!(unit!(size, tos!("abc")), Num(3f32));
         assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
-        assert_eq!(unit!(size, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(5f32));
+        assert_eq!(unit!(size,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(5f32));
     }
 
     #[test]
@@ -282,7 +296,7 @@ mod tests {
 
         // sure that Umlauts work
         assert_eq!(unit!(capitalize, tos!("über ètat, y̆es?")),
-                    tos!("Über Ètat, Y\u{306}es?"));
+                   tos!("Über Ètat, Y\u{306}es?"));
 
         // Weird UTF-8 White space is kept – this is a no-break whitespace!
         assert_eq!(unit!(capitalize, tos!("hello world​")),
@@ -295,8 +309,8 @@ mod tests {
         assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
                    tos!("one"));
 
-       assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
-                  tos!("many"));
+        assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
+                   tos!("many"));
     }
 
     #[test]
@@ -366,21 +380,26 @@ mod tests {
 
     #[test]
     fn unit_append() {
-        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]),
-                   tos!("samson"));
+        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]), tos!("samson"));
     }
 
     #[test]
     fn unit_first() {
-        assert_eq!(unit!(first, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(0f32));
-        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])), tos!("test"));
+        assert_eq!(unit!(first,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(0f32));
+        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])),
+                   tos!("test"));
         assert_eq!(unit!(first, Array(vec![])), tos!(""));
     }
 
     #[test]
     fn unit_last() {
-        assert_eq!(unit!(last, Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])), Num(4f32));
-        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])), tos!("last"));
+        assert_eq!(unit!(last,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(4f32));
+        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
+                   tos!("last"));
         assert_eq!(unit!(last, Array(vec![])), tos!(""));
     }
 }

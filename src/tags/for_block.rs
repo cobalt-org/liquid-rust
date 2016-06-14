@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use std::slice::Iter;
 
 enum Range {
-    Array (String),
-    Counted (Token, Token)
+    Array(String),
+    Counted(Token, Token),
 }
 
 struct For {
@@ -23,7 +23,7 @@ struct For {
     else_template: Option<Template>,
     limit: Option<usize>,
     offset: usize,
-    reversed: bool
+    reversed: bool,
 }
 
 fn get_array(context: &Context, array_id: &str) -> Result<Vec<Value>> {
@@ -37,7 +37,7 @@ fn token_as_int(token: &Token, context: &Context) -> Result<isize> {
     let value = match try!(context.evaluate(token)) {
         Some(Value::Num(ref n)) => *n,
         Some(_) => return Error::renderer(&format!("{} is not a number.", token)),
-        None => return Error::renderer(&format!("No such value: {}", token))
+        None => return Error::renderer(&format!("No such value: {}", token)),
     };
 
     Ok(value as isize)
@@ -46,9 +46,7 @@ fn token_as_int(token: &Token, context: &Context) -> Result<isize> {
 impl Renderable for For {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let mut range = match self.range {
-            Range::Array(ref array_id) => {
-                try!(get_array(context, array_id))
-            },
+            Range::Array(ref array_id) => try!(get_array(context, array_id)),
 
             Range::Counted(ref start_token, ref stop_token) => {
                 let start = try!(token_as_int(start_token, context));
@@ -59,10 +57,10 @@ impl Renderable for For {
 
         let end = match self.limit {
             Some(n) => self.offset + n,
-            None => range.len()
+            None => range.len(),
         };
 
-        let slice = &mut range[self.offset .. end];
+        let slice = &mut range[self.offset..end];
         if self.reversed {
             slice.reverse();
         };
@@ -74,7 +72,7 @@ impl Renderable for For {
                 } else {
                     Ok(None)
                 }
-            },
+            }
 
             range_len => {
                 let mut ret = String::default();
@@ -117,7 +115,7 @@ fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     try!(expect(args, Colon));
     match args.next() {
         Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => Error::parser("number", x)
+        x => Error::parser("number", x),
     }
 }
 
@@ -125,7 +123,7 @@ fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
         Some(id @ &NumberLiteral(_)) |
         Some(id @ &Identifier(_)) => Ok(id.clone()),
-        x => Error::parser("number | Identifier", x)
+        x => Error::parser("number | Identifier", x),
     }
 }
 
@@ -137,7 +135,7 @@ pub fn for_block(_tag_name: &str,
     let mut args = arguments.iter();
     let var_name = match args.next() {
         Some(&Identifier(ref x)) => x.clone(),
-        x => return Error::parser("Identifier", x)
+        x => return Error::parser("Identifier", x),
     };
 
     try!(expect(&mut args, Identifier("in".to_owned())));
@@ -154,14 +152,14 @@ pub fn for_block(_tag_name: &str,
 
             try!(expect(&mut args, CloseRound));
 
-            Range::Counted (start, stop)
-        },
+            Range::Counted(start, stop)
+        }
         x => return Error::parser("Identifier or (", x),
     };
 
     // now we get to check for parameters...
-    let mut limit : Option<usize> = None;
-    let mut offset : usize = 0;
+    let mut limit: Option<usize> = None;
+    let mut offset: usize = 0;
     let mut reversed = false;
 
     while let Some(token) = args.next() {
@@ -171,12 +169,10 @@ pub fn for_block(_tag_name: &str,
                     "limit" => limit = try!(int_attr(&mut args)),
                     "offset" => offset = try!(int_attr(&mut args)).unwrap_or(0),
                     "reversed" => reversed = true,
-                    _ => return Error::parser("limit | offset | reversed", Some(token))
+                    _ => return Error::parser("limit | offset | reversed", Some(token)),
                 }
-            },
-            _ => {
-                return Error::parser("Identifier", Some(token))
             }
+            _ => return Error::parser("Identifier", Some(token)),
         }
     }
 
@@ -187,8 +183,8 @@ pub fn for_block(_tag_name: &str,
         Some(split) => {
             let parsed = try!(parse(&split.trailing[1..], options));
             Some(Template::new(parsed))
-        },
-        None => None
+        }
+        None => None,
     };
 
     Ok(Box::new(For {
@@ -198,12 +194,12 @@ pub fn for_block(_tag_name: &str,
         else_template: else_template,
         limit: limit,
         offset: offset,
-        reversed: reversed
+        reversed: reversed,
     }))
 }
 
 #[cfg(test)]
-mod test{
+mod test {
     use super::for_block;
     use parse;
     use LiquidOptions;
@@ -256,20 +252,17 @@ mod test{
 
     #[test]
     fn loop_over_range_vars() {
-        let text = concat!(
-            "{% for x in (alpha .. omega) %}",
-            "#{{for_loop.index}} test {{x}}, ",
-            "{% endfor %}"
-        );
+        let text = concat!("{% for x in (alpha .. omega) %}",
+                           "#{{for_loop.index}} test {{x}}, ",
+                           "{% endfor %}");
 
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         context.set_val("alpha", Value::Num(42f32));
         context.set_val("omega", Value::Num(46f32));
         let output = template.render(&mut context);
-        assert_eq!(
-            output.unwrap(),
-            Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
+        assert_eq!(output.unwrap(),
+                   Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
     }
 
     #[test]
@@ -277,34 +270,32 @@ mod test{
         // test that nest nested for loops work, and that the
         // variable scopes between the inner and outer variable
         // scopes do not overlap.
-        let text = concat!(
-            "{% for outer in (1..5) %}",
-                ">>{{for_loop.index0}}:{{outer}}>>",
-                "{% for inner in (6..10) %}",
-                    "{{outer}}:{{for_loop.index0}}:{{inner}},",
-                "{% endfor %}",
-                ">>{{outer}}>>\n",
-            "{% endfor %}");
+        let text = concat!("{% for outer in (1..5) %}",
+                           ">>{{for_loop.index0}}:{{outer}}>>",
+                           "{% for inner in (6..10) %}",
+                           "{{outer}}:{{for_loop.index0}}:{{inner}},",
+                           "{% endfor %}",
+                           ">>{{outer}}>>\n",
+                           "{% endfor %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
-        assert_eq!(output.unwrap(), Some(concat!(
-            ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
-            ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
-            ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
-            ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n").to_owned()
-        ));
+        assert_eq!(output.unwrap(),
+                   Some(concat!(">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
+                                ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
+                                ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
+                                ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n")
+                       .to_owned()));
     }
 
     #[test]
     fn nested_for_loops_with_else() {
         // test that nested for loops parse their `else` blocks correctly
-        let text = concat!(
-            "{% for x in (0..i) %}",
-                "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
-            "{% else %}",
-                "empty outer",
-            "{% endfor %}");
+        let text = concat!("{% for x in (0..i) %}",
+                           "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
+                           "{% else %}",
+                           "empty outer",
+                           "{% endfor %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
 
@@ -324,11 +315,7 @@ mod test{
     fn degenerate_range_is_safe() {
         // make sure that a degenerate range (i.e. where max < min)
         // doesn't result in an infinte loop
-        let text = concat!(
-            "{% for x in (10 .. 0) %}",
-            "{{x}}",
-            "{% endfor %}"
-        );
+        let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -337,10 +324,9 @@ mod test{
 
     #[test]
     fn limited_loop() {
-        let text = concat!(
-            "{% for i in (1..100) limit:2 %}",
-            "{{ i }} ",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..100) limit:2 %}",
+                           "{{ i }} ",
+                           "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -349,10 +335,9 @@ mod test{
 
     #[test]
     fn offset_loop() {
-        let text = concat!(
-            "{% for i in (1..10) offset:4 %}",
-            "{{ i }} ",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..10) offset:4 %}",
+                           "{{ i }} ",
+                           "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -361,10 +346,9 @@ mod test{
 
     #[test]
     fn offset_and_limited_loop() {
-        let text = concat!(
-            "{% for i in (1..10) offset:4 limit:2 %}",
-            "{{ i }} ",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..10) offset:4 limit:2 %}",
+                           "{{ i }} ",
+                           "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -373,10 +357,9 @@ mod test{
 
     #[test]
     fn reversed_loop() {
-        let text = concat!(
-            "{% for i in (1..10) reversed %}",
-            "{{ i }} ",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..10) reversed %}",
+                           "{{ i }} ",
+                           "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -385,10 +368,9 @@ mod test{
 
     #[test]
     fn sliced_and_reversed_loop() {
-        let text = concat!(
-            "{% for i in (1..10) reversed offset:1 limit:5%}",
-            "{{ i }} ",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..10) reversed offset:1 limit:5%}",
+                           "{{ i }} ",
+                           "{% endfor %}");
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
         let output = template.render(&mut context);
@@ -397,12 +379,11 @@ mod test{
 
     #[test]
     fn empty_loop_invokes_else_template() {
-        let text = concat!(
-            "{% for i in (1..10) limit:0 %}",
-            "{{ i }} ",
-            "{% else %}",
-            "There are no items!",
-            "{% endfor %}");
+        let text = concat!("{% for i in (1..10) limit:0 %}",
+                           "{{ i }} ",
+                           "{% else %}",
+                           "There are no items!",
+                           "{% endfor %}");
 
         let template = parse(text, Default::default()).unwrap();
         let mut context = Context::new();
@@ -421,15 +402,15 @@ mod test{
                                   DotDot,
                                   NumberLiteral(103f32),
                                   CloseRound],
-                                tokenize(concat!(
-                                         "length: {{for_loop.length}}, ",
-                                         "index: {{for_loop.index}}, ",
-                                         "index0: {{for_loop.index0}}, ",
-                                         "rindex: {{for_loop.rindex}}, ",
-                                         "rindex0: {{for_loop.rindex0}}, ",
-                                         "value: {{v}}, ",
-                                         "first: {{for_loop.first}}, ",
-                                         "last: {{for_loop.last}}\n")).unwrap(),
+                                tokenize(concat!("length: {{for_loop.length}}, ",
+                                                 "index: {{for_loop.index}}, ",
+                                                 "index0: {{for_loop.index0}}, ",
+                                                 "rindex: {{for_loop.rindex}}, ",
+                                                 "rindex0: {{for_loop.rindex0}}, ",
+                                                 "value: {{v}}, ",
+                                                 "first: {{for_loop.first}}, ",
+                                                 "last: {{for_loop.last}}\n"))
+                                    .unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
@@ -455,7 +436,8 @@ mod test{
                                 &options);
 
         let mut data: Context = Default::default();
-        data.add_filter("shout", Box::new(|input, _args| {
+        data.add_filter("shout",
+                        Box::new(|input, _args| {
             if let &Value::Str(ref s) = input {
                 Ok(Value::Str(s.to_uppercase()))
             } else {
@@ -466,8 +448,7 @@ mod test{
         data.set_val("array",
                      Value::Array(vec![Value::str("alpha"),
                                        Value::str("beta"),
-                                       Value::str("gamma")
-                                       ]));
+                                       Value::str("gamma")]));
         assert_eq!(for_tag.unwrap().render(&mut data).unwrap(),
                    Some("test ALPHA test BETA test GAMMA ".to_owned()));
     }

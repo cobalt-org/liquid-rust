@@ -126,7 +126,8 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                 NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x)))
             }
             x if BOOLEAN_LITERAL.is_match(x) => {
-                BooleanLiteral(x.parse::<bool>().expect(&format!("Could not parse {:?} as bool", x)))
+                BooleanLiteral(x.parse::<bool>()
+                    .expect(&format!("Could not parse {:?} as bool", x)))
             }
             x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
             x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
@@ -202,9 +203,7 @@ fn test_granularize() {
     assert_eq!(granularize("test me").unwrap(),
                vec![Identifier("test".to_owned()), Identifier("me".to_owned())]);
     assert_eq!(granularize("test = me").unwrap(),
-           vec![Identifier("test".to_owned()),
-                Assignment,
-                Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()), Assignment, Identifier("me".to_owned())]);
     assert_eq!(granularize("test == me").unwrap(),
                vec![Identifier("test".to_owned()),
                     Comparison(Equals),

@@ -1,6 +1,7 @@
 use Renderable;
 use context::Context;
-use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor, round, prepend, append, first, last, pluralize, replace};
+use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
+              round, prepend, append, first, last, pluralize, replace};
 use error::Result;
 
 pub struct Template {

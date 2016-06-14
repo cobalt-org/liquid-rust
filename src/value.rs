@@ -13,7 +13,7 @@ pub enum Value {
     Str(String),
     Object(HashMap<String, Value>),
     Array(Vec<Value>),
-    Bool(bool)
+    Bool(bool),
 }
 
 impl Value {
@@ -46,9 +46,10 @@ impl PartialEq<Value> for Value {
 
             // encode Ruby truthiness; all values except false and nil
             // are true, and we don't have a notion of nil
-            (_, &Value::Bool(b)) | (&Value::Bool(b), _) => b,
+            (_, &Value::Bool(b)) |
+            (&Value::Bool(b), _) => b,
 
-            _ => false
+            _ => false,
         }
     }
 }
@@ -107,9 +108,10 @@ impl ToString for Value {
             Value::Array(ref x) => {
                 let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
                 arr.join(", ")
-            },
+            }
             Value::Object(ref x) => {
-                let arr: Vec<String> = x.iter().map(|(k, v)| k.clone() + ": " + &v.to_string()).collect();
+                let arr: Vec<String> =
+                    x.iter().map(|(k, v)| k.clone() + ": " + &v.to_string()).collect();
                 arr.join(", ")
             }
         }
@@ -127,8 +129,8 @@ mod test {
     use super::*;
     use std::collections::HashMap;
 
-    static TRUE : Value = Value::Bool(true);
-    static FALSE : Value = Value::Bool(false);
+    static TRUE: Value = Value::Bool(true);
+    static FALSE: Value = Value::Bool(false);
 
     #[test]
     fn test_num_to_string() {
@@ -147,7 +149,8 @@ mod test {
 
     #[test]
     fn test_array_to_string() {
-        let val = Value::Array(vec![Value::Num(3f32), Value::Str("test".to_owned()), Value::Num(5.3)]);
+        let val =
+            Value::Array(vec![Value::Num(3f32), Value::Str("test".to_owned()), Value::Num(5.3)]);
         assert_eq!(&val.to_string(), "3, test, 5.3");
     }
 
@@ -204,7 +207,7 @@ mod test {
 
         let a = Value::Object(values.clone());
 
-        values.insert("gamma".to_owned(), Value::Array(vec!()));
+        values.insert("gamma".to_owned(), Value::Array(vec![]));
         let b = Value::Object(values);
 
         assert_eq!(a, a);
@@ -220,8 +223,8 @@ mod test {
 
     #[test]
     fn array_equality() {
-        let a = Value::Array(vec!(Value::str("one"), Value::str("two")));
-        let b = Value::Array(vec!(Value::str("alpha"), Value::str("beta")));
+        let a = Value::Array(vec![Value::str("one"), Value::str("two")]);
+        let b = Value::Array(vec![Value::str("alpha"), Value::str("beta")]);
 
         assert_eq!(a, a);
         assert!(a != b);
@@ -240,10 +243,10 @@ mod test {
         let mut values = HashMap::<String, Value>::new();
         values.insert("alpha".to_owned(), Value::str("1"));
 
-        let terms = vec!(Value::Num(1f32),
+        let terms = vec![Value::Num(1f32),
                          Value::str("1"),
                          Value::Object(values),
-                         Value::Array(vec!(Value::Num(1f32))));
+                         Value::Array(vec![Value::Num(1f32)])];
 
         for (x, a) in terms.iter().enumerate() {
             for (y, b) in terms.iter().enumerate() {

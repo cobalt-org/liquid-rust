@@ -31,8 +31,8 @@ pub enum Token {
     NumberLiteral(f32),
     BooleanLiteral(bool),
     DotDot,
-    Comparison(ComparisonOperator),	
-    Or
+    Comparison(ComparisonOperator),
+    Or,
 }
 
 impl fmt::Display for Token {
@@ -59,9 +59,10 @@ impl fmt::Display for Token {
             Comparison(LessThan) => "<".to_owned(),
             Comparison(GreaterThan) => ">".to_owned(),
             Comparison(Contains) => "contains".to_owned(),
-            Identifier(ref x) | StringLiteral(ref x) => x.clone(),
+            Identifier(ref x) |
+            StringLiteral(ref x) => x.clone(),
             NumberLiteral(ref x) => x.to_string(),
-            BooleanLiteral(ref x) => x.to_string()
+            BooleanLiteral(ref x) => x.to_string(),
         };
         write!(f, "{}", out)
     }

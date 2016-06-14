@@ -10,7 +10,7 @@ use parser::parse;
 
 struct Capture {
     id: String,
-    template: Template
+    template: Template,
 }
 
 impl Renderable for Capture {
@@ -18,7 +18,7 @@ impl Renderable for Capture {
         let output = match self.template.render(context) {
             Ok(Some(s)) => s.clone(),
             Ok(None) => "".to_owned(),
-            Err(x) => return Err(x)
+            Err(x) => return Err(x),
         };
 
         context.set_val(&self.id, Value::Str(output));
@@ -34,21 +34,19 @@ pub fn capture_block(_tag_name: &str,
     let mut args = arguments.iter();
     let id = match args.next() {
         Some(&Identifier(ref x)) => x.clone(),
-        x @ Some(_) | x @ None => {
-            return Error::parser("Identifier", x)
-        }
+        x @ Some(_) | x @ None => return Error::parser("Identifier", x),
     };
 
     // there should be no trailing tokens after this
     if let t @ Some(_) = args.next() {
-        return Error::parser("%}", t)
+        return Error::parser("%}", t);
     };
 
     let t = Template::new(try!(parse(&tokens, options)));
 
     Ok(Box::new(Capture {
         id: id,
-        template: t
+        template: t,
     }))
 }
 
@@ -63,10 +61,9 @@ mod test {
 
     #[test]
     fn test_capture() {
-        let text = concat!(
-            "{% capture attribute_name %}",
-            "{{ item | upcase }}-{{ i }}-color",
-            "{% endcapture %}" );
+        let text = concat!("{% capture attribute_name %}",
+                           "{{ item | upcase }}-{{ i }}-color",
+                           "{% endcapture %}");
         let template = parse(text, LiquidOptions::default()).unwrap();
 
         let mut ctx = Context::new();
@@ -81,10 +78,9 @@ mod test {
 
     #[test]
     fn trailing_tokens_are_an_error() {
-        let text = concat!(
-            "{% capture foo bar baz %}",
-            "We should never see this",
-            "{% endcapture %}" );
+        let text = concat!("{% capture foo bar baz %}",
+                           "We should never see this",
+                           "{% endcapture %}");
         assert!(parse(text, LiquidOptions::default()).is_err());
     }
 }
