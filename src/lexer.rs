@@ -64,7 +64,7 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 
 lazy_static! {
     static ref SPLIT: Regex = Regex::new(
-        r"\s+|[\|:,\[\]\(\)\?-]|\.\.|={1,2}|!=|<=|>=|[<>]").unwrap();
+        r#"'.*?'|".*?"|\s+|[\|:,\[\]\(\)\?-]|\.\.|={1,2}|!=|<=|>=|[<>]"#).unwrap();
 }
 
 fn split_atom(block: &str) -> Vec<&str> {
@@ -267,4 +267,13 @@ fn test_granularize() {
                     DotDot,
                     NumberLiteral(5f32),
                     CloseRound]);
+    assert_eq!(granularize("\"1, '2', 3, 4\"").unwrap(),
+               vec![StringLiteral("1, '2', 3, 4".to_owned())]);
+    assert_eq!(granularize("'1, \"2\", 3, 4'").unwrap(),
+               vec![StringLiteral("1, \"2\", 3, 4".to_owned())]);
+    assert_eq!(granularize("\"1, '2', 3, 4\"\"1, '2', 3, 4\"").unwrap(),
+               vec![StringLiteral("1, '2', 3, 4".to_owned()),
+                    StringLiteral("1, '2', 3, 4".to_owned())]);
+    assert_eq!(granularize("abc : \"1, '2', 3, 4\"").unwrap(),
+               vec![Identifier("abc".to_owned()), Colon, StringLiteral("1, '2', 3, 4".to_owned())]);
 }
