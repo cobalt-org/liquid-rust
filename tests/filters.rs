@@ -239,3 +239,16 @@ pub fn split_no_comma() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("LETTER: a\nLETTER: b\nLETTER: c\n".to_string()));
 }
+
+#[test]
+// Split on 1 string and re-join on another
+pub fn split_then_join() {
+    let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("a, b, c".to_string()));
+}

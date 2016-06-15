@@ -3,6 +3,7 @@ use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
               round, prepend, append, first, last, pluralize, replace};
 use filters::split;
+use filters::join;
 use error::Result;
 
 pub struct Template {
@@ -30,6 +31,7 @@ impl Renderable for Template {
         context.add_filter("replace", Box::new(replace));
         context.add_filter("pluralize", Box::new(pluralize));
         context.add_filter("split", Box::new(split));
+        context.add_filter("join", Box::new(join));
 
         let mut buf = String::new();
         for el in &self.elements {
