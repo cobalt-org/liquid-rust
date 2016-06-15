@@ -244,6 +244,31 @@ pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn split(input: &Value, args: &[Value]) -> FilterResult {
+    // Make sure there is only 1 argument to split
+    if args.len() != 1 {
+        return Err(InvalidArgumentCount(format!("expected 1, {} given", args.len())));
+    }
+
+
+    match *input {
+        Str(ref string_to_split) => {
+            // the input String is in fact a String
+            match args.first() { // Check the first (and only) argument
+                Some(&Str(ref split_string)) => {
+                    // The split string argument is also in fact a String
+                    // Split and construct resulting Array
+                    Ok(Array(string_to_split.split(split_string)
+                        .map(|x| Str(String::from(x)))
+                        .collect()))
+                }
+                _ => Err(InvalidArgument(0, "expected String argument to split".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -401,5 +426,13 @@ mod tests {
         assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
                    tos!("last"));
         assert_eq!(unit!(last, Array(vec![])), tos!(""));
+    }
+
+    #[test]
+    fn unit_split() {
+        assert_eq!(unit!(split, tos!("a, b, c"), &[tos!(", ")]),
+                   Array(vec![tos!("a"), tos!("b"), tos!("c")]));
+        assert_eq!(unit!(split, tos!("a~b"), &[tos!("~")]),
+                   Array(vec![tos!("a"), tos!("b")]));
     }
 }
