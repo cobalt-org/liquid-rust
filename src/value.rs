@@ -16,10 +16,17 @@ pub enum Value {
     Bool(bool),
 }
 
-impl Value {
+impl<'a> Value {
     /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
+    }
+
+    pub fn as_str(&'a self) -> Option<&'a str> {
+        match *self {
+            Value::Str(ref v) => Some(v),
+            _ => None,
+        }
     }
 
     /// Parses a token that can possibly represent a Value
@@ -131,6 +138,15 @@ mod test {
 
     static TRUE: Value = Value::Bool(true);
     static FALSE: Value = Value::Bool(false);
+
+    #[test]
+    fn test_as_str() {
+        let val = Value::Num(42f32);
+        assert_eq!(val.as_str(), None);
+
+        let val = Value::str("test");
+        assert_eq!(val.as_str(), Some("test"));
+    }
 
     #[test]
     fn test_num_to_string() {
