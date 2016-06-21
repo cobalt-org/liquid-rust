@@ -269,6 +269,34 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn join(input: &Value, args: &[Value]) -> FilterResult {
+    // Make sure there is only 1 argument to join
+    if args.len() != 1 {
+        return Err(InvalidArgumentCount(format!("expected 1, {} given", args.len())));
+    }
+
+    match *input {
+        Array(ref array) => {
+            // use ToStr to stringify the values in case they aren't strings...
+            let mut strings_to_join = array.iter().map(|x| x.to_string());
+            // the input is in fact an Array of Strings
+            match args.first() {  // Check the first (and only) argument
+                Some(&Str(ref join_string)) => {
+                    // The join string argument is in fact a String
+                    let mut result = strings_to_join.next().unwrap_or(String::new());
+                    for string in strings_to_join {
+                        result.push_str(&join_string);
+                        result.push_str(&string);
+                    }
+                    Ok(Str(result))
+                }
+                _ => Err(InvalidArgument(0, "expected String argument as join".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("Array of Strings expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -435,4 +463,69 @@ mod tests {
         assert_eq!(unit!(split, tos!("a~b"), &[tos!("~")]),
                    Array(vec![tos!("a"), tos!("b")]));
     }
+
+    #[test]
+    fn unit_split_no_args() {
+        let input = tos!("a,b,c");
+        let args = &[];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_split_bad_split_string() {
+        let input = tos!("a,b,c");
+        let args = &[Num(1f32)];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_split_bad_input() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert_eq!(result.unwrap(), tos!("a,b,c"));
+    }
+
+    #[test]
+    fn unit_join_no_args() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_bad_join_string() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[Num(1f32)];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_bad_input() {
+        let input = tos!("a");
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_non_string_element() {
+        let input = Array(vec![tos!("a"), Num(1f32), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert_eq!(result.unwrap(), tos!("a,1,c"));
+    }
+
 }
