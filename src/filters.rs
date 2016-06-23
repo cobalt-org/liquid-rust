@@ -315,7 +315,7 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
     };
 
-    Ok(Value::Str(format!("{}", date.format(format))))
+    Ok(Value::Str(date.format(format).to_string()))
 }
 
 #[cfg(test)]
