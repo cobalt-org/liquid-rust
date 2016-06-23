@@ -285,7 +285,7 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
                     // The join string argument is in fact a String
                     let mut result = strings_to_join.next().unwrap_or(String::new());
                     for string in strings_to_join {
-                        result.push_str(&join_string);
+                        result.push_str(join_string);
                         result.push_str(&string);
                     }
                     Ok(Str(result))
