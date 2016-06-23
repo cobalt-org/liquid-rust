@@ -8,7 +8,7 @@ use chrono::DateTime;
 
 use self::FilterError::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
     InvalidType(String),
     InvalidArgumentCount(String),
@@ -333,6 +333,15 @@ mod tests {
         }};
     }
 
+    macro_rules! failed {
+        ( $a:ident, $b:expr ) => {{
+            failed!($a, $b, &[])
+        }};
+        ( $a:ident, $b:expr, $c:expr ) => {{
+            $a(&$b, $c).unwrap_err()
+        }};
+    }
+
     macro_rules! tos {
         ( $a:expr ) => {{
             Str($a.to_owned())
@@ -552,5 +561,14 @@ mod tests {
     #[test]
     fn unit_date() {
         assert_eq!(unit!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[tos!("%Y-%m-%d")]), tos!("2016-06-13"));
+
+        assert_eq!(failed!(date, Num(0f32), &[tos!("%Y-%m-%d")]),
+            FilterError::InvalidType("String expected".to_owned()));
+
+        assert_eq!(failed!(date, tos!("blah blah blah"), &[tos!("%Y-%m-%d")]),
+            FilterError::InvalidType("Invalid date format: input contains invalid characters".to_owned()));
+
+        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32)]),
+            FilterError::InvalidArgument(0, "Str expected".to_owned()));
     }
 }
