@@ -570,5 +570,11 @@ mod tests {
 
         assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32)]),
             FilterError::InvalidArgument(0, "Str expected".to_owned()));
+
+        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
+            FilterError::InvalidArgumentCount("expected 1, 0 given".to_owned()));
+
+        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32), Num(1f32)]),
+            FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned()));
     }
 }
