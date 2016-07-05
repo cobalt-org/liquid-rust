@@ -77,20 +77,22 @@ impl Renderable for For {
             range_len => {
                 let mut ret = String::default();
                 context.run_in_scope(|mut scope| {
-                    let mut helper_vars : HashMap<String, Value> = HashMap::new();
+                    let mut helper_vars: HashMap<String, Value> = HashMap::new();
                     helper_vars.insert("length".to_owned(), Value::Num(range_len as f32));
 
                     for (i, v) in slice.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::Num(i as f32));
                         helper_vars.insert("index".to_owned(), Value::Num((i + 1) as f32));
-                        helper_vars.insert("rindex0".to_owned(), Value::Num((range_len - i - 1) as f32));
+                        helper_vars.insert(
+                            "rindex0".to_owned(), Value::Num((range_len - i - 1) as f32));
                         helper_vars.insert("rindex".to_owned(), Value::Num((range_len - i) as f32));
                         helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
-                        helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len-1)));
+                        helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
 
                         scope.set_local_val("for_loop", Value::Object(helper_vars.clone()));
                         scope.set_local_val(&self.var_name, v.clone());
-                        let inner = try!(self.item_template.render(&mut scope)).unwrap_or("".to_owned());
+                        let inner = try!(self.item_template.render(&mut scope))
+                            .unwrap_or("".to_owned());
                         ret = ret + &inner;
 
                         // given that we're at the end of the loop body
@@ -416,10 +418,11 @@ mod test {
         let mut data: Context = Default::default();
         assert_eq!(for_tag.unwrap().render(&mut data).unwrap(),
                    Some(concat!(
-                    "length: 3, index: 1, index0: 0, rindex: 3, rindex0: 2, value: 100, first: true, last: false\n",
-                    "length: 3, index: 2, index0: 1, rindex: 2, rindex0: 1, value: 101, first: false, last: false\n",
-                    "length: 3, index: 3, index0: 2, rindex: 1, rindex0: 0, value: 102, first: false, last: true\n",
-                    ).to_owned()));
+"length: 3, index: 1, index0: 0, rindex: 3, rindex0: 2, value: 100, first: true, last: false\n",
+"length: 3, index: 2, index0: 1, rindex: 2, rindex0: 1, value: 101, first: false, last: false\n",
+"length: 3, index: 3, index0: 2, rindex: 1, rindex0: 0, value: 102, first: false, last: true\n",
+)
+                       .to_owned()));
     }
 
 

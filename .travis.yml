@@ -1,5 +1,6 @@
 sudo: false
 language: rust
+cache: cargo
 rust:
 - stable
 - beta
@@ -8,10 +9,13 @@ rust:
 before_script:
 - |
   pip install 'travis-cargo<0.2' --user &&
-  export PATH=$HOME/.local/bin:$PATH
+  cargo install --git https://github.com/rust-lang-nursery/rustfmt &&
+  export PATH=$HOME/.local/bin:$PATH &&
+  export PATH=$HOME/.cargo/bin:$PATH
 
 script:
 - |
+  cargo fmt -- --write-mode=diff &&
   travis-cargo build &&
   travis-cargo test &&
   travis-cargo --only stable doc

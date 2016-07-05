@@ -125,12 +125,14 @@ mod context;
 /// ```
 pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 
-/// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`). This is a simple type alias for a function.
+/// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
+/// This is a simple type alias for a function.
 ///
 /// This function will be called whenever the parser encounters a block and returns
 /// a new `Renderable` based on its parameters. The received parameters specify the name
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and the global [LiquidOptions](struct.LiquidOptions.html).
+/// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
+/// the global [LiquidOptions](struct.LiquidOptions.html).
 pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
