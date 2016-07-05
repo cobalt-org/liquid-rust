@@ -305,8 +305,10 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     }
 
     let date = match input {
-        &Value::Str(ref s) => try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
-                                   .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))),
+        &Value::Str(ref s) => {
+            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
+        }
         _ => return Err(FilterError::InvalidType("String expected".to_owned())),
     };
 
@@ -560,21 +562,28 @@ mod tests {
 
     #[test]
     fn unit_date() {
-        assert_eq!(unit!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[tos!("%Y-%m-%d")]), tos!("2016-06-13"));
+        assert_eq!(unit!(date,
+                         tos!("13 Jun 2016 02:30:00 +0300"),
+                         &[tos!("%Y-%m-%d")]),
+                   tos!("2016-06-13"));
 
         assert_eq!(failed!(date, Num(0f32), &[tos!("%Y-%m-%d")]),
-            FilterError::InvalidType("String expected".to_owned()));
+                   FilterError::InvalidType("String expected".to_owned()));
 
         assert_eq!(failed!(date, tos!("blah blah blah"), &[tos!("%Y-%m-%d")]),
-            FilterError::InvalidType("Invalid date format: input contains invalid characters".to_owned()));
+                   FilterError::InvalidType("Invalid date format: input contains invalid \
+                                             characters"
+                       .to_owned()));
 
         assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32)]),
-            FilterError::InvalidArgument(0, "Str expected".to_owned()));
+                   FilterError::InvalidArgument(0, "Str expected".to_owned()));
 
         assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
-            FilterError::InvalidArgumentCount("expected 1, 0 given".to_owned()));
+                   FilterError::InvalidArgumentCount("expected 1, 0 given".to_owned()));
 
-        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32), Num(1f32)]),
-            FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned()));
+        assert_eq!(failed!(date,
+                           tos!("13 Jun 2016 02:30:00 +0300"),
+                           &[Num(0f32), Num(1f32)]),
+                   FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned()));
     }
 }
