@@ -84,19 +84,31 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
         }
 
         try!(expect(&mut iter, Colon));
+        let mut comma_previous = false;
+        let mut first = true;
 
         // loops through the argument list after the filter name
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
             match iter.next().unwrap() {
-                &Comma => continue, // next argument
+                &Comma => {
+                    comma_previous = true;
+                    continue // next argument
+                }
                 x @ &StringLiteral(_) |
                 x @ &NumberLiteral(_) |
                 x @ &BooleanLiteral(_) => args.push(VarOrVal::Val(try!(Value::from_token(x)))),
-                &Identifier(ref v) => args.push(VarOrVal::Var(Variable::new(v))),
+                &Identifier(ref v) => {
+                    if !comma_previous && !first {
+                        return Error::parser("a comma or a pipe", Some(&Token::Identifier(v.clone())));
+                    }
+                    args.push(VarOrVal::Var(Variable::new(v)))
+                }
                 x => {
                     return Error::parser("a comma or a pipe", Some(x));
                 }
             }
+            comma_previous = false;
+            first = false;
         }
 
         filters.push(FilterPrototype::new(name, args));
