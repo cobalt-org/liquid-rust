@@ -7,7 +7,7 @@ use error::{Error, Result};
 #[derive(Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
-    arguments: Vec<Value>,
+    arguments: Vec<VarOrVal>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,7 +17,7 @@ pub enum VarOrVal {
 }
 
 impl FilterPrototype {
-    pub fn new(name: &str, arguments: Vec<Value>) -> FilterPrototype {
+    pub fn new(name: &str, arguments: Vec<VarOrVal>) -> FilterPrototype {
         FilterPrototype {
             name: name.to_owned(),
             arguments: arguments,
@@ -59,7 +59,20 @@ impl Output {
         for filter in &self.filters {
             let f = try!(context.get_filter(&filter.name)
                 .ok_or(Error::Render(format!("Filter {} not implemented", &filter.name))));
-            entry = try!(f(&entry, &filter.arguments));
+
+            let mut arguments = Vec::new();
+            for arg in filter.arguments.iter() {
+                match arg {
+                    &VarOrVal::Var(ref x) => {
+                        let val = context.get_val(&*x.name()).cloned().unwrap_or(Value::Str("".to_owned()));
+                        arguments.push(val);
+                    }
+                    &VarOrVal::Val(ref x) => {
+                        arguments.push(x.clone())
+                    }
+                }
+            }
+            entry = try!(f(&entry, &*arguments));
         }
 
         Ok(entry)

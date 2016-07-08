@@ -196,6 +196,17 @@ pub fn prepend() {
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("fifobar2bar".to_string()));
+
+    let text = "{{ text | prepend: myvar }}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("bar2bar".to_string()));
+    data.set_val("myvar", Value::Str("fifo".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("fifobar2bar".to_string()));
 }
 
 
