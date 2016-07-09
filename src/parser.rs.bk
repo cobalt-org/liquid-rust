@@ -91,7 +91,9 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
                 x @ &StringLiteral(_) |
                 x @ &NumberLiteral(_) |
                 x @ &BooleanLiteral(_) => args.push(VarOrVal::Val(try!(Value::from_token(x)))),
-                &Identifier(ref v) => args.push(VarOrVal::Var(Variable::new(v))),
+                &Identifier(ref v) => {
+                    args.push(VarOrVal::Var(Variable::new(v)))
+                }
                 x => {
                     return Error::parser("a comma or a pipe", Some(x));
                 }
