@@ -61,15 +61,15 @@ impl Output {
                 .ok_or(Error::Render(format!("Filter {} not implemented", &filter.name))));
 
             let mut arguments = Vec::new();
-            for arg in filter.arguments.iter() {
+            for arg in &filter.arguments {
                 match arg {
                     &VarOrVal::Var(ref x) => {
-                        let val = context.get_val(&*x.name()).cloned().unwrap_or(Value::Str("".to_owned()));
+                        let val = try!(context.get_val(&*x.name())
+                            .cloned()
+                            .ok_or(Error::Render(format!("undefined variable {}", x.name()))));
                         arguments.push(val);
                     }
-                    &VarOrVal::Val(ref x) => {
-                        arguments.push(x.clone())
-                    }
+                    &VarOrVal::Val(ref x) => arguments.push(x.clone()),
                 }
             }
             entry = try!(f(&entry, &*arguments));

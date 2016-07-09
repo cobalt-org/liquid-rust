@@ -92,14 +92,15 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
             match iter.next().unwrap() {
                 &Comma => {
                     comma_previous = true;
-                    continue // next argument
+                    continue; // next argument
                 }
                 x @ &StringLiteral(_) |
                 x @ &NumberLiteral(_) |
                 x @ &BooleanLiteral(_) => args.push(VarOrVal::Val(try!(Value::from_token(x)))),
                 &Identifier(ref v) => {
                     if !comma_previous && !first {
-                        return Error::parser("a comma or a pipe", Some(&Token::Identifier(v.clone())));
+                        return Error::parser("a comma or a pipe",
+                                             Some(&Token::Identifier(v.clone())));
                     }
                     args.push(VarOrVal::Var(Variable::new(v)))
                 }
