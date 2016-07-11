@@ -64,7 +64,7 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 
 lazy_static! {
     static ref SPLIT: Regex = Regex::new(
-        r#"'.*?'|".*?"|\s+|[\|:,\[\]\(\)\?-]|\.\.|={1,2}|!=|<=|>=|[<>]"#).unwrap();
+        r#"'.*?'|".*?"|\s+|[\|:,\[\]\(\)\?]|\.\.|={1,2}|!=|<=|>=|[<>]"#).unwrap();
 }
 
 fn split_atom(block: &str) -> Vec<&str> {
@@ -180,6 +180,8 @@ fn test_tokenize() {
 
 #[test]
 fn test_granularize() {
+    assert_eq!(granularize("include my-file.html").unwrap(),
+               vec![Identifier("include".to_owned()), Identifier("my-file.html".to_owned())]);
     assert_eq!(granularize("test | me").unwrap(),
                vec![Identifier("test".to_owned()), Pipe, Identifier("me".to_owned())]);
     assert_eq!(granularize("test .. me").unwrap(),
