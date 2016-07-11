@@ -13,26 +13,26 @@ pub struct Template {
 impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
 
-        context.add_filter("size", Box::new(size));
-        context.add_filter("upcase", Box::new(upcase));
-        context.add_filter("downcase", Box::new(downcase));
-        context.add_filter("capitalize", Box::new(capitalize));
-        context.add_filter("minus", Box::new(minus));
-        context.add_filter("plus", Box::new(plus));
-        context.add_filter("times", Box::new(times));
-        context.add_filter("divided_by", Box::new(divided_by));
-        context.add_filter("ceil", Box::new(ceil));
-        context.add_filter("floor", Box::new(floor));
-        context.add_filter("round", Box::new(round));
-        context.add_filter("first", Box::new(first));
-        context.add_filter("last", Box::new(last));
-        context.add_filter("prepend", Box::new(prepend));
-        context.add_filter("append", Box::new(append));
-        context.add_filter("replace", Box::new(replace));
-        context.add_filter("pluralize", Box::new(pluralize));
-        context.add_filter("split", Box::new(split));
-        context.add_filter("join", Box::new(join));
-        context.add_filter("date", Box::new(date));
+        context.maybe_add_filter("size", Box::new(size));
+        context.maybe_add_filter("upcase", Box::new(upcase));
+        context.maybe_add_filter("downcase", Box::new(downcase));
+        context.maybe_add_filter("capitalize", Box::new(capitalize));
+        context.maybe_add_filter("minus", Box::new(minus));
+        context.maybe_add_filter("plus", Box::new(plus));
+        context.maybe_add_filter("times", Box::new(times));
+        context.maybe_add_filter("divided_by", Box::new(divided_by));
+        context.maybe_add_filter("ceil", Box::new(ceil));
+        context.maybe_add_filter("floor", Box::new(floor));
+        context.maybe_add_filter("round", Box::new(round));
+        context.maybe_add_filter("first", Box::new(first));
+        context.maybe_add_filter("last", Box::new(last));
+        context.maybe_add_filter("prepend", Box::new(prepend));
+        context.maybe_add_filter("append", Box::new(append));
+        context.maybe_add_filter("replace", Box::new(replace));
+        context.maybe_add_filter("pluralize", Box::new(pluralize));
+        context.maybe_add_filter("split", Box::new(split));
+        context.maybe_add_filter("join", Box::new(join));
+        context.maybe_add_filter("date", Box::new(date));
 
         let mut buf = String::new();
         for el in &self.elements {
