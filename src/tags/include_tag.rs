@@ -48,6 +48,7 @@ pub fn include_tag(_tag_name: &str,
 
     let path = match args.next() {
         Some(&Token::StringLiteral(ref path)) => path,
+        Some(&Token::Identifier(ref s)) => s,
         arg => return Error::parser("String Literal", arg),
     };
 
@@ -74,6 +75,16 @@ mod test {
     #[test]
     fn include_tag() {
         let text = "{% include 'example.txt' %}";
+        let template = parse(text, options()).unwrap();
+
+        let mut context = Context::new();
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("5 wot wot\n".to_owned()));
+    }
+
+    #[test]
+    fn include_non_string() {
+        let text = "{% include example.txt %}";
         let template = parse(text, options()).unwrap();
 
         let mut context = Context::new();
