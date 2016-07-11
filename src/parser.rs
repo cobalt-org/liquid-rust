@@ -88,12 +88,24 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
         // loops through the argument list after the filter name
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
             match iter.next().unwrap() {
-                &Comma => continue, // next argument
                 x @ &StringLiteral(_) |
                 x @ &NumberLiteral(_) |
-                x @ &BooleanLiteral(_) => args.push(try!(Value::from_token(x))),
+                x @ &BooleanLiteral(_) => args.push(VarOrVal::Val(try!(Value::from_token(x)))),
+                &Identifier(ref v) => args.push(VarOrVal::Var(Variable::new(v))),
                 x => {
                     return Error::parser("a comma or a pipe", Some(x));
+                }
+            }
+
+            // ensure that the next token is either a Comma or a Pipe
+            match iter.peek() {
+                Some(&&Comma) => {
+                    let _ = iter.next().unwrap();
+                    continue;
+                }
+                Some(&&Pipe) | None => break,
+                _ => {
+                    return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
                 }
             }
         }
@@ -258,9 +270,9 @@ mod test {
                        Output::new(VarOrVal::Var(Variable::new("abc")),
                                    vec![
                     FilterPrototype::new("def", vec![
-                                         Value::str("1"),
-                                         Value::Num(2.0),
-                                         Value::str("3"),
+                                         VarOrVal::Val(Value::str("1")),
+                                         VarOrVal::Val(Value::Num(2.0)),
+                                         VarOrVal::Val(Value::str("3")),
                     ]),
                     FilterPrototype::new("blabla", vec![]),
                 ]));
