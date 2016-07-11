@@ -83,6 +83,13 @@ impl Context {
         self.evaluate(&values[index])
     }
 
+    /// Only add the given filter to the context if a filter with this name doesn't already exist.
+    pub fn maybe_add_filter(&mut self, name: &str, filter: Box<Filter>) {
+        if let None = self.get_filter(name) {
+            self.add_filter(name, filter)
+        }
+    }
+
     pub fn add_filter(&mut self, name: &str, filter: Box<Filter>) {
         self.filters.insert(name.to_owned(), filter);
     }
