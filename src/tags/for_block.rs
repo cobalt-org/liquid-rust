@@ -60,7 +60,12 @@ impl Renderable for For {
             None => range.len(),
         };
 
-        let slice = &mut range[self.offset..end];
+        let slice = if end > range.len() {
+            &mut range[self.offset..]
+        } else {
+            &mut range[self.offset..end]
+        };
+
         if self.reversed {
             slice.reverse();
         };
@@ -391,6 +396,16 @@ mod test {
         let mut context = Context::new();
         let output = template.render(&mut context);
         assert_eq!(output.unwrap(), Some("There are no items!".to_string()));
+    }
+
+    #[test]
+    fn limit_greater_than_iterator_length() {
+        let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
+
+        let template = parse(text, Default::default()).unwrap();
+        let mut context = Context::new();
+        let output = template.render(&mut context);
+        assert_eq!(output.unwrap(), Some("1 2 3 4 ".to_string()));
     }
 
     #[test]
