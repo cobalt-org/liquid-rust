@@ -99,11 +99,9 @@ mod test {
 
         assert!(output.is_err());
         if let Err(Error::Other(val)) = output {
-            assert_eq!(val,
-                       "\"tests/fixtures/input/file_does_not_exist.liquid\" does not exist"
-                           .to_owned());
+            assert!(val.contains("file_does_not_exist.liquid\" does not exist"));
         } else {
-            assert!(false);
+            panic!("output should be err::other");
         }
     }
 }
