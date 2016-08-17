@@ -217,27 +217,30 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     parser::parse(&tokens, &options).map(Template::new)
 }
 
-/// Parse a liquid template from a file, returning Result<Template, io::Error>
+/// Parse a liquid template from a file, returning a `Result<Template, Error>`.
 /// # Examples
 ///
 /// ## Minimal Template
 ///
-/// template.liquid:
-/// ```
-/// "Liquid! {{num | minus: 2}}"
+/// `template.txt`:
+///
+/// ```text
+/// "Liquid {{data}}"
 /// ```
 ///
 /// Your rust code:
-/// ```
-/// use liquid::{Renderable, LiquidOptions, Context};
 ///
-/// let template = liquid::parse_file("/path/to/template.liquid",
-///                                    LiquidOptions::default()).unwrap();
+/// ```rust,no_run
+/// use liquid::{Renderable, LiquidOptions, Context, Value};
+///
+/// let template = liquid::parse_file("path/to/template.txt",
+///                                   LiquidOptions::default()).unwrap();
 /// let mut data = Context::new();
-/// data.set_val("num", Value::Num(4f32));
+/// data.set_val("data", Value::Num(4f32));
 /// let output = template.render(&mut data);
-/// assert_eq!(output.unwrap(), Some("Liquid! 2".to_string()));
+/// assert_eq!(output.unwrap(), Some("Liquid 4\n".to_string()));
 /// ```
+///
 pub fn parse_file<P: AsRef<Path>>(fp: P, options: LiquidOptions) -> Result<Template> {
     let mut options = options;
     options.register_known_blocks();
