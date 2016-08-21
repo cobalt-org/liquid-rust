@@ -112,7 +112,11 @@ For an implementation of a `Shout` block, see [this example](https://github.com/
 
 ----------
 
-Ignore this:
+<!---
+
+Skeptic template:
 ```rust,skeptic-template
 extern crate skeptic; extern crate liquid; fn main() {{ {} }}
 ```
+
+-->
