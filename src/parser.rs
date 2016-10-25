@@ -213,7 +213,7 @@ pub struct BlockSplit<'a> {
 /// ignoring any it finds in nested blocks.
 ///
 /// Returns a slice contaiing all elements before the delimiter, and
-/// an optional BlockSplit struct describing the delimiter and
+/// an optional `BlockSplit` struct describing the delimiter and
 /// trailing elements.
 pub fn split_block<'a>(tokens: &'a [Element],
                        delimiters: &[&str],

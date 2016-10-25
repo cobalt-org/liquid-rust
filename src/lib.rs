@@ -101,7 +101,7 @@ mod context;
 /// This function will be called whenever the parser encounters a tag and returns
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the tag and the global [LiquidOptions](struct.LiquidOptions.html).
+/// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
 ///
 /// ## Minimal Example
 /// ```
@@ -134,7 +134,7 @@ pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 /// a new `Renderable` based on its parameters. The received parameters specify the name
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
-/// the global [LiquidOptions](struct.LiquidOptions.html).
+/// the global [`LiquidOptions`](struct.LiquidOptions.html).
 pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
@@ -146,7 +146,7 @@ pub trait Renderable {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
-/// Options that liquid::parse takes
+/// Options that `liquid::parse` takes
 #[derive(Default)]
 pub struct LiquidOptions {
     /// Holds all custom block-size tags
