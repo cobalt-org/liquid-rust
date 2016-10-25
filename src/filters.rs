@@ -299,6 +299,23 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() > 0 {
+        return Err(FilterError::InvalidArgumentCount(format!("expected no arguments, {} given",
+                                                             args.len())));
+    }
+    match input {
+        &Value::Array(ref array) => {
+            let mut sorted = array.clone();
+            sorted.sort();
+            Ok(Value::Array(sorted))
+        }
+        _ => Err(FilterError::InvalidType("Array argument expected".to_owned())),
+
+    }
+}
+
+
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 1 {
         return Err(FilterError::InvalidArgumentCount(format!("expected 1, {} given", args.len())));

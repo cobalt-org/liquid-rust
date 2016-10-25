@@ -1,7 +1,7 @@
 use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
-              round, prepend, append, first, last, pluralize, replace, date};
+              round, prepend, append, first, last, pluralize, replace, date, sort};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -32,6 +32,7 @@ impl Renderable for Template {
         context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("split", Box::new(split));
         context.maybe_add_filter("join", Box::new(join));
+        context.maybe_add_filter("sort", Box::new(sort));
         context.maybe_add_filter("date", Box::new(date));
 
         let mut buf = String::new();
