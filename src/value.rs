@@ -61,48 +61,24 @@ impl PartialEq<Value> for Value {
     }
 }
 
-// TODO implement for object and array
-// TODO clean this up
+impl Eq for Value {}
+
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {
             (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
             (&Value::Bool(x), &Value::Bool(y)) => x.partial_cmp(&y),
+            (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
+            (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
             _ => None,
         }
     }
-    fn lt(&self, other: &Value) -> bool {
-        match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.lt(&y),
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.lt(y),
-            (&Value::Bool(x), &Value::Bool(y)) => x.lt(&y),
-            _ => false,
-        }
-    }
-    fn le(&self, other: &Value) -> bool {
-        match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.le(&y),
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.le(y),
-            (&Value::Bool(x), &Value::Bool(y)) => x.le(&y),
-            _ => false,
-        }
-    }
-    fn gt(&self, other: &Value) -> bool {
-        match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.gt(&y),
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.gt(y),
-            (&Value::Bool(x), &Value::Bool(y)) => x.gt(&y),
-            _ => false,
-        }
-    }
-    fn ge(&self, other: &Value) -> bool {
-        match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.ge(&y),
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.ge(y),
-            (&Value::Bool(x), &Value::Bool(y)) => x.ge(&y),
-            _ => false,
-        }
+}
+
+impl Ord for Value {
+    fn cmp(&self, other: &Value) -> Ordering {
+        self.partial_cmp(&other).unwrap_or(Ordering::Equal)
     }
 }
 
