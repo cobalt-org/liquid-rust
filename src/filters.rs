@@ -301,8 +301,7 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() > 0 {
-        return Err(FilterError::InvalidArgumentCount(format!("expected no arguments, {} given",
-                                                             args.len())));
+        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
     }
     match input {
         &Value::Array(ref array) => {
@@ -310,7 +309,7 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
             sorted.sort();
             Ok(Value::Array(sorted))
         }
-        _ => Err(FilterError::InvalidType("Array argument expected".to_owned())),
+        _ => Err(InvalidType("Array argument expected".to_owned())),
 
     }
 }
