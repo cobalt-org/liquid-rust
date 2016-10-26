@@ -252,13 +252,26 @@ pub fn split_no_comma() {
 
 #[test]
 // Split on 1 string and re-join on another
-pub fn split_sort_join() {
-    let text = "{{ 'a~c~B' | split:'~' | sort | join:', ' }}";
+pub fn split_then_join() {
+    let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
     let options : LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("B, a, c".to_string()));
+    assert_eq!(output.unwrap(), Some("a, b, c".to_string()));
+}
+
+#[test]
+// Split string, sort it then re-join
+pub fn split_sort_join() {
+    let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("Sally Snake, giraffe, octopus, zebra".to_string()));
 }
