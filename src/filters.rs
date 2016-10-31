@@ -1,5 +1,6 @@
 use std::fmt;
 use std::error::Error;
+use std::cmp::Ordering;
 
 use value::Value;
 use value::Value::*;
@@ -306,7 +307,7 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     match input {
         &Value::Array(ref array) => {
             let mut sorted = array.clone();
-            sorted.sort();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
             Ok(Value::Array(sorted))
         }
         _ => Err(InvalidType("Array argument expected".to_owned())),

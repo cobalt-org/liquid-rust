@@ -76,12 +76,6 @@ impl PartialOrd<Value> for Value {
     }
 }
 
-impl Ord for Value {
-    fn cmp(&self, other: &Value) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
-    }
-}
-
 impl ToString for Value {
     fn to_string(&self) -> String {
         match *self {
