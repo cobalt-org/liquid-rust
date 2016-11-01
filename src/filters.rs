@@ -1,5 +1,6 @@
 use std::fmt;
 use std::error::Error;
+use std::cmp::Ordering;
 
 use value::Value;
 use value::Value::*;
@@ -298,6 +299,22 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
         _ => Err(InvalidType("Array of Strings expected".to_owned())),
     }
 }
+
+pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() > 0 {
+        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
+    }
+    match input {
+        &Value::Array(ref array) => {
+            let mut sorted = array.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+            Ok(Value::Array(sorted))
+        }
+        _ => Err(InvalidType("Array argument expected".to_owned())),
+
+    }
+}
+
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 1 {

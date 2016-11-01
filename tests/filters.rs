@@ -170,7 +170,6 @@ pub fn last() {
     assert_eq!(output.unwrap(), Some("t".to_string()));
 }
 
-
 #[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
@@ -262,4 +261,17 @@ pub fn split_then_join() {
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("a, b, c".to_string()));
+}
+
+#[test]
+// Split string, sort it then re-join
+pub fn split_sort_join() {
+    let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
+    let options : LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("Sally Snake, giraffe, octopus, zebra".to_string()));
 }
