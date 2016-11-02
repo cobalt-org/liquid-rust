@@ -10,7 +10,7 @@ use std::default::Default;
 #[test]
 pub fn upcase() {
     let text = "{{ text | upcase}}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -24,7 +24,7 @@ pub fn upcase() {
 #[test]
 pub fn downcase() {
     let text = "{{ text | downcase}}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -38,7 +38,7 @@ pub fn downcase() {
 #[test]
 pub fn capitalize() {
     let text = "{{ text | capitalize}}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -52,7 +52,7 @@ pub fn capitalize() {
 #[test]
 pub fn pluralize() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -78,7 +78,7 @@ pub fn pluralize() {
 #[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -92,7 +92,7 @@ pub fn minus() {
 #[test]
 pub fn plus() {
     let text = "{{ num | plus : 2 }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -105,7 +105,7 @@ pub fn plus() {
 #[test]
 pub fn minus_error() {
     let text = "{{ num | minus }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -118,12 +118,13 @@ pub fn minus_error() {
 #[test]
 pub fn first() {
     let text = "{{ nums | first }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     // array of numbers
     let mut data = Context::new();
-    data.set_val("nums", Value::Array(vec![Value::Num(12f32), Value::Num(1f32)]));
+    data.set_val("nums",
+                 Value::Array(vec![Value::Num(12f32), Value::Num(1f32)]));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("12".to_string()));
@@ -146,19 +147,22 @@ pub fn first() {
 #[test]
 pub fn last() {
     let text = "{{ list | last }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     // array of numbers
     let mut data = Context::new();
-    data.set_val("list", Value::Array(vec![Value::Num(12f32), Value::Num(100f32)]));
+    data.set_val("list",
+                 Value::Array(vec![Value::Num(12f32), Value::Num(100f32)]));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("100".to_string()));
 
     // array of strings
     let mut data = Context::new();
-    data.set_val("list", Value::Array(vec![Value::Str("first".to_owned()), Value::Str("second".to_owned())]));
+    data.set_val("list",
+                 Value::Array(vec![Value::Str("first".to_owned()),
+                                   Value::Str("second".to_owned())]));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("second".to_string()));
@@ -173,7 +177,7 @@ pub fn last() {
 #[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -187,7 +191,7 @@ pub fn replace() {
 #[test]
 pub fn prepend() {
     let text = "{{ text | prepend: 'fifo' }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -197,7 +201,7 @@ pub fn prepend() {
     assert_eq!(output.unwrap(), Some("fifobar2bar".to_string()));
 
     let text = "{{ text | prepend: myvar }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -212,7 +216,7 @@ pub fn prepend() {
 #[test]
 pub fn append() {
     let text = "{{ text | append: 'lifo' }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -227,34 +231,38 @@ pub fn append() {
 // This is an additional test to verify the comma/space parsing is also working
 // from https://github.com/cobalt-org/liquid-rust/issues/41
 pub fn split_with_comma() {
-    let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member in beatles %}{{ member }}\n{% endfor %}";
-    let options : LiquidOptions = Default::default();
+    let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member \
+                in beatles %}{{ member }}\n{% endfor %}";
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("John\nPaul\nGeorge\nRingo\n".to_string()));
+    assert_eq!(output.unwrap(),
+               Some("John\nPaul\nGeorge\nRingo\n".to_string()));
 }
 
 #[test]
 // This test verifies that issue https://github.com/cobalt-org/liquid-rust/issues/40 is fixed (that split works)
 pub fn split_no_comma() {
-    let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: {{ letter }}\n{% endfor %}";
-    let options : LiquidOptions = Default::default();
+    let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: \
+                {{ letter }}\n{% endfor %}";
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("LETTER: a\nLETTER: b\nLETTER: c\n".to_string()));
+    assert_eq!(output.unwrap(),
+               Some("LETTER: a\nLETTER: b\nLETTER: c\n".to_string()));
 }
 
 #[test]
 // Split on 1 string and re-join on another
 pub fn split_then_join() {
     let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
-    let options : LiquidOptions = Default::default();
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
@@ -264,14 +272,66 @@ pub fn split_then_join() {
 }
 
 #[test]
-// Split string, sort it then re-join
-pub fn split_sort_join() {
-    let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
-    let options : LiquidOptions = Default::default();
+// Slice single character
+pub fn slice_one() {
+    let text = "{{ '0123456' | slice: 2 }}";
+    let options: LiquidOptions = Default::default();
     let template = parse(&text, options).unwrap();
 
     let mut data = Context::new();
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("Sally Snake, giraffe, octopus, zebra".to_string()));
+    assert_eq!(output.unwrap(), Some("2".to_string()));
+}
+
+#[test]
+// Slicing with negative start should start from end of string
+pub fn slice_negative() {
+    let text = "{{ '6543210' | slice: -4, 3 }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("321".to_string()));
+}
+#[test]
+// Slicing with overflow should fit to string size
+pub fn slice_overflow() {
+    let text = "{{ 'xx0123456' | slice: 2, 10.1 }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("0123456".to_string()));
+}
+
+#[test]
+// Slicing empty string should not fail
+pub fn slice_empty() {
+    let text = "{{ '' | slice: 2 }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("".to_string()));
+}
+
+#[test]
+// Split string, sort it then re-join
+pub fn split_sort_join() {
+    let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(),
+               Some("Sally Snake, giraffe, octopus, zebra".to_string()));
 }
