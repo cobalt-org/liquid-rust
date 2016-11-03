@@ -300,6 +300,42 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+    let mut start = match args.first() {
+        Some(&Num(x)) => x as isize,
+        _ => return Err(InvalidArgument(0, "Number expected".to_owned())),
+    };
+    let mut offset = match args.get(1) {
+        Some(&Num(x)) if x > 0f32 => x as isize,
+        Some(_) => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
+        None => 1,
+    };
+
+    match *input {
+        Str(ref x) => {
+            // this simplifies counting and conversions
+            let ilen = x.len() as isize;
+            if start > ilen {
+                start = ilen;
+            }
+            // Check for overflows over string length and fallback to allowed values
+            if start < 0 {
+                start = ilen + start;
+            }
+            // start is guaranteed to be positive at this point
+            if start + offset > ilen {
+                offset = ilen - start;
+            }
+            Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() > 0 {
         return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
