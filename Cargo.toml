@@ -14,16 +14,16 @@ build = "build.rs"
 
 [dependencies]
 regex = "0.1"
-lazy_static = "0.1.15"
-chrono = "0.2.22"
+lazy_static = "0.2.1"
+chrono = "0.2.25"
 clippy = {version = "0.0", optional = true}
 
 [build-dependencies]
-skeptic = "0.4"
+skeptic = "0.6"
 
 [dev-dependencies]
 difference = "0.4"
-skeptic = "0.4"
+skeptic = "0.6"
 
 [features]
 default=[]
