@@ -95,6 +95,7 @@ impl Renderable for For {
                         helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
 
                         scope.set_local_val("for_loop", Value::Object(helper_vars.clone()));
+                        scope.set_local_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_local_val(&self.var_name, v.clone());
                         let inner = try!(self.item_template.render(&mut scope))
                             .unwrap_or("".to_owned());
@@ -249,7 +250,7 @@ mod test {
                                   DotDot,
                                   NumberLiteral(46f32),
                                   CloseRound],
-                                tokenize("#{{for_loop.index}} test {{name}} | ").unwrap(),
+                                tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
@@ -260,7 +261,7 @@ mod test {
     #[test]
     fn loop_over_range_vars() {
         let text = concat!("{% for x in (alpha .. omega) %}",
-                           "#{{for_loop.index}} test {{x}}, ",
+                           "#{{forloop.index}} test {{x}}, ",
                            "{% endfor %}");
 
         let template = parse(text, Default::default()).unwrap();
@@ -273,14 +274,14 @@ mod test {
     }
 
     #[test]
-    fn nested_for_loops() {
+    fn nested_forloops() {
         // test that nest nested for loops work, and that the
         // variable scopes between the inner and outer variable
         // scopes do not overlap.
         let text = concat!("{% for outer in (1..5) %}",
-                           ">>{{for_loop.index0}}:{{outer}}>>",
+                           ">>{{forloop.index0}}:{{outer}}>>",
                            "{% for inner in (6..10) %}",
-                           "{{outer}}:{{for_loop.index0}}:{{inner}},",
+                           "{{outer}}:{{forloop.index0}}:{{inner}},",
                            "{% endfor %}",
                            ">>{{outer}}>>\n",
                            "{% endfor %}");
@@ -296,7 +297,7 @@ mod test {
     }
 
     #[test]
-    fn nested_for_loops_with_else() {
+    fn nested_forloops_with_else() {
         // test that nested for loops parse their `else` blocks correctly
         let text = concat!("{% for x in (0..i) %}",
                            "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
@@ -419,14 +420,14 @@ mod test {
                                   DotDot,
                                   NumberLiteral(103f32),
                                   CloseRound],
-                                tokenize(concat!("length: {{for_loop.length}}, ",
-                                                 "index: {{for_loop.index}}, ",
-                                                 "index0: {{for_loop.index0}}, ",
-                                                 "rindex: {{for_loop.rindex}}, ",
-                                                 "rindex0: {{for_loop.rindex0}}, ",
+                                tokenize(concat!("length: {{forloop.length}}, ",
+                                                 "index: {{forloop.index}}, ",
+                                                 "index0: {{forloop.index0}}, ",
+                                                 "rindex: {{forloop.rindex}}, ",
+                                                 "rindex0: {{forloop.rindex0}}, ",
                                                  "value: {{v}}, ",
-                                                 "first: {{for_loop.first}}, ",
-                                                 "last: {{for_loop.last}}\n"))
+                                                 "first: {{forloop.first}}, ",
+                                                 "last: {{forloop.last}}\n"))
                                     .unwrap(),
                                 &options);
 
