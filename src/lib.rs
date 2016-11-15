@@ -138,7 +138,7 @@ pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
-pub trait Renderable {
+pub trait Renderable: Send + Sync {
     /// Renders the Renderable instance given a Liquid context.
     /// The Result that is returned signals if there was an error rendering,
     /// the Option<String> that is wrapped by the Result will be None if
