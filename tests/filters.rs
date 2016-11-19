@@ -343,3 +343,19 @@ pub fn modulo() {
         assert_eq!(template.render(&mut data).unwrap(), Some(t.1.to_string()));
     }
 }
+
+#[test]
+pub fn escape() {
+    let input = "{{ var | escape}}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&input, options).unwrap();
+    let mut data = Context::new();
+
+    let samples = [("abc", "abc"), ("", ""),
+                   ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
+                   ("&etc.", "&amp;etc.")];
+    for t in &samples {
+        data.set_val("var", Value::Str(t.0.to_string()));
+        assert_eq!(template.render(&mut data).unwrap(), Some(t.1.to_string()));
+    }
+}
