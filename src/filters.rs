@@ -63,14 +63,12 @@ pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
-
 pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref s) => Ok(Str(s.to_lowercase())),
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
-
 
 pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
@@ -93,7 +91,6 @@ pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
-
 
 pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 
@@ -207,7 +204,6 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
-
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
@@ -232,7 +228,6 @@ pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
         _ => Err(InvalidType("String or Array expected".to_owned())),
     }
 }
-
 
 pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
@@ -350,7 +345,6 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
 
     }
 }
-
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 1 {
