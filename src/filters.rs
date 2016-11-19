@@ -378,6 +378,44 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
+    if !args.is_empty() {
+        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
+    }
+    match *input {
+        Str(ref s) => {
+            // Adapted from
+            // https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
+            // Retrieved 2016-11-19.
+            let mut result = String::new();
+            let mut last = 0;
+            for (i, c) in s.chars().enumerate() {
+                match c as char {
+                    '<' | '>' | '&' | '\'' | '"' => {
+                        result.push_str(&s[last..i]);
+                        let escaped = match c as char {
+                            '<' => "&lt;",
+                            '>' => "&gt;",
+                            '&' => "&amp;",
+                            '\'' => "&#39;",
+                            '"' => "&quot;",
+                            _ => unreachable!(),
+                        };
+                        result.push_str(escaped);
+                        last = i + 1;
+                    }
+                    _ => {}
+                }
+            }
+            if last < s.len() {
+                result.push_str(&s[last..]);
+            }
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -651,5 +689,13 @@ mod tests {
         assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
         assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
         assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
+    }
+
+    #[test]
+    fn unit_escape() {
+        assert_eq!(unit!(escape, tos!("Have you read 'James & the Giant Peach'?")),
+                   tos!("Have you read &#39;James &amp; the Giant Peach&#39;?"));
+        assert_eq!(unit!(escape, tos!("Tetsuro Takara")),
+                   tos!("Tetsuro Takara"));
     }
 }
