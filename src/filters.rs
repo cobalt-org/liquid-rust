@@ -332,7 +332,7 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() > 0 {
+    if !args.is_empty() {
         return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
     }
     match input {
@@ -365,6 +365,17 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     };
 
     Ok(Value::Str(date.format(format).to_string()))
+}
+
+pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num % x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
 }
 
 #[cfg(test)]
@@ -632,5 +643,13 @@ mod tests {
                            tos!("13 Jun 2016 02:30:00 +0300"),
                            &[Num(0f32), Num(1f32)]),
                    FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned()));
+    }
+
+    #[test]
+    fn unit_modulo() {
+        assert_eq!(unit!(modulo, Num(3_f32), &[Num(2_f32)]), Num(1_f32));
+        assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
+        assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
+        assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
     }
 }

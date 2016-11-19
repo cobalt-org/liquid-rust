@@ -20,7 +20,6 @@ pub fn upcase() {
     assert_eq!(output.unwrap(), Some("HELLO".to_string()));
 }
 
-
 #[test]
 pub fn downcase() {
     let text = "{{ text | downcase}}";
@@ -34,7 +33,6 @@ pub fn downcase() {
     assert_eq!(output.unwrap(), Some("hello there".to_string()));
 }
 
-
 #[test]
 pub fn capitalize() {
     let text = "{{ text | capitalize}}";
@@ -47,7 +45,6 @@ pub fn capitalize() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("Hello World".to_string()));
 }
-
 
 #[test]
 pub fn pluralize() {
@@ -87,7 +84,6 @@ pub fn minus() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("2".to_string()));
 }
-
 
 #[test]
 pub fn plus() {
@@ -143,7 +139,6 @@ pub fn first() {
     assert_eq!(output.unwrap(), Some("f".to_string()));
 }
 
-
 #[test]
 pub fn last() {
     let text = "{{ list | last }}";
@@ -187,7 +182,6 @@ pub fn replace() {
     assert_eq!(output.unwrap(), Some("foo2foo".to_string()));
 }
 
-
 #[test]
 pub fn prepend() {
     let text = "{{ text | prepend: 'fifo' }}";
@@ -211,7 +205,6 @@ pub fn prepend() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("fifobar2bar".to_string()));
 }
-
 
 #[test]
 pub fn append() {
@@ -296,6 +289,7 @@ pub fn slice_negative() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("321".to_string()));
 }
+
 #[test]
 // Slicing with overflow should fit to string size
 pub fn slice_overflow() {
@@ -334,4 +328,18 @@ pub fn split_sort_join() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(),
                Some("Sally Snake, giraffe, octopus, zebra".to_string()));
+}
+
+#[test]
+pub fn modulo() {
+    let text = "{{ num | modulo: 2 }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+    let mut data = Context::new();
+
+    let samples = [(4_f32, "0"), (3_f32, "1"), (5.1, "1.0999999")];
+    for t in &samples {
+        data.set_val("num", Value::Num(t.0));
+        assert_eq!(template.render(&mut data).unwrap(), Some(t.1.to_string()));
+    }
 }
