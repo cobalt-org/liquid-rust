@@ -469,7 +469,7 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
-    // regexps from https://github.com/Shopify/liquid/blob/86944fe7b77710b299a5d03fb6ef816f6c09feb4/lib/liquid/standardfilters.rb#L106
+    // regexps taken from https://git.io/vXbgS
     let matchers = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
                     Regex::new(r"(?is)<style.*?</style>").unwrap(),
                     Regex::new(r"(?is)<!--.*?-->").unwrap(),
@@ -477,7 +477,8 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
             let result = matchers.iter()
-                .fold(x.to_string(), |acc, &ref matcher| matcher.replace_all(&acc, ""));
+                .fold(x.to_string(),
+                      |acc, &ref matcher| matcher.replace_all(&acc, ""));
             Ok(Str(result))
         }
         _ => Err(InvalidType("String expected".to_owned())),
