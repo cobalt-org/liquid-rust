@@ -451,14 +451,16 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
-    // regexps taken from https://git.io/vXbgS
-    let matchers = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
-                    Regex::new(r"(?is)<style.*?</style>").unwrap(),
-                    Regex::new(r"(?is)<!--.*?-->").unwrap(),
-                    Regex::new(r"(?is)<.*?>").unwrap()];
+    lazy_static! {
+        // regexps taken from https://git.io/vXbgS
+        static ref MATCHERS: [Regex; 4] = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
+                                           Regex::new(r"(?is)<style.*?</style>").unwrap(),
+                                           Regex::new(r"(?is)<!--.*?-->").unwrap(),
+                                           Regex::new(r"(?is)<.*?>").unwrap()];
+    }
     match *input {
         Str(ref x) => {
-            let result = matchers.iter()
+            let result = MATCHERS.iter()
                 .fold(x.to_string(),
                       |acc, &ref matcher| matcher.replace_all(&acc, ""));
             Ok(Str(result))
