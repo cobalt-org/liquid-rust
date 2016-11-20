@@ -172,6 +172,32 @@ pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() != 2 {
+        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
+    }
+    match *input {
+        Str(ref x) => {
+            let search = match args[0] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+            };
+            let replace = match args[1] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
+            };
+            let tokens: Vec<&str> = x.splitn(2, search).collect();
+            if tokens.len() == 2 {
+                let result = tokens[0].to_string() + replace + tokens[1];
+                Ok(Str(result))
+            } else {
+                Ok(Str(x.to_string()))
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() != 2 {
         return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
@@ -569,6 +595,16 @@ mod tests {
         assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
         assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
         assert!(round(&Bool(true), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_replace_first() {
+        assert_eq!(unit!(replace_first, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
+                   tos!("foobar"));
+        assert_eq!(unit!(replace_first, tos!("barxoxo"), &[tos!("xo"), tos!("foo")]),
+                   tos!("barfooxo"));
+        assert_eq!(unit!(replace_first, tos!(""), &[tos!("bar"), tos!("foo")]),
+                   tos!(""));
     }
 
     #[test]
