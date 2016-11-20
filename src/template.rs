@@ -2,7 +2,7 @@ use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
               round, prepend, append, first, last, pluralize, replace, date, sort, slice, modulo,
-              remove_first};
+              escape, remove_first};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -20,6 +20,7 @@ impl Renderable for Template {
         context.maybe_add_filter("date", Box::new(date));
         context.maybe_add_filter("divided_by", Box::new(divided_by));
         context.maybe_add_filter("downcase", Box::new(downcase));
+        context.maybe_add_filter("escape", Box::new(escape));
         context.maybe_add_filter("first", Box::new(first));
         context.maybe_add_filter("floor", Box::new(floor));
         context.maybe_add_filter("join", Box::new(join));

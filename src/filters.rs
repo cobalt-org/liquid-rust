@@ -378,6 +378,44 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
+    if !args.is_empty() {
+        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
+    }
+    match *input {
+        Str(ref s) => {
+            // Adapted from
+            // https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
+            // Retrieved 2016-11-19.
+            let mut result = String::new();
+            let mut last = 0;
+            for (i, c) in s.chars().enumerate() {
+                match c as char {
+                    '<' | '>' | '&' | '\'' | '"' => {
+                        result.push_str(&s[last..i]);
+                        let escaped = match c as char {
+                            '<' => "&lt;",
+                            '>' => "&gt;",
+                            '&' => "&amp;",
+                            '\'' => "&#39;",
+                            '"' => "&quot;",
+                            _ => unreachable!(),
+                        };
+                        result.push_str(escaped);
+                        last = i + 1;
+                    }
+                    _ => {}
+                }
+            }
+            if last < s.len() {
+                result.push_str(&s[last..]);
+            }
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
@@ -668,11 +706,18 @@ mod tests {
     }
 
     #[test]
+    fn unit_escape() {
+        assert_eq!(unit!(escape, tos!("Have you read 'James & the Giant Peach'?")),
+                   tos!("Have you read &#39;James &amp; the Giant Peach&#39;?"));
+        assert_eq!(unit!(escape, tos!("Tetsuro Takara")),
+                   tos!("Tetsuro Takara"));
+    }
+
+    #[test]
     fn unit_remove_first() {
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("bar")]), tos!("bar"));
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("")]), tos!("barbar"));
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("barbar")]), tos!(""));
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("a")]), tos!("brbar"));
     }
-
 }
