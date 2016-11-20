@@ -94,11 +94,17 @@ pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
-pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
-
-    if args.len() != 2 {
-        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
+fn check_args_len(args: &[Value], expected_len: usize) -> Result<(), FilterError> {
+    if args.len() != expected_len {
+        return Err(InvalidArgumentCount(format!("expected {}, {} given",
+                                                expected_len,
+                                                args.len())));
     }
+    Ok(())
+}
+
+pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
     match *input {
         Num(1f32) => Ok(args[0].clone()),
         Num(_) => Ok(args[1].clone()),
@@ -107,7 +113,6 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
-
     let num = match *input {
         Num(n) => n,
         _ => return Err(InvalidType("Num expected".to_owned())),
@@ -119,7 +124,6 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
-
     let num = match *input {
         Num(n) => n,
         _ => return Err(InvalidType("Num expected".to_owned())),
@@ -131,7 +135,6 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
-
     let num = match *input {
         Num(n) => n,
         _ => return Err(InvalidType("Num expected".to_owned())),
@@ -201,9 +204,7 @@ pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() != 2 {
-        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
-    }
+    try!(check_args_len(args, 2));
     match *input {
         Str(ref x) => {
             let arg1 = match args[0] {
@@ -271,12 +272,7 @@ pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
 }
 
 pub fn split(input: &Value, args: &[Value]) -> FilterResult {
-    // Make sure there is only 1 argument to split
-    if args.len() != 1 {
-        return Err(InvalidArgumentCount(format!("expected 1, {} given", args.len())));
-    }
-
-
+    try!(check_args_len(args, 1));
     match *input {
         Str(ref string_to_split) => {
             // the input String is in fact a String
@@ -296,11 +292,7 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
-    // Make sure there is only 1 argument to join
-    if args.len() != 1 {
-        return Err(InvalidArgumentCount(format!("expected 1, {} given", args.len())));
-    }
-
+    try!(check_args_len(args, 1));
     match *input {
         Array(ref array) => {
             // use ToStr to stringify the values in case they aren't strings...
@@ -360,9 +352,7 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
-    if !args.is_empty() {
-        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
-    }
+    try!(check_args_len(args, 0));
     match input {
         &Value::Array(ref array) => {
             let mut sorted = array.clone();
@@ -370,15 +360,11 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
             Ok(Value::Array(sorted))
         }
         _ => Err(InvalidType("Array argument expected".to_owned())),
-
     }
 }
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() != 1 {
-        return Err(FilterError::InvalidArgumentCount(format!("expected 1, {} given", args.len())));
-    }
-
+    try!(check_args_len(args, 1));
     let date = match input {
         &Value::Str(ref s) => {
             try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
@@ -386,12 +372,10 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         }
         _ => return Err(FilterError::InvalidType("String expected".to_owned())),
     };
-
     let format = match args[0] {
         Value::Str(ref s) => s,
         _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
     };
-
     Ok(Value::Str(date.format(format).to_string()))
 }
 
@@ -407,9 +391,7 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
-    if !args.is_empty() {
-        return Err(InvalidArgumentCount(format!("expected no arguments, {} given", args.len())));
-    }
+    try!(check_args_len(args, 0));
     match *input {
         Str(ref s) => {
             // Adapted from
