@@ -9,6 +9,8 @@ use chrono::DateTime;
 
 use self::FilterError::*;
 
+use regex::Regex;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
     InvalidType(String),
@@ -466,6 +468,21 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
+    let matchers = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
+                    Regex::new(r"(?is)<style.*?</style>").unwrap(),
+                    Regex::new(r"(?is)<!--.*?-->").unwrap(),
+                    Regex::new(r"(?is)<.*?>").unwrap()];
+    match *input {
+        Str(ref x) => {
+            let result = matchers.iter()
+                .fold(x.to_string(), |acc, &ref matcher| matcher.replace_all(&acc, ""));
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -777,5 +794,29 @@ mod tests {
         assert_eq!(unit!(remove, tos!("barbar"), &[tos!("")]), tos!("barbar"));
         assert_eq!(unit!(remove, tos!("barbar"), &[tos!("barbar")]), tos!(""));
         assert_eq!(unit!(remove, tos!("barbar"), &[tos!("a")]), tos!("brbr"));
+    }
+
+    #[test]
+    fn unit_strip_html() {
+        assert_eq!(unit!(strip_html,
+                         tos!("<script type=\"text/javascript\">alert('Hi!');</script>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html,
+                         tos!("<SCRIPT type=\"text/javascript\">alert('Hi!');</SCRIPT>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html, tos!("<p>test</p>"), &[]), tos!("test"));
+        assert_eq!(unit!(strip_html, tos!("<p id='xxx'>test</p>"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html,
+                         tos!("<style type=\"text/css\">cool style</style>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html, tos!("<p\nclass='loooong'>test</p>"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html, tos!(""), &[]), tos!(""));
     }
 }

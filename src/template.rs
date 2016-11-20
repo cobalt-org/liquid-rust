@@ -2,7 +2,7 @@ use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
               round, prepend, append, first, last, pluralize, replace_first, replace, date, sort,
-              slice, modulo, escape, remove_first, remove};
+              slice, modulo, escape, remove_first, remove, strip_html};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -39,6 +39,7 @@ impl Renderable for Template {
         context.maybe_add_filter("slice", Box::new(slice));
         context.maybe_add_filter("sort", Box::new(sort));
         context.maybe_add_filter("split", Box::new(split));
+        context.maybe_add_filter("strip_html", Box::new(strip_html));
         context.maybe_add_filter("times", Box::new(times));
         context.maybe_add_filter("upcase", Box::new(upcase));
 
