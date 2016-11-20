@@ -422,3 +422,16 @@ pub fn strip_html() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("Lorem ipsum dolor".to_string()));
 }
+
+#[test]
+pub fn truncatewords() {
+    let text = "{{ text | truncatewords: 1, '...' }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("first seconds third".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("first...".to_string()));
+}

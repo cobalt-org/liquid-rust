@@ -469,6 +469,35 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+    let num_words = match args.first() {
+        Some(&Num(x)) if x > 0f32 => x as usize,
+        _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
+    };
+    let empty = "".to_string();
+    let append = match args.get(1) {
+        Some(&Str(ref x)) => x,
+        _ => &empty,
+    };
+
+    match *input {
+        Str(ref x) => {
+            let words: Vec<&str> = x.split(' ').take(num_words).collect();
+            let mut result = words.join(" ");
+            if *x != result {
+                result = result + append;
+            }
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
 
@@ -804,5 +833,24 @@ mod tests {
         assert_eq!(unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
                    tos!("test"));
         assert_eq!(unit!(strip_html, tos!(""), &[]), tos!(""));
+    }
+
+    #[test]
+    fn unit_truncatewords() {
+        assert_eq!(failed!(truncatewords, tos!("bar bar"), &[Num(-1_f32)]),
+                   FilterError::InvalidArgument(0, "Positive number expected".to_owned()));
+        assert_eq!(failed!(truncatewords, tos!("bar bar"), &[Num(0_f32)]),
+                   FilterError::InvalidArgument(0, "Positive number expected".to_owned()));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(1_f32)]),
+                   tos!("bar"));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32)]),
+                   tos!("bar bar"));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(3_f32)]),
+                   tos!("bar bar"));
+        assert_eq!(unit!(truncatewords, tos!(""), &[Num(1_f32)]), tos!(""));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(1_f32), tos!("...")]),
+                   tos!("bar..."));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32), tos!("...")]),
+                   tos!("bar bar"));
     }
 }
