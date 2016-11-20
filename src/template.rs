@@ -1,7 +1,8 @@
 use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
-              round, prepend, append, first, last, pluralize, replace, date, sort, slice, modulo};
+              round, prepend, append, first, last, pluralize, replace, date, sort, slice, modulo,
+              remove_first};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -28,6 +29,7 @@ impl Renderable for Template {
         context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("plus", Box::new(plus));
         context.maybe_add_filter("prepend", Box::new(prepend));
+        context.maybe_add_filter("remove_first", Box::new(remove_first));
         context.maybe_add_filter("replace", Box::new(replace));
         context.maybe_add_filter("round", Box::new(round));
         context.maybe_add_filter("size", Box::new(size));

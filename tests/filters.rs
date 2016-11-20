@@ -343,3 +343,28 @@ pub fn modulo() {
         assert_eq!(template.render(&mut data).unwrap(), Some(t.1.to_string()));
     }
 }
+
+#[test]
+pub fn remove_first() {
+    let text = "{{ text | remove_first: 'bar' }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("bar2bar".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("2bar".to_string()));
+
+    let text = "{{ text | remove_first: myvar }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(&text, options).unwrap();
+
+    let mut data = Context::new();
+    data.set_val("text", Value::Str("bar2bar".to_string()));
+    data.set_val("myvar", Value::Str("bar".to_string()));
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("2bar".to_string()));
+}
+

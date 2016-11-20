@@ -378,6 +378,20 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => {
+                    Ok(Str(x.splitn(2, a).collect()))
+                },
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -652,4 +666,13 @@ mod tests {
         assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
         assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
     }
+
+    #[test]
+    fn unit_remove_first() {
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("bar")]), tos!("bar"));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("")]), tos!("barbar"));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("barbar")]), tos!(""));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("a")]), tos!("brbar"));
+    }
+
 }
