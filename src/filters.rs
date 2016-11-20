@@ -430,6 +430,20 @@ pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => {
+                    Ok(Str(x.replace(a, "")))
+                },
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -719,5 +733,13 @@ mod tests {
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("")]), tos!("barbar"));
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("barbar")]), tos!(""));
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("a")]), tos!("brbar"));
+    }
+
+    #[test]
+    fn unit_remove() {
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("bar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("")]), tos!("barbar"));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("barbar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("a")]), tos!("brbr"));
     }
 }
