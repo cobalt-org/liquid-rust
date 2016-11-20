@@ -469,6 +469,7 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
+    // regexps from https://github.com/Shopify/liquid/blob/86944fe7b77710b299a5d03fb6ef816f6c09feb4/lib/liquid/standardfilters.rb#L106
     let matchers = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
                     Regex::new(r"(?is)<style.*?</style>").unwrap(),
                     Regex::new(r"(?is)<!--.*?-->").unwrap(),
