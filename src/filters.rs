@@ -390,29 +390,49 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
-pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
+/// Returns the number of already escaped characters.
+fn nr_escaped(text: &str) -> usize {
+    for prefix in &["lt;", "gt;", "#39;", "quot;", "amp;"] {
+        if text.starts_with(prefix) {
+            return prefix.len();
+        }
+    }
+    0
+}
+
+// The code is adapted from
+// https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
+// Retrieved 2016-11-19.
+fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     try!(check_args_len(args, 0));
     match *input {
         Str(ref s) => {
-            // Adapted from
-            // https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
-            // Retrieved 2016-11-19.
             let mut result = String::new();
             let mut last = 0;
+            let mut skip = 0;
             for (i, c) in s.chars().enumerate() {
+                if skip > 0 {
+                    skip -= 1;
+                    continue;
+                }
                 match c as char {
-                    '<' | '>' | '&' | '\'' | '"' => {
+                    '<' | '>' | '\'' | '"' | '&' => {
                         result.push_str(&s[last..i]);
+                        last = i + 1;
                         let escaped = match c as char {
                             '<' => "&lt;",
                             '>' => "&gt;",
-                            '&' => "&amp;",
                             '\'' => "&#39;",
                             '"' => "&quot;",
+                            '&' => {
+                                if once_p {
+                                    skip = nr_escaped(&s[last..]);
+                                }
+                                if skip == 0 { "&amp;" } else { "&" }
+                            }
                             _ => unreachable!(),
                         };
                         result.push_str(escaped);
-                        last = i + 1;
                     }
                     _ => {}
                 }
@@ -424,6 +444,14 @@ pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
         }
         _ => Err(InvalidType("String expected".to_owned())),
     }
+}
+
+pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
+    _escape(input, args, false)
+}
+
+pub fn escape_once(input: &Value, args: &[Value]) -> FilterResult {
+    _escape(input, args, true)
 }
 
 pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
@@ -496,7 +524,6 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -789,6 +816,16 @@ mod tests {
                    tos!("Have you read &#39;James &amp; the Giant Peach&#39;?"));
         assert_eq!(unit!(escape, tos!("Tetsuro Takara")),
                    tos!("Tetsuro Takara"));
+    }
+
+    #[test]
+    fn unit_escape_once() {
+        assert_eq!(unit!(escape_once, tos!("1 < 2 & 3")),
+                   tos!("1 &lt; 2 &amp; 3"));
+        assert_eq!(unit!(escape_once, tos!("1 &lt; 2 &amp; 3")),
+                   tos!("1 &lt; 2 &amp; 3"));
+        assert_eq!(unit!(escape_once, tos!("&lt;&gt;&amp;&#39;&quot;&xyz;")),
+                   tos!("&lt;&gt;&amp;&#39;&quot;&amp;xyz;"));
     }
 
     #[test]
