@@ -9,6 +9,8 @@ use chrono::DateTime;
 
 use self::FilterError::*;
 
+use regex::Regex;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
     InvalidType(String),
@@ -172,6 +174,32 @@ pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Num(n) => Ok(Num(n.round())),
         _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() != 2 {
+        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
+    }
+    match *input {
+        Str(ref x) => {
+            let search = match args[0] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+            };
+            let replace = match args[1] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
+            };
+            let tokens: Vec<&str> = x.splitn(2, search).collect();
+            if tokens.len() == 2 {
+                let result = tokens[0].to_string() + replace + tokens[1];
+                Ok(Str(result))
+            } else {
+                Ok(Str(x.to_string()))
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
     }
 }
 
@@ -398,6 +426,78 @@ pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(x.splitn(2, a).collect())),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(x.replace(a, ""))),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
+    lazy_static! {
+        // regexps taken from https://git.io/vXbgS
+        static ref MATCHERS: [Regex; 4] = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
+                                           Regex::new(r"(?is)<style.*?</style>").unwrap(),
+                                           Regex::new(r"(?is)<!--.*?-->").unwrap(),
+                                           Regex::new(r"(?is)<.*?>").unwrap()];
+    }
+    match *input {
+        Str(ref x) => {
+            let result = MATCHERS.iter()
+                .fold(x.to_string(),
+                      |acc, &ref matcher| matcher.replace_all(&acc, ""));
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+    let num_words = match args.first() {
+        Some(&Num(x)) if x > 0f32 => x as usize,
+        _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
+    };
+    let empty = "".to_string();
+    let append = match args.get(1) {
+        Some(&Str(ref x)) => x,
+        _ => &empty,
+    };
+
+    match *input {
+        Str(ref x) => {
+            let words: Vec<&str> = x.split(' ').take(num_words).collect();
+            let mut result = words.join(" ");
+            if *x != result {
+                result = result + append;
+            }
+            Ok(Str(result))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
 
@@ -527,6 +627,16 @@ mod tests {
         assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
         assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
         assert!(round(&Bool(true), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_replace_first() {
+        assert_eq!(unit!(replace_first, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
+                   tos!("foobar"));
+        assert_eq!(unit!(replace_first, tos!("barxoxo"), &[tos!("xo"), tos!("foo")]),
+                   tos!("barfooxo"));
+        assert_eq!(unit!(replace_first, tos!(""), &[tos!("bar"), tos!("foo")]),
+                   tos!(""));
     }
 
     #[test]
@@ -679,5 +789,68 @@ mod tests {
                    tos!("Have you read &#39;James &amp; the Giant Peach&#39;?"));
         assert_eq!(unit!(escape, tos!("Tetsuro Takara")),
                    tos!("Tetsuro Takara"));
+    }
+
+    #[test]
+    fn unit_remove_first() {
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("bar")]),
+                   tos!("bar"));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("")]),
+                   tos!("barbar"));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("barbar")]),
+                   tos!(""));
+        assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("a")]),
+                   tos!("brbar"));
+    }
+
+    #[test]
+    fn unit_remove() {
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("bar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("")]), tos!("barbar"));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("barbar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("a")]), tos!("brbr"));
+    }
+
+    #[test]
+    fn unit_strip_html() {
+        assert_eq!(unit!(strip_html,
+                         tos!("<script type=\"text/javascript\">alert('Hi!');</script>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html,
+                         tos!("<SCRIPT type=\"text/javascript\">alert('Hi!');</SCRIPT>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html, tos!("<p>test</p>"), &[]), tos!("test"));
+        assert_eq!(unit!(strip_html, tos!("<p id='xxx'>test</p>"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html,
+                         tos!("<style type=\"text/css\">cool style</style>"),
+                         &[]),
+                   tos!(""));
+        assert_eq!(unit!(strip_html, tos!("<p\nclass='loooong'>test</p>"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
+                   tos!("test"));
+        assert_eq!(unit!(strip_html, tos!(""), &[]), tos!(""));
+    }
+
+    #[test]
+    fn unit_truncatewords() {
+        assert_eq!(failed!(truncatewords, tos!("bar bar"), &[Num(-1_f32)]),
+                   FilterError::InvalidArgument(0, "Positive number expected".to_owned()));
+        assert_eq!(failed!(truncatewords, tos!("bar bar"), &[Num(0_f32)]),
+                   FilterError::InvalidArgument(0, "Positive number expected".to_owned()));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(1_f32)]),
+                   tos!("bar"));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32)]),
+                   tos!("bar bar"));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(3_f32)]),
+                   tos!("bar bar"));
+        assert_eq!(unit!(truncatewords, tos!(""), &[Num(1_f32)]), tos!(""));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(1_f32), tos!("...")]),
+                   tos!("bar..."));
+        assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32), tos!("...")]),
+                   tos!("bar bar"));
     }
 }

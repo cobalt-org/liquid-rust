@@ -1,8 +1,8 @@
 use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
-              round, prepend, append, first, last, pluralize, replace, date, sort, slice, modulo,
-              escape};
+              round, prepend, append, first, last, pluralize, replace_first, replace, date, sort,
+              slice, modulo, escape, remove_first, remove, strip_html, truncatewords};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -30,13 +30,18 @@ impl Renderable for Template {
         context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("plus", Box::new(plus));
         context.maybe_add_filter("prepend", Box::new(prepend));
+        context.maybe_add_filter("remove_first", Box::new(remove_first));
+        context.maybe_add_filter("remove", Box::new(remove));
+        context.maybe_add_filter("replace_first", Box::new(replace_first));
         context.maybe_add_filter("replace", Box::new(replace));
         context.maybe_add_filter("round", Box::new(round));
         context.maybe_add_filter("size", Box::new(size));
         context.maybe_add_filter("slice", Box::new(slice));
         context.maybe_add_filter("sort", Box::new(sort));
         context.maybe_add_filter("split", Box::new(split));
+        context.maybe_add_filter("strip_html", Box::new(strip_html));
         context.maybe_add_filter("times", Box::new(times));
+        context.maybe_add_filter("truncatewords", Box::new(truncatewords));
         context.maybe_add_filter("upcase", Box::new(upcase));
 
         let mut buf = String::new();
