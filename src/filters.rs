@@ -3,7 +3,7 @@ use std::error::Error;
 use std::cmp::Ordering;
 
 use value::Value;
-use value::Value::*;
+use value::Value::{Array, Num, Object, Str};
 
 use chrono::DateTime;
 
