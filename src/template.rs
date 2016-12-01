@@ -2,7 +2,7 @@ use Renderable;
 use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
               round, prepend, append, first, last, pluralize, replace_first, replace, date, sort,
-              slice, modulo, escape, remove_first, remove, strip_html, truncatewords};
+              slice, modulo, escape, escape_once, remove_first, remove, strip_html, truncatewords};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -21,6 +21,7 @@ impl Renderable for Template {
         context.maybe_add_filter("divided_by", Box::new(divided_by));
         context.maybe_add_filter("downcase", Box::new(downcase));
         context.maybe_add_filter("escape", Box::new(escape));
+        context.maybe_add_filter("escape_once", Box::new(escape_once));
         context.maybe_add_filter("first", Box::new(first));
         context.maybe_add_filter("floor", Box::new(floor));
         context.maybe_add_filter("join", Box::new(join));
@@ -30,10 +31,10 @@ impl Renderable for Template {
         context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("plus", Box::new(plus));
         context.maybe_add_filter("prepend", Box::new(prepend));
-        context.maybe_add_filter("remove_first", Box::new(remove_first));
         context.maybe_add_filter("remove", Box::new(remove));
-        context.maybe_add_filter("replace_first", Box::new(replace_first));
+        context.maybe_add_filter("remove_first", Box::new(remove_first));
         context.maybe_add_filter("replace", Box::new(replace));
+        context.maybe_add_filter("replace_first", Box::new(replace_first));
         context.maybe_add_filter("round", Box::new(round));
         context.maybe_add_filter("size", Box::new(size));
         context.maybe_add_filter("slice", Box::new(slice));
