@@ -301,7 +301,7 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
             match args.first() {  // Check the first (and only) argument
                 Some(&Str(ref join_string)) => {
                     // The join string argument is in fact a String
-                    let mut result = strings_to_join.next().unwrap_or(String::new());
+                    let mut result = strings_to_join.next().unwrap_or_else(String::new);
                     for string in strings_to_join {
                         result.push_str(join_string);
                         result.push_str(&string);
@@ -339,7 +339,7 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
             }
             // Check for overflows over string length and fallback to allowed values
             if start < 0 {
-                start = ilen + start;
+                start += ilen;
             }
             // start is guaranteed to be positive at this point
             if start + offset > ilen {
@@ -353,8 +353,8 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match input {
-        &Value::Array(ref array) => {
+    match *input {
+        Value::Array(ref array) => {
             let mut sorted = array.clone();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
             Ok(Value::Array(sorted))
@@ -365,8 +365,8 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
-    let date = match input {
-        &Value::Str(ref s) => {
+    let date = match *input {
+        Value::Str(ref s) => {
             try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
                 .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
         }

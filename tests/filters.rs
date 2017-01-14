@@ -11,7 +11,7 @@ use std::default::Default;
 pub fn upcase() {
     let text = "{{ text | upcase}}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("hello".to_string()));
@@ -24,7 +24,7 @@ pub fn upcase() {
 pub fn downcase() {
     let text = "{{ text | downcase}}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("HELLO tHeRe".to_string()));
@@ -37,7 +37,7 @@ pub fn downcase() {
 pub fn capitalize() {
     let text = "{{ text | capitalize}}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("hello world".to_string()));
@@ -50,7 +50,7 @@ pub fn capitalize() {
 pub fn pluralize() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("count", Value::Num(1f32));
@@ -76,7 +76,7 @@ pub fn pluralize() {
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(4f32));
@@ -89,7 +89,7 @@ pub fn minus() {
 pub fn plus() {
     let text = "{{ num | plus : 2 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(4f32));
@@ -102,7 +102,7 @@ pub fn plus() {
 pub fn minus_error() {
     let text = "{{ num | minus }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("num", Value::Num(4f32));
@@ -115,7 +115,7 @@ pub fn minus_error() {
 pub fn first() {
     let text = "{{ nums | first }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     // array of numbers
     let mut data = Context::new();
@@ -143,7 +143,7 @@ pub fn first() {
 pub fn last() {
     let text = "{{ list | last }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     // array of numbers
     let mut data = Context::new();
@@ -173,7 +173,7 @@ pub fn last() {
 pub fn replace_first() {
     let text = "{{ text | replace_first: 'bar', 'foo' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -186,7 +186,7 @@ pub fn replace_first() {
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -199,7 +199,7 @@ pub fn replace() {
 pub fn prepend() {
     let text = "{{ text | prepend: 'fifo' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -209,7 +209,7 @@ pub fn prepend() {
 
     let text = "{{ text | prepend: myvar }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -223,7 +223,7 @@ pub fn prepend() {
 pub fn append() {
     let text = "{{ text | append: 'lifo' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("roobarb".to_string()));
@@ -240,7 +240,7 @@ pub fn split_with_comma() {
     let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member \
                 in beatles %}{{ member }}\n{% endfor %}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -255,7 +255,7 @@ pub fn split_no_comma() {
     let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: \
                 {{ letter }}\n{% endfor %}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -269,7 +269,7 @@ pub fn split_no_comma() {
 pub fn split_then_join() {
     let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -282,7 +282,7 @@ pub fn split_then_join() {
 pub fn slice_one() {
     let text = "{{ '0123456' | slice: 2 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -295,7 +295,7 @@ pub fn slice_one() {
 pub fn slice_negative() {
     let text = "{{ '6543210' | slice: -4, 3 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -308,7 +308,7 @@ pub fn slice_negative() {
 pub fn slice_overflow() {
     let text = "{{ 'xx0123456' | slice: 2, 10.1 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -321,7 +321,7 @@ pub fn slice_overflow() {
 pub fn slice_empty() {
     let text = "{{ '' | slice: 2 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -334,7 +334,7 @@ pub fn slice_empty() {
 pub fn split_sort_join() {
     let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
 
@@ -347,7 +347,7 @@ pub fn split_sort_join() {
 pub fn modulo() {
     let text = "{{ num | modulo: 2 }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
     let mut data = Context::new();
 
     let samples = [(4_f32, "0"), (3_f32, "1"), (5.1, "1.0999999")];
@@ -361,7 +361,7 @@ pub fn modulo() {
 pub fn escape() {
     let input = "{{ var | escape }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&input, options).unwrap();
+    let template = parse(input, options).unwrap();
     let mut data = Context::new();
 
     let samples = [("abc", "abc"), ("", ""),
@@ -378,7 +378,7 @@ pub fn escape() {
 pub fn escape_once() {
     let input = "{{ var | escape_once }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&input, options).unwrap();
+    let template = parse(input, options).unwrap();
     let mut data = Context::new();
 
     let samples = [("text", "text"), ("1 < 2 & 3", "1 &lt; 2 &amp; 3"),
@@ -396,7 +396,7 @@ pub fn escape_once() {
 pub fn remove_first() {
     let text = "{{ text | remove_first: 'bar' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -406,7 +406,7 @@ pub fn remove_first() {
 
     let text = "{{ text | remove_first: myvar }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -420,7 +420,7 @@ pub fn remove_first() {
 pub fn remove() {
     let text = "{{ text | remove: 'bar' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("bar2bar".to_string()));
@@ -433,7 +433,7 @@ pub fn remove() {
 pub fn strip_html() {
     let text = "{{ text | strip_html }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("<!-- <b> Comment -->Lorem <a>ipsum </b>dolor".to_string()));
@@ -446,7 +446,7 @@ pub fn strip_html() {
 pub fn truncatewords() {
     let text = "{{ text | truncatewords: 1, '...' }}";
     let options: LiquidOptions = Default::default();
-    let template = parse(&text, options).unwrap();
+    let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
     data.set_val("text", Value::Str("first seconds third".to_string()));

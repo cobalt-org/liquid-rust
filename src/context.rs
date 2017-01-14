@@ -85,7 +85,7 @@ impl Context {
 
     /// Only add the given filter to the context if a filter with this name doesn't already exist.
     pub fn maybe_add_filter(&mut self, name: &str, filter: Box<Filter>) {
-        if let None = self.get_filter(name) {
+        if self.get_filter(name).is_none() {
             self.add_filter(name, filter)
         }
     }
@@ -128,7 +128,7 @@ impl Context {
     /// frame already in place, empyting the stack should never happen in a
     /// well-formed program.
     fn pop_scope(&mut self) {
-        if let None = self.stack.pop() {
+        if self.stack.pop().is_none() {
             panic!("Pop leaves empty stack")
         };
     }
@@ -220,11 +220,11 @@ impl Context {
     /// Translates a Token to a Value, looking it up in the context if
     /// necessary
     pub fn evaluate(&self, t: &Token) -> Result<Option<Value>> {
-        match t {
-            &NumberLiteral(f) => Ok(Some(Value::Num(f))),
-            &StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
-            &BooleanLiteral(b) => Ok(Some(Value::Bool(b))),
-            &Identifier(ref id) => Ok(self.get_val(id).cloned()),
+        match *t {
+            NumberLiteral(f) => Ok(Some(Value::Num(f))),
+            StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
+            BooleanLiteral(b) => Ok(Some(Value::Bool(b))),
+            Identifier(ref id) => Ok(self.get_val(id).cloned()),
             _ => {
                 let msg = format!("Cannot evaluate {}", t);
                 Err(Error::Other(msg))

@@ -42,7 +42,7 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens[0] {
         Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags.get(x).unwrap()(x, &tokens[1..], options)
+            options.tags[x](x, &tokens[1..], options)
         }
         _ => {
             let output = try!(parse_output(tokens));
@@ -128,7 +128,7 @@ fn parse_tag(iter: &mut Iter<Element>,
     match *tag {
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags.get(x).unwrap()(x, &tokens[1..], options)
+            options.tags[x](x, &tokens[1..], options)
         }
 
         // is a block
@@ -147,7 +147,7 @@ fn parse_tag(iter: &mut Iter<Element>,
             let mut children = vec![];
             let mut nesting_depth = 0;
             for t in iter {
-                if let &Tag(ref tokens, _) = t {
+                if let Tag(ref tokens, _) = *t {
                     match tokens[0] {
                         ref n if n == tag => {
                             nesting_depth += 1;
@@ -161,7 +161,7 @@ fn parse_tag(iter: &mut Iter<Element>,
                 };
                 children.push(t.clone())
             }
-            options.blocks.get(x).unwrap()(x, &tokens[1..], children, options)
+            options.blocks[x](x, &tokens[1..], children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),

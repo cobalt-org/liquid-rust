@@ -171,8 +171,8 @@ pub fn for_block(_tag_name: &str,
     let mut reversed = false;
 
     while let Some(token) = args.next() {
-        match token {
-            &Identifier(ref attr) => {
+        match *token {
+            Identifier(ref attr) => {
                 match attr.as_ref() {
                     "limit" => limit = try!(int_attr(&mut args)),
                     "offset" => offset = try!(int_attr(&mut args)).unwrap_or(0),

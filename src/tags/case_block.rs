@@ -63,7 +63,7 @@ enum Conditional {
 }
 
 fn parse_condition(element: &Element) -> Result<Conditional> {
-    if let &Tag(ref tokens, _) = element {
+    if let Tag(ref tokens, _) = *element {
         match tokens[0] {
             Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
 

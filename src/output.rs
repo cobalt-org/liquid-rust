@@ -51,7 +51,7 @@ impl Output {
         let mut entry = match self.entry {
             VarOrVal::Val(ref x) => x.clone(),
             VarOrVal::Var(ref x) => {
-                context.get_val(&*x.name()).cloned().unwrap_or(Value::Str("".to_owned()))
+                context.get_val(&*x.name()).cloned().unwrap_or_else(|| Value::Str("".to_owned()))
             }
         };
 
@@ -62,14 +62,14 @@ impl Output {
 
             let mut arguments = Vec::new();
             for arg in &filter.arguments {
-                match arg {
-                    &VarOrVal::Var(ref x) => {
+                match *arg {
+                    VarOrVal::Var(ref x) => {
                         let val = try!(context.get_val(&*x.name())
                             .cloned()
                             .ok_or(Error::Render(format!("undefined variable {}", x.name()))));
                         arguments.push(val);
                     }
-                    &VarOrVal::Val(ref x) => arguments.push(x.clone()),
+                    VarOrVal::Val(ref x) => arguments.push(x.clone()),
                 }
             }
             entry = try!(f(&entry, &*arguments));
