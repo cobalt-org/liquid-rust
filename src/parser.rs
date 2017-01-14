@@ -268,14 +268,13 @@ mod test {
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap(),
                        Output::new(VarOrVal::Var(Variable::new("abc")),
-                                   vec![
-                    FilterPrototype::new("def", vec![
+                                   vec![FilterPrototype::new("def",
+                                                             vec![
                                          VarOrVal::Val(Value::str("1")),
                                          VarOrVal::Val(Value::Num(2.0)),
                                          VarOrVal::Val(Value::str("3")),
                     ]),
-                    FilterPrototype::new("blabla", vec![]),
-                ]));
+                                        FilterPrototype::new("blabla", vec![])]));
         }
 
         #[test]

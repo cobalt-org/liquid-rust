@@ -250,7 +250,7 @@ pub fn split_with_comma() {
 }
 
 #[test]
-// This test verifies that issue https://github.com/cobalt-org/liquid-rust/issues/40 is fixed (that split works)
+// This test verifies that issue #40 is fixed (that split works)
 pub fn split_no_comma() {
     let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: \
                 {{ letter }}\n{% endfor %}";
@@ -364,9 +364,11 @@ pub fn escape() {
     let template = parse(input, options).unwrap();
     let mut data = Context::new();
 
-    let samples = [("abc", "abc"), ("", ""),
+    let samples = [("abc", "abc"),
+                   ("", ""),
                    ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
-                   ("1 < 2", "1 &lt; 2"), ("1 &lt; 2", "1 &amp;lt; 2"),
+                   ("1 < 2", "1 &lt; 2"),
+                   ("1 &lt; 2", "1 &amp;lt; 2"),
                    ("&etc.", "&amp;etc.")];
     for t in &samples {
         data.set_val("var", Value::Str(t.0.to_string()));
@@ -381,7 +383,8 @@ pub fn escape_once() {
     let template = parse(input, options).unwrap();
     let mut data = Context::new();
 
-    let samples = [("text", "text"), ("1 < 2 & 3", "1 &lt; 2 &amp; 3"),
+    let samples = [("text", "text"),
+                   ("1 < 2 & 3", "1 &lt; 2 &amp; 3"),
                    ("1 &lt; 2 &amp; 3", "1 &lt; 2 &amp; 3"),
                    ("&xyz;", "&amp;xyz;"),
                    ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
@@ -436,7 +439,8 @@ pub fn strip_html() {
     let template = parse(text, options).unwrap();
 
     let mut data = Context::new();
-    data.set_val("text", Value::Str("<!-- <b> Comment -->Lorem <a>ipsum </b>dolor".to_string()));
+    data.set_val("text",
+                 Value::Str("<!-- <b> Comment -->Lorem <a>ipsum </b>dolor".to_string()));
 
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("Lorem ipsum dolor".to_string()));
