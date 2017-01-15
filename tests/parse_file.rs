@@ -6,7 +6,7 @@ use std::io::Read;
 use liquid::*;
 
 // README: The compare_by_file and following tests are almost line for line carbon-copies of the
-// tests in `fixutres.rs`. This might be overkill but keep that in mind when making changes to
+// tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to
 // fixtures that might necessitate changes to the parse_file method tested here.
 
 fn compare_by_file(name: &str, context: &mut Context) {

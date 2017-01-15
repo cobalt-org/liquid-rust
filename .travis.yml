@@ -1,39 +1,53 @@
 sudo: false
 language: rust
-cache: cargo
 rust:
-- stable
-- beta
-- nightly
+  - stable
+  - beta
+  - nightly
 
-before_script:
-- |
-  pip install 'travis-cargo<0.2' --user &&
-  (cargo install rustfmt || true) &&
-  export PATH=$HOME/.local/bin:$PATH &&
-  export PATH=$HOME/.cargo/bin:$PATH
+install:
+  # Install rustfmt
+  - curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --force --crate rustfmt --git japaric/rustfmt-bin --tag v0.6.3-20161120
+  # Install clippy
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy || true) fi
+  - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
-- |
-  cargo fmt -- --write-mode=diff &&
-  travis-cargo build &&
-  travis-cargo test &&
-  travis-cargo --only stable doc
+  - cargo build
+  - cargo test
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy) fi
+  - cargo fmt -- --write-mode=diff
 
 addons:
   apt:
     packages:
-    - libcurl4-openssl-dev
-    - libelf-dev
-    - libdw-dev
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
 
-after_success:
-- travis-cargo --only stable doc-upload
-- rm tests/skeptic.rs # "skip" skeptic doctests for coverage
-- travis-cargo --only stable coveralls --no-sudo
+cache:
+  apt: true
+  directories:
+    - $HOME/.cargo
+    - target/debug/build
+
+before_cache:
+    # Travis can't cache files that are not readable by "others"
+    - chmod -R a+r $HOME/.cargo
+
+after_success: |
+  [ $TRAVIS_RUST_VERSION = stable ] &&
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build && cmake .. && make && make install DESTDIR=../tmp && cd ../.. &&
+  ls target/debug &&
+  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/fixtures-* &&
+  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
+  ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
 
 env:
   global:
-  - TRAVIS_CARGO_NIGHTLY_FEATURE="clippy"
   - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 
