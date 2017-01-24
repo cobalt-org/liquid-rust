@@ -7,7 +7,7 @@ use token::Token;
 use token::Token::*;
 use token::ComparisonOperator::*;
 use self::Element::*;
-use regex::Regex;
+use regex::{Regex};
 use error::{Error, Result};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -24,12 +24,14 @@ lazy_static! {
 fn split_blocks(text: &str) -> Vec<&str> {
     let mut tokens = vec![];
     let mut current = 0;
-    for (begin, end) in MARKUP.find_iter(text) {
-        match &text[current..begin] {
+    for mat in MARKUP.find_iter(text) {
+        let start = mat.start();
+        let end = mat.end();
+        match &text[current..start] {
             "" => {}
             t => tokens.push(t),
         }
-        tokens.push(&text[begin..end]);
+        tokens.push(&text[start..end]);
         current = end;
     }
     match &text[current..text.len()] {
@@ -49,10 +51,10 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 
     for block in split_blocks(text) {
         if let Some(caps) = TAG.captures(block) {
-            blocks.push(Tag(try!(granularize(caps.at(1).unwrap_or(""))),
+            blocks.push(Tag(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
                             block.to_owned()));
         } else if let Some(caps) = EXPRESSION.captures(block) {
-            blocks.push(Expression(try!(granularize(caps.at(1).unwrap_or(""))),
+            blocks.push(Expression(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
                                    block.to_owned()));
         } else {
             blocks.push(Raw(block.to_owned()));
@@ -70,11 +72,13 @@ lazy_static! {
 fn split_atom(block: &str) -> Vec<&str> {
     let mut tokens = vec![];
     let mut current = 0;
-    for (begin, end) in SPLIT.find_iter(block) {
+    for mat in SPLIT.find_iter(block) {
+        let start = mat.start();
+        let end = mat.end();
         // insert the stuff between identifiers
-        tokens.push(&block[current..begin]);
+        tokens.push(&block[current..start]);
         // insert the identifier
-        tokens.push(&block[begin..end]);
+        tokens.push(&block[start..end]);
         current = end;
     }
     // insert remaining things

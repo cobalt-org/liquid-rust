@@ -490,7 +490,7 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
         Str(ref x) => {
             let result = MATCHERS.iter()
                 .fold(x.to_string(),
-                      |acc, &ref matcher| matcher.replace_all(&acc, ""));
+                      |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
             Ok(Str(result))
         }
         _ => Err(InvalidType("String expected".to_owned())),
