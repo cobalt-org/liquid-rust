@@ -7,6 +7,7 @@ description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust"
 documentation = "https://cobalt-org.github.io/liquid-rust/"
 readme = "README.md"
+categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 
