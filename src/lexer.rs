@@ -7,7 +7,7 @@ use token::Token;
 use token::Token::*;
 use token::ComparisonOperator::*;
 use self::Element::*;
-use regex::{Regex};
+use regex::Regex;
 use error::{Error, Result};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -54,7 +54,9 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
             blocks.push(Tag(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
                             block.to_owned()));
         } else if let Some(caps) = EXPRESSION.captures(block) {
-            blocks.push(Expression(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
+            blocks.push(Expression(try!(granularize(caps.get(1)
+                                       .map(|x| x.as_str())
+                                       .unwrap_or(""))),
                                    block.to_owned()));
         } else {
             blocks.push(Raw(block.to_owned()));
