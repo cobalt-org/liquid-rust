@@ -98,7 +98,7 @@ impl Renderable for For {
                         scope.set_local_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_local_val(&self.var_name, v.clone());
                         let inner = try!(self.item_template.render(&mut scope))
-                            .unwrap_or("".to_owned());
+                            .unwrap_or_else(String::new);
                         ret = ret + &inner;
 
                         // given that we're at the end of the loop body
