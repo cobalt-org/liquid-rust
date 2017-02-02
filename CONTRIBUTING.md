@@ -6,7 +6,11 @@ If you're looking for things to do check out the [open issues](https://github.co
 [easy](https://github.com/cobalt-org/liquid-rust/issues?q=is%3Aissue+is%3Aopen+label%3Aeasy) and [help wanted](https://github.com/cobalt-org/liquid-rust/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) flags.
 Or take a grep through [all TODO comments](https://github.com/cobalt-org/liquid-rust/search?q=TODO) in the code and feel free to help us out there!
 
-Please make sure to run **`cargo test`** and **`cargo fmt`** (requires https://github.com/rust-lang-nursery/rustfmt) locally before making a pull request, unless you want Travis to remind you that your build has failed.
+🌈 **Here's a checklist for the perfect pull request:**
+- [ ] Make sure existing tests still work by running `cargo test` locally.
+- [ ] Add new tests for any new feature or regression tests for bugfixes.
+- [ ] Install [Clippy](https://github.com/Manishearth/rust-clippy) and run `rustup run nightly cargo clippy` to catch common mistakes (will be checked by Travis)
+- [ ] Install [Rustfmt](https://github.com/rust-lang-nursery/rustfmt) and run `cargo fmt` to format your code (will also be checked by Travis)
 
 If you need assistance, you can join the `#cobalt` channel on `irc.mozilla.org` or the Gitter chat [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cobalt-org/cobalt.rs)
 
