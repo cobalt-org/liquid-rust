@@ -202,7 +202,7 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     };
     let timezone = match times(&args[1], &[Num(3600.0)]) {
         Ok(Num(n)) => FixedOffset::east(n as i32),
-        _ => return Err(InvalidType("Num expected".to_owned())),
+        _ => return Err(InvalidArgument(1, "Num expected".to_owned())),
     };
 
     Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
@@ -853,59 +853,84 @@ mod tests {
     }
 
     #[test]
-    fn unit_date_in_tz() {
-        // Shift timezone, same day.
-        assert_eq!(unit!(date_in_tz,
-                         tos!("13 Jun 2016 12:00:00 +0000"),
-                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(3f32)]),
-                   tos!("2016-06-13 15:00:00 +0300"));
+    fn unit_date_in_tz_same_day() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(3f32)];
+        let desired_result = tos!("2016-06-13 15:00:00 +0300");
+        assert_eq!(unit!(date_in_tz, input, args), desired_result);
+    }
 
-        // Shift timezone, previous day.
-        assert_eq!(unit!(date_in_tz,
-                         tos!("13 Jun 2016 12:00:00 +0000"),
-                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(-13f32)]),
-                   tos!("2016-06-12 23:00:00 -1300"));
+    #[test]
+    fn unit_date_in_tz_previous_day() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(-13f32)];
+        let desired_result = tos!("2016-06-12 23:00:00 -1300");
+        assert_eq!(unit!(date_in_tz, input, args), desired_result);
+    }
 
-        // Shift timezone, next day.
-        assert_eq!(unit!(date_in_tz,
-                         tos!("13 Jun 2016 12:00:00 +0000"),
-                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(13f32)]),
-                   tos!("2016-06-14 01:00:00 +1300"));
+    #[test]
+    fn unit_date_in_tz_next_day() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(13f32)];
+        let desired_result = tos!("2016-06-14 01:00:00 +1300");
+        assert_eq!(unit!(date_in_tz, input, args), desired_result);
+    }
 
-        // Date not a string.
-        assert_eq!(failed!(date_in_tz, Num(0f32), &[tos!("%Y-%m-%d"), Num(0f32)]),
-                   FilterError::InvalidType("String expected".to_owned()));
+    #[test]
+    fn unit_date_in_tz_input_not_a_string() {
+        let input = &Num(0f32);
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
+        let desired_result = FilterError::InvalidType("String expected".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
-        // Date a string, but not a properly formatted date.
-        assert_eq!(failed!(date_in_tz,
-                           tos!("blah blah blah"),
-                           &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)]),
-                   FilterError::InvalidType("Invalid date format: input contains invalid \
-                                             characters"
-                       .to_owned()));
+    #[test]
+    fn unit_date_in_tz_input_not_a_date_string() {
+        let input = &tos!("blah blah blah");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
+        let desired_result = FilterError::InvalidType("Invalid date format: input contains invalid \
+                                                      characters".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
-        // Date format not a string.
-        assert_eq!(failed!(date_in_tz,
-                           tos!("13 Jun 2016 12:00:00 +0000"),
-                           &[Num(0f32), Num(1f32)]),
-                   FilterError::InvalidArgument(0, "Str expected".to_owned()));
+    #[test]
+    fn unit_date_in_tz_date_format_not_a_string() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[Num(0f32), Num(1f32)];
+        let desired_result = FilterError::InvalidArgument(0, "Str expected".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
-        // Zero arguments.
-        assert_eq!(failed!(date_in_tz, tos!("13 Jun 2016 12:00:00 +0000"), &[]),
-                   FilterError::InvalidArgumentCount("expected 2, 0 given".to_owned()));
+    #[test]
+    fn unit_date_in_tz_offset_not_a_num() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
+        let desired_result = FilterError::InvalidArgument(1, "Num expected".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
-        // One argument.
-        assert_eq!(failed!(date_in_tz,
-                           tos!("13 Jun 2016 12:00:00 +0000"),
-                           &[tos!("%Y-%m-%d %H:%M:%S %z")]),
-                   FilterError::InvalidArgumentCount("expected 2, 1 given".to_owned()));
+    #[test]
+    fn unit_date_in_tz_zero_arguments() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[];
+        let desired_result = FilterError::InvalidArgumentCount("expected 2, 0 given".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
+    #[test]
+    fn unit_date_in_tz_one_argument() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z")];
+        let desired_result = FilterError::InvalidArgumentCount("expected 2, 1 given".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
+    }
 
-        // Three arguments
-        assert_eq!(failed!(date_in_tz,
-                           tos!("13 Jun 2016 12:00:00 +0000"),
-                           &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32), Num(1f32)]),
-                   FilterError::InvalidArgumentCount("expected 2, 3 given".to_owned()));
+    #[test]
+    fn unit_date_in_tz_three_arguments() {
+        let input = &tos!("13 Jun 2016 12:00:00 +0000");
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32), Num(1f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 2, 3 given".to_owned());
+        assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
     #[test]
