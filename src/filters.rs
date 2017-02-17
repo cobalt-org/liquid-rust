@@ -888,8 +888,9 @@ mod tests {
     fn unit_date_in_tz_input_not_a_date_string() {
         let input = &tos!("blah blah blah");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
-        let desired_result = FilterError::InvalidType("Invalid date format: input contains invalid \
-                                                      characters".to_owned());
+        let desired_result = FilterError::InvalidType("Invalid date format: input contains \
+                                                       invalid characters"
+            .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
