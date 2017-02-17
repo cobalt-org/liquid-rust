@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use value::Value;
 use value::Value::{Array, Bool, Num, Object, Str};
 
-use chrono::DateTime;
+use chrono::{DateTime, FixedOffset};
 
 use self::FilterError::*;
 
@@ -185,6 +185,27 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
     };
     Ok(Value::Str(date.format(format).to_string()))
+}
+
+pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+    let date = match *input {
+        Value::Str(ref s) => {
+            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
+        }
+        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
+    };
+    let format = match args[0] {
+        Value::Str(ref s) => s,
+        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+    };
+    let timezone = match times(&args[1], &[Num(3600.0)]) {
+        Ok(Num(n)) => FixedOffset::east(n as i32),
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+
+    Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
 }
 
 pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
@@ -829,6 +850,62 @@ mod tests {
                            tos!("13 Jun 2016 02:30:00 +0300"),
                            &[Num(0f32), Num(1f32)]),
                    FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned()));
+    }
+
+    #[test]
+    fn unit_date_with_timezone() {
+        // Shift timezone, same day.
+        assert_eq!(unit!(date_in_tz,
+                         tos!("13 Jun 2016 12:00:00 +0000"),
+                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(3f32)]),
+                   tos!("2016-06-13 15:00:00 +0300"));
+
+        // Shift timezone, previous day.
+        assert_eq!(unit!(date_in_tz,
+                         tos!("13 Jun 2016 12:00:00 +0000"),
+                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(-13f32)]),
+                   tos!("2016-06-12 23:00:00 -1300"));
+
+        // Shift timezone, next day.
+        assert_eq!(unit!(date_in_tz,
+                         tos!("13 Jun 2016 12:00:00 +0000"),
+                         &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(13f32)]),
+                   tos!("2016-06-14 01:00:00 +1300"));
+
+        // Date not a string.
+        assert_eq!(failed!(date_in_tz, Num(0f32), &[tos!("%Y-%m-%d"), Num(0f32)]),
+                   FilterError::InvalidType("String expected".to_owned()));
+
+        // Date a string, but not a properly formatted date.
+        assert_eq!(failed!(date_in_tz,
+                           tos!("blah blah blah"),
+                           &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)]),
+                   FilterError::InvalidType("Invalid date format: input contains invalid \
+                                             characters"
+                       .to_owned()));
+
+        // Date format not a string.
+        assert_eq!(failed!(date_in_tz,
+                           tos!("13 Jun 2016 12:00:00 +0000"),
+                           &[Num(0f32), Num(1f32)]),
+                   FilterError::InvalidArgument(0, "Str expected".to_owned()));
+
+        // Zero arguments.
+        assert_eq!(failed!(date_in_tz, tos!("13 Jun 2016 12:00:00 +0000"), &[]),
+                   FilterError::InvalidArgumentCount("expected 2, 0 given".to_owned()));
+
+        // One argument.
+        assert_eq!(failed!(date_in_tz,
+                           tos!("13 Jun 2016 12:00:00 +0000"),
+                           &[tos!("%Y-%m-%d %H:%M:%S %z")]),
+                   FilterError::InvalidArgumentCount("expected 2, 1 given".to_owned()));
+
+
+        // Three arguments
+        assert_eq!(failed!(date_in_tz,
+                           tos!("13 Jun 2016 12:00:00 +0000"),
+                           &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32), Num(1f32)]),
+                   FilterError::InvalidArgumentCount("expected 2, 3 given".to_owned()));
     }
 
     #[test]

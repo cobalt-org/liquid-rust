@@ -1,7 +1,7 @@
 use Renderable;
 use context::Context;
-use filters::{abs, append, capitalize, ceil, date, default, divided_by, downcase, escape,
-              escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br,
+use filters::{abs, append, capitalize, ceil, date, date_in_tz, default, divided_by, downcase,
+              escape, escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br,
               pluralize, plus, prepend, remove, remove_first, replace, replace_first, reverse,
               round, rstrip, size, slice, sort, split, strip, strip_html, strip_newlines, times,
               truncate, truncatewords, uniq, upcase};
@@ -20,6 +20,7 @@ impl Renderable for Template {
         context.maybe_add_filter("ceil", Box::new(ceil));
         context.maybe_add_filter("date", Box::new(date));
         context.maybe_add_filter("default", Box::new(default));
+        context.maybe_add_filter("date_in_tz", Box::new(date_in_tz));
         context.maybe_add_filter("divided_by", Box::new(divided_by));
         context.maybe_add_filter("downcase", Box::new(downcase));
         context.maybe_add_filter("escape", Box::new(escape));
