@@ -853,7 +853,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_date_with_timezone() {
+    fn unit_date_in_tz() {
         // Shift timezone, same day.
         assert_eq!(unit!(date_in_tz,
                          tos!("13 Jun 2016 12:00:00 +0000"),
