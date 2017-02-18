@@ -403,6 +403,15 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+/// Replaces every newline (`\n`) with an HTML line break (`<br>`).
+pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref x) => Ok(Str(x.replace("\n", "<br />"))),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 /// Returns the number of already escaped characters.
 fn nr_escaped(text: &str) -> usize {
     for prefix in &["lt;", "gt;", "#39;", "quot;", "amp;"] {
@@ -873,6 +882,31 @@ mod tests {
         assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
         assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
         assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
+    }
+
+    #[test]
+    fn unit_newline_to_br() {
+        let input = &tos!("a\nb");
+        let args = &[];
+        let desired_result = tos!("a<br />b");
+        assert_eq!(unit!(newline_to_br, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_newline_to_br_one_argument() {
+        let input = &tos!("a\nb");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(newline_to_br, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_newline_to_br_hello_world() {
+        /// First example from https://shopify.github.io/liquid/filters/newline_to_br/
+        let input = &tos!("\nHello\nWorld\n");
+        let args = &[];
+        let desired_result = tos!("<br />Hello<br />World<br />");
+        assert_eq!(unit!(newline_to_br, input, args), desired_result);
     }
 
     #[test]

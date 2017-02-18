@@ -3,7 +3,7 @@ use context::Context;
 use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
               round, prepend, append, first, last, pluralize, replace_first, replace, date, sort,
               slice, modulo, escape, escape_once, remove_first, remove, reverse, strip_html,
-              truncatewords};
+              truncatewords, newline_to_br};
 use filters::split;
 use filters::join;
 use error::Result;
@@ -29,6 +29,7 @@ impl Renderable for Template {
         context.maybe_add_filter("last", Box::new(last));
         context.maybe_add_filter("minus", Box::new(minus));
         context.maybe_add_filter("modulo", Box::new(modulo));
+        context.maybe_add_filter("newline_to_br", Box::new(newline_to_br));
         context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("plus", Box::new(plus));
         context.maybe_add_filter("prepend", Box::new(prepend));
