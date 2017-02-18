@@ -363,6 +363,19 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+/// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
+pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Array(ref array) => {
+            let mut reversed = array.clone();
+            reversed.reverse();
+            Ok(Value::Array(reversed))
+        }
+        _ => Err(InvalidType("Array argument expected".to_owned())),
+    }
+}
+
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
     let date = match *input {
@@ -773,6 +786,58 @@ mod tests {
         let args = &[tos!(",")];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a,1,c"));
+    }
+
+    #[test]
+    fn unit_reverse_array() {
+        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
+        let args = &[];
+        let desired_result = Array(vec![Num(2f32), Num(1f32), Num(3f32)]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_array_extra_args() {
+        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_string() {
+        let input = &tos!("abc");
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Array argument expected".to_owned());
+        assert_eq!(failed!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_apples_oranges_peaches_plums() {
+        /// First example from https://shopify.github.io/liquid/filters/reverse/
+        let input = &Array(vec![tos!("apples"), tos!("oranges"), tos!("peaches"), tos!("plums")]);
+        let args = &[];
+        let desired_result =
+            Array(vec![tos!("plums"), tos!("peaches"), tos!("oranges"), tos!("apples")]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_ground_control_major_tom() {
+        /// Second example from https://shopify.github.io/liquid/filters/reverse/
+        let input = &Array(vec![tos!("G"), tos!("r"), tos!("o"), tos!("u"), tos!("n"), tos!("d"),
+                                tos!(" "), tos!("c"), tos!("o"), tos!("n"), tos!("t"), tos!("r"),
+                                tos!("o"), tos!("l"), tos!(" "), tos!("t"), tos!("o"), tos!(" "),
+                                tos!("M"), tos!("a"), tos!("j"), tos!("o"), tos!("r"), tos!(" "),
+                                tos!("T"), tos!("o"), tos!("m"), tos!(".")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("."), tos!("m"), tos!("o"), tos!("T"), tos!(" "),
+                                        tos!("r"), tos!("o"), tos!("j"), tos!("a"), tos!("M"),
+                                        tos!(" "), tos!("o"), tos!("t"), tos!(" "), tos!("l"),
+                                        tos!("o"), tos!("r"), tos!("t"), tos!("n"), tos!("o"),
+                                        tos!("c"), tos!(" "), tos!("d"), tos!("n"), tos!("u"),
+                                        tos!("o"), tos!("r"), tos!("G")]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
     #[test]
