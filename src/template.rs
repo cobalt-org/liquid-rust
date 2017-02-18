@@ -1,11 +1,37 @@
 use Renderable;
 use context::Context;
-use filters::{size, upcase, downcase, capitalize, minus, plus, times, divided_by, ceil, floor,
-              round, prepend, append, first, last, pluralize, replace_first, replace, date, sort,
-              slice, modulo, escape, escape_once, remove_first, remove, reverse, strip_html,
-              truncatewords, newline_to_br};
-use filters::split;
+use filters::append;
+use filters::capitalize;
+use filters::ceil;
+use filters::date;
+use filters::divided_by;
+use filters::downcase;
+use filters::escape;
+use filters::escape_once;
+use filters::first;
+use filters::floor;
 use filters::join;
+use filters::last;
+use filters::minus;
+use filters::modulo;
+use filters::newline_to_br;
+use filters::pluralize;
+use filters::plus;
+use filters::prepend;
+use filters::remove;
+use filters::remove_first;
+use filters::replace;
+use filters::replace_first;
+use filters::reverse;
+use filters::round;
+use filters::size;
+use filters::slice;
+use filters::sort;
+use filters::split;
+use filters::strip_html;
+use filters::times;
+use filters::truncatewords;
+use filters::upcase;
 use error::Result;
 
 pub struct Template {
