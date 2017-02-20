@@ -643,12 +643,34 @@ mod tests {
 
     #[test]
     fn unit_abs() {
-        assert_eq!(unit!(abs, Num(-1f32), &[]), Num(1f32));
+        let input = Num(-1f32);
+        let args = &[];
+        let desired_result = Num(1f32);
+        assert_eq!(unit!(abs, input, args), desired_result);
     }
 
     #[test]
     fn unit_abs_positive_in_string() {
-        assert_eq!(unit!(abs, tos!("42"), &[]), Num(42f32));
+        let input = &tos!("42");
+        let args = &[];
+        let desired_result = Num(42f32);
+        assert_eq!(unit!(abs, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_abs_not_number_or_string() {
+        let input = &Bool(true);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("String or number expected".to_owned());
+        assert_eq!(failed!(abs, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_abs_one_argument() {
+        let input = &Num(-1f32);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(abs, input, args), desired_result);
     }
 
     #[test]
