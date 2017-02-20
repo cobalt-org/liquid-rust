@@ -121,7 +121,7 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
 pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
     match *input {
-        Value::Str(ref s) => {
+        Str(ref s) => {
             match s.parse::<f32>() {
                 Ok(n) => Ok(Num(n.abs())),
                 Err(e) => {
@@ -130,7 +130,7 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
                 }
             }
         }
-        Value::Num(n) => Ok(Num(n.abs())),
+        Num(n) => Ok(Num(n.abs())),
         _ => Err(InvalidType("String or number expected".to_owned())),
     }
 }
