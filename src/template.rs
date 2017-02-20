@@ -31,6 +31,7 @@ use filters::size;
 use filters::slice;
 use filters::sort;
 use filters::split;
+use filters::strip;
 use filters::strip_html;
 use filters::times;
 use filters::truncatewords;
@@ -75,6 +76,7 @@ impl Renderable for Template {
         context.maybe_add_filter("slice", Box::new(slice));
         context.maybe_add_filter("sort", Box::new(sort));
         context.maybe_add_filter("split", Box::new(split));
+        context.maybe_add_filter("strip", Box::new(strip));
         context.maybe_add_filter("strip_html", Box::new(strip_html));
         context.maybe_add_filter("times", Box::new(times));
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
