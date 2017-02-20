@@ -13,6 +13,7 @@ use filters::first;
 use filters::floor;
 use filters::join;
 use filters::last;
+use filters::lstrip;
 use filters::minus;
 use filters::modulo;
 use filters::newline_to_br;
@@ -55,6 +56,7 @@ impl Renderable for Template {
         context.maybe_add_filter("floor", Box::new(floor));
         context.maybe_add_filter("join", Box::new(join));
         context.maybe_add_filter("last", Box::new(last));
+        context.maybe_add_filter("lstrip", Box::new(lstrip));
         context.maybe_add_filter("minus", Box::new(minus));
         context.maybe_add_filter("modulo", Box::new(modulo));
         context.maybe_add_filter("newline_to_br", Box::new(newline_to_br));

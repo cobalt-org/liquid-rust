@@ -275,6 +275,20 @@ pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+/// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.trim_left().to_string())),
+        _ => return Err(InvalidType("Str expected".to_string())),
+    }
+}
+
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
     let num = match *input {
         Num(n) => n,
@@ -770,6 +784,55 @@ mod tests {
         assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
                    tos!("last"));
         assert_eq!(unit!(last, Array(vec![])), tos!(""));
+    }
+
+    #[test]
+    fn unit_lstrip() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/lstrip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("So much room for activities!          ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_trailing_sequence() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test 	 \n \r ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_trailing_sequence_only() {
+        let input = &tos!("test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test 	 \n \r ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_one_argument() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
     }
 
     #[test]
