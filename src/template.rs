@@ -33,6 +33,7 @@ use filters::sort;
 use filters::split;
 use filters::strip;
 use filters::strip_html;
+use filters::strip_newlines;
 use filters::times;
 use filters::truncatewords;
 use filters::upcase;
@@ -78,6 +79,7 @@ impl Renderable for Template {
         context.maybe_add_filter("split", Box::new(split));
         context.maybe_add_filter("strip", Box::new(strip));
         context.maybe_add_filter("strip_html", Box::new(strip_html));
+        context.maybe_add_filter("strip_newlines", Box::new(strip_newlines));
         context.maybe_add_filter("times", Box::new(times));
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
         context.maybe_add_filter("upcase", Box::new(upcase));

@@ -565,6 +565,15 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+/// Removes any newline characters (line breaks) from a string.
+pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.replace("\n", "").to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
+    }
+}
+
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
     let num = match *input {
         Num(n) => n,
@@ -1203,6 +1212,62 @@ mod tests {
         assert_eq!(unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
                    tos!("test"));
         assert_eq!(unit!(strip_html, tos!(""), &[]), tos!(""));
+    }
+
+    #[test]
+    fn unit_strip_newlines() {
+        let input = &tos!("a\nb\n");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_between_only() {
+        let input = &tos!("a\nb");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_leading_only() {
+        let input = &tos!("\nab");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_one_argument() {
+        let input = &tos!("ab\n");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_shopify_liquid() {
+        let input = &tos!("\nHello\nthere\n");
+        let args = &[];
+        let desired_result = tos!("Hellothere");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_trailing_only() {
+        let input = &tos!("ab\n");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
     }
 
     #[test]
