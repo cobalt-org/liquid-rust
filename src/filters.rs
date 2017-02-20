@@ -791,7 +791,7 @@ mod tests {
 
     #[test]
     fn unit_newline_to_br_hello_world() {
-        /// First example from https://shopify.github.io/liquid/filters/newline_to_br/
+        // First example from https://shopify.github.io/liquid/filters/newline_to_br/
         let input = &tos!("\nHello\nWorld\n");
         let args = &[];
         let desired_result = tos!("<br />Hello<br />World<br />");
@@ -865,7 +865,7 @@ mod tests {
 
     #[test]
     fn unit_reverse_apples_oranges_peaches_plums() {
-        /// First example from https://shopify.github.io/liquid/filters/reverse/
+        // First example from https://shopify.github.io/liquid/filters/reverse/
         let input = &Array(vec![tos!("apples"), tos!("oranges"), tos!("peaches"), tos!("plums")]);
         let args = &[];
         let desired_result =
@@ -891,7 +891,7 @@ mod tests {
 
     #[test]
     fn unit_reverse_ground_control_major_tom() {
-        /// Second example from https://shopify.github.io/liquid/filters/reverse/
+        // Second example from https://shopify.github.io/liquid/filters/reverse/
         let input = &Array(vec![tos!("G"), tos!("r"), tos!("o"), tos!("u"), tos!("n"), tos!("d"),
                                 tos!(" "), tos!("c"), tos!("o"), tos!("n"), tos!("t"), tos!("r"),
                                 tos!("o"), tos!("l"), tos!(" "), tos!("t"), tos!("o"), tos!(" "),
