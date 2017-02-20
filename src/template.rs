@@ -26,6 +26,7 @@ use filters::replace;
 use filters::replace_first;
 use filters::reverse;
 use filters::round;
+use filters::rstrip;
 use filters::size;
 use filters::slice;
 use filters::sort;
@@ -69,6 +70,7 @@ impl Renderable for Template {
         context.maybe_add_filter("replace_first", Box::new(replace_first));
         context.maybe_add_filter("reverse", Box::new(reverse));
         context.maybe_add_filter("round", Box::new(round));
+        context.maybe_add_filter("rstrip", Box::new(rstrip));
         context.maybe_add_filter("size", Box::new(size));
         context.maybe_add_filter("slice", Box::new(slice));
         context.maybe_add_filter("sort", Box::new(sort));

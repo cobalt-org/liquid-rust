@@ -440,6 +440,20 @@ pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+/// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.trim_right().to_string())),
+        _ => return Err(InvalidType("Str expected".to_string())),
+    }
+}
+
 pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => Ok(Num(x.len() as f32)),
@@ -981,6 +995,55 @@ mod tests {
         let args = &[];
         let desired_result = FilterError::InvalidType("Array argument expected".to_owned());
         assert_eq!(failed!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip() {
+        let input = &tos!("test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_leading_sequence() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!(" 	 \n \r test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_leading_sequence_only() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[];
+        let desired_result = tos!(" 	 \n \r test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/rstrip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("          So much room for activities!");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_one_argument() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(rstrip, input, args), desired_result);
     }
 
     #[test]
