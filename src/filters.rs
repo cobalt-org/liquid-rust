@@ -285,7 +285,7 @@ pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
     match *input {
         Str(ref s) => Ok(Str(s.trim_left().to_string())),
-        _ => return Err(InvalidType("Str expected".to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
     }
 }
 
@@ -450,7 +450,7 @@ pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
     match *input {
         Str(ref s) => Ok(Str(s.trim_right().to_string())),
-        _ => return Err(InvalidType("Str expected".to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
     }
 }
 
