@@ -531,7 +531,8 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
-/// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a string.
+/// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
+/// string.
 ///
 /// It does not affect spaces between words.  Note that while this works for the case of tabs,
 /// spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived Core
