@@ -824,6 +824,22 @@ mod tests {
     }
 
     #[test]
+    fn unit_lstrip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_one_argument() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
     fn unit_lstrip_shopify_liquid() {
         // One test from https://shopify.github.io/liquid/filters/lstrip/
         let input = &tos!("          So much room for activities!          ");
@@ -846,22 +862,6 @@ mod tests {
         let args = &[];
         let desired_result = tos!("test 	 \n \r ");
         assert_eq!(unit!(lstrip, input, args), desired_result);
-    }
-
-    #[test]
-    fn unit_lstrip_non_string() {
-        let input = &Num(0f32);
-        let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
-        assert_eq!(failed!(lstrip, input, args), desired_result);
-    }
-
-    #[test]
-    fn unit_lstrip_one_argument() {
-        let input = &tos!(" 	 \n \r test");
-        let args = &[Num(0f32)];
-        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
-        assert_eq!(failed!(lstrip, input, args), desired_result);
     }
 
     #[test]
@@ -1037,15 +1037,6 @@ mod tests {
     }
 
     #[test]
-    fn unit_rstrip_shopify_liquid() {
-        // One test from https://shopify.github.io/liquid/filters/rstrip/
-        let input = &tos!("          So much room for activities!          ");
-        let args = &[];
-        let desired_result = tos!("          So much room for activities!");
-        assert_eq!(unit!(rstrip, input, args), desired_result);
-    }
-
-    #[test]
     fn unit_rstrip_non_string() {
         let input = &Num(0f32);
         let args = &[];
@@ -1059,6 +1050,15 @@ mod tests {
         let args = &[Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
         assert_eq!(failed!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/rstrip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("          So much room for activities!");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
     }
 
     #[test]
@@ -1127,6 +1127,22 @@ mod tests {
     }
 
     #[test]
+    fn unit_strip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_one_argument() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(strip, input, args), desired_result);
+    }
+
+    #[test]
     fn unit_strip_shopify_liquid() {
         // One test from https://shopify.github.io/liquid/filters/strip/
         let input = &tos!("          So much room for activities!          ");
@@ -1141,22 +1157,6 @@ mod tests {
         let args = &[];
         let desired_result = tos!("test");
         assert_eq!(unit!(strip, input, args), desired_result);
-    }
-
-    #[test]
-    fn unit_strip_non_string() {
-        let input = &Num(0f32);
-        let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
-        assert_eq!(failed!(strip, input, args), desired_result);
-    }
-
-    #[test]
-    fn unit_strip_one_argument() {
-        let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let args = &[Num(0f32)];
-        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
-        assert_eq!(failed!(strip, input, args), desired_result);
     }
 
     #[test]
