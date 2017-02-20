@@ -116,6 +116,20 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
 }
 
 // Actual filters.
+
+/// Returns the absolute value of a number.
+pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Str(ref s) => match s.parse::<f32>() {
+            Ok(n) => Ok(Num(n.abs())),
+            Err(e) => Err(InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred", e.to_string()))),
+        },
+        Value::Num(n) => Ok(Num(n.abs())),
+        _ => Err(InvalidType("String or number expected".to_owned())),
+    }
+}
+
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
@@ -577,6 +591,24 @@ mod tests {
         ( $a:expr ) => {{
             Str($a.to_owned())
         }};
+    }
+
+    #[test]
+    fn unit_abs() {
+        assert_eq!(unit!(abs, Num(-1f32), &[]), Num(1f32));
+    }
+
+    #[test]
+    fn unit_abs_positive_in_string() {
+        assert_eq!(unit!(abs, tos!("42"), &[]), Num(42f32));
+    }
+
+    #[test]
+    fn unit_abs_shopify_liquid() {
+        // Three tests from https://shopify.github.io/liquid/filters/abs/
+        assert_eq!(unit!(abs, Num(-17f32), &[]), Num(17f32));
+        assert_eq!(unit!(abs, Num(4f32), &[]), Num(4f32));
+        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Num(19.86f32));
     }
 
     #[test]

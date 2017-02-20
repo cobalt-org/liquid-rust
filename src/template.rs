@@ -1,5 +1,6 @@
 use Renderable;
 use context::Context;
+use filters::abs;
 use filters::append;
 use filters::capitalize;
 use filters::ceil;
@@ -41,6 +42,7 @@ pub struct Template {
 impl Renderable for Template {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
 
+        context.maybe_add_filter("abs", Box::new(abs));
         context.maybe_add_filter("append", Box::new(append));
         context.maybe_add_filter("capitalize", Box::new(capitalize));
         context.maybe_add_filter("ceil", Box::new(ceil));
