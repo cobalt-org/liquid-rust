@@ -37,6 +37,7 @@ use filters::strip_newlines;
 use filters::times;
 use filters::truncate;
 use filters::truncatewords;
+use filters::uniq;
 use filters::upcase;
 use error::Result;
 
@@ -84,6 +85,7 @@ impl Renderable for Template {
         context.maybe_add_filter("times", Box::new(times));
         context.maybe_add_filter("truncate", Box::new(truncate));
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
+        context.maybe_add_filter("uniq", Box::new(uniq));
         context.maybe_add_filter("upcase", Box::new(upcase));
 
         let mut buf = String::new();

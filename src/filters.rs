@@ -670,6 +670,23 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+/// Removes any duplicate elements in an array.
+pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Array(ref array) => {
+            let mut deduped: Vec<Value> = Vec::new();
+            for x in array.iter() {
+                if !deduped.contains(x) {
+                    deduped.push(x.clone())
+                }
+            }
+            Ok(Value::Array(deduped))
+        }
+        _ => Err(InvalidType("Array argument expected".to_string())),
+    }
+}
+
 pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref s) => Ok(Str(s.to_uppercase())),
@@ -1433,6 +1450,40 @@ mod tests {
                    tos!("bar..."));
         assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32), tos!("...")]),
                    tos!("bar bar"));
+    }
+
+    #[test]
+    fn unit_uniq() {
+        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("a"), tos!("b")]);
+        assert_eq!(unit!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_non_array() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Array argument expected".to_string());
+        assert_eq!(failed!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_one_argument() {
+        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_string());
+        assert_eq!(failed!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_shopify_liquid() {
+        // Test from https://shopify.github.io/liquid/filters/uniq/
+        let input =
+            &Array(vec![tos!("ants"), tos!("bugs"), tos!("bees"), tos!("bugs"), tos!("ants")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
+        assert_eq!(unit!(uniq, input, args), desired_result);
     }
 
     #[test]
