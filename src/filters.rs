@@ -11,6 +11,8 @@ use self::FilterError::*;
 
 use regex::Regex;
 
+use unicode_segmentation::UnicodeSegmentation;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
     InvalidType(String),
@@ -582,6 +584,61 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
     match args.first() {
         Some(&Num(x)) => Ok(Num(num * x)),
         _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+/// `truncate` shortens a string down to the number of characters passed as a parameter.
+///
+/// Note that this function operates on [grapheme
+/// clusters](http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries) (or *user-perceived
+/// character*), rather than Unicode code points.  Each grapheme cluster may be composed of more
+/// than one Unicode code point, and does not necessarily correspond to rust's conception of a
+/// character.
+///
+/// If the number of characters specified is less than the length of the string, an ellipsis
+/// (`...`) is appended to the string and is included in the character count.
+///
+/// ## Custom ellipsis
+///
+/// `truncate` takes an optional second parameter that specifies the sequence of characters to be
+/// appended to the truncated string. By default this is an ellipsis (`...`), but you can specify a
+/// different sequence.
+///
+/// The length of the second parameter counts against the number of characters specified by the
+/// first parameter. For example, if you want to truncate a string to exactly 10 characters, and
+/// use a 3-character ellipsis, use 13 for the first parameter of `truncate`, since the ellipsis
+/// counts as 3 characters.
+///
+/// ## No ellipsis
+///
+/// You can truncate to the exact number of characters specified by the first parameter and show no
+/// trailing characters by passing a blank string as the second parameter.
+pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+
+    let num_chars = match args.first() {
+        Some(&Num(x)) if x > 0f32 => x as usize,
+        _ => return Err(InvalidArgument(0, "Positive number expected".to_string())),
+    };
+
+    let ellipsis = "...".to_string();
+    let append = match args.get(1) {
+        Some(&Str(ref x)) => x,
+        _ => &ellipsis,
+    };
+
+    match *input {
+        Str(ref s) => {
+            Ok(Str(UnicodeSegmentation::graphemes(s.as_str(), true)
+                .take(num_chars - append.len())
+                .collect::<Vec<&str>>()
+                .join("")
+                .to_string() + append))
+        }
+        _ => Err(InvalidType("String expected".to_string())),
     }
 }
 
@@ -1277,6 +1334,86 @@ mod tests {
         assert!(times(&Bool(true), &[Num(8.5)]).is_err());
         assert!(times(&Num(2.5), &[Bool(true)]).is_err());
         assert!(times(&Num(2.5), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_truncate() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(17f32)];
+        let desired_result = tos!("I often quote ...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_negative_length() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(-17f32)];
+        let desired_result = FilterError::InvalidArgument(0,
+                                                          "Positive number expected".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_non_string() {
+        let input = &Num(0f32);
+        let args = &[Num(17f32)];
+        let desired_result = FilterError::InvalidType("String expected".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_shopify_liquid() {
+        let input = &tos!("Ground control to Major Tom.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Ground control to...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        let args = &[Num(25f32), tos!(", and so on")];
+        let desired_result = tos!("Ground control, and so on");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        let args = &[Num(20f32), tos!("")];
+        let desired_result = tos!("Ground control to Ma");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_three_arguments() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(17f32), tos!("..."), Num(0f32)];
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected one or two arguments, 3 given".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_unicode_codepoints_examples() {
+        // The examples below came from the unicode_segmentation documentation.
+        //
+        // https://kbknapp.github.io/clap-rs/unicode_segmentation/ ...
+        //               ...  trait.UnicodeSegmentation.html#tymethod.graphemes
+        //
+        // Note that the accents applied to each letter are treated as part of the single grapheme
+        // cluster for the applicable letter.
+        let input = &tos!("Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Here is an a\u{310}, e\u{301}, ...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
+        let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Here is a RUST: 🇷🇺🇸🇹...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_zero_arguments() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[];
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected one or two arguments, 0 given".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
     }
 
     #[test]

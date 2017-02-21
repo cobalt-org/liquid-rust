@@ -17,6 +17,7 @@ build = "build.rs"
 regex = "0.2"
 lazy_static = "0.2"
 chrono = "0.2"
+unicode-segmentation = "0.1.0"
 
 [build-dependencies]
 skeptic = "0.6"

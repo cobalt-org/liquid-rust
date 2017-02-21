@@ -35,6 +35,7 @@ use filters::strip;
 use filters::strip_html;
 use filters::strip_newlines;
 use filters::times;
+use filters::truncate;
 use filters::truncatewords;
 use filters::upcase;
 use error::Result;
@@ -81,6 +82,7 @@ impl Renderable for Template {
         context.maybe_add_filter("strip_html", Box::new(strip_html));
         context.maybe_add_filter("strip_newlines", Box::new(strip_newlines));
         context.maybe_add_filter("times", Box::new(times));
+        context.maybe_add_filter("truncate", Box::new(truncate));
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
         context.maybe_add_filter("upcase", Box::new(upcase));
 
