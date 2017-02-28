@@ -1,10 +1,10 @@
 use Renderable;
 use context::Context;
-use filters::{abs, append, capitalize, ceil, date, divided_by, downcase, escape, escape_once, first,
-              floor, join, last, lstrip, minus, modulo, newline_to_br, pluralize, plus, prepend,
-              remove, remove_first, replace, replace_first, reverse, round, rstrip, size, slice,
-              sort, split, strip, strip_html, strip_newlines, times, truncate, truncatewords, uniq,
-              upcase};
+use filters::{abs, append, capitalize, ceil, date, divided_by, downcase, escape, escape_once,
+              first, floor, join, last, lstrip, minus, modulo, newline_to_br, pluralize, plus,
+              prepend, remove, remove_first, replace, replace_first, reverse, round, rstrip, size,
+              slice, sort, split, strip, strip_html, strip_newlines, times, truncate,
+              truncatewords, uniq, upcase};
 use error::Result;
 
 pub struct Template {
