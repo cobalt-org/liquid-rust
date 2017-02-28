@@ -1,44 +1,10 @@
 use Renderable;
 use context::Context;
-use filters::abs;
-use filters::append;
-use filters::capitalize;
-use filters::ceil;
-use filters::date;
-use filters::divided_by;
-use filters::downcase;
-use filters::escape;
-use filters::escape_once;
-use filters::first;
-use filters::floor;
-use filters::join;
-use filters::last;
-use filters::lstrip;
-use filters::minus;
-use filters::modulo;
-use filters::newline_to_br;
-use filters::pluralize;
-use filters::plus;
-use filters::prepend;
-use filters::remove;
-use filters::remove_first;
-use filters::replace;
-use filters::replace_first;
-use filters::reverse;
-use filters::round;
-use filters::rstrip;
-use filters::size;
-use filters::slice;
-use filters::sort;
-use filters::split;
-use filters::strip;
-use filters::strip_html;
-use filters::strip_newlines;
-use filters::times;
-use filters::truncate;
-use filters::truncatewords;
-use filters::uniq;
-use filters::upcase;
+use filters::{abs, append, capitalize, ceil, date, divided_by, downcase, escape, escape_once, first,
+              floor, join, last, lstrip, minus, modulo, newline_to_br, pluralize, plus, prepend,
+              remove, remove_first, replace, replace_first, reverse, round, rstrip, size, slice,
+              sort, sort_natural, split, strip, strip_html, strip_newlines, times, truncate,
+              truncatewords, uniq, upcase};
 use error::Result;
 
 pub struct Template {
