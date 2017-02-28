@@ -1332,6 +1332,7 @@ mod tests {
 
     #[test]
     fn unit_strip_newlines_shopify_liquid() {
+        // Test from https://shopify.github.io/liquid/filters/strip_newlines/
         let input = &tos!("\nHello\nthere\n");
         let args = &[];
         let desired_result = tos!("Hellothere");
@@ -1382,6 +1383,7 @@ mod tests {
 
     #[test]
     fn unit_truncate_shopify_liquid() {
+        // Tests from https://shopify.github.io/liquid/filters/truncate/
         let input = &tos!("Ground control to Major Tom.");
         let args = &[Num(20f32)];
         let desired_result = tos!("Ground control to...");
