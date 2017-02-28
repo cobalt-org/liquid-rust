@@ -397,9 +397,7 @@ pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() != 2 {
-        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
-    }
+    try!(check_args_len(args, 2));
     match *input {
         Str(ref x) => {
             let search = match args[0] {
