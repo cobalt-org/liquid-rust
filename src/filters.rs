@@ -645,10 +645,12 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
         return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
                                                 args.len())));
     }
+
     let num_words = match args.first() {
         Some(&Num(x)) if x > 0f32 => x as usize,
         _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
     };
+
     let empty = "";
     let append = match args.get(1) {
         Some(&Str(ref x)) => x,
