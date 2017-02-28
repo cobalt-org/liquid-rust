@@ -120,7 +120,7 @@ impl Renderable for For {
 
 /// Extracts an attribute with an integer value from the token stream
 fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
-    try!(expect(args, Colon));
+    try!(expect(args, &Colon));
     match args.next() {
         Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
         x => Error::parser("number", x),
@@ -137,7 +137,7 @@ fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
 
 pub fn for_block(_tag_name: &str,
                  arguments: &[Token],
-                 tokens: Vec<Element>,
+                 tokens: &[Element],
                  options: &LiquidOptions)
                  -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
@@ -146,7 +146,7 @@ pub fn for_block(_tag_name: &str,
         x => return Error::parser("Identifier", x),
     };
 
-    try!(expect(&mut args, Identifier("in".to_owned())));
+    try!(expect(&mut args, &Identifier("in".to_owned())));
 
     let range = match args.next() {
         Some(&Identifier(ref x)) => Range::Array(x.clone()),
@@ -154,11 +154,11 @@ pub fn for_block(_tag_name: &str,
             // this might be a range, let's try and see
             let start = try!(range_end_point(&mut args));
 
-            try!(expect(&mut args, DotDot));
+            try!(expect(&mut args, &DotDot));
 
             let stop = try!(range_end_point(&mut args));
 
-            try!(expect(&mut args, CloseRound));
+            try!(expect(&mut args, &CloseRound));
 
             Range::Counted(start, stop)
         }
@@ -184,7 +184,7 @@ pub fn for_block(_tag_name: &str,
         }
     }
 
-    let (leading, trailing) = split_block(&tokens, &["else"], options);
+    let (leading, trailing) = split_block(tokens, &["else"], options);
     let item_template = Template::new(try!(parse(leading, options)));
 
     let else_template = match trailing {
@@ -225,7 +225,7 @@ mod test {
                                 &[Identifier("name".to_owned()),
                                   Identifier("in".to_owned()),
                                   Identifier("array".to_owned())],
-                                tokenize("test {{name}} ").unwrap(),
+                                &tokenize("test {{name}} ").unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
@@ -250,7 +250,7 @@ mod test {
                                   DotDot,
                                   NumberLiteral(46f32),
                                   CloseRound],
-                                tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
+                                &tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
@@ -420,14 +420,14 @@ mod test {
                                   DotDot,
                                   NumberLiteral(103f32),
                                   CloseRound],
-                                tokenize(concat!("length: {{forloop.length}}, ",
-                                                 "index: {{forloop.index}}, ",
-                                                 "index0: {{forloop.index0}}, ",
-                                                 "rindex: {{forloop.rindex}}, ",
-                                                 "rindex0: {{forloop.rindex0}}, ",
-                                                 "value: {{v}}, ",
-                                                 "first: {{forloop.first}}, ",
-                                                 "last: {{forloop.last}}\n"))
+                                &tokenize(concat!("length: {{forloop.length}}, ",
+                                                  "index: {{forloop.index}}, ",
+                                                  "index0: {{forloop.index0}}, ",
+                                                  "rindex: {{forloop.rindex}}, ",
+                                                  "rindex0: {{forloop.rindex0}}, ",
+                                                  "value: {{v}}, ",
+                                                  "first: {{forloop.first}}, ",
+                                                  "last: {{forloop.last}}\n"))
                                     .unwrap(),
                                 &options);
 
@@ -451,18 +451,16 @@ mod test {
                                 &[Identifier("name".to_owned()),
                                   Identifier("in".to_owned()),
                                   Identifier("array".to_owned())],
-                                tokenize("test {{name | shout}} ").unwrap(),
+                                &tokenize("test {{name | shout}} ").unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
         data.add_filter("shout",
-                        Box::new(|input, _args| {
-            if let &Value::Str(ref s) = input {
-                Ok(Value::Str(s.to_uppercase()))
-            } else {
-                FilterError::invalid_type("Expected a string")
-            }
-        }));
+                        Box::new(|input, _args| if let &Value::Str(ref s) = input {
+                            Ok(Value::Str(s.to_uppercase()))
+                        } else {
+                            FilterError::invalid_type("Expected a string")
+                        }));
 
         data.set_val("array",
                      Value::Array(vec![Value::str("alpha"),

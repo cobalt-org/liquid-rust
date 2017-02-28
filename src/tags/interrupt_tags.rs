@@ -19,7 +19,7 @@ pub fn break_tag(_tag_name: &str,
                  -> Result<Box<Renderable>> {
 
     // no arguments should be supplied, trying to supply them is an error
-    if arguments.len() > 0 {
+    if !arguments.is_empty() {
         return Error::parser("%}", arguments.first());
     }
     Ok(Box::new(Break))
@@ -39,7 +39,7 @@ pub fn continue_tag(_tag_name: &str,
                     _options: &LiquidOptions)
                     -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
-    if arguments.len() > 0 {
+    if !arguments.is_empty() {
         return Error::parser("%}", arguments.first());
     }
     Ok(Box::new(Continue))

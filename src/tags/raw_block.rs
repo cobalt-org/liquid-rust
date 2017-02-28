@@ -17,7 +17,7 @@ impl Renderable for RawT {
 
 pub fn raw_block(_tag_name: &str,
                  _arguments: &[Token],
-                 tokens: Vec<Element>,
+                 tokens: &[Element],
                  _options: &LiquidOptions)
                  -> Result<Box<Renderable>> {
     let content = tokens.iter().fold("".to_owned(), |a, b| {
@@ -38,7 +38,7 @@ fn test_raw() {
     let options: LiquidOptions = Default::default();
     let raw = raw_block("raw",
                         &[],
-                        vec![Expression(vec![], "This is a test".to_owned())],
+                        &vec![Expression(vec![], "This is a test".to_owned())],
                         &options);
     assert_eq!(raw.unwrap().render(&mut Default::default()).unwrap(),
                Some("This is a test".to_owned()));

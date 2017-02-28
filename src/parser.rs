@@ -65,7 +65,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
     iter.next();
 
     while iter.peek() != None {
-        try!(expect(&mut iter, Pipe));
+        try!(expect(&mut iter, &Pipe));
 
         let name = match iter.next() {
             Some(&Identifier(ref name)) => name,
@@ -83,7 +83,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
             _ => (),
         }
 
-        try!(expect(&mut iter, Colon));
+        try!(expect(&mut iter, &Colon));
 
         // loops through the argument list after the filter name
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
@@ -161,7 +161,7 @@ fn parse_tag(iter: &mut Iter<Element>,
                 };
                 children.push(t.clone())
             }
-            options.blocks[x](x, &tokens[1..], children, options)
+            options.blocks[x](x, &tokens[1..], &children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
@@ -170,11 +170,11 @@ fn parse_tag(iter: &mut Iter<Element>,
 
 /// Confirm that the next token in a token stream is what you want it
 /// to be. The token iterator is moved to the next token in the stream.
-pub fn expect<'a, T>(tokens: &mut T, expected: Token) -> Result<&'a Token>
+pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
     where T: Iterator<Item = &'a Token>
 {
     match tokens.next() {
-        Some(x) if *x == expected => Ok(x),
+        Some(x) if x == expected => Ok(x),
         x => Error::parser(&expected.to_string(), x),
     }
 }
@@ -314,9 +314,9 @@ mod test {
             let token_vec = vec![Pipe, Dot, Colon];
             let mut tokens = token_vec.iter();
 
-            assert!(expect(&mut tokens, Pipe).is_ok());
-            assert!(expect(&mut tokens, Dot).is_ok());
-            assert!(expect(&mut tokens, Comma).is_err());
+            assert!(expect(&mut tokens, &Pipe).is_ok());
+            assert!(expect(&mut tokens, &Dot).is_ok());
+            assert!(expect(&mut tokens, &Comma).is_err());
         }
     }
 

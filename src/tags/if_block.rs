@@ -85,7 +85,7 @@ fn condition(arguments: &[Token]) -> Result<Condition> {
 
 pub fn unless_block(_tag_name: &str,
                     arguments: &[Token],
-                    tokens: Vec<Element>,
+                    tokens: &[Element],
                     options: &LiquidOptions)
                     -> Result<Box<Renderable>> {
     let cond = try!(condition(arguments));
@@ -99,7 +99,7 @@ pub fn unless_block(_tag_name: &str,
 
 pub fn if_block(_tag_name: &str,
                 arguments: &[Token],
-                tokens: Vec<Element>,
+                tokens: &[Element],
                 options: &LiquidOptions)
                 -> Result<Box<Renderable>> {
     let cond = try!(condition(arguments));
@@ -119,7 +119,7 @@ pub fn if_block(_tag_name: &str,
                 .skip(1)
                 .cloned()
                 .collect();
-            let parsed = try!(if_block("if", &split.args[1..], child_tokens, options));
+            let parsed = try!(if_block("if", &split.args[1..], &child_tokens, options));
             Some(Template::new(vec![parsed]))
         }
 

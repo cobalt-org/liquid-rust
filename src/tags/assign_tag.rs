@@ -29,7 +29,7 @@ pub fn assign_tag(_tag_name: &str,
         x => return Error::parser("Identifier", x),
     };
 
-    try!(expect(&mut args, Assignment));
+    try!(expect(&mut args, &Assignment));
 
     let src = try!(parse_output(&arguments[2..]));
 
