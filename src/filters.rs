@@ -671,6 +671,8 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 /// Removes any duplicate elements in an array.
+///
+/// This has an O(n^2) worst-case complexity.
 pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
     match *input {
