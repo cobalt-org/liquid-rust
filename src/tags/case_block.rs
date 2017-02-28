@@ -95,7 +95,7 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
 
 pub fn case_block(_tag_name: &str,
                   arguments: &[Token],
-                  tokens: Vec<Element>,
+                  tokens: &[Element],
                   options: &LiquidOptions)
                   -> Result<Box<Renderable>> {
     let delims = &["when", "else"];

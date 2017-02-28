@@ -28,7 +28,7 @@ impl Renderable for Capture {
 
 pub fn capture_block(_tag_name: &str,
                      arguments: &[Token],
-                     tokens: Vec<Element>,
+                     tokens: &[Element],
                      options: &LiquidOptions)
                      -> Result<Box<Renderable>> {
     let mut args = arguments.iter();

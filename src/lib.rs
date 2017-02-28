@@ -27,6 +27,10 @@
 // #![deny(missing_docs)]
 #![cfg_attr(feature="dev", warn(warnings))]
 
+// Allow zero pointers for lazy_static. Otherwise clippy will complain.
+#![allow(unknown_lints)]
+#![allow(zero_ptr)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
@@ -102,7 +106,7 @@ pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`LiquidOptions`](struct.LiquidOptions.html).
-pub type Block = Fn(&str, &[Token], Vec<Element>, &LiquidOptions) -> Result<Box<Renderable>>;
+pub type Block = Fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable: Send + Sync {
