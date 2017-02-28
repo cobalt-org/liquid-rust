@@ -622,10 +622,10 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
         _ => return Err(InvalidArgument(0, "Positive number expected".to_string())),
     };
 
-    let ellipsis = "...".to_string();
+    let ellipsis = "...";
     let append = match args.get(1) {
         Some(&Str(ref x)) => x,
-        _ => &ellipsis,
+        _ => ellipsis,
     };
 
     match *input {
@@ -649,10 +649,10 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
         Some(&Num(x)) if x > 0f32 => x as usize,
         _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
     };
-    let empty = "".to_string();
+    let empty = "";
     let append = match args.get(1) {
         Some(&Str(ref x)) => x,
-        _ => &empty,
+        _ => empty,
     };
 
     match *input {
