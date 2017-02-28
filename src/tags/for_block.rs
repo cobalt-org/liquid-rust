@@ -421,13 +421,13 @@ mod test {
                                   NumberLiteral(103f32),
                                   CloseRound],
                                 &tokenize(concat!("length: {{forloop.length}}, ",
-                                                 "index: {{forloop.index}}, ",
-                                                 "index0: {{forloop.index0}}, ",
-                                                 "rindex: {{forloop.rindex}}, ",
-                                                 "rindex0: {{forloop.rindex0}}, ",
-                                                 "value: {{v}}, ",
-                                                 "first: {{forloop.first}}, ",
-                                                 "last: {{forloop.last}}\n"))
+                                                  "index: {{forloop.index}}, ",
+                                                  "index0: {{forloop.index0}}, ",
+                                                  "rindex: {{forloop.rindex}}, ",
+                                                  "rindex0: {{forloop.rindex0}}, ",
+                                                  "value: {{v}}, ",
+                                                  "first: {{forloop.first}}, ",
+                                                  "last: {{forloop.last}}\n"))
                                     .unwrap(),
                                 &options);
 
@@ -456,13 +456,11 @@ mod test {
 
         let mut data: Context = Default::default();
         data.add_filter("shout",
-                        Box::new(|input, _args| {
-            if let &Value::Str(ref s) = input {
-                Ok(Value::Str(s.to_uppercase()))
-            } else {
-                FilterError::invalid_type("Expected a string")
-            }
-        }));
+                        Box::new(|input, _args| if let &Value::Str(ref s) = input {
+                            Ok(Value::Str(s.to_uppercase()))
+                        } else {
+                            FilterError::invalid_type("Expected a string")
+                        }));
 
         data.set_val("array",
                      Value::Array(vec![Value::str("alpha"),
