@@ -11,6 +11,8 @@ use self::FilterError::*;
 
 use regex::Regex;
 
+use unicode_segmentation::UnicodeSegmentation;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
     InvalidType(String),
@@ -49,51 +51,7 @@ impl Error for FilterError {
 pub type FilterResult = Result<Value, FilterError>;
 pub type Filter = Fn(&Value, &[Value]) -> FilterResult;
 
-pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => Ok(Num(x.len() as f32)),
-        Array(ref x) => Ok(Num(x.len() as f32)),
-        Object(ref x) => Ok(Num(x.len() as f32)),
-        _ => Err(InvalidType("String, Array or Object expected".to_owned())),
-    }
-}
-
-pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => Ok(Str(s.to_uppercase())),
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => Ok(Str(s.to_lowercase())),
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => {
-            Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
-                let next_char = match word.chars().last() {
-                        Some(last) => {
-                            if last.is_whitespace() {
-                                chr.to_uppercase().next().unwrap()
-                            } else {
-                                chr
-                            }
-                        }
-                        _ => chr.to_uppercase().next().unwrap(),
-                    }
-                    .to_string();
-                word + &next_char
-            })))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
+// Helper functions for the filters.
 fn check_args_len(args: &[Value], expected_len: usize) -> Result<(), FilterError> {
     if args.len() != expected_len {
         return Err(InvalidArgumentCount(format!("expected {}, {} given",
@@ -101,293 +59,6 @@ fn check_args_len(args: &[Value], expected_len: usize) -> Result<(), FilterError
                                                 args.len())));
     }
     Ok(())
-}
-
-pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-    match *input {
-        Num(1f32) => Ok(args[0].clone()),
-        Num(_) => Ok(args[1].clone()),
-        _ => Err(InvalidType("Number expected".to_owned())),
-    }
-}
-
-pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num - x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
-}
-
-pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num + x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
-}
-
-pub fn times(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num * x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
-}
-
-pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num((num / x).floor())),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
-}
-
-pub fn floor(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.floor())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
-}
-
-pub fn ceil(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.ceil())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
-}
-
-pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.round())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
-}
-
-pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() != 2 {
-        return Err(InvalidArgumentCount(format!("expected 2, {} given", args.len())));
-    }
-    match *input {
-        Str(ref x) => {
-            let search = match args[0] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-            };
-            let replace = match args[1] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
-            };
-            let tokens: Vec<&str> = x.splitn(2, search).collect();
-            if tokens.len() == 2 {
-                let result = tokens[0].to_string() + replace + tokens[1];
-                Ok(Str(result))
-            } else {
-                Ok(Str(x.to_string()))
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-    match *input {
-        Str(ref x) => {
-            let arg1 = match args[0] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-            };
-            let arg2 = match args[1] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
-            };
-            Ok(Str(x.replace(arg1, arg2)))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn append(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match x.chars().next() {
-                Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned())),
-            }
-        }
-        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
-    }
-}
-
-pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match x.chars().last() {
-                Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned())),
-            }
-        }
-        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
-    }
-}
-
-pub fn split(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-    match *input {
-        Str(ref string_to_split) => {
-            // the input String is in fact a String
-            match args.first() { // Check the first (and only) argument
-                Some(&Str(ref split_string)) => {
-                    // The split string argument is also in fact a String
-                    // Split and construct resulting Array
-                    Ok(Array(string_to_split.split(split_string)
-                        .map(|x| Str(String::from(x)))
-                        .collect()))
-                }
-                _ => Err(InvalidArgument(0, "expected String argument to split".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn join(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-    match *input {
-        Array(ref array) => {
-            // use ToStr to stringify the values in case they aren't strings...
-            let mut strings_to_join = array.iter().map(|x| x.to_string());
-            // the input is in fact an Array of Strings
-            match args.first() {  // Check the first (and only) argument
-                Some(&Str(ref join_string)) => {
-                    // The join string argument is in fact a String
-                    let mut result = strings_to_join.next().unwrap_or_else(String::new);
-                    for string in strings_to_join {
-                        result.push_str(join_string);
-                        result.push_str(&string);
-                    }
-                    Ok(Str(result))
-                }
-                _ => Err(InvalidArgument(0, "expected String argument as join".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("Array of Strings expected".to_owned())),
-    }
-}
-
-pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
-    if args.len() < 1 || args.len() > 2 {
-        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
-                                                args.len())));
-    }
-    let mut start = match args.first() {
-        Some(&Num(x)) => x as isize,
-        _ => return Err(InvalidArgument(0, "Number expected".to_owned())),
-    };
-    let mut offset = match args.get(1) {
-        Some(&Num(x)) if x > 0f32 => x as isize,
-        Some(_) => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
-        None => 1,
-    };
-
-    match *input {
-        Str(ref x) => {
-            // this simplifies counting and conversions
-            let ilen = x.len() as isize;
-            if start > ilen {
-                start = ilen;
-            }
-            // Check for overflows over string length and fallback to allowed values
-            if start < 0 {
-                start += ilen;
-            }
-            // start is guaranteed to be positive at this point
-            if start + offset > ilen {
-                offset = ilen - start;
-            }
-            Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
-}
-
-pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-    match *input {
-        Value::Array(ref array) => {
-            let mut sorted = array.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-            Ok(Value::Array(sorted))
-        }
-        _ => Err(InvalidType("Array argument expected".to_owned())),
-    }
-}
-
-pub fn date(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-    let date = match *input {
-        Value::Str(ref s) => {
-            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
-        }
-        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
-    };
-    let format = match args[0] {
-        Value::Str(ref s) => s,
-        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-    };
-    Ok(Value::Str(date.format(format).to_string()))
-}
-
-pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num % x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
 }
 
 /// Returns the number of already escaped characters.
@@ -446,6 +117,101 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     }
 }
 
+// Actual filters.
+
+/// Returns the absolute value of a number.
+pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => {
+            match s.parse::<f32>() {
+                Ok(n) => Ok(Num(n.abs())),
+                Err(e) => {
+                    Err(InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
+                                            e.to_string())))
+                }
+            }
+        }
+        Num(n) => Ok(Num(n.abs())),
+        _ => Err(InvalidType("String or number expected".to_owned())),
+    }
+}
+
+pub fn append(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => {
+            Ok(Str(s.char_indices().fold(String::new(), |word, (_, chr)| {
+                let next_char = match word.chars().last() {
+                        Some(last) => {
+                            if last.is_whitespace() {
+                                chr.to_uppercase().next().unwrap()
+                            } else {
+                                chr
+                            }
+                        }
+                        _ => chr.to_uppercase().next().unwrap(),
+                    }
+                    .to_string();
+                word + &next_char
+            })))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn ceil(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.ceil())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+pub fn date(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+    let date = match *input {
+        Value::Str(ref s) => {
+            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
+        }
+        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
+    };
+    let format = match args[0] {
+        Value::Str(ref s) => s,
+        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+    };
+    Ok(Value::Str(date.format(format).to_string()))
+}
+
+pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num((num / x).floor())),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.to_lowercase())),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
     _escape(input, args, false)
 }
@@ -454,11 +220,133 @@ pub fn escape_once(input: &Value, args: &[Value]) -> FilterResult {
     _escape(input, args, true)
 }
 
-pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
+pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match x.chars().next() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned())),
+            }
+        }
+        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
+pub fn floor(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.floor())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+pub fn join(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+    match *input {
+        Array(ref array) => {
+            // use ToStr to stringify the values in case they aren't strings...
+            let mut strings_to_join = array.iter().map(|x| x.to_string());
+            // the input is in fact an Array of Strings
+            match args.first() {  // Check the first (and only) argument
+                Some(&Str(ref join_string)) => {
+                    // The join string argument is in fact a String
+                    let mut result = strings_to_join.next().unwrap_or_else(String::new);
+                    for string in strings_to_join {
+                        result.push_str(join_string);
+                        result.push_str(&string);
+                    }
+                    Ok(Str(result))
+                }
+                _ => Err(InvalidArgument(0, "expected String argument as join".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("Array of Strings expected".to_owned())),
+    }
+}
+
+pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match x.chars().last() {
+                Some(c) => Ok(Str(c.to_string())),
+                _ => Ok(Str("".to_owned())),
+            }
+        }
+        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
+/// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.trim_left().to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
+    }
+}
+
+pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num - x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num % x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+/// Replaces every newline (`\n`) with an HTML line break (`<br>`).
+pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref x) => Ok(Str(x.replace("\n", "<br />"))),
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+    match *input {
+        Num(1f32) => Ok(args[0].clone()),
+        Num(_) => Ok(args[1].clone()),
+        _ => Err(InvalidType("Number expected".to_owned())),
+    }
+}
+
+pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num + x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
             match args.first() {
-                Some(&Str(ref a)) => Ok(Str(x.splitn(2, a).collect())),
+                Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
                 _ => Err(InvalidArgument(0, "Str expected".to_owned())),
             }
         }
@@ -475,6 +363,186 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
             }
         }
         _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            match args.first() {
+                Some(&Str(ref a)) => Ok(Str(x.splitn(2, a).collect())),
+                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+    match *input {
+        Str(ref x) => {
+            let arg1 = match args[0] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+            };
+            let arg2 = match args[1] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
+            };
+            Ok(Str(x.replace(arg1, arg2)))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+    match *input {
+        Str(ref x) => {
+            let search = match args[0] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
+            };
+            let replace = match args[1] {
+                Str(ref a) => a,
+                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
+            };
+            let tokens: Vec<&str> = x.splitn(2, search).collect();
+            if tokens.len() == 2 {
+                let result = tokens[0].to_string() + replace + tokens[1];
+                Ok(Str(result))
+            } else {
+                Ok(Str(x.to_string()))
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+/// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
+pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Array(ref array) => {
+            let mut reversed = array.clone();
+            reversed.reverse();
+            Ok(Value::Array(reversed))
+        }
+        _ => Err(InvalidType("Array argument expected".to_owned())),
+    }
+}
+
+pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Num(n) => Ok(Num(n.round())),
+        _ => Err(InvalidType("Num expected".to_owned())),
+    }
+}
+
+/// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.trim_right().to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
+    }
+}
+
+pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => Ok(Num(x.len() as f32)),
+        Array(ref x) => Ok(Num(x.len() as f32)),
+        Object(ref x) => Ok(Num(x.len() as f32)),
+        _ => Err(InvalidType("String, Array or Object expected".to_owned())),
+    }
+}
+
+pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+    let mut start = match args.first() {
+        Some(&Num(x)) => x as isize,
+        _ => return Err(InvalidArgument(0, "Number expected".to_owned())),
+    };
+    let mut offset = match args.get(1) {
+        Some(&Num(x)) if x > 0f32 => x as isize,
+        Some(_) => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
+        None => 1,
+    };
+
+    match *input {
+        Str(ref x) => {
+            // this simplifies counting and conversions
+            let ilen = x.len() as isize;
+            if start > ilen {
+                start = ilen;
+            }
+            // Check for overflows over string length and fallback to allowed values
+            if start < 0 {
+                start += ilen;
+            }
+            // start is guaranteed to be positive at this point
+            if start + offset > ilen {
+                offset = ilen - start;
+            }
+            Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Array(ref array) => {
+            let mut sorted = array.clone();
+            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+            Ok(Value::Array(sorted))
+        }
+        _ => Err(InvalidType("Array argument expected".to_owned())),
+    }
+}
+
+pub fn split(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+    match *input {
+        Str(ref string_to_split) => {
+            // the input String is in fact a String
+            match args.first() { // Check the first (and only) argument
+                Some(&Str(ref split_string)) => {
+                    // The split string argument is also in fact a String
+                    // Split and construct resulting Array
+                    Ok(Array(string_to_split.split(split_string)
+                        .map(|x| Str(String::from(x)))
+                        .collect()))
+                }
+                _ => Err(InvalidArgument(0, "expected String argument to split".to_owned())),
+            }
+        }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+/// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
+/// string.
+///
+/// It does not affect spaces between words.  Note that while this works for the case of tabs,
+/// spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived Core
+/// Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.trim().to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
     }
 }
 
@@ -497,19 +565,96 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+/// Removes any newline characters (line breaks) from a string.
+pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => Ok(Str(s.replace("\n", "").to_string())),
+        _ => Err(InvalidType("Str expected".to_string())),
+    }
+}
+
+pub fn times(input: &Value, args: &[Value]) -> FilterResult {
+    let num = match *input {
+        Num(n) => n,
+        _ => return Err(InvalidType("Num expected".to_owned())),
+    };
+    match args.first() {
+        Some(&Num(x)) => Ok(Num(num * x)),
+        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
+    }
+}
+
+/// `truncate` shortens a string down to the number of characters passed as a parameter.
+///
+/// Note that this function operates on [grapheme
+/// clusters](http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries) (or *user-perceived
+/// character*), rather than Unicode code points.  Each grapheme cluster may be composed of more
+/// than one Unicode code point, and does not necessarily correspond to rust's conception of a
+/// character.
+///
+/// If the number of characters specified is less than the length of the string, an ellipsis
+/// (`...`) is appended to the string and is included in the character count.
+///
+/// ## Custom ellipsis
+///
+/// `truncate` takes an optional second parameter that specifies the sequence of characters to be
+/// appended to the truncated string. By default this is an ellipsis (`...`), but you can specify a
+/// different sequence.
+///
+/// The length of the second parameter counts against the number of characters specified by the
+/// first parameter. For example, if you want to truncate a string to exactly 10 characters, and
+/// use a 3-character ellipsis, use 13 for the first parameter of `truncate`, since the ellipsis
+/// counts as 3 characters.
+///
+/// ## No ellipsis
+///
+/// You can truncate to the exact number of characters specified by the first parameter and show no
+/// trailing characters by passing a blank string as the second parameter.
+pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
+    if args.len() < 1 || args.len() > 2 {
+        return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
+                                                args.len())));
+    }
+
+    let num_chars = match args.first() {
+        Some(&Num(x)) if x > 0f32 => x as usize,
+        _ => return Err(InvalidArgument(0, "Positive number expected".to_string())),
+    };
+
+    let ellipsis = "...";
+    let append = match args.get(1) {
+        Some(&Str(ref x)) => x,
+        _ => ellipsis,
+    };
+
+    match *input {
+        Str(ref s) => {
+            Ok(Str(UnicodeSegmentation::graphemes(s.as_str(), true)
+                .take(num_chars - append.len())
+                .collect::<Vec<&str>>()
+                .join("")
+                .to_string() + append))
+        }
+        _ => Err(InvalidType("String expected".to_string())),
+    }
+}
+
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() < 1 || args.len() > 2 {
         return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
                                                 args.len())));
     }
+
     let num_words = match args.first() {
         Some(&Num(x)) if x > 0f32 => x as usize,
         _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
     };
-    let empty = "".to_string();
+
+    let empty = "";
     let append = match args.get(1) {
         Some(&Str(ref x)) => x,
-        _ => &empty,
+        _ => empty,
     };
 
     match *input {
@@ -521,6 +666,32 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
             }
             Ok(Str(result))
         }
+        _ => Err(InvalidType("String expected".to_owned())),
+    }
+}
+
+/// Removes any duplicate elements in an array.
+///
+/// This has an O(n^2) worst-case complexity.
+pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Value::Array(ref array) => {
+            let mut deduped: Vec<Value> = Vec::new();
+            for x in array.iter() {
+                if !deduped.contains(x) {
+                    deduped.push(x.clone())
+                }
+            }
+            Ok(Value::Array(deduped))
+        }
+        _ => Err(InvalidType("Array argument expected".to_string())),
+    }
+}
+
+pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref s) => Ok(Str(s.to_uppercase())),
         _ => Err(InvalidType("String expected".to_owned())),
     }
 }
@@ -556,26 +727,48 @@ mod tests {
     }
 
     #[test]
-    fn unit_size() {
-        assert_eq!(unit!(size, tos!("abc")), Num(3f32));
-        assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
-        assert_eq!(unit!(size,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(5f32));
+    fn unit_abs() {
+        let input = Num(-1f32);
+        let args = &[];
+        let desired_result = Num(1f32);
+        assert_eq!(unit!(abs, input, args), desired_result);
     }
 
     #[test]
-    fn unit_upcase() {
-        assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
-        assert_eq!(unit!(upcase, tos!("Hello World 21")),
-                   tos!("HELLO WORLD 21"));
+    fn unit_abs_positive_in_string() {
+        let input = &tos!("42");
+        let args = &[];
+        let desired_result = Num(42f32);
+        assert_eq!(unit!(abs, input, args), desired_result);
     }
 
     #[test]
-    fn unit_downcase() {
-        assert_eq!(unit!(downcase, tos!("Abc")), tos!("abc"));
-        assert_eq!(unit!(downcase, tos!("Hello World 21")),
-                   tos!("hello world 21"));
+    fn unit_abs_not_number_or_string() {
+        let input = &Bool(true);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("String or number expected".to_owned());
+        assert_eq!(failed!(abs, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_abs_one_argument() {
+        let input = &Num(-1f32);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(abs, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_abs_shopify_liquid() {
+        // Three tests from https://shopify.github.io/liquid/filters/abs/
+        assert_eq!(unit!(abs, Num(-17f32), &[]), Num(17f32));
+        assert_eq!(unit!(abs, Num(4f32), &[]), Num(4f32));
+        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Num(19.86f32));
+    }
+
+    #[test]
+    fn unit_append() {
+        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]), tos!("samson"));
     }
 
     #[test]
@@ -595,184 +788,10 @@ mod tests {
     }
 
     #[test]
-    fn unit_pluralize() {
-        assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
-                   tos!("one"));
-
-        assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
-                   tos!("many"));
-    }
-
-    #[test]
-    fn unit_minus() {
-        assert_eq!(unit!(minus, Num(2f32), &[Num(1f32)]), Num(1f32));
-        assert_eq!(unit!(minus, Num(21.5), &[Num(1.25)]), Num(20.25));
-    }
-
-
-    #[test]
-    fn unit_plus() {
-        assert_eq!(unit!(plus, Num(2f32), &[Num(1f32)]), Num(3f32));
-        assert_eq!(unit!(plus, Num(21.5), &[Num(2.25)]), Num(23.75));
-    }
-
-    #[test]
-    fn unit_times() {
-        assert_eq!(unit!(times, Num(2f32), &[Num(3f32)]), Num(6f32));
-        assert_eq!(unit!(times, Num(8.5), &[Num(0.5)]), Num(4.25));
-        assert!(times(&Bool(true), &[Num(8.5)]).is_err());
-        assert!(times(&Num(2.5), &[Bool(true)]).is_err());
-        assert!(times(&Num(2.5), &[]).is_err());
-    }
-
-    #[test]
-    fn unit_divided_by() {
-        assert_eq!(unit!(divided_by, Num(4f32), &[Num(2f32)]), Num(2f32));
-        assert_eq!(unit!(divided_by, Num(5f32), &[Num(2f32)]), Num(2f32));
-        assert!(divided_by(&Bool(true), &[Num(8.5)]).is_err());
-        assert!(divided_by(&Num(2.5), &[Bool(true)]).is_err());
-        assert!(divided_by(&Num(2.5), &[]).is_err());
-    }
-
-    #[test]
-    fn unit_floor() {
-        assert_eq!(unit!(floor, Num(1.1f32), &[]), Num(1f32));
-        assert_eq!(unit!(floor, Num(1f32), &[]), Num(1f32));
-        assert!(floor(&Bool(true), &[]).is_err());
-    }
-
-    #[test]
     fn unit_ceil() {
         assert_eq!(unit!(ceil, Num(1.1f32), &[]), Num(2f32));
         assert_eq!(unit!(ceil, Num(1f32), &[]), Num(1f32));
         assert!(ceil(&Bool(true), &[]).is_err());
-    }
-
-    #[test]
-    fn unit_round() {
-        assert_eq!(unit!(round, Num(1.1f32), &[]), Num(1f32));
-        assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
-        assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
-        assert!(round(&Bool(true), &[]).is_err());
-    }
-
-    #[test]
-    fn unit_replace_first() {
-        assert_eq!(unit!(replace_first, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
-                   tos!("foobar"));
-        assert_eq!(unit!(replace_first, tos!("barxoxo"), &[tos!("xo"), tos!("foo")]),
-                   tos!("barfooxo"));
-        assert_eq!(unit!(replace_first, tos!(""), &[tos!("bar"), tos!("foo")]),
-                   tos!(""));
-    }
-
-    #[test]
-    fn unit_replace() {
-        assert_eq!(unit!(replace, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
-                   tos!("foofoo"));
-    }
-
-    #[test]
-    fn unit_prepend() {
-        assert_eq!(unit!(prepend, tos!("barbar"), &[tos!("foo")]),
-                   tos!("foobarbar"));
-    }
-
-    #[test]
-    fn unit_append() {
-        assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]), tos!("samson"));
-    }
-
-    #[test]
-    fn unit_first() {
-        assert_eq!(unit!(first,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(0f32));
-        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])),
-                   tos!("test"));
-        assert_eq!(unit!(first, Array(vec![])), tos!(""));
-    }
-
-    #[test]
-    fn unit_last() {
-        assert_eq!(unit!(last,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(4f32));
-        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
-                   tos!("last"));
-        assert_eq!(unit!(last, Array(vec![])), tos!(""));
-    }
-
-    #[test]
-    fn unit_split() {
-        assert_eq!(unit!(split, tos!("a, b, c"), &[tos!(", ")]),
-                   Array(vec![tos!("a"), tos!("b"), tos!("c")]));
-        assert_eq!(unit!(split, tos!("a~b"), &[tos!("~")]),
-                   Array(vec![tos!("a"), tos!("b")]));
-    }
-
-    #[test]
-    fn unit_split_no_args() {
-        let input = tos!("a,b,c");
-        let args = &[];
-        let result = split(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_split_bad_split_string() {
-        let input = tos!("a,b,c");
-        let args = &[Num(1f32)];
-        let result = split(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_split_bad_input() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[tos!(",")];
-        let result = split(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_join() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[tos!(",")];
-        let result = join(&input, args);
-        assert_eq!(result.unwrap(), tos!("a,b,c"));
-    }
-
-    #[test]
-    fn unit_join_no_args() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[];
-        let result = join(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_join_bad_join_string() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[Num(1f32)];
-        let result = join(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_join_bad_input() {
-        let input = tos!("a");
-        let args = &[tos!(",")];
-        let result = join(&input, args);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn unit_join_non_string_element() {
-        let input = Array(vec![tos!("a"), Num(1f32), tos!("c")]);
-        let args = &[tos!(",")];
-        let result = join(&input, args);
-        assert_eq!(result.unwrap(), tos!("a,1,c"));
     }
 
     #[test]
@@ -803,11 +822,19 @@ mod tests {
     }
 
     #[test]
-    fn unit_modulo() {
-        assert_eq!(unit!(modulo, Num(3_f32), &[Num(2_f32)]), Num(1_f32));
-        assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
-        assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
-        assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
+    fn unit_divided_by() {
+        assert_eq!(unit!(divided_by, Num(4f32), &[Num(2f32)]), Num(2f32));
+        assert_eq!(unit!(divided_by, Num(5f32), &[Num(2f32)]), Num(2f32));
+        assert!(divided_by(&Bool(true), &[Num(8.5)]).is_err());
+        assert!(divided_by(&Num(2.5), &[Bool(true)]).is_err());
+        assert!(divided_by(&Num(2.5), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_downcase() {
+        assert_eq!(unit!(downcase, tos!("Abc")), tos!("abc"));
+        assert_eq!(unit!(downcase, tos!("Hello World 21")),
+                   tos!("hello world 21"));
     }
 
     #[test]
@@ -829,6 +856,190 @@ mod tests {
     }
 
     #[test]
+    fn unit_first() {
+        assert_eq!(unit!(first,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(0f32));
+        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])),
+                   tos!("test"));
+        assert_eq!(unit!(first, Array(vec![])), tos!(""));
+    }
+
+    #[test]
+    fn unit_floor() {
+        assert_eq!(unit!(floor, Num(1.1f32), &[]), Num(1f32));
+        assert_eq!(unit!(floor, Num(1f32), &[]), Num(1f32));
+        assert!(floor(&Bool(true), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_join() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert_eq!(result.unwrap(), tos!("a,b,c"));
+    }
+
+    #[test]
+    fn unit_join_bad_input() {
+        let input = tos!("a");
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_bad_join_string() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[Num(1f32)];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_no_args() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[];
+        let result = join(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_join_non_string_element() {
+        let input = Array(vec![tos!("a"), Num(1f32), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = join(&input, args);
+        assert_eq!(result.unwrap(), tos!("a,1,c"));
+    }
+
+    #[test]
+    fn unit_last() {
+        assert_eq!(unit!(last,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(4f32));
+        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
+                   tos!("last"));
+        assert_eq!(unit!(last, Array(vec![])), tos!(""));
+    }
+
+    #[test]
+    fn unit_lstrip() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_one_argument() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/lstrip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("So much room for activities!          ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_trailing_sequence() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test 	 \n \r ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_lstrip_trailing_sequence_only() {
+        let input = &tos!("test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test 	 \n \r ");
+        assert_eq!(unit!(lstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_minus() {
+        assert_eq!(unit!(minus, Num(2f32), &[Num(1f32)]), Num(1f32));
+        assert_eq!(unit!(minus, Num(21.5), &[Num(1.25)]), Num(20.25));
+    }
+
+    #[test]
+    fn unit_modulo() {
+        assert_eq!(unit!(modulo, Num(3_f32), &[Num(2_f32)]), Num(1_f32));
+        assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
+        assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
+        assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
+    }
+
+    #[test]
+    fn unit_newline_to_br() {
+        let input = &tos!("a\nb");
+        let args = &[];
+        let desired_result = tos!("a<br />b");
+        assert_eq!(unit!(newline_to_br, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_newline_to_br_hello_world() {
+        // First example from https://shopify.github.io/liquid/filters/newline_to_br/
+        let input = &tos!("\nHello\nWorld\n");
+        let args = &[];
+        let desired_result = tos!("<br />Hello<br />World<br />");
+        assert_eq!(unit!(newline_to_br, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_newline_to_br_one_argument() {
+        let input = &tos!("a\nb");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(newline_to_br, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_pluralize() {
+        assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
+                   tos!("one"));
+
+        assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
+                   tos!("many"));
+    }
+
+    #[test]
+    fn unit_plus() {
+        assert_eq!(unit!(plus, Num(2f32), &[Num(1f32)]), Num(3f32));
+        assert_eq!(unit!(plus, Num(21.5), &[Num(2.25)]), Num(23.75));
+    }
+
+    #[test]
+    fn unit_prepend() {
+        assert_eq!(unit!(prepend, tos!("barbar"), &[tos!("foo")]),
+                   tos!("foobarbar"));
+    }
+
+    #[test]
+    fn unit_remove() {
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("bar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("")]), tos!("barbar"));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("barbar")]), tos!(""));
+        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("a")]), tos!("brbr"));
+    }
+
+    #[test]
     fn unit_remove_first() {
         assert_eq!(unit!(remove_first, tos!("barbar"), &[tos!("bar")]),
                    tos!("bar"));
@@ -841,11 +1052,218 @@ mod tests {
     }
 
     #[test]
-    fn unit_remove() {
-        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("bar")]), tos!(""));
-        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("")]), tos!("barbar"));
-        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("barbar")]), tos!(""));
-        assert_eq!(unit!(remove, tos!("barbar"), &[tos!("a")]), tos!("brbr"));
+    fn unit_replace() {
+        assert_eq!(unit!(replace, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
+                   tos!("foofoo"));
+    }
+
+    #[test]
+    fn unit_replace_first() {
+        assert_eq!(unit!(replace_first, tos!("barbar"), &[tos!("bar"), tos!("foo")]),
+                   tos!("foobar"));
+        assert_eq!(unit!(replace_first, tos!("barxoxo"), &[tos!("xo"), tos!("foo")]),
+                   tos!("barfooxo"));
+        assert_eq!(unit!(replace_first, tos!(""), &[tos!("bar"), tos!("foo")]),
+                   tos!(""));
+    }
+
+    #[test]
+    fn unit_reverse_apples_oranges_peaches_plums() {
+        // First example from https://shopify.github.io/liquid/filters/reverse/
+        let input = &Array(vec![tos!("apples"), tos!("oranges"), tos!("peaches"), tos!("plums")]);
+        let args = &[];
+        let desired_result =
+            Array(vec![tos!("plums"), tos!("peaches"), tos!("oranges"), tos!("apples")]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_array() {
+        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
+        let args = &[];
+        let desired_result = Array(vec![Num(2f32), Num(1f32), Num(3f32)]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_array_extra_args() {
+        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_ground_control_major_tom() {
+        // Second example from https://shopify.github.io/liquid/filters/reverse/
+        let input = &Array(vec![tos!("G"), tos!("r"), tos!("o"), tos!("u"), tos!("n"), tos!("d"),
+                                tos!(" "), tos!("c"), tos!("o"), tos!("n"), tos!("t"), tos!("r"),
+                                tos!("o"), tos!("l"), tos!(" "), tos!("t"), tos!("o"), tos!(" "),
+                                tos!("M"), tos!("a"), tos!("j"), tos!("o"), tos!("r"), tos!(" "),
+                                tos!("T"), tos!("o"), tos!("m"), tos!(".")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("."), tos!("m"), tos!("o"), tos!("T"), tos!(" "),
+                                        tos!("r"), tos!("o"), tos!("j"), tos!("a"), tos!("M"),
+                                        tos!(" "), tos!("o"), tos!("t"), tos!(" "), tos!("l"),
+                                        tos!("o"), tos!("r"), tos!("t"), tos!("n"), tos!("o"),
+                                        tos!("c"), tos!(" "), tos!("d"), tos!("n"), tos!("u"),
+                                        tos!("o"), tos!("r"), tos!("G")]);
+        assert_eq!(unit!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_reverse_string() {
+        let input = &tos!("abc");
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Array argument expected".to_owned());
+        assert_eq!(failed!(reverse, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip() {
+        let input = &tos!("test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_leading_sequence() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!(" 	 \n \r test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_leading_sequence_only() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[];
+        let desired_result = tos!(" 	 \n \r test");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_one_argument() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_rstrip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/rstrip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("          So much room for activities!");
+        assert_eq!(unit!(rstrip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_round() {
+        assert_eq!(unit!(round, Num(1.1f32), &[]), Num(1f32));
+        assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
+        assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
+        assert!(round(&Bool(true), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_size() {
+        assert_eq!(unit!(size, tos!("abc")), Num(3f32));
+        assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
+        assert_eq!(unit!(size,
+                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
+                   Num(5f32));
+    }
+
+    #[test]
+    fn unit_split() {
+        assert_eq!(unit!(split, tos!("a, b, c"), &[tos!(", ")]),
+                   Array(vec![tos!("a"), tos!("b"), tos!("c")]));
+        assert_eq!(unit!(split, tos!("a~b"), &[tos!("~")]),
+                   Array(vec![tos!("a"), tos!("b")]));
+    }
+
+    #[test]
+    fn unit_split_bad_input() {
+        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[tos!(",")];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_split_bad_split_string() {
+        let input = tos!("a,b,c");
+        let args = &[Num(1f32)];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_split_no_args() {
+        let input = tos!("a,b,c");
+        let args = &[];
+        let result = split(&input, args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unit_strip() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_leading_sequence_only() {
+        let input = &tos!(" 	 \n \r test");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_one_argument() {
+        let input = &tos!(" 	 \n \r test 	 \n \r ");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_shopify_liquid() {
+        // One test from https://shopify.github.io/liquid/filters/strip/
+        let input = &tos!("          So much room for activities!          ");
+        let args = &[];
+        let desired_result = tos!("So much room for activities!");
+        assert_eq!(unit!(strip, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_trailing_sequence_only() {
+        let input = &tos!("test 	 \n \r ");
+        let args = &[];
+        let desired_result = tos!("test");
+        assert_eq!(unit!(strip, input, args), desired_result);
     }
 
     #[test]
@@ -873,6 +1291,153 @@ mod tests {
     }
 
     #[test]
+    fn unit_strip_newlines() {
+        let input = &tos!("a\nb\n");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_between_only() {
+        let input = &tos!("a\nb");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_leading_only() {
+        let input = &tos!("\nab");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_non_string() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        assert_eq!(failed!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_one_argument() {
+        let input = &tos!("ab\n");
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_owned());
+        assert_eq!(failed!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_shopify_liquid() {
+        // Test from https://shopify.github.io/liquid/filters/strip_newlines/
+        let input = &tos!("\nHello\nthere\n");
+        let args = &[];
+        let desired_result = tos!("Hellothere");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_strip_newlines_trailing_only() {
+        let input = &tos!("ab\n");
+        let args = &[];
+        let desired_result = tos!("ab");
+        assert_eq!(unit!(strip_newlines, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_times() {
+        assert_eq!(unit!(times, Num(2f32), &[Num(3f32)]), Num(6f32));
+        assert_eq!(unit!(times, Num(8.5), &[Num(0.5)]), Num(4.25));
+        assert!(times(&Bool(true), &[Num(8.5)]).is_err());
+        assert!(times(&Num(2.5), &[Bool(true)]).is_err());
+        assert!(times(&Num(2.5), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_truncate() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(17f32)];
+        let desired_result = tos!("I often quote ...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_negative_length() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(-17f32)];
+        let desired_result = FilterError::InvalidArgument(0,
+                                                          "Positive number expected".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_non_string() {
+        let input = &Num(0f32);
+        let args = &[Num(17f32)];
+        let desired_result = FilterError::InvalidType("String expected".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_shopify_liquid() {
+        // Tests from https://shopify.github.io/liquid/filters/truncate/
+        let input = &tos!("Ground control to Major Tom.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Ground control to...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        let args = &[Num(25f32), tos!(", and so on")];
+        let desired_result = tos!("Ground control, and so on");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        let args = &[Num(20f32), tos!("")];
+        let desired_result = tos!("Ground control to Ma");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_three_arguments() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[Num(17f32), tos!("..."), Num(0f32)];
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected one or two arguments, 3 given".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_unicode_codepoints_examples() {
+        // The examples below came from the unicode_segmentation documentation.
+        //
+        // https://kbknapp.github.io/clap-rs/unicode_segmentation/ ...
+        //               ...  trait.UnicodeSegmentation.html#tymethod.graphemes
+        //
+        // Note that the accents applied to each letter are treated as part of the single grapheme
+        // cluster for the applicable letter.
+        let input = &tos!("Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Here is an a\u{310}, e\u{301}, ...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+
+        // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
+        let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
+        let args = &[Num(20f32)];
+        let desired_result = tos!("Here is a RUST: 🇷🇺🇸🇹...");
+        assert_eq!(unit!(truncate, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_truncate_zero_arguments() {
+        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
+        let args = &[];
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected one or two arguments, 0 given".to_string());
+        assert_eq!(failed!(truncate, input, args), desired_result);
+    }
+
+    #[test]
     fn unit_truncatewords() {
         assert_eq!(failed!(truncatewords, tos!("bar bar"), &[Num(-1_f32)]),
                    FilterError::InvalidArgument(0, "Positive number expected".to_owned()));
@@ -889,5 +1454,46 @@ mod tests {
                    tos!("bar..."));
         assert_eq!(unit!(truncatewords, tos!("bar bar"), &[Num(2_f32), tos!("...")]),
                    tos!("bar bar"));
+    }
+
+    #[test]
+    fn unit_uniq() {
+        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("a"), tos!("b")]);
+        assert_eq!(unit!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_non_array() {
+        let input = &Num(0f32);
+        let args = &[];
+        let desired_result = FilterError::InvalidType("Array argument expected".to_string());
+        assert_eq!(failed!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_one_argument() {
+        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let args = &[Num(0f32)];
+        let desired_result = FilterError::InvalidArgumentCount("expected 0, 1 given".to_string());
+        assert_eq!(failed!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_uniq_shopify_liquid() {
+        // Test from https://shopify.github.io/liquid/filters/uniq/
+        let input =
+            &Array(vec![tos!("ants"), tos!("bugs"), tos!("bees"), tos!("bugs"), tos!("ants")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
+        assert_eq!(unit!(uniq, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_upcase() {
+        assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
+        assert_eq!(unit!(upcase, tos!("Hello World 21")),
+                   tos!("HELLO WORLD 21"));
     }
 }
