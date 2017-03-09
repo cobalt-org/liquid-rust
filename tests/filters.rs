@@ -458,3 +458,20 @@ pub fn truncatewords() {
     let output = template.render(&mut data);
     assert_eq!(output.unwrap(), Some("first...".to_string()));
 }
+
+#[test]
+pub fn default() {
+    let text = "{{ text | default: 'bar' }}";
+    let options: LiquidOptions = Default::default();
+    let template = parse(text, options).unwrap();
+
+    let mut data = Context::new();
+
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("bar".to_string()));
+
+
+    data.set_val("text", Value::Str("foo".to_string()));
+    let output = template.render(&mut data);
+    assert_eq!(output.unwrap(), Some("foo".to_string()));
+}
