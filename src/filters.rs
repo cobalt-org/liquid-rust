@@ -3,7 +3,7 @@ use std::error::Error;
 use std::cmp::Ordering;
 
 use value::Value;
-use value::Value::{Array, Num, Object, Str};
+use value::Value::{Array, Bool, Num, Object, Str};
 
 use chrono::DateTime;
 
@@ -696,10 +696,25 @@ pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
     }
 }
 
+pub fn default(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+    if match *input {
+        Str(ref s) => s.is_empty(),
+        Object(ref o) => o.is_empty(),
+        Array(ref a) => a.is_empty(),
+        Bool(b) => !b,
+        Num(_) => false,
+    } {
+        Ok(args[0].clone())
+    } else {
+        Ok(input.clone())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use value::Value::*;
+    use std::collections::HashMap;
     use super::*;
 
     macro_rules! unit {
@@ -1495,5 +1510,19 @@ mod tests {
         assert_eq!(unit!(upcase, tos!("abc")), tos!("ABC"));
         assert_eq!(unit!(upcase, tos!("Hello World 21")),
                    tos!("HELLO WORLD 21"));
+    }
+
+    #[test]
+    fn unit_default() {
+        assert_eq!(unit!(default, tos!(""), &[tos!("bar")]), tos!("bar"));
+        assert_eq!(unit!(default, tos!("foo"), &[tos!("bar")]), tos!("foo"));
+        assert_eq!(unit!(default, Num(0_f32), &[tos!("bar")]), Num(0_f32));
+        assert_eq!(unit!(default, Array(vec![]), &[Num(1_f32)]), Num(1_f32));
+        assert_eq!(unit!(default, Array(vec![tos!("")]), &[Num(1_f32)]),
+                   Array(vec![tos!("")]));
+        assert_eq!(unit!(default, Object(HashMap::new()), &[Num(1_f32)]),
+                   Num(1_f32));
+        assert_eq!(unit!(default, Bool(false), &[Num(1_f32)]), Num(1_f32));
+        assert_eq!(unit!(default, Bool(true), &[Num(1_f32)]), Bool(true));
     }
 }
