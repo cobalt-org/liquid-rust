@@ -43,7 +43,7 @@ pub fn capitalize() {
     data.set_val("text", Value::Str("hello world".to_string()));
 
     let output = template.render(&mut data);
-    assert_eq!(output.unwrap(), Some("Hello World".to_string()));
+    assert_eq!(output.unwrap(), Some("Hello world".to_string()));
 }
 
 #[test]
