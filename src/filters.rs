@@ -5,7 +5,10 @@ use std::cmp::Ordering;
 use value::Value;
 use value::Value::{Array, Bool, Num, Object, Str};
 
-use chrono::{DateTime, FixedOffset};
+use chrono::DateTime;
+
+#[cfg(feature = "extra-filters")]
+use chrono::FixedOffset;
 
 use self::FilterError::*;
 
@@ -187,6 +190,7 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::Str(date.format(format).to_string()))
 }
 
+#[cfg(feature = "extra-filters")]
 pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
     let date = match *input {
@@ -853,6 +857,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_same_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(3f32)];
@@ -861,6 +866,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_previous_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(-13f32)];
@@ -869,6 +875,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_next_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(13f32)];
@@ -877,6 +884,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_string() {
         let input = &Num(0f32);
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
@@ -885,6 +893,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_date_string() {
         let input = &tos!("blah blah blah");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
@@ -895,6 +904,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_date_format_not_a_string() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[Num(0f32), Num(1f32)];
@@ -903,6 +913,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_offset_not_a_num() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
@@ -911,6 +922,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_zero_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[];
@@ -919,6 +931,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_one_argument() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z")];
@@ -927,6 +940,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_three_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32), Num(1f32)];

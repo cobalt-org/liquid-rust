@@ -27,5 +27,8 @@ difference = "0.4"
 skeptic = "0.6"
 
 [features]
-default=[]
+default = ["extra-filters"]
+
+extra-filters = []
+
 dev=[]

@@ -1,11 +1,14 @@
 use Renderable;
 use context::Context;
-use filters::{abs, append, capitalize, ceil, date, date_in_tz, default, divided_by, downcase,
-              escape, escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br,
+use filters::{abs, append, capitalize, ceil, date, default, divided_by, downcase, escape,
+              escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br,
               pluralize, plus, prepend, remove, remove_first, replace, replace_first, reverse,
               round, rstrip, size, slice, sort, split, strip, strip_html, strip_newlines, times,
               truncate, truncatewords, uniq, upcase};
 use error::Result;
+
+#[cfg(feature = "extra-filters")]
+use filters::date_in_tz;
 
 pub struct Template {
     pub elements: Vec<Box<Renderable>>,
@@ -20,7 +23,6 @@ impl Renderable for Template {
         context.maybe_add_filter("ceil", Box::new(ceil));
         context.maybe_add_filter("date", Box::new(date));
         context.maybe_add_filter("default", Box::new(default));
-        context.maybe_add_filter("date_in_tz", Box::new(date_in_tz));
         context.maybe_add_filter("divided_by", Box::new(divided_by));
         context.maybe_add_filter("downcase", Box::new(downcase));
         context.maybe_add_filter("escape", Box::new(escape));
@@ -55,6 +57,10 @@ impl Renderable for Template {
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
         context.maybe_add_filter("uniq", Box::new(uniq));
         context.maybe_add_filter("upcase", Box::new(upcase));
+
+
+        #[cfg(feature = "extra-filters")]
+        context.maybe_add_filter("date_in_tz", Box::new(date_in_tz));
 
         let mut buf = String::new();
         for el in &self.elements {
