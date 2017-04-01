@@ -7,6 +7,9 @@ use filters::{abs, append, capitalize, ceil, date, default, divided_by, downcase
               truncate, truncatewords, uniq, upcase};
 use error::Result;
 
+#[cfg(feature = "extra-filters")]
+use filters::date_in_tz;
+
 pub struct Template {
     pub elements: Vec<Box<Renderable>>,
 }
@@ -54,6 +57,10 @@ impl Renderable for Template {
         context.maybe_add_filter("truncatewords", Box::new(truncatewords));
         context.maybe_add_filter("uniq", Box::new(uniq));
         context.maybe_add_filter("upcase", Box::new(upcase));
+
+
+        #[cfg(feature = "extra-filters")]
+        context.maybe_add_filter("date_in_tz", Box::new(date_in_tz));
 
         let mut buf = String::new();
         for el in &self.elements {
