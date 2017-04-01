@@ -18,7 +18,11 @@ pub enum Element {
 }
 
 lazy_static! {
-    static ref MARKUP: Regex = Regex::new("\\{%.*?%\\}|\\{\\{.*?\\}\\}").unwrap();
+    static ref MARKUP: Regex = {
+        let t = "(?:[[:space:]]*\\{\\{-|\\{\\{).*?(?:-\\}\\}[[:space:]]*|\\}\\})";
+        let e = "(?:[[:space:]]*\\{%-|\\{%).*?(?:-%\\}[[:space:]]*|%\\})";
+        Regex::new(&format!("{}|{}", t, e)).unwrap()
+    };
 }
 
 fn split_blocks(text: &str) -> Vec<&str> {
@@ -42,8 +46,14 @@ fn split_blocks(text: &str) -> Vec<&str> {
 }
 
 lazy_static! {
-    static ref EXPRESSION: Regex = Regex::new("\\{\\{(.*?)\\}\\}").unwrap();
-    static ref TAG: Regex = Regex::new("\\{%(.*?)%\\}").unwrap();
+    static ref EXPRESSION: Regex = {
+        let t = "(?:[[:space:]]*\\{\\{-|\\{\\{)(.*?)(?:-\\}\\}[[:space:]]*|\\}\\})";
+        Regex::new(t).unwrap()
+    };
+    static ref TAG: Regex = {
+        let e = "(?:[[:space:]]*\\{%-|\\{%)(.*?)(?:-%\\}[[:space:]]*|%\\})";
+        Regex::new(e).unwrap()
+    };
 }
 
 pub fn tokenize(text: &str) -> Result<Vec<Element>> {
@@ -150,6 +160,21 @@ fn test_split_blocks() {
     assert_eq!(split_blocks("asdlkjfn\n{%askdljfbalkjsdbf%} asdjlfb"),
                vec!["asdlkjfn\n", "{%askdljfbalkjsdbf%}", " asdjlfb"]);
 }
+#[test]
+fn test_whitespace_control() {
+    assert_eq!(split_blocks("foo {{ bar }} 2000"),
+               vec!["foo ", "{{ bar }}", " 2000"]);
+    assert_eq!(split_blocks("foo {{- bar -}} 2000"),
+               vec!["foo", " {{- bar -}} ", "2000"]);
+    assert_eq!(split_blocks("foo \n{{- bar }} 2000"),
+               vec!["foo", " \n{{- bar }}", " 2000"]);
+    assert_eq!(split_blocks("foo {% bar %} 2000"),
+               vec!["foo ", "{% bar %}", " 2000"]);
+    assert_eq!(split_blocks("foo {%- bar -%} 2000"),
+               vec!["foo", " {%- bar -%} ", "2000"]);
+    assert_eq!(split_blocks("foo \n{%- bar %} 2000"),
+               vec!["foo", " \n{%- bar %}", " 2000"]);
+}
 
 #[test]
 fn test_split_atom() {
@@ -182,6 +207,12 @@ fn test_tokenize() {
                                     StringLiteral("world".to_owned())],
                                "{{hello 'world'}}".to_owned()),
                     Raw(" test".to_owned())]);
+    assert_eq!(tokenize("wat \n {{-hello 'world'-}} test").unwrap(),
+               vec![Raw("wat".to_owned()),
+                    Expression(vec![Identifier("hello".to_owned()),
+                                    StringLiteral("world".to_owned())],
+                               " \n {{-hello 'world'-}} ".to_owned()),
+                    Raw("test".to_owned())]);
 }
 
 #[test]
