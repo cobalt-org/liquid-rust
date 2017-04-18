@@ -1,5 +1,4 @@
 [package]
-
 name = "liquid"
 version = "0.9.1"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
@@ -13,6 +12,20 @@ license = "MIT"
 
 build = "build.rs"
 
+[[bin]]
+name = "liquid-dbg"
+required-features = ["cli"]
+test = false
+doctest = false
+bench = false
+doc = false
+
+[features]
+default = ["extra-filters"]
+cli = ["clap", "error-chain", "toml"]
+extra-filters = []
+dev = []
+
 [dependencies]
 regex = "0.2"
 lazy_static = "0.2"
@@ -22,6 +35,10 @@ itertools = "0.6.0"
 serde = "1.0"
 serde_derive = "1.0"
 
+clap = { version = "2.22.0", optional = true }
+error-chain = { version = "0.10.0", optional = true }
+toml = { version = "0.3.2", optional = true }
+
 [build-dependencies]
 skeptic = "0.9"
 
@@ -29,10 +46,3 @@ skeptic = "0.9"
 difference = "1.0"
 skeptic = "0.9"
 serde_yaml = "0.7"
-
-[features]
-default = ["extra-filters"]
-
-extra-filters = []
-
-dev=[]

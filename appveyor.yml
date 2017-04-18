@@ -27,8 +27,8 @@ install:
   - cargo -V
 
 test_script:
-  - cargo build --verbose
-  - cargo test
+  - cargo build --verbose --features=cli
+  - cargo test --features=cli
 
 cache:
   - C:\Users\appveyor\.cargo\registry
