@@ -28,8 +28,8 @@ fn run() {
                     -> Result<Box<Renderable>, Error> {
 
         let numbers = arguments.iter()
-            .filter_map(|x| match x {
-                &Token::NumberLiteral(ref num) => Some(*num),
+            .filter_map(|x| match *x {
+                Token::NumberLiteral(ref num) => Some(*num),
                 _ => None,
             })
             .collect();

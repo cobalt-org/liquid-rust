@@ -58,7 +58,7 @@ impl Output {
         // apply all specified filters
         for filter in &self.filters {
             let f = try!(context.get_filter(&filter.name)
-                .ok_or(Error::Render(format!("Filter {} not implemented", &filter.name))));
+                .ok_or_else(|| Error::Render(format!("Filter {} not implemented", &filter.name))));
 
             let mut arguments = Vec::new();
             for arg in &filter.arguments {
@@ -66,7 +66,9 @@ impl Output {
                     VarOrVal::Var(ref x) => {
                         let val = try!(context.get_val(&*x.name())
                             .cloned()
-                            .ok_or(Error::Render(format!("undefined variable {}", x.name()))));
+                            .ok_or_else(|| {
+                                Error::Render(format!("undefined variable {}", x.name()))
+                            }));
                         arguments.push(val);
                     }
                     VarOrVal::Val(ref x) => arguments.push(x.clone()),

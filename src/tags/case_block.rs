@@ -24,7 +24,7 @@ impl CaseOption {
 
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
         for t in &self.tokens {
-            match try!(context.evaluate(&t)) {
+            match try!(context.evaluate(t)) {
                 Some(ref v) if *v == *value => return Ok(true),
                 _ => {}
             }
