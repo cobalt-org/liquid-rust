@@ -42,7 +42,7 @@ pub fn capture_block(_tag_name: &str,
         return Error::parser("%}", t);
     };
 
-    let t = Template::new(try!(parse(&tokens, options)));
+    let t = Template::new(try!(parse(tokens, options)));
 
     Ok(Box::new(Capture {
         id: id,

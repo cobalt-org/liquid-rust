@@ -185,7 +185,7 @@ pub fn parse(text: &str, options: LiquidOptions) -> Result<Template> {
     let mut options = options;
     options.register_known_blocks();
 
-    let tokens = try!(lexer::tokenize(&text));
+    let tokens = try!(lexer::tokenize(text));
     parser::parse(&tokens, &options).map(Template::new)
 }
 
