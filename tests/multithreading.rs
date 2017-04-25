@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate difference;
 extern crate liquid;
 
@@ -35,7 +36,7 @@ pub fn pass_between_threads() {
             let mut comp = String::new();
             File::open(output_file).unwrap().read_to_string(&mut comp).unwrap();
 
-            difference::assert_diff(&comp, &output.unwrap(), " ", 0);
+            assert_diff!(&comp, &output.unwrap(), " ", 0);
         }));
     }
 

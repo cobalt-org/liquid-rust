@@ -1538,7 +1538,7 @@ mod tests {
     fn unit_truncate_unicode_codepoints_examples() {
         // The examples below came from the unicode_segmentation documentation.
         //
-        // https://kbknapp.github.io/clap-rs/unicode_segmentation/ ...
+        // https://unicode-rs.github.io/unicode-segmentation/unicode_segmentation/ ...
         //               ...  trait.UnicodeSegmentation.html#tymethod.graphemes
         //
         // Note that the accents applied to each letter are treated as part of the single grapheme
@@ -1551,7 +1551,7 @@ mod tests {
         // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
         let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
         let args = &[Num(20f32)];
-        let desired_result = tos!("Here is a RUST: 🇷🇺🇸🇹...");
+        let desired_result = tos!("Here is a RUST: 🇷🇺...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
 
