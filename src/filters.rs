@@ -178,7 +178,7 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
     let date = match *input {
         Value::Str(ref s) => {
-            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+            try!(DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
                 .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
         }
         _ => return Err(FilterError::InvalidType("String expected".to_owned())),
@@ -195,7 +195,7 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
     let date = match *input {
         Value::Str(ref s) => {
-            try!(DateTime::parse_from_str(&s, "%d %B %Y %H:%M:%S %z")
+            try!(DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
                 .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
         }
         _ => return Err(FilterError::InvalidType("String expected".to_owned())),
