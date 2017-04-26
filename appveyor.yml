@@ -32,7 +32,6 @@ test_script:
 
 cache:
   - C:\Users\appveyor\.cargo\registry
-  - target
 
 # disable automatic builds
 build: false
