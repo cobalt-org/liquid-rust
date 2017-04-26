@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate difference;
 extern crate liquid;
 
@@ -21,7 +22,7 @@ fn compare_by_file(name: &str, context: &mut Context) {
     let mut comp = String::new();
     File::open(output_file).unwrap().read_to_string(&mut comp).unwrap();
 
-    difference::assert_diff(&comp, &output.unwrap(), " ", 0);
+    assert_diff!(&comp, &output.unwrap(), " ", 0);
 }
 
 #[test]

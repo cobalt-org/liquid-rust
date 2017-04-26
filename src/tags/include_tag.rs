@@ -53,7 +53,7 @@ pub fn include_tag(_tag_name: &str,
     };
 
 
-    Ok(Box::new(Include { partial: try!(parse_partial(&path, &options)) }))
+    Ok(Box::new(Include { partial: try!(parse_partial(&path, options)) }))
 }
 
 #[cfg(test)]

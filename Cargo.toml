@@ -16,15 +16,15 @@ build = "build.rs"
 [dependencies]
 regex = "0.2"
 lazy_static = "0.2"
-chrono = "0.2"
-unicode-segmentation = "0.1.0"
+chrono = "0.3"
+unicode-segmentation = "1.1"
 
 [build-dependencies]
-skeptic = "0.6"
+skeptic = "0.9"
 
 [dev-dependencies]
-difference = "0.4"
-skeptic = "0.6"
+difference = "1.0"
+skeptic = "0.9"
 
 [features]
 default = ["extra-filters"]
