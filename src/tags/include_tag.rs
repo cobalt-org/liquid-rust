@@ -8,9 +8,7 @@ use parser;
 use lexer;
 use error::{Result, Error};
 
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 struct Include {
     partial: Template,
@@ -23,18 +21,7 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let file_system = options.file_system.clone().unwrap_or_else(PathBuf::new);
-    let path = file_system.join(path);
-
-    // check if file exists
-    if !path.exists() {
-        return Err(Error::from(&*format!("{:?} does not exist", path)));
-    }
-
-    let mut file = try!(File::open(path));
-
-    let mut content = String::new();
-    try!(file.read_to_string(&mut content));
+    let content = options.file_system.read_template_file(path.as_ref())?;
 
     let tokens = try!(lexer::tokenize(&content));
     parser::parse(&tokens, options).map(Template::new)
@@ -63,11 +50,12 @@ mod test {
     use parse;
     use error::Error;
     use LiquidOptions;
+    use LocalFileSystem;
     use std::path::PathBuf;
 
     fn options() -> LiquidOptions {
         LiquidOptions {
-            file_system: Some(PathBuf::from("tests/fixtures/input")),
+            file_system: Box::new(LocalFileSystem { root: PathBuf::from("tests/fixtures/input") }),
             ..Default::default()
         }
     }

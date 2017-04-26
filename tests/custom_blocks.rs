@@ -37,11 +37,7 @@ fn run() {
         Ok(Box::new(Multiply { numbers: numbers }))
     }
 
-    let mut options = LiquidOptions {
-        blocks: Default::default(),
-        tags: Default::default(),
-        file_system: Default::default(),
-    };
+    let mut options: LiquidOptions = Default::default();
     options.register_tag("multiply", Box::new(multiply_tag));
 
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test",
