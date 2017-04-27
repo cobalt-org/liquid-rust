@@ -9,24 +9,23 @@ use token::Token::*;
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
 pub enum Value {
-    Num(f32),
     Str(String),
-    Object(HashMap<String, Value>),
-    Array(Vec<Value>),
+    Num(f32),
     Bool(bool),
+    Array(Array),
+    Object(Object),
 }
+
+/// Type representing a Liquid array, payload of the `Value::Array` variant
+pub type Array = Vec<Value>;
+
+/// Type representing a Liquid object, payload of the `Value::Object` variant
+pub type Object = HashMap<String, Value>;
 
 impl<'a> Value {
     /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
-    }
-
-    pub fn as_str(&'a self) -> Option<&'a str> {
-        match *self {
-            Value::Str(ref v) => Some(v),
-            _ => None,
-        }
     }
 
     /// Parses a token that can possibly represent a Value
@@ -40,16 +39,97 @@ impl<'a> Value {
             x => Error::parser("Value", Some(x)),
         }
     }
+
+    /// Extracts the str value if it is a str.
+    pub fn as_str(&'a self) -> Option<&'a str> {
+        match *self {
+            Value::Str(ref v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is a str
+    pub fn is_str(&self) -> bool {
+        self.as_str().is_some()
+    }
+
+    /// Extracts the float value if it is a float.
+    pub fn as_float(&self) -> Option<f32> {
+        match *self {
+            Value::Num(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is a float
+    pub fn is_float(&self) -> bool {
+        self.as_float().is_some()
+    }
+
+    /// Extracts the boolean value if it is a boolean.
+    pub fn as_bool(&self) -> Option<bool> {
+        match *self {
+            Value::Bool(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is a boolean
+    pub fn is_bool(&self) -> bool {
+        self.as_bool().is_some()
+    }
+
+    /// Extracts the array value if it is an array.
+    pub fn as_array(&self) -> Option<&Vec<Value>> {
+        match *self {
+            Value::Array(ref s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the array value if it is an array.
+    pub fn as_array_mut(&mut self) -> Option<&mut Vec<Value>> {
+        match *self {
+            Value::Array(ref mut s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is an array
+    pub fn is_array(&self) -> bool {
+        self.as_array().is_some()
+    }
+
+    /// Extracts the object value if it is a object.
+    pub fn as_object(&self) -> Option<&Object> {
+        match *self {
+            Value::Object(ref s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the object value if it is a object.
+    pub fn as_object_mut(&mut self) -> Option<&mut Object> {
+        match *self {
+            Value::Object(ref mut s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the object value if it is a object.
+    pub fn is_object(&self) -> bool {
+        self.as_object().is_some()
+    }
 }
 
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x == y,
             (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
+            (&Value::Num(x), &Value::Num(y)) => x == y,
             (&Value::Bool(x), &Value::Bool(y)) => x == y,
-            (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
             (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
+            (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
 
             // encode Ruby truthiness; all values except false and nil
             // are true, and we don't have a notion of nil
@@ -66,8 +146,8 @@ impl Eq for Value {}
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
             (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
+            (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
             (&Value::Bool(x), &Value::Bool(y)) => x.partial_cmp(&y),
             (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
             (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
@@ -79,9 +159,9 @@ impl PartialOrd<Value> for Value {
 impl ToString for Value {
     fn to_string(&self) -> String {
         match *self {
-            Value::Bool(ref x) => x.to_string(),
-            Value::Num(ref x) => x.to_string(),
             Value::Str(ref x) => x.to_owned(),
+            Value::Num(ref x) => x.to_string(),
+            Value::Bool(ref x) => x.to_string(),
             Value::Array(ref x) => {
                 let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
                 arr.join(", ")
