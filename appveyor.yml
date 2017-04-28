@@ -28,10 +28,10 @@ install:
 
 test_script:
   - cargo build --verbose
+  - cargo test
 
 cache:
   - C:\Users\appveyor\.cargo\registry
-  - target
 
 # disable automatic builds
 build: false
