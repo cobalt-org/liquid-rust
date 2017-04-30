@@ -20,7 +20,7 @@ impl Renderable for Include {
 }
 
 fn parse_partial<P: AsRef<TemplateLocation>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let content = options.file_system.read_template_file(path.as_ref())?;
+    let content = options.file_repository.read_template_file(path.as_ref())?;
 
     let tokens = try!(lexer::tokenize(&content));
     parser::parse(&tokens, options).map(Template::new)
@@ -49,12 +49,14 @@ mod test {
     use parse;
     use error::Error;
     use LiquidOptions;
-    use LocalFileSystem;
+    use LocalFileRepository;
     use std::path::PathBuf;
 
     fn options() -> LiquidOptions {
         LiquidOptions {
-            file_system: Box::new(LocalFileSystem { root: PathBuf::from("tests/fixtures/input") }),
+            file_repository: Box::new(LocalFileRepository {
+                root: PathBuf::from("tests/fixtures/input"),
+            }),
             ..Default::default()
         }
     }

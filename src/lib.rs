@@ -127,16 +127,16 @@ pub trait Renderable: Send + Sync {
 }
 
 pub type TemplateLocation = Path;
-pub trait FileSystem {
+pub trait FileRepository {
     fn read_template_file(&self, path: &TemplateLocation) -> Result<String>;
 }
 
 /// FileSystem to load files relative to the root
-pub struct LocalFileSystem {
+pub struct LocalFileRepository {
     root: PathBuf,
 }
 
-impl FileSystem for LocalFileSystem {
+impl FileRepository for LocalFileRepository {
     fn read_template_file(&self, relative_path: &TemplateLocation) -> Result<String> {
         let path = self.root.clone().join(relative_path);
 
@@ -158,7 +158,7 @@ pub struct LiquidOptions {
     /// Holds all custom tags
     pub tags: HashMap<String, Box<Tag>>,
     /// The path to which paths in include tags should be relative to
-    pub file_system: Box<FileSystem>,
+    pub file_repository: Box<FileRepository>,
 }
 
 impl Default for LiquidOptions {
@@ -166,7 +166,7 @@ impl Default for LiquidOptions {
         LiquidOptions {
             blocks: Default::default(),
             tags: Default::default(),
-            file_system: Box::new(LocalFileSystem { root: PathBuf::new() }),
+            file_repository: Box::new(LocalFileRepository { root: PathBuf::new() }),
         }
     }
 }
