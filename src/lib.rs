@@ -36,6 +36,7 @@ extern crate lazy_static;
 extern crate regex;
 extern crate chrono;
 extern crate unicode_segmentation;
+extern crate itertools;
 
 use std::collections::HashMap;
 use lexer::Element;

@@ -13,7 +13,7 @@ use chrono::FixedOffset;
 use self::FilterError::*;
 
 use regex::Regex;
-
+use itertools;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -79,45 +79,42 @@ fn nr_escaped(text: &str) -> usize {
 // Retrieved 2016-11-19.
 fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref s) => {
-            let mut result = String::new();
-            let mut last = 0;
-            let mut skip = 0;
-            for (i, c) in s.chars().enumerate() {
-                if skip > 0 {
-                    skip -= 1;
-                    continue;
-                }
-                match c as char {
-                    '<' | '>' | '\'' | '"' | '&' => {
-                        result.push_str(&s[last..i]);
-                        last = i + 1;
-                        let escaped = match c as char {
-                            '<' => "&lt;",
-                            '>' => "&gt;",
-                            '\'' => "&#39;",
-                            '"' => "&quot;",
-                            '&' => {
-                                if once_p {
-                                    skip = nr_escaped(&s[last..]);
-                                }
-                                if skip == 0 { "&amp;" } else { "&" }
-                            }
-                            _ => unreachable!(),
-                        };
-                        result.push_str(escaped);
-                    }
-                    _ => {}
-                }
-            }
-            if last < s.len() {
-                result.push_str(&s[last..]);
-            }
-            Ok(Str(result))
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let mut result = String::new();
+    let mut last = 0;
+    let mut skip = 0;
+    for (i, c) in s.chars().enumerate() {
+        if skip > 0 {
+            skip -= 1;
+            continue;
         }
-        _ => Err(InvalidType("String expected".to_owned())),
+        match c as char {
+            '<' | '>' | '\'' | '"' | '&' => {
+                result.push_str(&s[last..i]);
+                last = i + 1;
+                let escaped = match c as char {
+                    '<' => "&lt;",
+                    '>' => "&gt;",
+                    '\'' => "&#39;",
+                    '"' => "&quot;",
+                    '&' => {
+                        if once_p {
+                            skip = nr_escaped(&s[last..]);
+                        }
+                        if skip == 0 { "&amp;" } else { "&" }
+                    }
+                    _ => unreachable!(),
+                };
+                result.push_str(escaped);
+            }
+            _ => {}
+        }
     }
+    if last < s.len() {
+        result.push_str(&s[last..]);
+    }
+    Ok(Str(result))
 }
 
 // Actual filters.
@@ -141,93 +138,79 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(format!("{}{}", x, a))),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(format!("{}{}", x, a)))
 }
 
-pub fn capitalize(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => {
-            let mut chars = s.chars();
-            let capitalized = match chars.next() {
-                Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
-                None => String::new(),
-            };
+pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
 
-            Ok(Str(capitalized))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let mut chars = s.chars();
+    let capitalized = match chars.next() {
+        Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
+        None => String::new(),
+    };
+
+    Ok(Str(capitalized))
 }
 
-pub fn ceil(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.ceil())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
+pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.ceil()))
 }
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
-    let date = match *input {
-        Value::Str(ref s) => {
-            try!(DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
-        }
-        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
-    };
-    let format = match args[0] {
-        Value::Str(ref s) => s,
-        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-    };
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+
+    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
     Ok(Value::Str(date.format(format).to_string()))
 }
 
 #[cfg(feature = "extra-filters")]
 pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
-    let date = match *input {
-        Value::Str(ref s) => {
-            try!(DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e))))
-        }
-        _ => return Err(FilterError::InvalidType("String expected".to_owned())),
-    };
-    let format = match args[0] {
-        Value::Str(ref s) => s,
-        _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-    };
-    let timezone = match times(&args[1], &[Num(3600.0)]) {
-        Ok(Num(n)) => FixedOffset::east(n as i32),
-        _ => return Err(InvalidArgument(1, "Num expected".to_owned())),
-    };
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+
+    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    let n = args[1].as_float().ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
+    let timezone = FixedOffset::east((n * 3600.0) as i32);
 
     Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
 }
 
 pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num((num / x).floor())),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num((n / x).floor()))
 }
 
-pub fn downcase(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => Ok(Str(s.to_lowercase())),
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+pub fn downcase(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.to_lowercase()))
 }
 
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
@@ -241,54 +224,39 @@ pub fn escape_once(input: &Value, args: &[Value]) -> FilterResult {
 pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
-            match x.chars().next() {
-                Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned())),
-            }
+            let c = x.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            Ok(Str(c))
         }
         Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
         _ => Err(InvalidType("String or Array expected".to_owned())),
     }
 }
 
-pub fn floor(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.floor())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
+pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.floor()))
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
-    match *input {
-        Array(ref array) => {
-            // use ToStr to stringify the values in case they aren't strings...
-            let mut strings_to_join = array.iter().map(|x| x.to_string());
-            // the input is in fact an Array of Strings
-            match args.first() {  // Check the first (and only) argument
-                Some(&Str(ref join_string)) => {
-                    // The join string argument is in fact a String
-                    let mut result = strings_to_join.next().unwrap_or_else(String::new);
-                    for string in strings_to_join {
-                        result.push_str(join_string);
-                        result.push_str(&string);
-                    }
-                    Ok(Str(result))
-                }
-                _ => Err(InvalidArgument(0, "expected String argument as join".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("Array of Strings expected".to_owned())),
-    }
+
+    let array = input.as_array()
+        .ok_or_else(|| InvalidType("Array of strings expected".to_owned()))?;
+    // use ToStr to stringify the values in case they aren't strings...
+    let strings_to_join = array.iter().map(|x| x.to_string());
+
+    let join_string = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    Ok(Str(itertools::join(strings_to_join, join_string)))
 }
 
 pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
         Str(ref x) => {
-            match x.chars().last() {
-                Some(c) => Ok(Str(c.to_string())),
-                _ => Ok(Str("".to_owned())),
-            }
+            let c = x.chars().last().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            Ok(Str(c))
         }
         Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
         _ => Err(InvalidType("String or Array expected".to_owned())),
@@ -303,159 +271,140 @@ pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref s) => Ok(Str(s.trim_left().to_string())),
-        _ => Err(InvalidType("Str expected".to_string())),
-    }
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim_left().to_string()))
 }
 
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num - x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n - x))
 }
 
 pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num % x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n % x))
 }
 
 /// Replaces every newline (`\n`) with an HTML line break (`<br>`).
 pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref x) => Ok(Str(x.replace("\n", "<br />"))),
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.replace("\n", "<br />")))
 }
 
 pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
-    match *input {
-        Num(1f32) => Ok(args[0].clone()),
-        Num(_) => Ok(args[1].clone()),
-        _ => Err(InvalidType("Number expected".to_owned())),
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    if (n as isize) == 1 {
+        Ok(args[0].clone())
+    } else {
+        Ok(args[1].clone())
     }
 }
 
 pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num + x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n + x))
 }
 
 pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(format!("{}{}", a, x))),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(format!("{}{}", a, x)))
 }
 
 pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(x.replace(a, ""))),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(x.replace(a, "")))
 }
 
 pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            match args.first() {
-                Some(&Str(ref a)) => Ok(Str(x.splitn(2, a).collect())),
-                _ => Err(InvalidArgument(0, "Str expected".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(x.splitn(2, a).collect()))
 }
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
-    match *input {
-        Str(ref x) => {
-            let arg1 = match args[0] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-            };
-            let arg2 = match args[1] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
-            };
-            Ok(Str(x.replace(arg1, arg2)))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let search = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    let replace = args[1].as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
+
+    Ok(Str(x.replace(search, replace)))
 }
 
 pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
-    match *input {
-        Str(ref x) => {
-            let search = match args[0] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(0, "Str expected".to_owned())),
-            };
-            let replace = match args[1] {
-                Str(ref a) => a,
-                _ => return Err(InvalidArgument(1, "Str expected".to_owned())),
-            };
-            let tokens: Vec<&str> = x.splitn(2, search).collect();
-            if tokens.len() == 2 {
-                let result = tokens[0].to_string() + replace + tokens[1];
-                Ok(Str(result))
-            } else {
-                Ok(Str(x.to_string()))
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let search = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    let replace = args[1].as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
+
+    let tokens: Vec<&str> = x.splitn(2, search).collect();
+    if tokens.len() == 2 {
+        let result = tokens[0].to_string() + replace + tokens[1];
+        Ok(Str(result))
+    } else {
+        Ok(Str(x.to_string()))
     }
 }
 
 /// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
 pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Value::Array(ref array) => {
-            let mut reversed = array.clone();
-            reversed.reverse();
-            Ok(Value::Array(reversed))
-        }
-        _ => Err(InvalidType("Array argument expected".to_owned())),
-    }
+
+    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut reversed = array.clone();
+    reversed.reverse();
+    Ok(Value::Array(reversed))
 }
 
-pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Num(n) => Ok(Num(n.round())),
-        _ => Err(InvalidType("Num expected".to_owned())),
-    }
+pub fn round(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.round()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
@@ -466,10 +415,9 @@ pub fn round(input: &Value, _args: &[Value]) -> FilterResult {
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref s) => Ok(Str(s.trim_right().to_string())),
-        _ => Err(InvalidType("Str expected".to_string())),
-    }
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim_right().to_string()))
 }
 
 pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
@@ -486,67 +434,53 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
         return Err(InvalidArgumentCount(format!("expected one or two arguments, {} given",
                                                 args.len())));
     }
-    let mut start = match args.first() {
-        Some(&Num(x)) => x as isize,
-        _ => return Err(InvalidArgument(0, "Number expected".to_owned())),
-    };
+    let start = args[0].as_float()
+        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let mut start = start as isize;
     let mut offset = match args.get(1) {
         Some(&Num(x)) if x > 0f32 => x as isize,
-        Some(_) => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
+        Some(_) => return Err(InvalidArgument(1, "Positive number expected".to_owned())),
         None => 1,
     };
 
-    match *input {
-        Str(ref x) => {
-            // this simplifies counting and conversions
-            let ilen = x.len() as isize;
-            if start > ilen {
-                start = ilen;
-            }
-            // Check for overflows over string length and fallback to allowed values
-            if start < 0 {
-                start += ilen;
-            }
-            // start is guaranteed to be positive at this point
-            if start + offset > ilen {
-                offset = ilen - start;
-            }
-            Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    // this simplifies counting and conversions
+    let ilen = x.len() as isize;
+    if start > ilen {
+        start = ilen;
     }
+    // Check for overflows over string length and fallback to allowed values
+    if start < 0 {
+        start += ilen;
+    }
+    // start is guaranteed to be positive at this point
+    if start + offset > ilen {
+        offset = ilen - start;
+    }
+    Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
 }
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Value::Array(ref array) => {
-            let mut sorted = array.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-            Ok(Value::Array(sorted))
-        }
-        _ => Err(InvalidType("Array argument expected".to_owned())),
-    }
+
+    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut sorted = array.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+    Ok(Value::Array(sorted))
 }
 
 pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
-    match *input {
-        Str(ref string_to_split) => {
-            // the input String is in fact a String
-            match args.first() { // Check the first (and only) argument
-                Some(&Str(ref split_string)) => {
-                    // The split string argument is also in fact a String
-                    // Split and construct resulting Array
-                    Ok(Array(string_to_split.split(split_string)
-                        .map(|x| Str(String::from(x)))
-                        .collect()))
-                }
-                _ => Err(InvalidArgument(0, "expected String argument to split".to_owned())),
-            }
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+
+    let string_to_split = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let split_string = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    // Split and construct resulting Array
+    Ok(Array(string_to_split.split(split_string)
+        .map(|x| Str(String::from(x)))
+        .collect()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
@@ -558,13 +492,12 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref s) => Ok(Str(s.trim().to_string())),
-        _ => Err(InvalidType("Str expected".to_string())),
-    }
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim().to_string()))
 }
 
-pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
+pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
     lazy_static! {
         // regexps taken from https://git.io/vXbgS
         static ref MATCHERS: [Regex; 4] = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
@@ -572,35 +505,32 @@ pub fn strip_html(input: &Value, _args: &[Value]) -> FilterResult {
                                            Regex::new(r"(?is)<!--.*?-->").unwrap(),
                                            Regex::new(r"(?is)<.*?>").unwrap()];
     }
-    match *input {
-        Str(ref x) => {
-            let result = MATCHERS.iter()
-                .fold(x.to_string(),
-                      |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
-            Ok(Str(result))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+    try!(check_args_len(args, 0));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let result = MATCHERS.iter()
+        .fold(x.to_string(),
+              |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
+    Ok(Str(result))
 }
 
 /// Removes any newline characters (line breaks) from a string.
 pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Str(ref s) => Ok(Str(s.replace("\n", "").to_string())),
-        _ => Err(InvalidType("Str expected".to_string())),
-    }
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.replace("\n", "")))
 }
 
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
-    let num = match *input {
-        Num(n) => n,
-        _ => return Err(InvalidType("Num expected".to_owned())),
-    };
-    match args.first() {
-        Some(&Num(x)) => Ok(Num(num * x)),
-        _ => Err(InvalidArgument(0, "Num expected".to_owned())),
-    }
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n * x))
 }
 
 /// `truncate` shortens a string down to the number of characters passed as a parameter.
@@ -640,22 +570,19 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
         _ => return Err(InvalidArgument(0, "Positive number expected".to_string())),
     };
 
-    let ellipsis = "...";
-    let append = match args.get(1) {
-        Some(&Str(ref x)) => x,
-        _ => ellipsis,
-    };
+    let ellipsis = Value::str("...");
+    let append = args.get(1)
+        .unwrap_or(&ellipsis)
+        .as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
 
-    match *input {
-        Str(ref s) => {
-            Ok(Str(UnicodeSegmentation::graphemes(s.as_str(), true)
-                .take(num_chars - append.len())
-                .collect::<Vec<&str>>()
-                .join("")
-                .to_string() + append))
-        }
-        _ => Err(InvalidType("String expected".to_string())),
-    }
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    Ok(Str(UnicodeSegmentation::graphemes(s, true)
+        .take(num_chars - append.len())
+        .collect::<Vec<&str>>()
+        .join("")
+        .to_string() + append))
 }
 
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
@@ -669,23 +596,20 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
         _ => return Err(InvalidArgument(0, "Positive number expected".to_owned())),
     };
 
-    let empty = "";
-    let append = match args.get(1) {
-        Some(&Str(ref x)) => x,
-        _ => empty,
-    };
+    let empty = Value::str("");
+    let append = args.get(1)
+        .unwrap_or(&empty)
+        .as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
 
-    match *input {
-        Str(ref x) => {
-            let words: Vec<&str> = x.split(' ').take(num_words).collect();
-            let mut result = words.join(" ");
-            if *x != result {
-                result = result + append;
-            }
-            Ok(Str(result))
-        }
-        _ => Err(InvalidType("String expected".to_owned())),
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let words: Vec<&str> = x.split(' ').take(num_words).collect();
+    let mut result = words.join(" ");
+    if *x != result {
+        result = result + append;
     }
+    Ok(Str(result))
 }
 
 /// Removes any duplicate elements in an array.
@@ -693,36 +617,37 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
 /// This has an O(n^2) worst-case complexity.
 pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
-    match *input {
-        Value::Array(ref array) => {
-            let mut deduped: Vec<Value> = Vec::new();
-            for x in array.iter() {
-                if !deduped.contains(x) {
-                    deduped.push(x.clone())
-                }
-            }
-            Ok(Value::Array(deduped))
+
+    let array = input.as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut deduped: Vec<Value> = Vec::new();
+    for x in array.iter() {
+        if !deduped.contains(x) {
+            deduped.push(x.clone())
         }
-        _ => Err(InvalidType("Array argument expected".to_string())),
     }
+    Ok(Value::Array(deduped))
 }
 
-pub fn upcase(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref s) => Ok(Str(s.to_uppercase())),
-        _ => Err(InvalidType("String expected".to_owned())),
-    }
+pub fn upcase(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.to_uppercase()))
 }
 
 pub fn default(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
-    if match *input {
+
+    let use_default = match *input {
         Str(ref s) => s.is_empty(),
         Object(ref o) => o.is_empty(),
         Array(ref a) => a.is_empty(),
         Bool(b) => !b,
         Num(_) => false,
-    } {
+    };
+
+    if use_default {
         Ok(args[0].clone())
     } else {
         Ok(input.clone())
@@ -845,7 +770,7 @@ mod tests {
                        .to_owned()));
 
         assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32)]),
-                   FilterError::InvalidArgument(0, "Str expected".to_owned()));
+                   FilterError::InvalidArgument(0, "String expected".to_owned()));
 
         assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
                    FilterError::InvalidArgumentCount("expected 1, 0 given".to_owned()));
@@ -908,7 +833,7 @@ mod tests {
     fn unit_date_in_tz_date_format_not_a_string() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[Num(0f32), Num(1f32)];
-        let desired_result = FilterError::InvalidArgument(0, "Str expected".to_owned());
+        let desired_result = FilterError::InvalidArgument(0, "String expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -917,7 +842,7 @@ mod tests {
     fn unit_date_in_tz_offset_not_a_num() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
-        let desired_result = FilterError::InvalidArgument(1, "Num expected".to_owned());
+        let desired_result = FilterError::InvalidArgument(1, "Number expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1061,7 +986,7 @@ mod tests {
     fn unit_lstrip_non_string() {
         let input = &Num(0f32);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        let desired_result = FilterError::InvalidType("String expected".to_string());
         assert_eq!(failed!(lstrip, input, args), desired_result);
     }
 
@@ -1242,7 +1167,7 @@ mod tests {
     fn unit_reverse_string() {
         let input = &tos!("abc");
         let args = &[];
-        let desired_result = FilterError::InvalidType("Array argument expected".to_owned());
+        let desired_result = FilterError::InvalidType("Array expected".to_owned());
         assert_eq!(failed!(reverse, input, args), desired_result);
     }
 
@@ -1274,7 +1199,7 @@ mod tests {
     fn unit_rstrip_non_string() {
         let input = &Num(0f32);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        let desired_result = FilterError::InvalidType("String expected".to_string());
         assert_eq!(failed!(rstrip, input, args), desired_result);
     }
 
@@ -1364,7 +1289,7 @@ mod tests {
     fn unit_strip_non_string() {
         let input = &Num(0f32);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        let desired_result = FilterError::InvalidType("String expected".to_string());
         assert_eq!(failed!(strip, input, args), desired_result);
     }
 
@@ -1445,7 +1370,7 @@ mod tests {
     fn unit_strip_newlines_non_string() {
         let input = &Num(0f32);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Str expected".to_string());
+        let desired_result = FilterError::InvalidType("String expected".to_string());
         assert_eq!(failed!(strip_newlines, input, args), desired_result);
     }
 
@@ -1595,7 +1520,7 @@ mod tests {
     fn unit_uniq_non_array() {
         let input = &Num(0f32);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Array argument expected".to_string());
+        let desired_result = FilterError::InvalidType("Array expected".to_string());
         assert_eq!(failed!(uniq, input, args), desired_result);
     }
 
