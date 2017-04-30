@@ -3,12 +3,11 @@ use Renderable;
 use context::Context;
 use token::Token;
 use LiquidOptions;
+use TemplateLocation;
 use template::Template;
 use parser;
 use lexer;
 use error::{Result, Error};
-
-use std::path::Path;
 
 struct Include {
     partial: Template,
@@ -20,7 +19,7 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
+fn parse_partial<P: AsRef<TemplateLocation>>(path: P, options: &LiquidOptions) -> Result<Template> {
     let content = options.file_system.read_template_file(path.as_ref())?;
 
     let tokens = try!(lexer::tokenize(&content));

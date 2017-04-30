@@ -126,8 +126,9 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
+pub type TemplateLocation = Path;
 pub trait FileSystem {
-    fn read_template_file(&self, path: &Path) -> Result<String>;
+    fn read_template_file(&self, path: &TemplateLocation) -> Result<String>;
 }
 
 /// FileSystem to load files relative to the root
@@ -136,7 +137,7 @@ pub struct LocalFileSystem {
 }
 
 impl FileSystem for LocalFileSystem {
-    fn read_template_file(&self, relative_path: &Path) -> Result<String> {
+    fn read_template_file(&self, relative_path: &TemplateLocation) -> Result<String> {
         let path = self.root.clone().join(relative_path);
 
         if !path.exists() {
