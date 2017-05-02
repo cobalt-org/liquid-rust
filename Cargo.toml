@@ -19,6 +19,8 @@ lazy_static = "0.2"
 chrono = "0.3"
 unicode-segmentation = "1.1"
 itertools = "0.6.0"
+serde = "1.0"
+serde_derive = "1.0"
 
 [build-dependencies]
 skeptic = "0.9"
@@ -26,6 +28,7 @@ skeptic = "0.9"
 [dev-dependencies]
 difference = "1.0"
 skeptic = "0.9"
+serde_yaml = "0.7"
 
 [features]
 default = ["extra-filters"]

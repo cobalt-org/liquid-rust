@@ -31,12 +31,17 @@
 #![allow(unknown_lints)]
 #![allow(zero_ptr)]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate regex;
 extern crate chrono;
 extern crate unicode_segmentation;
 extern crate itertools;
+
+#[macro_use]
+extern crate lazy_static;
+
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 use std::collections::HashMap;
 use lexer::Element;
