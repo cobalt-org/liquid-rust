@@ -2,7 +2,7 @@ use error::{Result, Error};
 use filters::Filter;
 use std::collections::HashMap;
 use token::Token::{self, Identifier, StringLiteral, NumberLiteral, BooleanLiteral};
-use value::Value;
+use value::{Value, Object};
 
 
 #[derive(Clone)]
@@ -11,12 +11,10 @@ pub enum Interrupt {
     Break,
 }
 
-type ValueMap = HashMap<String, Value>;
-
 #[derive(Default)]
 pub struct Context {
-    stack: Vec<ValueMap>,
-    globals: ValueMap,
+    stack: Vec<Object>,
+    globals: Object,
 
     /// The current interrupt state. The interrupt state is used by
     /// the `break` and `continue` tags to halt template rendering
@@ -43,22 +41,22 @@ impl Context {
     /// assert_eq!(ctx.get_val("test"), None);
     /// ```
     pub fn new() -> Context {
-        Context::with_values_and_filters(HashMap::new(), HashMap::new())
+        Context::with_values_and_filters(Object::new(), HashMap::new())
     }
 
-    pub fn with_values(values: HashMap<String, Value>) -> Context {
+    pub fn with_values(values: Object) -> Context {
         Context::with_values_and_filters(values, HashMap::new())
     }
 
     pub fn with_filters(filters: HashMap<String, Box<Filter>>) -> Context {
-        Context::with_values_and_filters(HashMap::new(), filters)
+        Context::with_values_and_filters(Object::new(), filters)
     }
 
-    pub fn with_values_and_filters(values: HashMap<String, Value>,
+    pub fn with_values_and_filters(values: Object,
                                    filters: HashMap<String, Box<Filter>>)
                                    -> Context {
         Context {
-            stack: vec![HashMap::new()],
+            stack: vec![Object::new()],
             interrupt: None,
             cycles: HashMap::new(),
             globals: values,
@@ -116,7 +114,7 @@ impl Context {
 
     /// Creates a new variable scope chained to a parent scope.
     fn push_scope(&mut self) {
-        self.stack.push(HashMap::new());
+        self.stack.push(Object::new());
     }
 
     /// Removes the topmost stack frame from the local variable stack.
