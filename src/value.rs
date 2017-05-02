@@ -8,10 +8,12 @@ use token::Token::*;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Value {
-    Str(String),
     Num(f32),
     Bool(bool),
+    Str(String),
     Array(Array),
     Object(Object),
 }
@@ -40,19 +42,6 @@ impl<'a> Value {
         }
     }
 
-    /// Extracts the str value if it is a str.
-    pub fn as_str(&'a self) -> Option<&'a str> {
-        match *self {
-            Value::Str(ref v) => Some(v),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is a str
-    pub fn is_str(&self) -> bool {
-        self.as_str().is_some()
-    }
-
     /// Extracts the float value if it is a float.
     pub fn as_float(&self) -> Option<f32> {
         match *self {
@@ -77,6 +66,19 @@ impl<'a> Value {
     /// Tests whether this value is a boolean
     pub fn is_bool(&self) -> bool {
         self.as_bool().is_some()
+    }
+
+    /// Extracts the str value if it is a str.
+    pub fn as_str(&'a self) -> Option<&'a str> {
+        match *self {
+            Value::Str(ref v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is a str
+    pub fn is_str(&self) -> bool {
+        self.as_str().is_some()
     }
 
     /// Extracts the array value if it is an array.
@@ -125,9 +127,9 @@ impl<'a> Value {
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
             (&Value::Num(x), &Value::Num(y)) => x == y,
             (&Value::Bool(x), &Value::Bool(y)) => x == y,
+            (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
             (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
             (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
 
@@ -146,9 +148,9 @@ impl Eq for Value {}
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
             (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
             (&Value::Bool(x), &Value::Bool(y)) => x.partial_cmp(&y),
+            (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
             (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
             (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
             _ => None,
@@ -159,9 +161,9 @@ impl PartialOrd<Value> for Value {
 impl ToString for Value {
     fn to_string(&self) -> String {
         match *self {
-            Value::Str(ref x) => x.to_owned(),
             Value::Num(ref x) => x.to_string(),
             Value::Bool(ref x) => x.to_string(),
+            Value::Str(ref x) => x.to_owned(),
             Value::Array(ref x) => {
                 let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
                 arr.join(", ")
@@ -190,21 +192,21 @@ mod test {
     static FALSE: Value = Value::Bool(false);
 
     #[test]
-    fn test_as_str() {
-        let val = Value::Num(42f32);
-        assert_eq!(val.as_str(), None);
-
-        let val = Value::str("test");
-        assert_eq!(val.as_str(), Some("test"));
-    }
-
-    #[test]
     fn test_num_to_string() {
         let val = Value::Num(42f32);
         assert_eq!(&val.to_string(), "42");
 
         let val = Value::Num(42.34);
         assert_eq!(&val.to_string(), "42.34");
+    }
+
+    #[test]
+    fn test_as_str() {
+        let val = Value::Num(42f32);
+        assert_eq!(val.as_str(), None);
+
+        let val = Value::str("test");
+        assert_eq!(val.as_str(), Some("test"));
     }
 
     #[test]
