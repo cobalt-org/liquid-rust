@@ -49,6 +49,8 @@ use std::path::{PathBuf, Path};
 use error::Result;
 
 pub use value::Value;
+pub use value::Object;
+pub use value::Array;
 pub use context::Context;
 pub use template::Template;
 pub use error::Error;
