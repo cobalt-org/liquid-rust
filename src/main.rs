@@ -3,24 +3,20 @@ extern crate clap;
 #[macro_use]
 extern crate error_chain;
 extern crate liquid;
-extern crate toml;
 
-use std::collections;
+#[cfg(feature = "serde_yaml")]
+extern crate serde_yaml;
+#[cfg(feature = "serde_json")]
+extern crate serde_json;
+
+use std::ffi;
 use std::fs;
 use std::io;
-use std::io::{Write, Read};
+use std::io::Write;
 use std::path;
 use liquid::Renderable;
 
-macro_rules! println_stderr(
-    ($($arg:tt)*) => { {
-        let r = writeln!(&mut ::std::io::stderr(), $($arg)*);
-        r.expect("failed printing to stderr");
-    } }
-);
-
 error_chain! {
-
     links {
     }
 
@@ -28,7 +24,8 @@ error_chain! {
         Clap(clap::Error);
         Io(io::Error);
         Liquid(liquid::Error);
-        Toml(toml::de::Error);
+        Yaml(serde_yaml::Error) #[cfg(feature = "serde_yaml")];
+        Json(serde_json::Error) #[cfg(feature = "serde_json")];
     }
 
     errors {
@@ -39,43 +36,40 @@ fn option<'a>(name: &'a str, value: &'a str) -> clap::Arg<'a, 'a> {
     clap::Arg::with_name(name).long(name).value_name(value)
 }
 
-fn convert_value(toml_value: &toml::Value) -> Result<liquid::Value> {
-    match *toml_value {
-        toml::Value::String(ref s) => Ok(liquid::Value::Str(s.to_string())),
-        toml::Value::Integer(n) => Ok(liquid::Value::Num(n as f32)),
-        toml::Value::Float(n) => Ok(liquid::Value::Num(n as f32)),
-        toml::Value::Boolean(b) => Ok(liquid::Value::Bool(b)),
-        toml::Value::Datetime(_) => Err("Datetime's are unsupported".into()),
-        toml::Value::Array(ref a) => {
-            let liquid_array: Result<Vec<liquid::Value>> = a.iter().map(convert_value).collect();
-            let liquid_array = liquid_array?;
-            Ok(liquid::Value::Array(liquid_array))
-        }
-        toml::Value::Table(ref t) => {
-            let liquid_object: Result<collections::HashMap<String, liquid::Value>> = t.iter()
-                .map(|(k, v)| {
-                    let v = convert_value(v);
-                    match v {
-                        Ok(v) => Ok((k.to_string(), v)),
-                        Err(e) => Err(e),
-                    }
-                })
-                .collect();
-            let liquid_object = liquid_object?;
-            Ok(liquid::Value::Object(liquid_object))
-        }
-    }
+#[cfg(feature = "serde_yaml")]
+fn load_yaml(path: &path::Path) -> Result<liquid::Value> {
+    let f = fs::File::open(path)?;
+    serde_yaml::from_reader(f).map_err(|e| e.into())
+}
+
+#[cfg(not(feature = "serde_yaml"))]
+fn load_yaml(path: &path::Path) -> Result<liquid::Value> {
+    bail!("yaml is unsupported");
+}
+
+#[cfg(feature = "serde_json")]
+fn load_json(path: &path::Path) -> Result<liquid::Value> {
+    let f = fs::File::open(path)?;
+    serde_json::from_reader(f).map_err(|e| e.into())
+}
+
+#[cfg(not(feature = "serde_json"))]
+fn load_json(path: &path::Path) -> Result<liquid::Value> {
+    bail!("json is unsupported");
 }
 
 fn build_context(path: &path::Path) -> Result<liquid::Context> {
-    let mut input = String::new();
-    let mut f = fs::File::open(path)?;
-    f.read_to_string(&mut input)?;
-    let input: toml::Value = input.parse()?;
-    let value = convert_value(&input)?;
+    let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
+    let value = if extension == ffi::OsStr::new("yaml") {
+        load_yaml(path)
+    } else if extension == ffi::OsStr::new("yaml") {
+        load_json(path)
+    } else {
+        Err("Unsupported file type".into())
+    }?;
     let value = match value {
         liquid::Value::Object(o) => Ok(o),
-        _ => Err("File must be a toml table"),
+        _ => Err("File must be an object"),
     }?;
     let data = liquid::Context::with_values(value);
 
