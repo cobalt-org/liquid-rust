@@ -47,6 +47,7 @@ pub fn capitalize() {
 }
 
 #[test]
+#[cfg(feature = "extra-filters")]
 pub fn pluralize() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
     let options: LiquidOptions = Default::default();

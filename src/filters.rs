@@ -117,35 +117,29 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     Ok(Str(result))
 }
 
-// Actual filters.
+// standardfilters.rb
 
-/// Returns the absolute value of a number.
-pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
+pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref s) => {
-            match s.parse::<f32>() {
-                Ok(n) => Ok(Num(n.abs())),
-                Err(e) => {
-                    Err(InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
-                                            e.to_string())))
-                }
-            }
-        }
-        Num(n) => Ok(Num(n.abs())),
-        _ => Err(InvalidType("String or number expected".to_owned())),
+        Str(ref x) => Ok(Num(x.len() as f32)),
+        Array(ref x) => Ok(Num(x.len() as f32)),
+        Object(ref x) => Ok(Num(x.len() as f32)),
+        _ => Err(InvalidType("String, Array or Object expected".to_owned())),
     }
 }
 
-pub fn append(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
+pub fn downcase(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
 
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.to_lowercase()))
+}
 
-    let a = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+pub fn upcase(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
 
-    Ok(Str(format!("{}{}", x, a)))
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.to_uppercase()))
 }
 
 pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
@@ -161,58 +155,6 @@ pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Str(capitalized))
 }
 
-pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    Ok(Num(n.ceil()))
-}
-
-pub fn date(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
-
-    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    Ok(Value::Str(date.format(format).to_string()))
-}
-
-#[cfg(feature = "extra-filters")]
-pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
-
-    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    let n = args[1].as_float().ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
-    let timezone = FixedOffset::east((n * 3600.0) as i32);
-
-    Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
-}
-
-pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-
-    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-
-    Ok(Num((n / x).floor()))
-}
-
-pub fn downcase(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.to_lowercase()))
-}
-
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
     _escape(input, args, false)
 }
@@ -221,213 +163,9 @@ pub fn escape_once(input: &Value, args: &[Value]) -> FilterResult {
     _escape(input, args, true)
 }
 
-pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            let c = x.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
-            Ok(Str(c))
-        }
-        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
-    }
-}
+// Missing: url_encode
 
-pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    Ok(Num(n.floor()))
-}
-
-pub fn join(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let array = input.as_array()
-        .ok_or_else(|| InvalidType("Array of strings expected".to_owned()))?;
-    // use ToStr to stringify the values in case they aren't strings...
-    let strings_to_join = array.iter().map(|x| x.to_string());
-
-    let join_string = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-    Ok(Str(itertools::join(strings_to_join, join_string)))
-}
-
-pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => {
-            let c = x.chars().last().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
-            Ok(Str(c))
-        }
-        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
-    }
-}
-
-/// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
-///
-/// The filter does not affect spaces between words.  Note that while this works for the case of
-/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
-/// Core Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
-pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.trim_left().to_string()))
-}
-
-pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-
-    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-
-    Ok(Num(n - x))
-}
-
-pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-
-    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-
-    Ok(Num(n % x))
-}
-
-/// Replaces every newline (`\n`) with an HTML line break (`<br>`).
-pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.replace("\n", "<br />")))
-}
-
-pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    if (n as isize) == 1 {
-        Ok(args[0].clone())
-    } else {
-        Ok(args[1].clone())
-    }
-}
-
-pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-
-    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-
-    Ok(Num(n + x))
-}
-
-pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let a = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    Ok(Str(format!("{}{}", a, x)))
-}
-
-pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let a = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    Ok(Str(x.replace(a, "")))
-}
-
-pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let a = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    Ok(Str(x.splitn(2, a).collect()))
-}
-
-pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let search = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-    let replace = args[1].as_str()
-        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
-
-    Ok(Str(x.replace(search, replace)))
-}
-
-pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let search = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-    let replace = args[1].as_str()
-        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
-
-    let tokens: Vec<&str> = x.splitn(2, search).collect();
-    if tokens.len() == 2 {
-        let result = tokens[0].to_string() + replace + tokens[1];
-        Ok(Str(result))
-    } else {
-        Ok(Str(x.to_string()))
-    }
-}
-
-/// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
-pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
-    let mut reversed = array.clone();
-    reversed.reverse();
-    Ok(Value::Array(reversed))
-}
-
-pub fn round(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    Ok(Num(n.round()))
-}
-
-/// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
-///
-/// The filter does not affect spaces between words.  Note that while this works for the case of
-/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
-/// Core Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
-pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.trim_right().to_string()))
-}
-
-pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
-    match *input {
-        Str(ref x) => Ok(Num(x.len() as f32)),
-        Array(ref x) => Ok(Num(x.len() as f32)),
-        Object(ref x) => Ok(Num(x.len() as f32)),
-        _ => Err(InvalidType("String, Array or Object expected".to_owned())),
-    }
-}
+// Missing: url_decode
 
 pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() < 1 || args.len() > 2 {
@@ -458,79 +196,6 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
         offset = ilen - start;
     }
     Ok(Value::Str(x.chars().skip(start.abs() as usize).take(offset as usize).collect()))
-}
-
-pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
-    let mut sorted = array.clone();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-    Ok(Value::Array(sorted))
-}
-
-pub fn split(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let string_to_split = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let split_string = args[0].as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
-
-    // Split and construct resulting Array
-    Ok(Array(string_to_split.split(split_string)
-        .map(|x| Str(String::from(x)))
-        .collect()))
-}
-
-/// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
-/// string.
-///
-/// It does not affect spaces between words.  Note that while this works for the case of tabs,
-/// spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived Core
-/// Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
-pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.trim().to_string()))
-}
-
-pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
-    lazy_static! {
-        // regexps taken from https://git.io/vXbgS
-        static ref MATCHERS: [Regex; 4] = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
-                                           Regex::new(r"(?is)<style.*?</style>").unwrap(),
-                                           Regex::new(r"(?is)<!--.*?-->").unwrap(),
-                                           Regex::new(r"(?is)<.*?>").unwrap()];
-    }
-    try!(check_args_len(args, 0));
-
-    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-
-    let result = MATCHERS.iter()
-        .fold(x.to_string(),
-              |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
-    Ok(Str(result))
-}
-
-/// Removes any newline characters (line breaks) from a string.
-pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0));
-
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.replace("\n", "")))
-}
-
-pub fn times(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1));
-
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-
-    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-
-    Ok(Num(n * x))
 }
 
 /// `truncate` shortens a string down to the number of characters passed as a parameter.
@@ -612,6 +277,110 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Str(result))
 }
 
+pub fn split(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let string_to_split = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let split_string = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    // Split and construct resulting Array
+    Ok(Array(string_to_split.split(split_string)
+        .map(|x| Str(String::from(x)))
+        .collect()))
+}
+
+/// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
+/// string.
+///
+/// It does not affect spaces between words.  Note that while this works for the case of tabs,
+/// spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived Core
+/// Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim().to_string()))
+}
+
+/// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim_left().to_string()))
+}
+
+/// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
+///
+/// The filter does not affect spaces between words.  Note that while this works for the case of
+/// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
+/// Core Property `White_Space` (per [rust
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.trim_right().to_string()))
+}
+
+pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
+    lazy_static! {
+        // regexps taken from https://git.io/vXbgS
+        static ref MATCHERS: [Regex; 4] = [Regex::new(r"(?is)<script.*?</script>").unwrap(),
+                                           Regex::new(r"(?is)<style.*?</style>").unwrap(),
+                                           Regex::new(r"(?is)<!--.*?-->").unwrap(),
+                                           Regex::new(r"(?is)<.*?>").unwrap()];
+    }
+    try!(check_args_len(args, 0));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let result = MATCHERS.iter()
+        .fold(x.to_string(),
+              |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
+    Ok(Str(result))
+}
+
+/// Removes any newline characters (line breaks) from a string.
+pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    Ok(Str(s.replace("\n", "")))
+}
+
+pub fn join(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let array = input.as_array()
+        .ok_or_else(|| InvalidType("Array of strings expected".to_owned()))?;
+    // use ToStr to stringify the values in case they aren't strings...
+    let strings_to_join = array.iter().map(|x| x.to_string());
+
+    let join_string = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    Ok(Str(itertools::join(strings_to_join, join_string)))
+}
+
+pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut sorted = array.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+    Ok(Value::Array(sorted))
+}
+
+// Missing: sort_natural
+
 /// Removes any duplicate elements in an array.
 ///
 /// This has an O(n^2) worst-case complexity.
@@ -629,11 +398,227 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::Array(deduped))
 }
 
-pub fn upcase(input: &Value, args: &[Value]) -> FilterResult {
+/// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
+pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut reversed = array.clone();
+    reversed.reverse();
+    Ok(Value::Array(reversed))
+}
+
+// Missing: map
+
+// Missing: compact
+
+pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let search = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    let replace = args[1].as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
+
+    Ok(Str(x.replace(search, replace)))
+}
+
+pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let search = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    let replace = args[1].as_str()
+        .ok_or_else(|| InvalidArgument(1, "String expected".to_owned()))?;
+
+    let tokens: Vec<&str> = x.splitn(2, search).collect();
+    if tokens.len() == 2 {
+        let result = tokens[0].to_string() + replace + tokens[1];
+        Ok(Str(result))
+    } else {
+        Ok(Str(x.to_string()))
+    }
+}
+
+pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(x.replace(a, "")))
+}
+
+pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(x.splitn(2, a).collect()))
+}
+
+pub fn append(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(format!("{}{}", x, a)))
+}
+
+// Missing: concat
+
+pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let x = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+
+    let a = args[0].as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Str(format!("{}{}", a, x)))
+}
+
+/// Replaces every newline (`\n`) with an HTML line break (`<br>`).
+pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
 
     let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
-    Ok(Str(s.to_uppercase()))
+    Ok(Str(s.replace("\n", "<br />")))
+}
+
+pub fn date(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+
+    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    Ok(Value::Str(date.format(format).to_string()))
+}
+
+pub fn first(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            let c = x.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            Ok(Str(c))
+        }
+        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
+pub fn last(input: &Value, _args: &[Value]) -> FilterResult {
+    match *input {
+        Str(ref x) => {
+            let c = x.chars().last().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            Ok(Str(c))
+        }
+        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
+        _ => Err(InvalidType("String or Array expected".to_owned())),
+    }
+}
+
+/// Returns the absolute value of a number.
+pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+    match *input {
+        Str(ref s) => {
+            match s.parse::<f32>() {
+                Ok(n) => Ok(Num(n.abs())),
+                Err(e) => {
+                    Err(InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
+                                            e.to_string())))
+                }
+            }
+        }
+        Num(n) => Ok(Num(n.abs())),
+        _ => Err(InvalidType("String or number expected".to_owned())),
+    }
+}
+
+pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n + x))
+}
+
+pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n - x))
+}
+
+pub fn times(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n * x))
+}
+
+pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num((n / x).floor()))
+}
+
+pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+
+    let x = args[0].as_float().ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(Num(n % x))
+}
+
+pub fn round(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.round()))
+}
+
+pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.ceil()))
+}
+
+pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    Ok(Num(n.floor()))
 }
 
 pub fn default(input: &Value, args: &[Value]) -> FilterResult {
@@ -652,6 +637,38 @@ pub fn default(input: &Value, args: &[Value]) -> FilterResult {
     } else {
         Ok(input.clone())
     }
+}
+
+// shopify
+
+#[cfg(feature = "extra-filters")]
+pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+
+    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    if (n as isize) == 1 {
+        Ok(args[0].clone())
+    } else {
+        Ok(args[1].clone())
+    }
+}
+
+// liquid-rust proprietary
+
+#[cfg(feature = "extra-filters")]
+pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 2));
+
+    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
+                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+
+    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+
+    let n = args[1].as_float().ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
+    let timezone = FixedOffset::east((n * 3600.0) as i32);
+
+    Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
 }
 
 #[cfg(test)]
@@ -1063,6 +1080,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "extra-filters")]
     fn unit_pluralize() {
         assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
                    tos!("one"));
