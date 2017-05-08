@@ -714,7 +714,7 @@ pub fn round(input: &Value, args: &[Value]) -> FilterResult {
         .unwrap_or(&Value::Num(0_f32))
         .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
-    let n = n as usize;
+    let n = n as i32;
 
     let input = input
         .as_float()
@@ -722,10 +722,11 @@ pub fn round(input: &Value, args: &[Value]) -> FilterResult {
 
     if n == 0 {
         Ok(Num(input.round()))
+    } else if n < 0 {
+        Err(InvalidArgument(0, "Positive number expected".to_owned()))
     } else {
-        // TODO support this
-        Err(InvalidArgument(0,
-                            "Rounding to additional places is not yet supported".to_owned()))
+        let multiplier = 10.0_f32.powi(n);
+        Ok(Num((input * multiplier).round() / multiplier))
     }
 }
 
@@ -1404,6 +1405,13 @@ mod tests {
         assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
         assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
         assert!(round(&Bool(true), &[]).is_err());
+    }
+
+    #[test]
+    fn unit_round_precision() {
+        assert_eq!(unit!(round, Num(1.1f32), &[Num(0f32)]), Num(1f32));
+        assert_eq!(unit!(round, Num(1.5f32), &[Num(1f32)]), Num(1.5f32));
+        assert_eq!(unit!(round, Num(3.14159f32), &[Num(3f32)]), Num(3.142f32));
     }
 
     #[test]
