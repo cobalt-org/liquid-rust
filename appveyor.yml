@@ -32,8 +32,5 @@ test_script:
   - cargo check --verbose --features "cli serde_yaml serde_json"
   - cargo test --features "cli serde_yaml serde_json"
 
-cache:
-  - C:\Users\appveyor\.cargo\registry
-
 # disable automatic builds
 build: false

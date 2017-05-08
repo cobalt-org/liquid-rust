@@ -32,9 +32,6 @@ addons:
 
 cache:
   apt: true
-  directories:
-    - $HOME/.cargo
-    - target/debug/build
 
 before_cache:
     # Travis can't cache files that are not readable by "others"
