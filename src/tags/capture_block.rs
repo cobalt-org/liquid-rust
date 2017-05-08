@@ -45,9 +45,9 @@ pub fn capture_block(_tag_name: &str,
     let t = Template::new(try!(parse(tokens, options)));
 
     Ok(Box::new(Capture {
-        id: id,
-        template: t,
-    }))
+                    id: id,
+                    template: t,
+                }))
 }
 
 #[cfg(test)]

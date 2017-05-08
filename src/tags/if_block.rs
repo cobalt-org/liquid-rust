@@ -77,10 +77,10 @@ fn condition(arguments: &[Token]) -> Result<Condition> {
     };
 
     Ok(Condition {
-        lh: lh,
-        comparison: comp,
-        rh: rh,
-    })
+           lh: lh,
+           comparison: comp,
+           rh: rh,
+       })
 }
 
 pub fn unless_block(_tag_name: &str,
@@ -90,11 +90,11 @@ pub fn unless_block(_tag_name: &str,
                     -> Result<Box<Renderable>> {
     let cond = try!(condition(arguments));
     Ok(Box::new(Conditional {
-        condition: cond,
-        mode: false,
-        if_true: Template::new(try!(parse(&tokens[..], options))),
-        if_false: None,
-    }))
+                    condition: cond,
+                    mode: false,
+                    if_true: Template::new(try!(parse(&tokens[..], options))),
+                    if_false: None,
+                }))
 }
 
 pub fn if_block(_tag_name: &str,
@@ -114,11 +114,7 @@ pub fn if_block(_tag_name: &str,
         }
 
         Some(ref split) if split.delimiter == "elsif" => {
-            let child_tokens: Vec<Element> = split.trailing
-                .iter()
-                .skip(1)
-                .cloned()
-                .collect();
+            let child_tokens: Vec<Element> = split.trailing.iter().skip(1).cloned().collect();
             let parsed = try!(if_block("if", &split.args[1..], &child_tokens, options));
             Some(Template::new(vec![parsed]))
         }
@@ -129,11 +125,11 @@ pub fn if_block(_tag_name: &str,
     let if_true = Template::new(try!(parse(leading_tokens, options)));
 
     Ok(Box::new(Conditional {
-        condition: cond,
-        mode: true,
-        if_true: if_true,
-        if_false: if_false,
-    }))
+                    condition: cond,
+                    mode: true,
+                    if_true: if_true,
+                    if_false: if_false,
+                }))
 }
 
 #[cfg(test)]
@@ -148,14 +144,14 @@ mod test {
     fn number_comparison() {
         let a = parse("{% if 6 < 7  %}if true{% endif %}",
                       LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
+                .unwrap()
+                .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         let b = parse("{% if 7 < 6  %}if true{% else %}if false{% endif %}",
                       LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
+                .unwrap()
+                .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("if false".to_owned()));
     }
 
@@ -164,15 +160,15 @@ mod test {
         // "one" == "one" then "if true" else "if false"
         let a = parse("{% if \"one\" == \"one\" %}if true{% endif %}",
                       LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
+                .unwrap()
+                .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         // "one" == "two"
         let b = parse("{% if \"one\" == \"two\" %}if true{% endif %}",
                       LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
+                .unwrap()
+                .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("".to_owned()));
     }
 

@@ -51,14 +51,21 @@ impl Output {
         let mut entry = match self.entry {
             VarOrVal::Val(ref x) => x.clone(),
             VarOrVal::Var(ref x) => {
-                context.get_val(&*x.name()).cloned().unwrap_or_else(|| Value::Str("".to_owned()))
+                context
+                    .get_val(&*x.name())
+                    .cloned()
+                    .unwrap_or_else(|| Value::Str("".to_owned()))
             }
         };
 
         // apply all specified filters
         for filter in &self.filters {
-            let f = try!(context.get_filter(&filter.name)
-                .ok_or_else(|| Error::Render(format!("Filter {} not implemented", &filter.name))));
+            let f = try!(context
+                             .get_filter(&filter.name)
+                             .ok_or_else(|| {
+                                             Error::Render(format!("Filter {} not implemented",
+                                                                   &filter.name))
+                                         }));
 
             let mut arguments = Vec::new();
             for arg in &filter.arguments {

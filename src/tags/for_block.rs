@@ -88,8 +88,8 @@ impl Renderable for For {
                     for (i, v) in slice.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::Num(i as f32));
                         helper_vars.insert("index".to_owned(), Value::Num((i + 1) as f32));
-                        helper_vars.insert(
-                            "rindex0".to_owned(), Value::Num((range_len - i - 1) as f32));
+                        helper_vars.insert("rindex0".to_owned(),
+                                           Value::Num((range_len - i - 1) as f32));
                         helper_vars.insert("rindex".to_owned(), Value::Num((range_len - i) as f32));
                         helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
                         helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
@@ -196,14 +196,14 @@ pub fn for_block(_tag_name: &str,
     };
 
     Ok(Box::new(For {
-        var_name: var_name,
-        range: range,
-        item_template: item_template,
-        else_template: else_template,
-        limit: limit,
-        offset: offset,
-        reversed: reversed,
-    }))
+                    var_name: var_name,
+                    range: range,
+                    item_template: item_template,
+                    else_template: else_template,
+                    limit: limit,
+                    offset: offset,
+                    reversed: reversed,
+                }))
 }
 
 #[cfg(test)]
@@ -293,7 +293,7 @@ mod test {
                                 ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
                                 ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
                                 ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n")
-                       .to_owned()));
+                                .to_owned()));
     }
 
     #[test]
@@ -428,7 +428,7 @@ mod test {
                                                   "value: {{v}}, ",
                                                   "first: {{forloop.first}}, ",
                                                   "last: {{forloop.last}}\n"))
-                                    .unwrap(),
+                                         .unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
@@ -438,7 +438,7 @@ mod test {
 "length: 3, index: 2, index0: 1, rindex: 2, rindex0: 1, value: 101, first: false, last: false\n",
 "length: 3, index: 3, index0: 2, rindex: 1, rindex0: 0, value: 102, first: false, last: true\n",
 )
-                       .to_owned()));
+                                .to_owned()));
     }
 
 
@@ -457,10 +457,10 @@ mod test {
         let mut data: Context = Default::default();
         data.add_filter("shout",
                         Box::new(|input, _args| if let &Value::Str(ref s) = input {
-                            Ok(Value::Str(s.to_uppercase()))
-                        } else {
-                            FilterError::invalid_type("Expected a string")
-                        }));
+                                     Ok(Value::Str(s.to_uppercase()))
+                                 } else {
+                                     FilterError::invalid_type("Expected a string")
+                                 }));
 
         data.set_val("array",
                      Value::Array(vec![Value::str("alpha"),

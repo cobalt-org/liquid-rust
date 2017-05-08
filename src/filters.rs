@@ -80,7 +80,9 @@ fn nr_escaped(text: &str) -> usize {
 fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     try!(check_args_len(args, 0));
 
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let s = input
+        .as_str()
+        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
     let mut result = String::new();
     let mut last = 0;
     let mut skip = 0;
@@ -198,7 +200,8 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
                                                 args.len())));
     }
 
-    let offset = args[0].as_float()
+    let offset = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
     let offset = offset as isize;
 
@@ -210,15 +213,20 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 
     if let Value::Array(ref input) = *input {
         let (offset, length) = canonicalize_slice(offset, length, input.len());
-        Ok(Value::Array(input.iter()
-            .skip(offset as usize)
-            .take(length as usize)
-            .cloned()
-            .collect()))
+        Ok(Value::Array(input
+                            .iter()
+                            .skip(offset as usize)
+                            .take(length as usize)
+                            .cloned()
+                            .collect()))
     } else {
         let input = input.to_string();
         let (offset, length) = canonicalize_slice(offset, length, input.len());
-        Ok(Value::Str(input.chars().skip(offset as usize).take(length as usize).collect()))
+        Ok(Value::Str(input
+                          .chars()
+                          .skip(offset as usize)
+                          .take(length as usize)
+                          .collect()))
     }
 }
 
@@ -317,9 +325,10 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     let pattern = args[0].to_string();
 
     // Split and construct resulting Array
-    Ok(Array(input.split(pattern.as_str())
-        .map(|x| Str(x.to_owned()))
-        .collect()))
+    Ok(Array(input
+                 .split(pattern.as_str())
+                 .map(|x| Str(x.to_owned()))
+                 .collect()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
@@ -374,7 +383,8 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input.to_string();
 
-    let result = MATCHERS.iter()
+    let result = MATCHERS
+        .iter()
         .fold(input,
               |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
     Ok(Str(result))
@@ -385,7 +395,10 @@ pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
 
     let input = input.to_string();
-    Ok(Str(input.chars().filter(|c| *c != '\n' && *c != '\r').collect()))
+    Ok(Str(input
+               .chars()
+               .filter(|c| *c != '\n' && *c != '\r')
+               .collect()))
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
@@ -397,7 +410,8 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
         .map(|v| v.to_string())
         .unwrap_or_else(|| " ".to_owned());
 
-    let input = input.as_array()
+    let input = input
+        .as_array()
         .ok_or_else(|| InvalidType("Array of strings expected".to_owned()))?;
     // use ToStr to stringify the values in case they aren't strings...
     let input = input.iter().map(|x| x.to_string());
@@ -410,7 +424,9 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
 
     // TODO optional property parameter
 
-    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let array = input
+        .as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
     let mut sorted = array.clone();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
     Ok(Value::Array(sorted))
@@ -426,7 +442,8 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
 
     // TODO optional property parameter
 
-    let array = input.as_array()
+    let array = input
+        .as_array()
         .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
     let mut deduped: Vec<Value> = Vec::new();
     for x in array.iter() {
@@ -441,7 +458,9 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
 pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
 
-    let array = input.as_array().ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let array = input
+        .as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
     let mut reversed = array.clone();
     reversed.reverse();
     Ok(Value::Array(reversed))
@@ -551,7 +570,9 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         return Ok(input.clone());
     }
 
-    let input_string = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let input_string = input
+        .as_str()
+        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
     let date = DateTime::parse_from_str(input_string, "%d %B %Y %H:%M:%S %z");
     let date = match date {
         Ok(d) => d,
@@ -568,7 +589,10 @@ pub fn first(input: &Value, args: &[Value]) -> FilterResult {
 
     match *input {
         Str(ref x) => {
-            let c = x.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            let c = x.chars()
+                .next()
+                .map(|c| c.to_string())
+                .unwrap_or_else(|| "".to_owned());
             Ok(Str(c))
         }
         Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
@@ -581,7 +605,10 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
 
     match *input {
         Str(ref x) => {
-            let c = x.chars().last().map(|c| c.to_string()).unwrap_or_else(|| "".to_owned());
+            let c = x.chars()
+                .last()
+                .map(|c| c.to_string())
+                .unwrap_or_else(|| "".to_owned());
             Ok(Str(c))
         }
         Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
@@ -610,9 +637,12 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
 pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
-    let operand = args[0].as_float()
+    let operand = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Num(input + operand))
@@ -621,9 +651,12 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
-    let operand = args[0].as_float()
+    let operand = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Num(input - operand))
@@ -632,9 +665,12 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
-    let operand = args[0].as_float()
+    let operand = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Num(input * operand))
@@ -643,9 +679,12 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
 pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
-    let operand = args[0].as_float()
+    let operand = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
 
     // TODO only do `.floor` if its an integer
@@ -655,9 +694,12 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
 pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
-    let operand = args[0].as_float()
+    let operand = args[0]
+        .as_float()
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Num(input % operand))
@@ -674,7 +716,9 @@ pub fn round(input: &Value, args: &[Value]) -> FilterResult {
         .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
     let n = n as usize;
 
-    let input = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let input = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
 
     if n == 0 {
         Ok(Num(input.round()))
@@ -688,14 +732,18 @@ pub fn round(input: &Value, args: &[Value]) -> FilterResult {
 pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
 
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let n = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
     Ok(Num(n.ceil()))
 }
 
 pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0));
 
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let n = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
     Ok(Num(n.floor()))
 }
 
@@ -723,7 +771,9 @@ pub fn default(input: &Value, args: &[Value]) -> FilterResult {
 pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
 
-    let n = input.as_float().ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+    let n = input
+        .as_float()
+        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
     if (n as isize) == 1 {
         Ok(args[0].clone())
     } else {
@@ -737,13 +787,19 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 2));
 
-    let s = input.as_str().ok_or_else(|| InvalidType("String expected".to_owned()))?;
+    let s = input
+        .as_str()
+        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
     let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
-                .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+        .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
 
-    let format = args[0].as_str().ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+    let format = args[0]
+        .as_str()
+        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
 
-    let n = args[1].as_float().ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
+    let n = args[1]
+        .as_float()
+        .ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
     let timezone = FixedOffset::east((n * 3600.0) as i32);
 
     Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
@@ -940,7 +996,7 @@ mod tests {
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
         let desired_result = FilterError::InvalidType("Invalid date format: input contains \
                                                        invalid characters"
-            .to_owned());
+                                                              .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1239,10 +1295,15 @@ mod tests {
     #[test]
     fn unit_reverse_apples_oranges_peaches_plums() {
         // First example from https://shopify.github.io/liquid/filters/reverse/
-        let input = &Array(vec![tos!("apples"), tos!("oranges"), tos!("peaches"), tos!("plums")]);
+        let input = &Array(vec![tos!("apples"),
+                                tos!("oranges"),
+                                tos!("peaches"),
+                                tos!("plums")]);
         let args = &[];
-        let desired_result =
-            Array(vec![tos!("plums"), tos!("peaches"), tos!("oranges"), tos!("apples")]);
+        let desired_result = Array(vec![tos!("plums"),
+                                        tos!("peaches"),
+                                        tos!("oranges"),
+                                        tos!("apples")]);
         assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
@@ -1656,8 +1717,11 @@ mod tests {
     #[test]
     fn unit_uniq_shopify_liquid() {
         // Test from https://shopify.github.io/liquid/filters/uniq/
-        let input =
-            &Array(vec![tos!("ants"), tos!("bugs"), tos!("bees"), tos!("bugs"), tos!("ants")]);
+        let input = &Array(vec![tos!("ants"),
+                                tos!("bugs"),
+                                tos!("bees"),
+                                tos!("bugs"),
+                                tos!("ants")]);
         let args = &[];
         let desired_result = Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
         assert_eq!(unit!(uniq, input, args), desired_result);

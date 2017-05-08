@@ -111,43 +111,47 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
 
     for el in split_atom(block) {
         result.push(match &*el.trim() {
-            "" => continue,
+                        "" => continue,
 
-            "|" => Pipe,
-            "." => Dot,
-            ":" => Colon,
-            "," => Comma,
-            "[" => OpenSquare,
-            "]" => CloseSquare,
-            "(" => OpenRound,
-            ")" => CloseRound,
-            "?" => Question,
-            "-" => Dash,
-            "=" => Assignment,
-            "or" => Or,
+                        "|" => Pipe,
+                        "." => Dot,
+                        ":" => Colon,
+                        "," => Comma,
+                        "[" => OpenSquare,
+                        "]" => CloseSquare,
+                        "(" => OpenRound,
+                        ")" => CloseRound,
+                        "?" => Question,
+                        "-" => Dash,
+                        "=" => Assignment,
+                        "or" => Or,
 
-            "==" => Comparison(Equals),
-            "!=" => Comparison(NotEquals),
-            "<=" => Comparison(LessThanEquals),
-            ">=" => Comparison(GreaterThanEquals),
-            "<" => Comparison(LessThan),
-            ">" => Comparison(GreaterThan),
-            "contains" => Comparison(Contains),
-            ".." => DotDot,
+                        "==" => Comparison(Equals),
+                        "!=" => Comparison(NotEquals),
+                        "<=" => Comparison(LessThanEquals),
+                        ">=" => Comparison(GreaterThanEquals),
+                        "<" => Comparison(LessThan),
+                        ">" => Comparison(GreaterThan),
+                        "contains" => Comparison(Contains),
+                        ".." => DotDot,
 
-            x if SINGLE_STRING_LITERAL.is_match(x) || DOUBLE_STRING_LITERAL.is_match(x) => {
-                StringLiteral(x[1..x.len() - 1].to_owned())
-            }
-            x if NUMBER_LITERAL.is_match(x) => {
-                NumberLiteral(x.parse::<f32>().expect(&format!("Could not parse {:?} as float", x)))
-            }
-            x if BOOLEAN_LITERAL.is_match(x) => {
-                BooleanLiteral(x.parse::<bool>()
-                    .expect(&format!("Could not parse {:?} as bool", x)))
-            }
-            x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
-            x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
-        });
+                        x if SINGLE_STRING_LITERAL.is_match(x) ||
+                             DOUBLE_STRING_LITERAL.is_match(x) => {
+                            StringLiteral(x[1..x.len() - 1].to_owned())
+                        }
+                        x if NUMBER_LITERAL.is_match(x) => {
+                            NumberLiteral(x.parse::<f32>()
+                                              .expect(&format!("Could not parse {:?} as float",
+                                                               x)))
+                        }
+                        x if BOOLEAN_LITERAL.is_match(x) => {
+                            BooleanLiteral(x.parse::<bool>()
+                                               .expect(&format!("Could not parse {:?} as bool",
+                                                                x)))
+                        }
+                        x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
+                        x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
+                    });
     }
 
     Ok(result)
@@ -218,31 +222,54 @@ fn test_tokenize() {
 #[test]
 fn test_granularize() {
     assert_eq!(granularize("include my-file.html").unwrap(),
-               vec![Identifier("include".to_owned()), Identifier("my-file.html".to_owned())]);
+               vec![Identifier("include".to_owned()),
+                    Identifier("my-file.html".to_owned())]);
     assert_eq!(granularize("test | me").unwrap(),
-               vec![Identifier("test".to_owned()), Pipe, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Pipe,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test .. me").unwrap(),
-               vec![Identifier("test".to_owned()), DotDot, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    DotDot,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test : me").unwrap(),
-               vec![Identifier("test".to_owned()), Colon, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Colon,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test , me").unwrap(),
-               vec![Identifier("test".to_owned()), Comma, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Comma,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test [ me").unwrap(),
-               vec![Identifier("test".to_owned()), OpenSquare, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    OpenSquare,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test ] me").unwrap(),
-               vec![Identifier("test".to_owned()), CloseSquare, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    CloseSquare,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test ( me").unwrap(),
-               vec![Identifier("test".to_owned()), OpenRound, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    OpenRound,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test ) me").unwrap(),
-               vec![Identifier("test".to_owned()), CloseRound, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    CloseRound,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test ? me").unwrap(),
-               vec![Identifier("test".to_owned()), Question, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Question,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test - me").unwrap(),
-               vec![Identifier("test".to_owned()), Dash, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Dash,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test me").unwrap(),
                vec![Identifier("test".to_owned()), Identifier("me".to_owned())]);
     assert_eq!(granularize("test = me").unwrap(),
-               vec![Identifier("test".to_owned()), Assignment, Identifier("me".to_owned())]);
+               vec![Identifier("test".to_owned()),
+                    Assignment,
+                    Identifier("me".to_owned())]);
     assert_eq!(granularize("test == me").unwrap(),
                vec![Identifier("test".to_owned()),
                     Comparison(Equals),
@@ -296,7 +323,9 @@ fn test_granularize() {
                     Comma,
                     Identifier("arg2".to_owned())]);
     assert_eq!(granularize("multiply 5 3").unwrap(),
-               vec![Identifier("multiply".to_owned()), NumberLiteral(5f32), NumberLiteral(3f32)]);
+               vec![Identifier("multiply".to_owned()),
+                    NumberLiteral(5f32),
+                    NumberLiteral(3f32)]);
     assert_eq!(granularize("for i in (1..5)").unwrap(),
                vec![Identifier("for".to_owned()),
                     Identifier("i".to_owned()),
@@ -314,5 +343,7 @@ fn test_granularize() {
                vec![StringLiteral("1, '2', 3, 4".to_owned()),
                     StringLiteral("1, '2', 3, 4".to_owned())]);
     assert_eq!(granularize("abc : \"1, '2', 3, 4\"").unwrap(),
-               vec![Identifier("abc".to_owned()), Colon, StringLiteral("1, '2', 3, 4".to_owned())]);
+               vec![Identifier("abc".to_owned()),
+                    Colon,
+                    StringLiteral("1, '2', 3, 4".to_owned())]);
 }
