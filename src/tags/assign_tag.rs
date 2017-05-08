@@ -33,10 +33,7 @@ pub fn assign_tag(_tag_name: &str,
 
     let src = try!(parse_output(&arguments[2..]));
 
-    Ok(Box::new(Assign {
-        dst: dst,
-        src: src,
-    }))
+    Ok(Box::new(Assign { dst: dst, src: src }))
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ rust:
 
 install:
   # Install rustfmt
-  - curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --force --crate rustfmt --git japaric/rustfmt-bin --tag v0.6.3-20161120
+  - cargo install rustfmt --force
   # Install clippy
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
   - export PATH=$HOME/.cargo/bin:$PATH
@@ -32,9 +32,6 @@ addons:
 
 cache:
   apt: true
-  directories:
-    - $HOME/.cargo
-    - target/debug/build
 
 before_cache:
     # Travis can't cache files that are not readable by "others"

@@ -66,7 +66,7 @@ mod test {
         let output = template.render(&mut ctx);
         assert_eq!(output.unwrap(),
                    Some(concat!("enter-0;exit-0\n", "enter-1;exit-1\n", "enter-2;break-2\n")
-                       .to_owned()));
+                            .to_owned()));
     }
 
     #[test]
@@ -88,7 +88,7 @@ mod test {
                    Some(concat!("enter-0; 6, 7, break, exit-0\n",
                                 "enter-1; 6, 7, break, exit-1\n",
                                 "enter-2; 6, 7, break, exit-2\n")
-                       .to_owned()));
+                                .to_owned()));
     }
 
     #[test]
@@ -108,7 +108,7 @@ mod test {
                                 "enter-2;continue-2\n",
                                 "enter-3;exit-3\n",
                                 "enter-4;exit-4\n")
-                       .to_owned()));
+                                .to_owned()));
     }
 
     #[test]
@@ -130,7 +130,7 @@ mod test {
                    Some(concat!("enter-0; 6, 7, continue, 9, exit-0\n",
                                 "enter-1; 6, 7, continue, 9, exit-1\n",
                                 "enter-2; 6, 7, continue, 9, exit-2\n")
-                       .to_owned()));
+                                .to_owned()));
     }
 
 

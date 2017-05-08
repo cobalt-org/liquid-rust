@@ -331,7 +331,7 @@ mod test {
             // top level, which is where it should split.
             let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
                                    else tag")
-                .unwrap();
+                    .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know
@@ -360,7 +360,7 @@ mod test {
                                           "{% endfor %}",
                                           "{% else %}",
                                           "trailing tags"))
-                .unwrap();
+                    .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know

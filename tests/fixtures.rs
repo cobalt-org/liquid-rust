@@ -11,7 +11,10 @@ fn compare(name: &str, context: &mut Context) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
     let mut input = String::new();
-    File::open(Path::new(&input_file)).unwrap().read_to_string(&mut input).unwrap();
+    File::open(Path::new(&input_file))
+        .unwrap()
+        .read_to_string(&mut input)
+        .unwrap();
 
     let options: LiquidOptions = Default::default();
     let template = parse(&input, options).unwrap();
@@ -19,7 +22,10 @@ fn compare(name: &str, context: &mut Context) {
     let output = template.render(context).unwrap();
 
     let mut comp = String::new();
-    File::open(output_file).unwrap().read_to_string(&mut comp).unwrap();
+    File::open(output_file)
+        .unwrap()
+        .read_to_string(&mut comp)
+        .unwrap();
 
     assert_diff!(&comp, &output.unwrap(), " ", 0);
 }

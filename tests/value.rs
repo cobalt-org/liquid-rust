@@ -95,8 +95,9 @@ pub fn deserialize_str() {
 
 #[test]
 pub fn serialize_array() {
-    let actual =
-        vec![liquid::Value::Num(1f32), liquid::Value::Bool(true), liquid::Value::str("true")];
+    let actual = vec![liquid::Value::Num(1f32),
+                      liquid::Value::Bool(true),
+                      liquid::Value::str("true")];
     let actual = liquid::Value::Array(actual);
     let actual = serde_yaml::to_string(&actual).unwrap();
     assert_diff!(&actual, "---\n- 1\n- true\n- \"true\"", "", 0);
@@ -105,8 +106,9 @@ pub fn serialize_array() {
 #[test]
 pub fn deserialize_array() {
     let actual: liquid::Value = serde_yaml::from_str("---\n- 1\n- true\n- \"true\"").unwrap();
-    let expected =
-        vec![liquid::Value::Num(1f32), liquid::Value::Bool(true), liquid::Value::str("true")];
+    let expected = vec![liquid::Value::Num(1f32),
+                        liquid::Value::Bool(true),
+                        liquid::Value::str("true")];
     let expected = liquid::Value::Array(expected);
     assert_eq!(actual, expected);
 }
@@ -123,9 +125,9 @@ pub fn deserialize_object() {
     let expected: liquid::Object = [("Num".to_owned(), liquid::Value::Num(1f32)),
                                     ("Bool".to_owned(), liquid::Value::Bool(true)),
                                     ("Str".to_owned(), liquid::Value::str("true"))]
-        .iter()
-        .cloned()
-        .collect();
+            .iter()
+            .cloned()
+            .collect();
     let expected = liquid::Value::Object(expected);
     assert_eq!(actual, expected);
 }

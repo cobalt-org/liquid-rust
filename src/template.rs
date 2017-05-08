@@ -1,12 +1,14 @@
 use Renderable;
 use context::Context;
 use filters::{abs, append, capitalize, ceil, date, default, divided_by, downcase, escape,
-              escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br,
-              pluralize, plus, prepend, remove, remove_first, replace, replace_first, reverse,
-              round, rstrip, size, slice, sort, split, strip, strip_html, strip_newlines, times,
-              truncate, truncatewords, uniq, upcase};
+              escape_once, first, floor, join, last, lstrip, minus, modulo, newline_to_br, plus,
+              prepend, remove, remove_first, replace, replace_first, reverse, round, rstrip, size,
+              slice, sort, split, strip, strip_html, strip_newlines, times, truncate,
+              truncatewords, uniq, upcase};
 use error::Result;
 
+#[cfg(feature = "extra-filters")]
+use filters::pluralize;
 #[cfg(feature = "extra-filters")]
 use filters::date_in_tz;
 
@@ -35,7 +37,6 @@ impl Renderable for Template {
         context.maybe_add_filter("minus", Box::new(minus));
         context.maybe_add_filter("modulo", Box::new(modulo));
         context.maybe_add_filter("newline_to_br", Box::new(newline_to_br));
-        context.maybe_add_filter("pluralize", Box::new(pluralize));
         context.maybe_add_filter("plus", Box::new(plus));
         context.maybe_add_filter("prepend", Box::new(prepend));
         context.maybe_add_filter("remove", Box::new(remove));
@@ -58,7 +59,8 @@ impl Renderable for Template {
         context.maybe_add_filter("uniq", Box::new(uniq));
         context.maybe_add_filter("upcase", Box::new(upcase));
 
-
+        #[cfg(feature = "extra-filters")]
+        context.maybe_add_filter("pluralize", Box::new(pluralize));
         #[cfg(feature = "extra-filters")]
         context.maybe_add_filter("date_in_tz", Box::new(date_in_tz));
 

@@ -169,8 +169,9 @@ impl ToString for Value {
                 arr.join(", ")
             }
             Value::Object(ref x) => {
-                let arr: Vec<String> =
-                    x.iter().map(|(k, v)| k.clone() + ": " + &v.to_string()).collect();
+                let arr: Vec<String> = x.iter()
+                    .map(|(k, v)| k.clone() + ": " + &v.to_string())
+                    .collect();
                 arr.join(", ")
             }
         }
@@ -217,8 +218,9 @@ mod test {
 
     #[test]
     fn test_array_to_string() {
-        let val =
-            Value::Array(vec![Value::Num(3f32), Value::Str("test".to_owned()), Value::Num(5.3)]);
+        let val = Value::Array(vec![Value::Num(3f32),
+                                    Value::Str("test".to_owned()),
+                                    Value::Num(5.3)]);
         assert_eq!(&val.to_string(), "3, test, 5.3");
     }
 

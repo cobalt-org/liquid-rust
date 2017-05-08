@@ -53,13 +53,15 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     }
 
     if name.is_empty() {
-        name = values.iter().fold(String::new(), |acc, n| acc + n.to_string().as_str())
+        name = values
+            .iter()
+            .fold(String::new(), |acc, n| acc + n.to_string().as_str())
     }
 
     Ok(Cycle {
-        name: name,
-        values: values,
-    })
+           name: name,
+           values: values,
+       })
 }
 
 pub fn cycle_tag(_tag_name: &str,
@@ -101,7 +103,7 @@ mod test {
                            "{% cycle 'a': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n")
-            .to_owned();
+                .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
@@ -120,7 +122,7 @@ mod test {
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n")
-            .to_owned();
+                .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
@@ -140,7 +142,7 @@ mod test {
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n")
-            .to_owned();
+                .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();

@@ -27,11 +27,12 @@ fn run() {
                     _options: &LiquidOptions)
                     -> Result<Box<Renderable>, Error> {
 
-        let numbers = arguments.iter()
+        let numbers = arguments
+            .iter()
             .filter_map(|x| match *x {
-                Token::NumberLiteral(ref num) => Some(*num),
-                _ => None,
-            })
+                            Token::NumberLiteral(ref num) => Some(*num),
+                            _ => None,
+                        })
             .collect();
         Ok(Box::new(Multiply { numbers: numbers }))
     }
@@ -45,7 +46,7 @@ fn run() {
 
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test",
                          options)
-        .unwrap();
+            .unwrap();
 
     let mut data = Context::new();
     data.set_val("hello", Value::Str("world".to_string()));

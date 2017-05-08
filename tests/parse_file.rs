@@ -20,7 +20,10 @@ fn compare_by_file(name: &str, context: &mut Context) {
     let output = template.render(context).unwrap();
 
     let mut comp = String::new();
-    File::open(output_file).unwrap().read_to_string(&mut comp).unwrap();
+    File::open(output_file)
+        .unwrap()
+        .read_to_string(&mut comp)
+        .unwrap();
 
     assert_diff!(&comp, &output.unwrap(), " ", 0);
 }

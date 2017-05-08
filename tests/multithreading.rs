@@ -34,7 +34,10 @@ pub fn pass_between_threads() {
 
             let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter);
             let mut comp = String::new();
-            File::open(output_file).unwrap().read_to_string(&mut comp).unwrap();
+            File::open(output_file)
+                .unwrap()
+                .read_to_string(&mut comp)
+                .unwrap();
 
             assert_diff!(&comp, &output.unwrap(), " ", 0);
         }));

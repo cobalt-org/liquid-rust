@@ -20,14 +20,16 @@ pub fn raw_block(_tag_name: &str,
                  tokens: &[Element],
                  _options: &LiquidOptions)
                  -> Result<Box<Renderable>> {
-    let content = tokens.iter().fold("".to_owned(), |a, b| {
-        match *b {
-                Expression(_, ref text) |
-                Tag(_, ref text) |
-                Raw(ref text) => text,
-            }
-            .to_owned() + &a
-    });
+    let content = tokens
+        .iter()
+        .fold("".to_owned(), |a, b| {
+            match *b {
+                    Expression(_, ref text) |
+                    Tag(_, ref text) |
+                    Raw(ref text) => text,
+                }
+                .to_owned() + &a
+        });
     Ok(Box::new(RawT { content: content }))
 }
 
