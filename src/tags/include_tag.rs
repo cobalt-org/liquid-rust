@@ -3,7 +3,7 @@ use Renderable;
 use context::Context;
 use token::Token;
 use LiquidOptions;
-use TemplateLocation;
+use TemplateName;
 use template::Template;
 use parser;
 use lexer;
@@ -19,8 +19,8 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial<P: AsRef<TemplateLocation>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let content = options.file_repository.read_template_file(path.as_ref())?;
+fn parse_partial(name: &TemplateName, options: &LiquidOptions) -> Result<Template> {
+    let content = options.template_repository.read_template(name)?;
 
     let tokens = try!(lexer::tokenize(&content));
     parser::parse(&tokens, options).map(Template::new)
@@ -32,14 +32,14 @@ pub fn include_tag(_tag_name: &str,
                    -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
-    let path = match args.next() {
-        Some(&Token::StringLiteral(ref path)) => path,
+    let name = match args.next() {
+        Some(&Token::StringLiteral(ref name)) => name,
         Some(&Token::Identifier(ref s)) => s,
         arg => return Error::parser("String Literal", arg),
     };
 
 
-    Ok(Box::new(Include { partial: try!(parse_partial(&path, options)) }))
+    Ok(Box::new(Include { partial: try!(parse_partial(name, options)) }))
 }
 
 #[cfg(test)]
@@ -49,12 +49,12 @@ mod test {
     use parse;
     use error::Error;
     use LiquidOptions;
-    use LocalFileRepository;
+    use LocalTemplateRepository;
     use std::path::PathBuf;
 
     fn options() -> LiquidOptions {
         LiquidOptions {
-            file_repository: Box::new(LocalFileRepository {
+            template_repository: Box::new(LocalTemplateRepository {
                 root: PathBuf::from("tests/fixtures/input"),
             }),
             ..Default::default()

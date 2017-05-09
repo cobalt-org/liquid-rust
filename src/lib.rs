@@ -126,18 +126,24 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
-pub type TemplateLocation = Path;
-pub trait FileRepository {
-    fn read_template_file(&self, path: &TemplateLocation) -> Result<String>;
+pub type TemplateName = String;
+pub trait TemplateRepository {
+    fn read_template(&self, path: &TemplateName) -> Result<String>;
 }
 
-/// FileSystem to load files relative to the root
-pub struct LocalFileRepository {
+/// `TemplateRepository` to load files relative to the root
+pub struct LocalTemplateRepository {
     root: PathBuf,
 }
 
-impl FileRepository for LocalFileRepository {
-    fn read_template_file(&self, relative_path: &TemplateLocation) -> Result<String> {
+impl LocalTemplateRepository {
+    pub fn new(root: PathBuf) -> LocalTemplateRepository {
+        LocalTemplateRepository { root: root }
+    }
+}
+
+impl TemplateRepository for LocalTemplateRepository {
+    fn read_template(&self, relative_path: &TemplateName) -> Result<String> {
         let path = self.root.clone().join(relative_path);
 
         if !path.exists() {
@@ -158,7 +164,7 @@ pub struct LiquidOptions {
     /// Holds all custom tags
     pub tags: HashMap<String, Box<Tag>>,
     /// The path to which paths in include tags should be relative to
-    pub file_repository: Box<FileRepository>,
+    pub template_repository: Box<TemplateRepository>,
 }
 
 impl Default for LiquidOptions {
@@ -166,7 +172,7 @@ impl Default for LiquidOptions {
         LiquidOptions {
             blocks: Default::default(),
             tags: Default::default(),
-            file_repository: Box::new(LocalFileRepository { root: PathBuf::new() }),
+            template_repository: Box::new(LocalTemplateRepository { root: PathBuf::new() }),
         }
     }
 }
