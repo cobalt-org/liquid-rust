@@ -55,8 +55,8 @@ mod test {
     fn options() -> LiquidOptions {
         LiquidOptions {
             template_repository: Box::new(LocalTemplateRepository {
-                root: PathBuf::from("tests/fixtures/input"),
-            }),
+                                              root: PathBuf::from("tests/fixtures/input"),
+                                          }),
             ..Default::default()
         }
     }
