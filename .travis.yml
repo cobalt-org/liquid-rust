@@ -7,9 +7,11 @@ rust:
 
 install:
   # Install rustfmt
-  - cargo install rustfmt --force
+  - cargo install rustfmt --force --vers 0.8.3
+  - cargo fmt -- --version
   # Install clippy
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy -- --version) fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
