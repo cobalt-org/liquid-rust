@@ -539,7 +539,23 @@ pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Str(input))
 }
 
-// TODO concat
+pub fn concat(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let input = input
+        .as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let input = input.iter().map(|v| v.to_owned());
+
+    let array = args[0]
+        .as_array()
+        .ok_or_else(|| InvalidArgument(0, "Array expected".to_owned()))?;
+    let array = array.iter().map(|v| v.to_owned());
+
+    let result = input.chain(array);
+    let result: Vec<_> = result.collect();
+    Ok(Array(result))
+}
 
 pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1));
@@ -879,6 +895,54 @@ mod tests {
     #[test]
     fn unit_append() {
         assert_eq!(unit!(append, tos!("sam"), &[tos!("son")]), tos!("samson"));
+    }
+
+    #[test]
+    fn unit_concat_nothing() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[Array(vec![])];
+        let result = Array(vec![Num(1f32), Num(2f32)]);
+        assert_eq!(unit!(concat, input, args), result);
+    }
+
+    #[test]
+    fn unit_concat_something() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[Array(vec![Num(3f32), Num(4f32)])];
+        let result = Array(vec![Num(1f32), Num(2f32), Num(3f32), Num(4f32)]);
+        assert_eq!(unit!(concat, input, args), result);
+    }
+
+    #[test]
+    fn unit_concat_mixed() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[Array(vec![Num(3f32), Value::str("a")])];
+        let result = Array(vec![Num(1f32), Num(2f32), Num(3f32), Value::str("a")]);
+        assert_eq!(unit!(concat, input, args), result);
+    }
+
+    #[test]
+    fn unit_concat_wrong_type() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[Num(1f32)];
+        let result = FilterError::InvalidArgument(0, "Array expected".to_owned());
+        assert_eq!(failed!(concat, input, args), result);
+    }
+
+    #[test]
+    fn unit_concat_no_args() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[];
+        let result = FilterError::InvalidArgumentCount("expected 1, 0 given".to_owned());
+        assert_eq!(failed!(concat, input, args), result);
+    }
+
+    #[test]
+    fn unit_concat_extra_args() {
+        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let args = &[Array(vec![Num(3f32), Value::str("a")]), Num(2f32)];
+        let result = FilterError::InvalidArgumentCount("expected 1, 2 given".to_owned());
+        assert_eq!(failed!(concat, input, args), result);
     }
 
     #[test]
