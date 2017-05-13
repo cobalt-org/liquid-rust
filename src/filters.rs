@@ -468,7 +468,10 @@ pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
 
 // TODO map
 
-// TODO compact
+// TODO compact removes nulls from an iterable.  For hashes, you can specify which property you
+// want to filter out if it maps to Null.
+// liquid-rust doesn't have the concept of Null.  Are there some behavior gaps we have that should
+// force us to support Null? Should we make this function a no-op?
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     if args.len() < 1 || 2 < args.len() {
