@@ -466,7 +466,26 @@ pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::Array(reversed))
 }
 
-// TODO map
+/// Extract `property` from the `Value::Object` elements of an array
+pub fn map(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 1));
+
+    let array = input
+        .as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+
+    let property = args[0].to_string();
+
+    let result = array
+        .iter()
+        .filter_map(|v| {
+                        v.as_object()
+                            .map(|o| o.get(&property).cloned())
+                            .map_or(None, |o| o)
+                    })
+        .collect();
+    Ok(Value::Array(result))
+}
 
 // TODO compact removes nulls from an iterable.  For hashes, you can specify which property you
 // want to filter out if it maps to Null.
