@@ -7,17 +7,17 @@ use error::{Error, Result};
 #[derive(Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
-    arguments: Vec<VarOrVal>,
+    arguments: Vec<Argument>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum VarOrVal {
+pub enum Argument {
     Var(Variable),
     Val(Value),
 }
 
 impl FilterPrototype {
-    pub fn new(name: &str, arguments: Vec<VarOrVal>) -> FilterPrototype {
+    pub fn new(name: &str, arguments: Vec<Argument>) -> FilterPrototype {
         FilterPrototype {
             name: name.to_owned(),
             arguments: arguments,
@@ -27,7 +27,7 @@ impl FilterPrototype {
 
 #[derive(Debug, PartialEq)]
 pub struct Output {
-    entry: VarOrVal,
+    entry: Argument,
     filters: Vec<FilterPrototype>,
 }
 
@@ -39,7 +39,7 @@ impl Renderable for Output {
 }
 
 impl Output {
-    pub fn new(entry: VarOrVal, filters: Vec<FilterPrototype>) -> Output {
+    pub fn new(entry: Argument, filters: Vec<FilterPrototype>) -> Output {
         Output {
             entry: entry,
             filters: filters,
@@ -49,8 +49,8 @@ impl Output {
     pub fn apply_filters(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
         let mut entry = match self.entry {
-            VarOrVal::Val(ref x) => x.clone(),
-            VarOrVal::Var(ref x) => {
+            Argument::Val(ref x) => x.clone(),
+            Argument::Var(ref x) => {
                 context
                     .get_val(&*x.name())
                     .cloned()
@@ -70,7 +70,7 @@ impl Output {
             let mut arguments = Vec::new();
             for arg in &filter.arguments {
                 match *arg {
-                    VarOrVal::Var(ref x) => {
+                    Argument::Var(ref x) => {
                         let val = try!(context.get_val(&*x.name())
                             .cloned()
                             .ok_or_else(|| {
@@ -78,7 +78,7 @@ impl Output {
                             }));
                         arguments.push(val);
                     }
-                    VarOrVal::Val(ref x) => arguments.push(x.clone()),
+                    Argument::Val(ref x) => arguments.push(x.clone()),
                 }
             }
             entry = try!(f(&entry, &*arguments));
