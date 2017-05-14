@@ -51,6 +51,8 @@ impl Renderable for Template {
         context.maybe_add_filter("truncatewords", Box::new(filters::truncatewords));
         context.maybe_add_filter("uniq", Box::new(filters::uniq));
         context.maybe_add_filter("upcase", Box::new(filters::upcase));
+        context.maybe_add_filter("url_decode", Box::new(filters::url_decode));
+        context.maybe_add_filter("url_encode", Box::new(filters::url_encode));
 
         #[cfg(feature = "extra-filters")]
         context.maybe_add_filter("pluralize", Box::new(filters::pluralize));

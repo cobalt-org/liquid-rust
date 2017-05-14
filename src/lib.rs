@@ -35,6 +35,7 @@ extern crate regex;
 extern crate chrono;
 extern crate unicode_segmentation;
 extern crate itertools;
+extern crate url;
 
 #[macro_use]
 extern crate lazy_static;

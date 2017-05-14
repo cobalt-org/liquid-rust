@@ -1,6 +1,8 @@
 use std::fmt;
 use std::error::Error;
 use std::cmp;
+use url::percent_encoding::EncodeSet;
+use url::percent_encoding;
 
 use value::Value;
 use value::Value::{Array, Bool, Num, Object, Str};
@@ -165,9 +167,56 @@ pub fn escape_once(input: &Value, args: &[Value]) -> FilterResult {
     _escape(input, args, true)
 }
 
-// TODO url_encode
+#[derive(Clone)]
+struct UrlEncodeSet(String);
 
-// TODO url_decode
+impl UrlEncodeSet {
+    fn safe_bytes(&self) -> &[u8] {
+        let &UrlEncodeSet(ref safe) = self;
+        safe.as_bytes()
+    }
+}
+
+impl EncodeSet for UrlEncodeSet {
+    fn contains(&self, byte: u8) -> bool {
+        let is_digit = 48 <= byte && byte <= 57;
+        let is_upper = 65 <= byte && byte <= 90;
+        let is_lower = 97 <= byte && byte <= 122;
+        // -, . or _
+        let is_special = byte == 45 || byte == 46 || byte == 95;
+        if is_digit || is_upper || is_lower || is_special {
+            false
+        } else {
+            !self.safe_bytes().contains(&byte)
+        }
+    }
+}
+
+pub fn url_encode(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    lazy_static! {
+        static ref URL_ENCODE_SET: UrlEncodeSet = UrlEncodeSet("".to_owned());
+    }
+
+    let s = input.to_string();
+
+    let result = percent_encoding::utf8_percent_encode(s.as_str(), URL_ENCODE_SET.clone())
+        .collect();
+    Ok(Str(result))
+}
+
+pub fn url_decode(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0));
+
+    let s = input.to_string();
+
+    let result = percent_encoding::percent_decode(s.as_bytes())
+        .decode_utf8()
+        .map_err(|_| InvalidType("Malformed UTF-8".to_owned()))?
+        .into_owned();
+    Ok(Str(result))
+}
 
 fn canonicalize_slice(slice_offset: isize,
                       slice_length: isize,
@@ -1164,6 +1213,22 @@ mod tests {
                    tos!("1 &lt; 2 &amp; 3"));
         assert_eq!(unit!(escape_once, tos!("&lt;&gt;&amp;&#39;&quot;&xyz;")),
                    tos!("&lt;&gt;&amp;&#39;&quot;&amp;xyz;"));
+    }
+
+    #[test]
+    fn unit_url_encode() {
+        assert_eq!(unit!(url_encode, tos!("foo bar")), tos!("foo%20bar"));
+        assert_eq!(unit!(url_encode, tos!("foo+1@example.com")),
+                   tos!("foo%2B1%40example.com"));
+    }
+
+    #[test]
+    fn unit_url_decode() {
+        // TODO Test case from shopify/liquid that we aren't handling:
+        // - assert_eq!(unit!(url_decode, tos!("foo+bar")), tos!("foo bar"));
+        assert_eq!(unit!(url_decode, tos!("foo%20bar")), tos!("foo bar"));
+        assert_eq!(unit!(url_decode, tos!("foo%2B1%40example.com")),
+                   tos!("foo+1@example.com"));
     }
 
     #[test]
