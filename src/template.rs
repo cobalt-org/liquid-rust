@@ -14,6 +14,7 @@ impl Renderable for Template {
         context.maybe_add_filter("append", Box::new(filters::append));
         context.maybe_add_filter("capitalize", Box::new(filters::capitalize));
         context.maybe_add_filter("ceil", Box::new(filters::ceil));
+        context.maybe_add_filter("compact", Box::new(filters::compact));
         context.maybe_add_filter("concat", Box::new(filters::concat));
         context.maybe_add_filter("date", Box::new(filters::date));
         context.maybe_add_filter("default", Box::new(filters::default));

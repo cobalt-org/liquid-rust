@@ -530,10 +530,16 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::Array(result))
 }
 
-// TODO compact removes nulls from an iterable.  For hashes, you can specify which property you
-// want to filter out if it maps to Null.
-// liquid-rust doesn't have the concept of Null.  Are there some behavior gaps we have that should
-// force us to support Null? Should we make this function a no-op?
+/// Remove nulls from an iterable.  For hashes, you can specify which property you
+/// want to filter out if it maps to Null.
+pub fn compact(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0, 1));
+
+    // No-op.  liquid-rust doesn't have Null but this is left in for compatibility with existing
+    // shopofy/liquid code.  Should it be a no-op, error, or not exist?
+
+    Ok(input.clone())
+}
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1, 1));
