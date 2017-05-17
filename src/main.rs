@@ -43,7 +43,7 @@ fn load_yaml(path: &path::Path) -> Result<liquid::Value> {
 }
 
 #[cfg(not(feature = "serde_yaml"))]
-fn load_yaml(path: &path::Path) -> Result<liquid::Value> {
+fn load_yaml(_path: &path::Path) -> Result<liquid::Value> {
     bail!("yaml is unsupported");
 }
 
@@ -54,7 +54,7 @@ fn load_json(path: &path::Path) -> Result<liquid::Value> {
 }
 
 #[cfg(not(feature = "serde_json"))]
-fn load_json(path: &path::Path) -> Result<liquid::Value> {
+fn load_json(_path: &path::Path) -> Result<liquid::Value> {
     bail!("json is unsupported");
 }
 
