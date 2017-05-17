@@ -126,9 +126,8 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
-pub type TemplateName = String;
 pub trait TemplateRepository {
-    fn read_template(&self, path: &TemplateName) -> Result<String>;
+    fn read_template(&self, path: &str) -> Result<String>;
 }
 
 /// `TemplateRepository` to load files relative to the root
@@ -143,7 +142,7 @@ impl LocalTemplateRepository {
 }
 
 impl TemplateRepository for LocalTemplateRepository {
-    fn read_template(&self, relative_path: &TemplateName) -> Result<String> {
+    fn read_template(&self, relative_path: &str) -> Result<String> {
         let path = self.root.clone().join(relative_path);
 
         if !path.exists() {

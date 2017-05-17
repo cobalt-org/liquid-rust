@@ -3,7 +3,6 @@ use Renderable;
 use context::Context;
 use token::Token;
 use LiquidOptions;
-use TemplateName;
 use template::Template;
 use parser;
 use lexer;
@@ -19,7 +18,7 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial(name: &TemplateName, options: &LiquidOptions) -> Result<Template> {
+fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
     let content = options.template_repository.read_template(name)?;
 
     let tokens = try!(lexer::tokenize(&content));
