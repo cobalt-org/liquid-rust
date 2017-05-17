@@ -43,6 +43,7 @@ impl Renderable for Template {
         context.maybe_add_filter("size", Box::new(filters::size));
         context.maybe_add_filter("slice", Box::new(filters::slice));
         context.maybe_add_filter("sort", Box::new(filters::sort));
+        context.maybe_add_filter("sort_natural", Box::new(filters::sort_natural));
         context.maybe_add_filter("split", Box::new(filters::split));
         context.maybe_add_filter("strip", Box::new(filters::strip));
         context.maybe_add_filter("strip_html", Box::new(filters::strip_html));

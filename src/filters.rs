@@ -475,7 +475,22 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::Array(sorted))
 }
 
-// TODO sort_natural
+pub fn sort_natural(input: &Value, args: &[Value]) -> FilterResult {
+    try!(check_args_len(args, 0, 0));
+
+    // TODO optional property parameter
+
+    let array = input
+        .as_array()
+        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+    let mut sorted: Vec<_> = array
+        .iter()
+        .map(|v| (v.to_string().to_lowercase(), v.clone()))
+        .collect();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
+    let result = sorted.into_iter().map(|(_, v)| v).collect();
+    Ok(Value::Array(result))
+}
 
 /// Removes any duplicate elements in an array.
 ///
@@ -1284,6 +1299,22 @@ mod tests {
         let args = &[tos!(",")];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a,1,c"));
+    }
+
+    #[test]
+    fn unit_sort() {
+        let input = &Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("Z"), tos!("a"), tos!("b"), tos!("c")]);
+        assert_eq!(unit!(sort, input, args), desired_result);
+    }
+
+    #[test]
+    fn unit_sort_natural() {
+        let input = &Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
+        let args = &[];
+        let desired_result = Array(vec![tos!("a"), tos!("b"), tos!("c"), tos!("Z")]);
+        assert_eq!(unit!(sort_natural, input, args), desired_result);
     }
 
     #[test]
