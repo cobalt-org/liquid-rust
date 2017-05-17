@@ -2,20 +2,18 @@
 
 set -ex
 
-# TODO This is the "test phase", tweak it as you see fit
 main() {
-    cross build --target $TARGET
-    cross build --target $TARGET --release
+    cross check --verbose --target $TARGET
+    cross check --verbose --target $TARGET --features "cli"
+    cross check --verbose --target $TARGET --features "cli serde_yaml serde_json"
+    cross fmt -- --write-mode=diff
 
     if [ ! -z $DISABLE_TESTS ]; then
         return
     fi
 
-    cross test --target $TARGET
-    cross test --target $TARGET --release
-
-    cross run --target $TARGET
-    cross run --target $TARGET --release
+    cross test --verbose --target $TARGET --features "cli serde_yaml serde_json"
+    if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy --features "cli serde_yaml serde_json") fi
 }
 
 # we don't run the "test phase" when doing deploys

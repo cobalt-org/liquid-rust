@@ -22,6 +22,9 @@ main() {
            --git japaric/cross \
            --tag $tag \
            --target $target
+    cargo install rustfmt --vers 0.8.3
+    if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
+    if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy -- --version) fi
 }
 
 main
