@@ -98,7 +98,11 @@ fn run() -> Result<()> {
         .get_matches_safe()?;
 
     let mut options = liquid::LiquidOptions::default();
-    options.file_system = matches.value_of("include-root").map(path::PathBuf::from);
+    let root = matches
+        .value_of("include-root")
+        .map(path::PathBuf::from)
+        .unwrap_or(Default::default());
+    options.template_repository = Box::new(liquid::LocalTemplateRepository::new(root));
 
     let mut data = matches
         .value_of("context")

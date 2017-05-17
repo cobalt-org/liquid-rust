@@ -127,15 +127,54 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
+pub trait TemplateRepository {
+    fn read_template(&self, path: &str) -> Result<String>;
+}
+
+/// `TemplateRepository` to load files relative to the root
+pub struct LocalTemplateRepository {
+    root: PathBuf,
+}
+
+impl LocalTemplateRepository {
+    pub fn new(root: PathBuf) -> LocalTemplateRepository {
+        LocalTemplateRepository { root: root }
+    }
+}
+
+impl TemplateRepository for LocalTemplateRepository {
+    fn read_template(&self, relative_path: &str) -> Result<String> {
+        let path = self.root.clone().join(relative_path);
+
+        if !path.exists() {
+            return Err(Error::from(&*format!("{:?} does not exist", path)));
+        }
+        let mut file = try!(File::open(path));
+
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+        Ok(content)
+    }
+}
+
 /// Options that `liquid::parse` takes
-#[derive(Default)]
 pub struct LiquidOptions {
     /// Holds all custom block-size tags
     pub blocks: HashMap<String, Box<Block>>,
     /// Holds all custom tags
     pub tags: HashMap<String, Box<Tag>>,
     /// The path to which paths in include tags should be relative to
-    pub file_system: Option<PathBuf>,
+    pub template_repository: Box<TemplateRepository>,
+}
+
+impl Default for LiquidOptions {
+    fn default() -> LiquidOptions {
+        LiquidOptions {
+            blocks: Default::default(),
+            tags: Default::default(),
+            template_repository: Box::new(LocalTemplateRepository { root: PathBuf::new() }),
+        }
+    }
 }
 
 impl LiquidOptions {

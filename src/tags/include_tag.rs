@@ -8,10 +8,6 @@ use parser;
 use lexer;
 use error::{Result, Error};
 
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
-
 struct Include {
     partial: Template,
 }
@@ -22,19 +18,8 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial<P: AsRef<Path>>(path: P, options: &LiquidOptions) -> Result<Template> {
-    let file_system = options.file_system.clone().unwrap_or_else(PathBuf::new);
-    let path = file_system.join(path);
-
-    // check if file exists
-    if !path.exists() {
-        return Err(Error::from(&*format!("{:?} does not exist", path)));
-    }
-
-    let mut file = try!(File::open(path));
-
-    let mut content = String::new();
-    try!(file.read_to_string(&mut content));
+fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
+    let content = options.template_repository.read_template(name)?;
 
     let tokens = try!(lexer::tokenize(&content));
     parser::parse(&tokens, options).map(Template::new)
@@ -46,14 +31,14 @@ pub fn include_tag(_tag_name: &str,
                    -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
-    let path = match args.next() {
-        Some(&Token::StringLiteral(ref path)) => path,
+    let name = match args.next() {
+        Some(&Token::StringLiteral(ref name)) => name,
         Some(&Token::Identifier(ref s)) => s,
         arg => return Error::parser("String Literal", arg),
     };
 
 
-    Ok(Box::new(Include { partial: try!(parse_partial(&path, options)) }))
+    Ok(Box::new(Include { partial: try!(parse_partial(name, options)) }))
 }
 
 #[cfg(test)]
@@ -63,11 +48,14 @@ mod test {
     use parse;
     use error::Error;
     use LiquidOptions;
+    use LocalTemplateRepository;
     use std::path::PathBuf;
 
     fn options() -> LiquidOptions {
         LiquidOptions {
-            file_system: Some(PathBuf::from("tests/fixtures/input")),
+            template_repository: Box::new(LocalTemplateRepository {
+                                              root: PathBuf::from("tests/fixtures/input"),
+                                          }),
             ..Default::default()
         }
     }
