@@ -101,7 +101,7 @@ fn run() -> Result<()> {
     let root = matches
         .value_of("include-root")
         .map(path::PathBuf::from)
-        .unwrap_or(Default::default());
+        .unwrap_or_default();
     options.template_repository = Box::new(liquid::LocalTemplateRepository::new(root));
 
     let mut data = matches
