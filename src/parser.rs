@@ -8,7 +8,7 @@ use LiquidOptions;
 use value::Value;
 use variable::Variable;
 use text::Text;
-use output::{Output, FilterPrototype, VarOrVal};
+use output::{Output, FilterPrototype, Argument};
 use token::Token;
 use token::Token::*;
 use lexer::Element::{self, Expression, Tag, Raw};
@@ -56,8 +56,8 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
     let entry = match tokens[0] {
-        Identifier(ref x) => VarOrVal::Var(Variable::new(x)),
-        ref x => VarOrVal::Val(try!(Value::from_token(x))),
+        Identifier(ref x) => Argument::Var(Variable::new(x)),
+        ref x => Argument::Val(try!(Value::from_token(x))),
     };
 
     let mut filters = vec![];
@@ -90,8 +90,8 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
             match iter.next().unwrap() {
                 x @ &StringLiteral(_) |
                 x @ &NumberLiteral(_) |
-                x @ &BooleanLiteral(_) => args.push(VarOrVal::Val(try!(Value::from_token(x)))),
-                &Identifier(ref v) => args.push(VarOrVal::Var(Variable::new(v))),
+                x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
+                &Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
                 x => {
                     return Error::parser("a comma or a pipe", Some(x));
                 }
@@ -257,7 +257,7 @@ mod test {
     mod test_parse_output {
         use super::super::parse_output;
         use lexer::granularize;
-        use output::{Output, VarOrVal, FilterPrototype};
+        use output::{Output, Argument, FilterPrototype};
         use variable::Variable;
         use value::Value;
 
@@ -267,12 +267,12 @@ mod test {
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap(),
-                       Output::new(VarOrVal::Var(Variable::new("abc")),
+                       Output::new(Argument::Var(Variable::new("abc")),
                                    vec![FilterPrototype::new("def",
                                                              vec![
-                                         VarOrVal::Val(Value::str("1")),
-                                         VarOrVal::Val(Value::Num(2.0)),
-                                         VarOrVal::Val(Value::str("3")),
+                                                                 Argument::Val(Value::str("1")),
+                                                                 Argument::Val(Value::Num(2.0)),
+                                                                 Argument::Val(Value::str("3")),
                     ]),
                                         FilterPrototype::new("blabla", vec![])]));
         }
