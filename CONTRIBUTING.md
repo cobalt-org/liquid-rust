@@ -35,6 +35,7 @@ For new tags or filters, we recommend
 - Open an RFC Issue for discussing what the API should be.  We'd like to avoid disrupting people once they start using a feature.
 - Consider incubating it in your code first to so it can be iterated on to find what works well.
 - Checkout prior art with [https://help.shopify.com/themes/liquid](Shopify's proprietary extensions) or [https://jekyllrb.com/docs/templates/](Jekyll's extensions).
+- Putting all non-standard features behind feature flags.
 
 If you're interested in benchmarking your changes
 - Be sure to get some before and afters on the same machine
