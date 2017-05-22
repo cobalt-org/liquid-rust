@@ -120,7 +120,7 @@ fn parse_positional_args(iter: &mut Peekable<Iter<Token>>) -> Result<Vec<Argumen
                 let _ = iter.next().unwrap();
                 continue;
             }
-            Some(&&Pipe) | None => break,
+            None => break,
             _ => {
                 return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
             }
