@@ -55,14 +55,16 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
 /// used internally, from a list of Tokens. This is mostly useful
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
-    let entry = match tokens[0] {
-        Identifier(ref x) => Argument::Var(Variable::new(x)),
-        ref x => Argument::Val(try!(Value::from_token(x))),
+    let mut iter = tokens.iter().peekable();
+    let token = iter.next();
+
+    let entry = match token {
+        Some(&Identifier(ref x)) => Argument::Var(Variable::new(x)),
+        Some(ref x) => Argument::Val(Value::from_token(x)?),
+        _ => return Error::parser("a token", None),
     };
 
     let mut filters = vec![];
-    let mut iter = tokens.iter().peekable();
-    iter.next();
 
     while iter.peek() != None {
         try!(expect(&mut iter, &Pipe));
