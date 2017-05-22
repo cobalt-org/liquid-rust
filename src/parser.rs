@@ -90,14 +90,14 @@ fn parse_filter(tokens: &[Token]) -> Result<FilterPrototype> {
     };
 
     if let None = iter.peek() {
-        return Ok(FilterPrototype::new(name, vec![]))
+        return Ok(FilterPrototype::new(name, vec![], vec![]))
     }
 
     try!(expect(&mut iter, &Colon));
 
     let args = parse_positional_args(&mut iter)?;
 
-    Ok(FilterPrototype::new(name, args))
+    Ok(FilterPrototype::new(name, args, vec![]))
 }
 
 fn parse_positional_args(iter: &mut Peekable<Iter<Token>>) -> Result<Vec<Argument>> {
@@ -315,7 +315,7 @@ mod test {
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
-            "Parsing error: Expected a comma, a pipe, or a colon, found blabla");
+                       "Parsing error: Expected a colon, found ','");
         }
 
         #[test]
