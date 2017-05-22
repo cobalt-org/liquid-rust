@@ -65,7 +65,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
     };
 
     if let None = iter.peek() {
-        return Ok(Output::new(entry, vec![]))
+        return Ok(Output::new(entry, vec![]));
     }
 
     expect(&mut iter, &Pipe)?;
@@ -90,25 +90,49 @@ fn parse_filter(tokens: &[Token]) -> Result<FilterPrototype> {
     };
 
     if let None = iter.peek() {
-        return Ok(FilterPrototype::new(name, vec![], vec![]))
+        return Ok(FilterPrototype::new(name, vec![], vec![]));
     }
 
     try!(expect(&mut iter, &Colon));
 
-    let args = parse_positional_args(&mut iter)?;
+    let (args, named_args) = parse_args(&mut iter.clone())?;
 
-    Ok(FilterPrototype::new(name, args, vec![]))
+    Ok(FilterPrototype::new(name, args, named_args))
 }
 
-fn parse_positional_args(iter: &mut Peekable<Iter<Token>>) -> Result<Vec<Argument>> {
+fn parse_args(iter: &mut Peekable<Iter<Token>>)
+              -> Result<(Vec<Argument>, Vec<(String, Argument)>)> {
     let mut args = vec![];
+    let mut named_args = vec![];
 
     while iter.peek() != None {
         match iter.next().unwrap() {
             x @ &StringLiteral(_) |
             x @ &NumberLiteral(_) |
             x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
-            &Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
+            &Identifier(ref v) => {
+                match iter.peek() {
+                    Some(&&Colon) => {
+                        iter.next();
+                        if None == iter.peek() {
+                            return Error::parser("a string | number | boolean | identifier", None);
+                        }
+
+                        let value = match iter.next().unwrap() {
+                            x @ &StringLiteral(_) |
+                            x @ &NumberLiteral(_) |
+                            x @ &BooleanLiteral(_) => Argument::Val(try!(Value::from_token(x))),
+                            &Identifier(ref v) => Argument::Var(Variable::new(v)),
+                            x => {
+                                return Error::parser("a string | number | boolean | identifier",
+                                                     Some(x))
+                            }
+                        };
+                        named_args.push((v.to_string(), value));
+                    }
+                    _ => args.push(Argument::Var(Variable::new(v))),
+                }
+            }
             x => {
                 return Error::parser("a comma or a pipe", Some(x));
             }
@@ -127,7 +151,7 @@ fn parse_positional_args(iter: &mut Peekable<Iter<Token>>) -> Result<Vec<Argumen
         }
     }
 
-    Ok(args)
+    Ok((args, named_args))
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
@@ -287,7 +311,13 @@ mod test {
                                          Argument::Val(Value::str("1")),
                                          Argument::Val(Value::Num(2.0)),
                                          Argument::Val(Value::str("3")),
-                    ], vec![("a".to_string(), Argument::Val(Value::str("b"))), ("b".to_string(), Argument::Val(Value::str("c")))]),
+                                                             ],
+                                                             vec![
+                                                                 ("a".to_string(),
+                                                                  Argument::Val(Value::str("b"))),
+                                                                 ("b".to_string(),
+                                                                  Argument::Val(Value::str("c")))
+                                                             ]),
                                         FilterPrototype::new("blabla", vec![], vec![])]));
         }
 
@@ -310,11 +340,18 @@ mod test {
         }
 
         #[test]
-        fn fails_on_positional_args_following_named_args() {
+        fn positional_args_can_follow_named_args() {
             let tokens = granularize("abc | def:'1',a: blabla, 'a'").unwrap();
 
             let result = parse_output(&tokens);
-            assert_eq!(result.unwrap_err().to_string(),
+            assert_eq!(result.unwrap(),
+                       Output::new(Argument::Var(Variable::new("abc")),
+                                   vec![FilterPrototype::new("def",
+                                                             vec![Argument::Val(Value::str("1")),
+                                                                  Argument::Val(Value::str("a"))],
+                                                             vec![
+                                         ("a".to_string(),
+                                          Argument::Var(Variable::new("blabla")))])]),
                        "Parsing error: Expected a colon, found ','");
         }
 
