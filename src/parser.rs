@@ -15,7 +15,7 @@ use lexer::Element::{self, Expression, Tag, Raw};
 use error::{Error, Result};
 use std::slice::Iter;
 use std::collections::HashSet;
-use std::iter::FromIterator;
+use std::iter::{FromIterator, Peekable};
 
 /// Parses the provided elements into a number of Renderable items
 /// This is the internal version of parse that accepts Elements tokenized
@@ -95,9 +95,14 @@ fn parse_filter(tokens: &[Token]) -> Result<FilterPrototype> {
 
     try!(expect(&mut iter, &Colon));
 
+    let args = parse_positional_args(&mut iter)?;
+
+    Ok(FilterPrototype::new(name, args))
+}
+
+fn parse_positional_args(iter: &mut Peekable<Iter<Token>>) -> Result<Vec<Argument>> {
     let mut args = vec![];
 
-    // loops through the argument list after the filter name
     while iter.peek() != None {
         match iter.next().unwrap() {
             x @ &StringLiteral(_) |
@@ -122,7 +127,7 @@ fn parse_filter(tokens: &[Token]) -> Result<FilterPrototype> {
         }
     }
 
-    Ok(FilterPrototype::new(name, args))
+    Ok(args)
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
