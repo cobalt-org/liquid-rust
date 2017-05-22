@@ -184,8 +184,9 @@ fn test_whitespace_control() {
 fn test_split_atom() {
     assert_eq!(split_atom("truc | arg:val"),
                vec!["truc", " ", "", "|", "", " ", "arg", ":", "val"]);
-    assert_eq!(split_atom("truc | filter:arg1,arg2"),
-               vec!["truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2"]);
+    assert_eq!(split_atom("truc | filter:arg1,arg2,a:arg3"),
+               vec!["truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2", ",", "a",
+                    ":", "arg3"]);
 }
 
 #[test]

@@ -226,7 +226,7 @@ pub struct BlockSplit<'a> {
 /// when it finds a delimter at the top level of the token stream,
 /// ignoring any it finds in nested blocks.
 ///
-/// Returns a slice contaiing all elements before the delimiter, and
+/// Returns a slice containing all elements before the delimiter, and
 /// an optional `BlockSplit` struct describing the delimiter and
 /// trailing elements.
 pub fn split_block<'a>(tokens: &'a [Element],
@@ -277,18 +277,18 @@ mod test {
 
         #[test]
         fn parses_filters() {
-            let tokens = granularize("abc | def:'1',2,'3' | blabla").unwrap();
+            let tokens = granularize("abc | def:'1',2,'3',a:'b', b:'c' | blabla").unwrap();
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap(),
                        Output::new(Argument::Var(Variable::new("abc")),
                                    vec![FilterPrototype::new("def",
                                                              vec![
-                                                                 Argument::Val(Value::str("1")),
-                                                                 Argument::Val(Value::Num(2.0)),
-                                                                 Argument::Val(Value::str("3")),
-                    ]),
-                                        FilterPrototype::new("blabla", vec![])]));
+                                         Argument::Val(Value::str("1")),
+                                         Argument::Val(Value::Num(2.0)),
+                                         Argument::Val(Value::str("3")),
+                    ], vec![("a".to_string(), Argument::Val(Value::str("b"))), ("b".to_string(), Argument::Val(Value::str("c")))]),
+                                        FilterPrototype::new("blabla", vec![], vec![])]));
         }
 
         #[test]
@@ -307,6 +307,15 @@ mod test {
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
                        "Parsing error: Expected a comma or a pipe, found blabla");
+        }
+
+        #[test]
+        fn fails_on_positional_args_following_named_args() {
+            let tokens = granularize("abc | def:'1',a: blabla, 'a'").unwrap();
+
+            let result = parse_output(&tokens);
+            assert_eq!(result.unwrap_err().to_string(),
+            "Parsing error: Expected a comma, a pipe, or a colon, found blabla");
         }
 
         #[test]
