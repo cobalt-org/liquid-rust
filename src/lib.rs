@@ -39,10 +39,9 @@ extern crate url;
 
 #[macro_use]
 extern crate lazy_static;
-
-extern crate serde;
+#[cfg(feature = "serde")]
 #[macro_use]
-extern crate serde_derive;
+extern crate serde;
 
 use std::collections::HashMap;
 use lexer::Element;
