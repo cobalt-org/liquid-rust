@@ -8,8 +8,8 @@ use token::Token::*;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Value {
     Num(f32),
     Bool(bool),
