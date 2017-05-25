@@ -9,9 +9,9 @@ Please contact [@johannhof](https://github.com/johannhof) for questions or in ca
 
 # Issues
 
-This project aims to be a Rust implementation of [https://shopify.github.io/liquid/](Liquid).
+This project aims to be a Rust implementation of [Liquid](https://shopify.github.io/liquid/).
 - Notice that we deviate from shopify/liquid? Please, open an issue if there isn't an [existing one](https://github.com/cobalt-org/liquid-rust/labels/shopify-compatibility)
-- Want a new tag or filter? Check for an [https://github.com/cobalt-org/liquid-rust/labels/enhancement](existing issue) and open one if needed.
+- Want a new tag or filter? Check for an [existing issue](https://github.com/cobalt-org/liquid-rust/labels/enhancement) and open one if needed.
 
 # Pull Requests
 
@@ -34,7 +34,7 @@ We appreciate your help as-is.  We'd love to help you through the process for co
 For new tags or filters, we recommend
 - Open an RFC Issue for discussing what the API should be.  We'd like to avoid disrupting people once they start using a feature.
 - Consider incubating it in your code first to so it can be iterated on to find what works well.
-- Checkout prior art with [https://help.shopify.com/themes/liquid](Shopify's proprietary extensions) or [https://jekyllrb.com/docs/templates/](Jekyll's extensions).
+- Checkout prior art with [Shopify's proprietary extensions](https://help.shopify.com/themes/liquid) or [Jekyll's extensions](https://jekyllrb.com/docs/templates/).
 - Putting all non-standard features behind feature flags.
 
 If you're interested in benchmarking your changes
