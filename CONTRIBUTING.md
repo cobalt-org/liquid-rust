@@ -13,6 +13,11 @@ This project aims to be a Rust implementation of [Liquid](https://shopify.github
 - Notice that we deviate from shopify/liquid? Please, open an issue if there isn't an [existing one](https://github.com/cobalt-org/liquid-rust/labels/shopify-compatibility)
 - Want a new tag or filter? Check for an [existing issue](https://github.com/cobalt-org/liquid-rust/labels/enhancement) and open one if needed.
 
+Some helpful pieces of information when reporting issues
+* liquid-rust version
+* rust version
+* OS and version
+
 # Pull Requests
 
 ## Project Ideas
@@ -42,3 +47,14 @@ If you're interested in benchmarking your changes
 - Rust nightly is required.  You'll need to run `rustup run nightly -- cargo bench`
 
 Hopefully we get this integrated into your CI process.
+
+# Releasing
+
+When we're ready to release, a project owner should do the following
+# Determine what the next version is, according to semver
+# Run `clog --setversion <X>.<Y>.<Z>` and commit the changelog
+# Manually touch up the change log and commit
+# Update the version in `Cargo.toml` and commit
+# Run `git tag v<X>.<Y>.<Z>`
+# Push all of this to `master`
+# Run `cargo publish` (run `cargo login` first if needed)
