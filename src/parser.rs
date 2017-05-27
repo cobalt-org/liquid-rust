@@ -15,7 +15,7 @@ use lexer::Element::{self, Expression, Tag, Raw};
 use error::{Error, Result};
 use std::slice::Iter;
 use std::collections::HashSet;
-use std::iter::{FromIterator, Peekable};
+use std::iter::FromIterator;
 
 /// Parses the provided elements into a number of Renderable items
 /// This is the internal version of parse that accepts Elements tokenized
@@ -55,103 +55,89 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
 /// used internally, from a list of Tokens. This is mostly useful
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
-    let mut iter = tokens.iter().peekable();
-    let token = iter.next();
-
-    let entry = match token {
-        Some(&Identifier(ref x)) => Argument::Var(Variable::new(x)),
-        Some(ref x) => Argument::Val(Value::from_token(x)?),
-        _ => return Error::parser("a token", None),
+    let entry = match tokens[0] {
+        Identifier(ref x) => Argument::Var(Variable::new(x)),
+        ref x => Argument::Val(try!(Value::from_token(x))),
     };
 
-    if let None = iter.peek() {
-        return Ok(Output::new(entry, vec![]));
-    }
-
-    expect(&mut iter, &Pipe)?;
-
     let mut filters = vec![];
+    let mut iter = tokens.iter().peekable();
+    iter.next();
 
-    for filter_tokens in tokens.split(|token| token == &Pipe).skip(1) {
-        filters.push(try!(parse_filter(filter_tokens)));
+    while iter.peek() != None {
+        try!(expect(&mut iter, &Pipe));
+
+        let name = match iter.next() {
+            Some(&Identifier(ref name)) => name,
+            x => {
+                return Error::parser("an identifier", x);
+            }
+        };
+        let mut args = vec![];
+        let mut named_args = vec![];
+
+        match iter.peek() {
+            Some(&&Pipe) | None => {
+                filters.push(FilterPrototype::new(name, args, named_args));
+                continue;
+            }
+            _ => (),
+        }
+
+        try!(expect(&mut iter, &Colon));
+
+        // loops through the argument list after the filter name
+        while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
+            match iter.next().unwrap() {
+                x @ &StringLiteral(_) |
+                x @ &NumberLiteral(_) |
+                x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
+                &Identifier(ref v) => {
+                    match iter.peek() {
+                        Some(&&Colon) => {
+                            iter.next();
+                            if iter.peek() == None {
+                                return Error::parser("a string | number | boolean | identifier",
+                                                     None);
+                            }
+
+                            let value = match iter.next().unwrap() {
+                                x @ &StringLiteral(_) |
+                                x @ &NumberLiteral(_) |
+                                x @ &BooleanLiteral(_) => Argument::Val(try!(Value::from_token(x))),
+                                &Identifier(ref v) => Argument::Var(Variable::new(v)),
+                                x => {
+                                    return Error::parser("a string | number | boolean | identifier",
+                                                         Some(x));
+                                }
+                            };
+                            named_args.push((v.to_string(), value));
+                        }
+                        _ => args.push(Argument::Var(Variable::new(v))),
+                    }
+                }
+                x => {
+                    return Error::parser("a comma or a pipe", Some(x));
+                }
+            }
+
+            // ensure that the next token is either a Comma or a Pipe
+            match iter.peek() {
+                Some(&&Comma) => {
+                    let _ = iter.next().unwrap();
+                    continue;
+                }
+                Some(&&Pipe) | None => break,
+                _ => {
+                    return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
+                }
+            }
+        }
+
+        filters.push(FilterPrototype::new(name, args, named_args));
     }
 
     Ok(Output::new(entry, filters))
-}
-
-fn parse_filter(tokens: &[Token]) -> Result<FilterPrototype> {
-    let mut iter = tokens.iter().peekable();
-
-    let name = match iter.next() {
-        Some(&Identifier(ref name)) => name,
-        x => {
-            return Error::parser("an identifier", x);
-        }
-    };
-
-    if let None = iter.peek() {
-        return Ok(FilterPrototype::new(name, vec![], vec![]));
-    }
-
-    try!(expect(&mut iter, &Colon));
-
-    let (args, named_args) = parse_args(&mut iter.clone())?;
-
-    Ok(FilterPrototype::new(name, args, named_args))
-}
-
-fn parse_args(iter: &mut Peekable<Iter<Token>>)
-              -> Result<(Vec<Argument>, Vec<(String, Argument)>)> {
-    let mut args = vec![];
-    let mut named_args = vec![];
-
-    while iter.peek() != None {
-        match iter.next().unwrap() {
-            x @ &StringLiteral(_) |
-            x @ &NumberLiteral(_) |
-            x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
-            &Identifier(ref v) => {
-                match iter.peek() {
-                    Some(&&Colon) => {
-                        iter.next();
-                        if None == iter.peek() {
-                            return Error::parser("a string | number | boolean | identifier", None);
-                        }
-
-                        let value = match iter.next().unwrap() {
-                            x @ &StringLiteral(_) |
-                            x @ &NumberLiteral(_) |
-                            x @ &BooleanLiteral(_) => Argument::Val(try!(Value::from_token(x))),
-                            &Identifier(ref v) => Argument::Var(Variable::new(v)),
-                            x => {
-                                return Error::parser("a string | number | boolean | identifier",
-                                                     Some(x))
-                            }
-                        };
-                        named_args.push((v.to_string(), value));
-                    }
-                    _ => args.push(Argument::Var(Variable::new(v))),
-                }
-            }
-            x => {
-                return Error::parser("a comma or a pipe", Some(x));
-            }
-        }
-
-        // ensure that the next token is either a Comma or a Pipe
-        match iter.peek() {
-            Some(&&Comma) => {
-                let _ = iter.next().unwrap();
-                continue;
-            }
-            None => break,
-            _ => {
-                return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
-            }
-        }
-    }
-
-    Ok((args, named_args))
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
@@ -360,7 +346,7 @@ mod test {
             let tokens = granularize("abc | def: a: | toto").unwrap();
             let results = parse_output(&tokens);
             assert_eq!(results.unwrap_err().to_string(),
-                       "Parsing error: Expected a string | number | boolean | identifier, found nothing");
+                       "Parsing error: Expected a string | number | boolean | identifier, found |");
 
             let tokens = granularize("abc | def: a:,").unwrap();
             let results = parse_output(&tokens);
