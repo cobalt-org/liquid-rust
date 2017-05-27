@@ -356,6 +356,24 @@ mod test {
         }
 
         #[test]
+        fn named_args_require_a_value() {
+            let tokens = granularize("abc | def: a: | toto").unwrap();
+            let results = parse_output(&tokens);
+            assert_eq!(results.unwrap_err().to_string(),
+                       "Parsing error: Expected a string | number | boolean | identifier, found nothing");
+
+            let tokens = granularize("abc | def: a:,").unwrap();
+            let results = parse_output(&tokens);
+            assert_eq!(results.unwrap_err().to_string(),
+                       "Parsing error: Expected a string | number | boolean | identifier, found ,");
+
+            let tokens = granularize("abc | def: a: a:").unwrap();
+            let results = parse_output(&tokens);
+            assert_eq!(results.unwrap_err().to_string(),
+                       "Parsing error: Expected a comma or a pipe, found :");
+        }
+
+        #[test]
         fn fails_on_missing_colons() {
             let tokens = granularize("abc | def '1',2,'3' | blabla").unwrap();
 
