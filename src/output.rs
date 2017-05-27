@@ -8,6 +8,7 @@ use error::{Error, Result};
 pub struct FilterPrototype {
     name: String,
     arguments: Vec<Argument>,
+    named_arguments: Vec<(String, Argument)>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,10 +18,14 @@ pub enum Argument {
 }
 
 impl FilterPrototype {
-    pub fn new(name: &str, arguments: Vec<Argument>) -> FilterPrototype {
+    pub fn new(name: &str,
+               arguments: Vec<Argument>,
+               named_arguments: Vec<(String, Argument)>)
+               -> FilterPrototype {
         FilterPrototype {
             name: name.to_owned(),
             arguments: arguments,
+            named_arguments: named_arguments,
         }
     }
 }
