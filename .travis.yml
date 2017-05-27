@@ -1,43 +1,42 @@
-sudo: false
+# Based on the "trust" template v0.1.1
+# https://github.com/japaric/trust/tree/v0.1.1
+
+dist: trusty
 language: rust
-rust:
-  - stable
-  - beta
-  - nightly
+services: docker
+sudo: required
+
+env:
+  global:
+    - CRATE_NAME=liquid
+
+matrix:
+  include:
+    # Linux
+    - env: TARGET=i686-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-gnu
+
+    # Testing other channels
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: beta
+    - env: TARGET=x86_64-unknown-linux-gnu
+      rust: nightly
+
+before_install: set -e
 
 install:
-  # Install rustfmt
-  - cargo install rustfmt --force --vers 0.8.3
-  - cargo fmt -- --version
-  # Install clippy
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy -- --version) fi
-  - export PATH=$HOME/.cargo/bin:$PATH
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
 
 script:
-  - cargo check
-  - cargo check --features "cli"
-  - cargo check --features "cli serde_yaml serde_json"
-  - cargo test --features "cli serde_yaml serde_json"
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy --features=cli) fi
-  - cargo fmt -- --write-mode=diff
+  - bash ci/script.sh
 
-addons:
-  apt:
-    packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - cmake
-      - gcc
-      - binutils-dev
+after_script: set +e
 
-cache:
-  apt: true
-
+cache: cargo
 before_cache:
-    # Travis can't cache files that are not readable by "others"
-    - chmod -R a+r $HOME/.cargo
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
 
 after_success: |
   [ $TRAVIS_RUST_VERSION = stable ] &&
@@ -48,7 +47,16 @@ after_success: |
   ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
   ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
 
+branches:
+  only:
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+    - master
+
+notifications:
+  email:
+    on_success: never
+
 env:
   global:
-  - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
-
+    - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
