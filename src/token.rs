@@ -30,6 +30,7 @@ pub enum Token {
     StringLiteral(String),
     NumberLiteral(f32),
     BooleanLiteral(bool),
+    NilLiteral,
     DotDot,
     Comparison(ComparisonOperator),
     Or,
@@ -63,6 +64,7 @@ impl fmt::Display for Token {
             StringLiteral(ref x) => x.clone(),
             NumberLiteral(ref x) => x.to_string(),
             BooleanLiteral(ref x) => x.to_string(),
+            NilLiteral => "nil".to_owned(),
         };
         write!(f, "{}", out)
     }

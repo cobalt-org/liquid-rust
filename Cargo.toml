@@ -41,6 +41,7 @@ chrono = "0.3"
 unicode-segmentation = "1.1"
 itertools = "0.6.0"
 url = "1.4"
+nom = { version = "^3.0", features = ["regexp", "verbose-errors"] }
 
 serde = { version = "1.0", optional = true, features = ["derive"] }
 clap = { version = "2.22.0", optional = true }
