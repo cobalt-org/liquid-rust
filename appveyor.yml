@@ -29,8 +29,8 @@ install:
 test_script:
   - cargo check --verbose
   - cargo check --verbose --features "cli"
-  - cargo check --verbose --features "cli serde_yaml serde_json"
-  - cargo test --features "cli serde_yaml serde_json"
+  - cargo check --verbose --features "cli serde serde_yaml serde_json"
+  - cargo test --features "cli serde serde_yaml serde_json"
 
 # disable automatic builds
 build: false
