@@ -25,6 +25,7 @@ script:
 addons:
   apt:
     packages:
+      # Needed for kcov
       - libcurl4-openssl-dev
       - libelf-dev
       - libdw-dev
