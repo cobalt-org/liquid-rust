@@ -6,25 +6,26 @@ rust:
   - nightly
 
 install:
-  # Install rustfmt
   - cargo install rustfmt --force --vers 0.8.3
-  - cargo fmt -- --version
-  # Install clippy
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy -- --version) fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force || true) fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
-  - cargo check
-  - cargo check --features "cli"
-  - cargo check --features "cli serde serde_yaml serde_json"
-  - cargo test --features "cli serde serde_yaml serde_json"
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy --features "cli serde serde_yaml serde_json") fi
+  - rustc -Vv
+  - cargo -V
+  - cargo check --verbose
+  - cargo check --verbose --features "cli"
+  - cargo check --verbose --features "cli serde serde_yaml serde_json"
+  - cargo test  --verbose --features "cli serde serde_yaml serde_json"
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy -- --version) fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy --features "cli serde serde_yaml serde_json") fi
+  - cargo fmt -- --version
   - cargo fmt -- --write-mode=diff
 
 addons:
   apt:
     packages:
+      # Needed for kcov
       - libcurl4-openssl-dev
       - libelf-dev
       - libdw-dev
@@ -34,11 +35,13 @@ addons:
 
 cache:
   apt: true
+  cargo: true
 
 before_cache:
     # Travis can't cache files that are not readable by "others"
     - chmod -R a+r $HOME/.cargo
 
+# Note: this will kill the build of we call `set -e` like trust
 after_success: |
   [ $TRAVIS_RUST_VERSION = stable ] &&
   wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
@@ -47,6 +50,10 @@ after_success: |
   ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/fixtures-* &&
   ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
   ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
+
+notifications:
+  email:
+    on_success: never
 
 env:
   global:

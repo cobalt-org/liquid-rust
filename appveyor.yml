@@ -23,14 +23,21 @@ install:
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
-  - rustc -Vv
-  - cargo -V
 
 test_script:
+  - rustc -Vv
+  - cargo -V
   - cargo check --verbose
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
-  - cargo test --features "cli serde serde_yaml serde_json"
+  - cargo test  --verbose --features "cli serde serde_yaml serde_json"
 
-# disable automatic builds
+cache:
+  - C:\Users\appveyor\.cargo\registry
+
+notifications:
+  - provider: Email
+    on_build_success: false
+
+# Building is done in the test phase, so we disable Appveyor's build phase.
 build: false
