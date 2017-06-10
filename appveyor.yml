@@ -32,5 +32,5 @@ test_script:
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
   - cargo test  --verbose --features "cli serde serde_yaml serde_json"
 
-# disable automatic builds
+# Building is done in the test phase, so we disable Appveyor's build phase.
 build: false
