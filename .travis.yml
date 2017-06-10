@@ -7,7 +7,7 @@ rust:
 
 install:
   - cargo install rustfmt --force --vers 0.8.3
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force) fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force || true) fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
@@ -17,8 +17,8 @@ script:
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
   - cargo test  --verbose --features "cli serde serde_yaml serde_json"
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy -- --version) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo clippy --features "cli serde serde_yaml serde_json") fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy -- --version) fi
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy --features "cli serde serde_yaml serde_json") fi
   - cargo fmt -- --version
   - cargo fmt -- --write-mode=diff
 
