@@ -32,6 +32,9 @@ test_script:
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
   - cargo test  --verbose --features "cli serde serde_yaml serde_json"
 
+cache:
+  - C:\Users\appveyor\.cargo\registry
+
 notifications:
   - provider: Email
     on_build_success: false
