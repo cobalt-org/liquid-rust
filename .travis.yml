@@ -41,6 +41,7 @@ before_cache:
     # Travis can't cache files that are not readable by "others"
     - chmod -R a+r $HOME/.cargo
 
+# Note: this will kill the build of we call `set -e` like trust
 after_success: |
   [ $TRAVIS_RUST_VERSION = stable ] &&
   wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
