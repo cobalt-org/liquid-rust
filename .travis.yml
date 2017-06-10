@@ -48,6 +48,10 @@ after_success: |
   ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
   ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
 
+notifications:
+  email:
+    on_success: never
+
 env:
   global:
   - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
