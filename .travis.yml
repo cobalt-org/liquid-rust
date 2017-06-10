@@ -34,6 +34,7 @@ addons:
 
 cache:
   apt: true
+  cargo: true
 
 before_cache:
     # Travis can't cache files that are not readable by "others"
