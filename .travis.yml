@@ -6,7 +6,7 @@ rust:
   - nightly
 
 install:
-  - cargo install rustfmt --force --vers 0.8.3
+  - travis_wait cargo install rustfmt --force --vers 0.8.3
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force || true) fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
