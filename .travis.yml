@@ -20,6 +20,7 @@ script:
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy -- --version) fi
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy --features "cli serde serde_yaml serde_json") fi
   - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo bench --features "cli serde serde_yaml serde_json") fi
+  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (cargo doc --no-deps --all-features) fi
   - cargo fmt -- --version
   - cargo fmt -- --write-mode=diff
 
