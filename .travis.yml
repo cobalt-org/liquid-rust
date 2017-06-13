@@ -24,6 +24,16 @@ script:
   - cargo fmt -- --version
   - cargo fmt -- --write-mode=diff
 
+# Note: this will kill the build of we call `set -e` like trust
+after_success: |
+  [ $TRAVIS_RUST_VERSION = stable ] &&
+  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
+  tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build && cmake .. && make && make install DESTDIR=../tmp && cd ../.. &&
+  ls target/debug &&
+  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/fixtures-* &&
+  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
+  ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
+
 addons:
   apt:
     packages:
@@ -38,20 +48,9 @@ addons:
 cache:
   apt: true
   cargo: true
-
 before_cache:
     # Travis can't cache files that are not readable by "others"
     - chmod -R a+r $HOME/.cargo
-
-# Note: this will kill the build of we call `set -e` like trust
-after_success: |
-  [ $TRAVIS_RUST_VERSION = stable ] &&
-  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
-  tar xzf master.tar.gz && mkdir kcov-master/build && cd kcov-master/build && cmake .. && make && make install DESTDIR=../tmp && cd ../.. &&
-  ls target/debug &&
-  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/fixtures-* &&
-  ./kcov-master/tmp/usr/local/bin/kcov --exclude-pattern=/.cargo target/kcov target/debug/filters-* &&
-  ./kcov-master/tmp/usr/local/bin/kcov --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/liquid-*
 
 notifications:
   email:
