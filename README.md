@@ -10,7 +10,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid = "0.9"
+liquid = "0.10"
 ```
 
 Now you can use the crate in your code
