@@ -56,6 +56,6 @@ When we're ready to release, a project owner should do the following
 - Manually touch up the change log and commit
 - Update the version in `Cargo.toml` and commit
 - Run `git tag v<X>.<Y>.<Z>`
-- Push all of this to `master`
+- `git push --tags` to `master`
 - Run `cargo publish` (run `cargo login` first if needed)
 - Update README.md to list the new version for Cargo.toml
