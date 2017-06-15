@@ -1,0 +1,4 @@
+- [ ] Tests created for any new feature or regression tests for bugfixes.
+- [ ] `cargo test` succeeds
+- [ ] `rustup run nightly cargo clippy` succeeds
+- [ ] `cargo fmt -- --write-mode=diff` succeeds
