@@ -83,7 +83,7 @@ impl Context {
 
     /// Only add the given filter to the context if a filter with this name doesn't already exist.
     pub fn maybe_add_filter(&mut self, name: &str, filter: Box<Filter>) {
-        if self.get_filter(name).is_none() {
+        if !self.filters.contains_key(name) {
             self.add_filter(name, filter)
         }
     }
@@ -92,8 +92,8 @@ impl Context {
         self.filters.insert(name.to_owned(), filter);
     }
 
-    pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b Box<Filter>> {
-        self.filters.get(name)
+    pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b Filter> {
+        self.filters.get(name).map(|f| f.as_ref())
     }
 
     pub fn interrupted(&self) -> bool {
