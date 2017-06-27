@@ -7,8 +7,9 @@ rust:
 
 install:
   - which cargo-coveralls || cargo install cargo-travis
-  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (travis_wait cargo install rustfmt --force --vers 0.8.3) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo install clippy --force || true) fi
+  - which cargo-when || cargo install cargo-when
+  - travis_wait cargo when --channel stable install rustfmt --force --vers 0.8.3
+  - travis_wait cargo when --channel nightly install clippy --force || true
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
@@ -18,15 +19,15 @@ script:
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
   - cargo test  --verbose --features "cli serde serde_yaml serde_json"
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy -- --version) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (! which cargo-clippy || cargo clippy --features "cli serde serde_yaml serde_json") fi
-  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then (cargo bench --features "cli serde serde_yaml serde_json") fi
-  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (cargo doc --no-deps --all-features) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (cargo fmt -- --version) fi
-  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (cargo fmt -- --write-mode=diff) fi
+  - ! which cargo-clippy || cargo when --channel nightly clippy -- --version
+  - ! which cargo-clippy || cargo when --channel nightly clippy --features "cli serde serde_yaml serde_json"
+  - cargo when --channel nightly bench --features "cli serde serde_yaml serde_json"
+  - cargo when --channel stable doc --no-deps --all-features
+  - cargo when --channel stable fmt -- --version
+  - cargo when --channel stable fmt -- --write-mode=diff
 
 after_success:
-  - if [ "$TRAVIS_RUST_VERSION" = "stable" ]; then (cargo coveralls) fi
+  - cargo when --channel stable coveralls
 
 addons:
   apt:
