@@ -24,12 +24,8 @@ doctest = false
 bench = false
 doc = false
 
-[[test]]
-name = "liquid"
-required-features = ["serde"]
-
 [features]
-default = ["extra-filters"]
+default = ["extra-filters", "serde"]
 cli = ["clap", "error-chain", "serde_yaml"]
 extra-filters = []
 dev = []
@@ -50,6 +46,7 @@ serde_json = { version = "1.0", optional = true }
 
 [build-dependencies]
 skeptic = "0.9"
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 difference = "1.0"

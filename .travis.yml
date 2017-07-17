@@ -17,11 +17,11 @@ script:
   - cargo -V
   - cargo check --verbose
   - cargo check --verbose --features "cli"
-  - cargo check --verbose --features "cli serde serde_yaml serde_json"
-  - cargo test  --verbose --features "cli serde serde_yaml serde_json"
+  - cargo check --verbose --features "cli serde_yaml serde_json"
+  - cargo test  --verbose --features "cli serde_yaml serde_json"
   - ! which cargo-clippy || cargo when --channel nightly clippy -- --version
-  - ! which cargo-clippy || cargo when --channel nightly clippy --features "cli serde serde_yaml serde_json"
-  - cargo when --channel nightly bench --features "cli serde serde_yaml serde_json"
+  - ! which cargo-clippy || cargo when --channel nightly clippy --features "cli serde_yaml serde_json"
+  - cargo when --channel nightly bench --features "cli serde_yaml serde_json"
   - cargo when --channel stable doc --no-deps --all-features
   - cargo when --channel stable fmt -- --version
   - cargo when --channel stable fmt -- --write-mode=diff
