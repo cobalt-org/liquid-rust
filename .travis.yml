@@ -9,7 +9,6 @@ install:
   - which cargo-coveralls || cargo install cargo-travis
   - which cargo-when || cargo install cargo-when
   - travis_wait cargo when --channel stable install rustfmt --force --vers 0.8.3
-  - travis_wait cargo when --channel nightly install clippy --force || true
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
@@ -18,9 +17,8 @@ script:
   - cargo check --verbose
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde_yaml serde_json"
+  - cargo clean
   - cargo test  --verbose --features "cli serde_yaml serde_json"
-  - ! which cargo-clippy || cargo when --channel nightly clippy -- --version
-  - ! which cargo-clippy || cargo when --channel nightly clippy --features "cli serde_yaml serde_json"
   - cargo when --channel nightly bench --features "cli serde_yaml serde_json"
   - cargo when --channel stable doc --no-deps --all-features
   - cargo when --channel stable fmt -- --version

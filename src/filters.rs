@@ -431,7 +431,7 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
     let result = MATCHERS
         .iter()
         .fold(input,
-              |acc, &ref matcher| matcher.replace_all(&acc, "").into_owned());
+              |acc, matcher| matcher.replace_all(&acc, "").into_owned());
     Ok(Str(result))
 }
 

@@ -1,7 +1,6 @@
 #![feature(test)]
 
 extern crate test;
-extern crate serde;
 extern crate serde_yaml;
 
 extern crate liquid;
