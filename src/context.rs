@@ -283,7 +283,7 @@ mod test {
         ctx.set_val("test", Value::Num(42f32));
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
 
-        ctx.run_in_scope(|mut new_scope| {
+        ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(new_scope.get_val("test").unwrap(), &Value::Num(42f32));
 
