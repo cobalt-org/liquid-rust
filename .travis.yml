@@ -18,6 +18,7 @@ script:
   - cargo check --verbose
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde_yaml serde_json"
+  - cargo clean
   - cargo test  --verbose --features "cli serde_yaml serde_json"
   - ! which cargo-clippy || cargo when --channel nightly clippy -- --version
   - ! which cargo-clippy || cargo when --channel nightly clippy --features "cli serde_yaml serde_json"

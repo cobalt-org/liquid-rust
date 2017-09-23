@@ -30,6 +30,7 @@ test_script:
   - cargo check --verbose
   - cargo check --verbose --features "cli"
   - cargo check --verbose --features "cli serde serde_yaml serde_json"
+  - cargo clean
   - cargo test  --verbose --features "cli serde serde_yaml serde_json"
 
 cache:
