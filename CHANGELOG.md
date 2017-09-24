@@ -1,3 +1,15 @@
+<a name="0.10.1"></a>
+## 0.10.1 (2017-09-24)
+
+
+#### Features
+
+*   Turn `serde` into a default feature. ([6be99f1d](https://github.com/cobalt-org/liquid-rust/commit/6be99f1da4c066dc08eafd6918f604409f93d43d), closes [#128](https://github.com/cobalt-org/liquid-rust/issues/128))
+
+### Bug Fixes
+* Stop recompiling everytime due to Skeptic.
+
+
 <a name="v0.10.0"></a>
 ## v0.10.0 (2017-05-27)
 

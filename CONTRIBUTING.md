@@ -52,10 +52,9 @@ Hopefully we get this integrated into your CI process.
 
 When we're ready to release, a project owner should do the following
 - Determine what the next version is, according to semver
-- Run `clog --setversion <X>.<Y>.<Z>` and commit the changelog
-- Manually touch up the change log and commit
+- Run `clog --setversion <X>.<Y>.<Z>`, touch up the log, and commit it
 - Update the version in `Cargo.toml` and commit
-- Run `git tag v<X>.<Y>.<Z>`
+- Run `git tag -a v<X>.<Y>.<Z>`
 - `git push --tags` to `master`
 - Run `cargo publish` (run `cargo login` first if needed)
 - Update README.md to list the new version for Cargo.toml
