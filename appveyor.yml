@@ -1,6 +1,7 @@
 environment:
   global:
     RUST_VERSION: stable
+    APPVEYOR_CACHE_SKIP_RESTORE: false
 
   matrix:
     # Stable channel
