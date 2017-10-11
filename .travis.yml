@@ -4,6 +4,14 @@ rust:
   - stable
   - beta
   - nightly
+matrix:
+  include:
+  - rust: nightly-2017-10-09
+    env: CLIPPY_VERS="0.0.165"
+    before_script: |
+      if [[ `cargo +nightly-2017-10-09 clippy -- --version` != $CLIPPY_VERS* ]] ; then travis_wait cargo +nightly-2017-10-09 install clippy --vers "$CLIPPY_VERS" --force; fi
+    script:
+      - cargo +nightly-2017-10-09 clippy --features "cli serde_yaml serde_json" -- -D warnings
 
 env:
   global:

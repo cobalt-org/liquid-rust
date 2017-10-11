@@ -16,7 +16,7 @@ pub fn serialize_num() {
     let actual = serde_yaml::to_string(&actual).unwrap();
     assert_diff!(&actual, "---\n-100", "", 0);
 
-    let actual = liquid::Value::Num(3.14e10f32);
+    let actual = liquid::Value::Num(3.14e_10f32);
     let actual = serde_yaml::to_string(&actual).unwrap();
     assert_diff!(&actual, "---\n31399999488", "", 0);
 
@@ -38,7 +38,7 @@ pub fn deserialize_num() {
     assert_eq!(actual, liquid::Value::Num(-100f32));
 
     let actual: liquid::Value = serde_yaml::from_str("---\n31399999488").unwrap();
-    assert_eq!(actual, liquid::Value::Num(3.14e10f32));
+    assert_eq!(actual, liquid::Value::Num(3.14e_10f32));
 
     // Skipping NaN since equality fails
 
