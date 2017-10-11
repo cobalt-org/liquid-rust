@@ -36,8 +36,6 @@ addons:
       - libdw-dev
       - binutils-dev
       - cmake
-    sources:
-      - kalakris-cmake
 
 cache:
   apt: true
