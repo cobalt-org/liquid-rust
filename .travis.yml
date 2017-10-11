@@ -5,10 +5,17 @@ rust:
   - beta
   - nightly
 
+env:
+  global:
+  - RUSTFMT=0.8.3
+  - COVERALLS=0.0.5
+  - WHEN=0.1.0
+  - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
+
 install:
-  - which cargo-coveralls || cargo install cargo-travis
-  - which cargo-when || cargo install cargo-when
-  - travis_wait cargo when --channel stable install rustfmt --force --vers 0.8.3
+  - which cargo-coveralls || travis_wait cargo install cargo-travis --force --vers $COVERALLS
+  - if [[ `cargo-when --version` != *$WHEN ]] ; then travis_wait cargo install cargo-when --force --vers $WHEN; fi
+  - if [[ `rustfmt --version` != $RUSTFMT* ]] ; then travis_wait cargo when --channel stable install rustfmt --force --vers $RUSTFMT; fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
@@ -47,8 +54,4 @@ before_cache:
 notifications:
   email:
     on_success: never
-
-env:
-  global:
-  - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 
