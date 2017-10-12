@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use token::Token::{self, Identifier, StringLiteral, NumberLiteral, BooleanLiteral};
 use value::{Value, Object};
 
-
 #[derive(Clone)]
 pub enum Interrupt {
     Continue,
@@ -165,6 +164,7 @@ impl Context {
     fn get<'a>(&'a self, name: &str) -> Option<&'a Value> {
         for frame in self.stack.iter().rev() {
             if let rval @ Some(_) = frame.get(name) {
+                //println!("rval {:?}", rval);
                 return rval;
             }
         }
@@ -191,9 +191,31 @@ impl Context {
 
         // walk the chain of Object values, as specified by the path
         // passed in name
-        for id in path {
+        'pathwalk: for id in path {
             match rval {
                 Some(&Value::Object(ref x)) => rval = x.get(id),
+                Some(&Value::Array(ref x)) => {
+                    for val in x {
+                        if let &Value::Object(ref x) = val {
+                            for (a, b) in x {
+                                if a == id {
+                                    match b {
+                                        &Value::Object(_) => {
+                                            rval = Some(b);
+                                            continue 'pathwalk;
+
+                                        }
+                                        &Value::Array(_) => {
+                                            rval = Some(b);
+                                            continue 'pathwalk;
+                                        }
+                                        _ => return Some(b),
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 _ => return None,
             }
         }
