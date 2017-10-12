@@ -4,11 +4,32 @@ rust:
   - stable
   - beta
   - nightly
+matrix:
+  include:
+  - rust: nightly-2017-10-09
+    env: CLIPPY_VERS="0.0.165"
+    install:
+      - if [[ `cargo +nightly-2017-10-09 clippy -- --version` != $CLIPPY_VERS* ]] ; then travis_wait cargo +nightly-2017-10-09 install clippy --vers "$CLIPPY_VERS" --force; fi
+      - export PATH=$HOME/.cargo/bin:$PATH
+    script:
+      - cargo +nightly-2017-10-09 clippy --features "cli serde_yaml serde_json" -- -D warnings
+  - rust: stable
+    env: RUSTFMT=0.8.3
+    install:
+      - if [[ `rustfmt --version` != $RUSTFMT* ]] ; then travis_wait cargo install rustfmt --force --vers $RUSTFMT; fi
+      - export PATH=$HOME/.cargo/bin:$PATH
+    script:
+      - cargo fmt -- --write-mode=diff
+
+env:
+  global:
+  - COVERALLS=0.0.5
+  - WHEN=0.1.0
+  - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 
 install:
-  - which cargo-coveralls || cargo install cargo-travis
-  - which cargo-when || cargo install cargo-when
-  - travis_wait cargo when --channel stable install rustfmt --force --vers 0.8.3
+  - which cargo-coveralls || travis_wait cargo install cargo-travis --force --vers $COVERALLS
+  - if [[ `cargo-when --version` != *$WHEN ]] ; then travis_wait cargo install cargo-when --force --vers $WHEN; fi
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
@@ -21,8 +42,6 @@ script:
   - cargo test  --verbose --features "cli serde_yaml serde_json"
   - cargo when --channel nightly bench --features "cli serde_yaml serde_json"
   - cargo when --channel stable doc --no-deps --all-features
-  - cargo when --channel stable fmt -- --version
-  - cargo when --channel stable fmt -- --write-mode=diff
 
 after_success:
   - cargo when --channel stable coveralls
@@ -36,8 +55,6 @@ addons:
       - libdw-dev
       - binutils-dev
       - cmake
-    sources:
-      - kalakris-cmake
 
 cache:
   apt: true
@@ -49,8 +66,4 @@ before_cache:
 notifications:
   email:
     on_success: never
-
-env:
-  global:
-  - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 

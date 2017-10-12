@@ -20,11 +20,10 @@ pub fn pass_between_threads() {
 
     // Start threads
     let mut handles = Vec::new();
-    let mut counter = 0;
     let template = Arc::new(template);
-    for (num1, num2) in v {
-        let template = template.clone();
-        counter += 1;
+    for (counter, (num1, num2)) in v.into_iter().enumerate() {
+        let template = Arc::clone(&template);
+        let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter + 1);
         handles.push(thread::spawn(move || {
             let mut context = Context::new();
             context.set_val("num", num1);
@@ -32,12 +31,11 @@ pub fn pass_between_threads() {
 
             let output = template.render(&mut context).unwrap();
 
-            let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter);
             let mut comp = String::new();
-            File::open(output_file)
-                .unwrap()
+            File::open(&output_file)
+                .expect(&format!("Expected output file does not exist: {}", output_file))
                 .read_to_string(&mut comp)
-                .unwrap();
+                .expect(&format!("Failed to read file: {}", output_file));
 
             assert_diff!(&comp, &output.unwrap(), " ", 0);
         }));
