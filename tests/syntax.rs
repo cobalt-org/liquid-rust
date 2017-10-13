@@ -21,46 +21,52 @@ macro_rules! compare {
 
 #[test]
 pub fn no_whitespace_control() {
-    compare!("
+    compare!(
+        "
 topic1
 ……{% assign foo = \"bar\" %}
 ……{% if foo %}
 …………-……{{ foo }}
 ……{% endif %}
 ",
-             "
+        "
 topic1
 ……
 ……
 …………-……bar
 ……
-");
+"
+    );
 }
 
 #[test]
 pub fn simple_whitespace_control() {
-    compare!("
+    compare!(
+        "
 topic1
 ……{% assign foo = \"bar\" -%}
 ……{% if foo -%}
 …………-……{{- foo }}
 ……{%- endif %}
 ",
-             "
+        "
 topic1
 ……-bar
-");
+"
+    );
 }
 
 #[test]
 pub fn double_sided_whitespace_control() {
-    compare!("
+    compare!(
+        "
 topic1
 ……{%- assign foo = \"bar\" -%}
 ……-……{{- foo -}}……
 
 ",
-             "
+        "
 topic1-bar\
-");
+"
+    );
 }

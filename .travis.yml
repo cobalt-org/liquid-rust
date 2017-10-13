@@ -14,7 +14,7 @@ matrix:
     script:
       - cargo +nightly-2017-10-09 clippy --features "cli serde_yaml serde_json" -- -D warnings
   - rust: stable
-    env: RUSTFMT=0.8.3
+    env: RUSTFMT=0.8.6
     install:
       - if [[ `rustfmt --version` != $RUSTFMT* ]] ; then travis_wait cargo install rustfmt --force --vers $RUSTFMT; fi
       - export PATH=$HOME/.cargo/bin:$PATH

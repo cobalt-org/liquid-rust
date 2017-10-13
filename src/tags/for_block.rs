@@ -88,8 +88,8 @@ impl Renderable for For {
                     for (i, v) in slice.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::Num(i as f32));
                         helper_vars.insert("index".to_owned(), Value::Num((i + 1) as f32));
-                        helper_vars.insert("rindex0".to_owned(),
-                                           Value::Num((range_len - i - 1) as f32));
+                        helper_vars
+                            .insert("rindex0".to_owned(), Value::Num((range_len - i - 1) as f32));
                         helper_vars.insert("rindex".to_owned(), Value::Num((range_len - i) as f32));
                         helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
                         helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
@@ -293,7 +293,7 @@ mod test {
                                 ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
                                 ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
                                 ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n")
-                                .to_owned()));
+                            .to_owned()));
     }
 
     #[test]
@@ -428,17 +428,20 @@ mod test {
                                                   "value: {{v}}, ",
                                                   "first: {{forloop.first}}, ",
                                                   "last: {{forloop.last}}\n"))
-                                         .unwrap(),
+                                    .unwrap(),
                                 &options);
 
         let mut data: Context = Default::default();
-        assert_eq!(for_tag.unwrap().render(&mut data).unwrap(),
-                   Some(concat!(
+        assert_eq!(
+            for_tag.unwrap().render(&mut data).unwrap(),
+            Some(
+                concat!(
 "length: 3, index: 1, index0: 0, rindex: 3, rindex0: 2, value: 100, first: true, last: false\n",
 "length: 3, index: 2, index0: 1, rindex: 2, rindex0: 1, value: 101, first: false, last: false\n",
 "length: 3, index: 3, index0: 2, rindex: 1, rindex0: 0, value: 102, first: false, last: true\n",
-)
-                                .to_owned()));
+).to_owned(),
+            )
+        );
     }
 
 

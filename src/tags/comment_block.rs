@@ -35,10 +35,7 @@ mod test {
                                     &[],
                                     &vec![Expression(vec![], "This is a test".to_string())],
                                     &options);
-        assert_eq!(comment
-                       .unwrap()
-                       .render(&mut Default::default())
-                       .unwrap(),
+        assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
                    None);
     }
 }

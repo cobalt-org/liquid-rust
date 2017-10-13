@@ -64,10 +64,9 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
             blocks.push(Tag(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
                             block.to_owned()));
         } else if let Some(caps) = EXPRESSION.captures(block) {
-            blocks.push(Expression(try!(granularize(caps.get(1)
-                                       .map(|x| x.as_str())
-                                       .unwrap_or(""))),
-                                   block.to_owned()));
+            blocks
+                .push(Expression(try!(granularize(caps.get(1).map(|x| x.as_str()).unwrap_or(""))),
+                                 block.to_owned()));
         } else {
             blocks.push(Raw(block.to_owned()));
         }
@@ -141,13 +140,11 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                         }
                         x if NUMBER_LITERAL.is_match(x) => {
                             NumberLiteral(x.parse::<f32>()
-                                              .expect(&format!("Could not parse {:?} as float",
-                                                               x)))
+                                              .expect(&format!("Could not parse {:?} as float", x)))
                         }
                         x if BOOLEAN_LITERAL.is_match(x) => {
                             BooleanLiteral(x.parse::<bool>()
-                                               .expect(&format!("Could not parse {:?} as bool",
-                                                                x)))
+                                               .expect(&format!("Could not parse {:?} as bool", x)))
                         }
                         x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
                         x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),

@@ -103,7 +103,7 @@ mod test {
                            "{% cycle 'a': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n")
-                .to_owned();
+            .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
@@ -122,7 +122,7 @@ mod test {
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n")
-                .to_owned();
+            .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
@@ -142,7 +142,7 @@ mod test {
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n")
-                .to_owned();
+            .to_owned();
 
         let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
