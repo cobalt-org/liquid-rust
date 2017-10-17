@@ -144,14 +144,14 @@ mod test {
     fn number_comparison() {
         let a = parse("{% if 6 < 7  %}if true{% endif %}",
                       LiquidOptions::default())
-                .unwrap()
-                .render(&mut Context::new());
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         let b = parse("{% if 7 < 6  %}if true{% else %}if false{% endif %}",
                       LiquidOptions::default())
-                .unwrap()
-                .render(&mut Context::new());
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("if false".to_owned()));
     }
 
@@ -160,15 +160,15 @@ mod test {
         // "one" == "one" then "if true" else "if false"
         let a = parse("{% if \"one\" == \"one\" %}if true{% endif %}",
                       LiquidOptions::default())
-                .unwrap()
-                .render(&mut Context::new());
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(a.unwrap(), Some("if true".to_owned()));
 
         // "one" == "two"
         let b = parse("{% if \"one\" == \"two\" %}if true{% endif %}",
                       LiquidOptions::default())
-                .unwrap()
-                .render(&mut Context::new());
+            .unwrap()
+            .render(&mut Context::new());
         assert_eq!(b.unwrap(), Some("".to_owned()));
     }
 

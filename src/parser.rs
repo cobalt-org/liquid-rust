@@ -266,15 +266,19 @@ mod test {
             let tokens = granularize("abc | def:'1',2,'3' | blabla").unwrap();
 
             let result = parse_output(&tokens);
-            assert_eq!(result.unwrap(),
-                       Output::new(Argument::Var(Variable::new("abc")),
-                                   vec![FilterPrototype::new("def",
-                                                             vec![
-                                                                 Argument::Val(Value::str("1")),
-                                                                 Argument::Val(Value::Num(2.0)),
-                                                                 Argument::Val(Value::str("3")),
-                    ]),
-                                        FilterPrototype::new("blabla", vec![])]));
+            assert_eq!(
+                result.unwrap(),
+                Output::new(
+                    Argument::Var(Variable::new("abc")),
+                    vec![FilterPrototype::new(
+                        "def",
+                        vec![Argument::Val(Value::str("1")),
+                             Argument::Val(Value::Num(2.0)),
+                             Argument::Val(Value::str("3"))]
+                    ),
+                         FilterPrototype::new("blabla", vec![])],
+                )
+            );
         }
 
         #[test]
@@ -331,7 +335,7 @@ mod test {
             // top level, which is where it should split.
             let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
                                    else tag")
-                    .unwrap();
+                .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know
@@ -360,7 +364,7 @@ mod test {
                                           "{% endfor %}",
                                           "{% else %}",
                                           "trailing tags"))
-                    .unwrap();
+                .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know

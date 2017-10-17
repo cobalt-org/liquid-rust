@@ -125,9 +125,9 @@ pub fn deserialize_object() {
     let expected: liquid::Object = [("Num".to_owned(), liquid::Value::Num(1f32)),
                                     ("Bool".to_owned(), liquid::Value::Bool(true)),
                                     ("Str".to_owned(), liquid::Value::str("true"))]
-            .iter()
-            .cloned()
-            .collect();
+        .iter()
+        .cloned()
+        .collect();
     let expected = liquid::Value::Object(expected);
     assert_eq!(actual, expected);
 }

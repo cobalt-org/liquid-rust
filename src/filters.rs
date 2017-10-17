@@ -428,10 +428,9 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input.to_string();
 
-    let result = MATCHERS
-        .iter()
-        .fold(input,
-              |acc, matcher| matcher.replace_all(&acc, "").into_owned());
+    let result = MATCHERS.iter().fold(input, |acc, matcher| {
+        matcher.replace_all(&acc, "").into_owned()
+    });
     Ok(Str(result))
 }
 
@@ -440,10 +439,7 @@ pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let input = input.to_string();
-    Ok(Str(input
-               .chars()
-               .filter(|c| *c != '\n' && *c != '\r')
-               .collect()))
+    Ok(Str(input.chars().filter(|c| *c != '\n' && *c != '\r').collect()))
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
@@ -1142,7 +1138,7 @@ mod tests {
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
         let desired_result = FilterError::InvalidType("Invalid date format: input contains \
                                                        invalid characters"
-                                                              .to_owned());
+                                                          .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
