@@ -45,7 +45,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
         Identifier(ref x) if tokens.len() > 1 && (tokens[1] == Dot || tokens[1] == OpenSquare) => {
             let mut result = IdentifierPath::new(x.clone());
             try!(result.append_indexes(&tokens[1..]));
-            return Ok(Box::new(result));
+            Ok(Box::new(result))
         }
         Identifier(ref x) if options.tags.contains_key(x) => {
             options.tags[x](x, &tokens[1..], options)
@@ -95,12 +95,12 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
         while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
             match iter.next().unwrap() {
                 x @ &StringLiteral(_) |
-                    x @ &NumberLiteral(_) |
-                    x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
-                    &Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
-                    x => {
-                        return Error::parser("a comma or a pipe", Some(x));
-                    }
+                x @ &NumberLiteral(_) |
+                x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
+                &Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
+                x => {
+                    return Error::parser("a comma or a pipe", Some(x));
+                }
             }
 
             // ensure that the next token is either a Comma or a Pipe
@@ -129,55 +129,55 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
 fn parse_tag(iter: &mut Iter<Element>,
              tokens: &[Token],
              options: &LiquidOptions)
-    -> Result<Box<Renderable>> {
-        let tag = &tokens[0];
-        match *tag {
-            // is a tag
-            Identifier(ref x) if options.tags.contains_key(x) => {
-                options.tags[x](x, &tokens[1..], options)
-            }
-
-            // is a block
-            Identifier(ref x) if options.blocks.contains_key(x) => {
-                // Collect all the inner elements of this block until we find a
-                // matching "end<blockname>" tag. Note that there may be nested blocks
-                // of the same type (and hence have the same closing delimiter) *inside*
-                // the body of the block, which would premauturely stop the element
-                // collection early if we did a nesting-unaware search for the
-                // closing tag.
-                //
-                // The whole nesting count machinery below is to ensure we only stop
-                // collecting elements when we have an un-nested closing tag.
-
-                let end_tag = Identifier("end".to_owned() + x);
-                let mut children = vec![];
-                let mut nesting_depth = 0;
-                for t in iter {
-                    if let Tag(ref tokens, _) = *t {
-                        match tokens[0] {
-                            ref n if n == tag => {
-                                nesting_depth += 1;
-                            }
-                            ref n if n == &end_tag && nesting_depth > 0 => {
-                                nesting_depth -= 1;
-                            }
-                            ref n if n == &end_tag && nesting_depth == 0 => break,
-                            _ => {}
-                        }
-                    };
-                    children.push(t.clone())
-                }
-                options.blocks[x](x, &tokens[1..], &children, options)
-            }
-
-            ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
+             -> Result<Box<Renderable>> {
+    let tag = &tokens[0];
+    match *tag {
+        // is a tag
+        Identifier(ref x) if options.tags.contains_key(x) => {
+            options.tags[x](x, &tokens[1..], options)
         }
+
+        // is a block
+        Identifier(ref x) if options.blocks.contains_key(x) => {
+            // Collect all the inner elements of this block until we find a
+            // matching "end<blockname>" tag. Note that there may be nested blocks
+            // of the same type (and hence have the same closing delimiter) *inside*
+            // the body of the block, which would premauturely stop the element
+            // collection early if we did a nesting-unaware search for the
+            // closing tag.
+            //
+            // The whole nesting count machinery below is to ensure we only stop
+            // collecting elements when we have an un-nested closing tag.
+
+            let end_tag = Identifier("end".to_owned() + x);
+            let mut children = vec![];
+            let mut nesting_depth = 0;
+            for t in iter {
+                if let Tag(ref tokens, _) = *t {
+                    match tokens[0] {
+                        ref n if n == tag => {
+                            nesting_depth += 1;
+                        }
+                        ref n if n == &end_tag && nesting_depth > 0 => {
+                            nesting_depth -= 1;
+                        }
+                        ref n if n == &end_tag && nesting_depth == 0 => break,
+                        _ => {}
+                    }
+                };
+                children.push(t.clone())
+            }
+            options.blocks[x](x, &tokens[1..], &children, options)
+        }
+
+        ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
     }
+}
 
 /// Confirm that the next token in a token stream is what you want it
 /// to be. The token iterator is moved to the next token in the stream.
 pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
-where T: Iterator<Item = &'a Token>
+    where T: Iterator<Item = &'a Token>
 {
     match tokens.next() {
         Some(x) if x == expected => Ok(x),
@@ -200,9 +200,9 @@ pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
 pub fn value_token(t: Token) -> Result<Token> {
     match t {
         v @ StringLiteral(_) |
-            v @ NumberLiteral(_) |
-            v @ BooleanLiteral(_) |
-            v @ Identifier(_) => Ok(v),
+        v @ NumberLiteral(_) |
+        v @ BooleanLiteral(_) |
+        v @ Identifier(_) => Ok(v),
         x => Error::parser("string | number | boolean | identifier", Some(&x)),
     }
 }
@@ -224,7 +224,7 @@ pub struct BlockSplit<'a> {
 pub fn split_block<'a>(tokens: &'a [Element],
                        delimiters: &[&str],
                        options: &LiquidOptions)
--> (&'a [Element], Option<BlockSplit<'a>>) {
+                       -> (&'a [Element], Option<BlockSplit<'a>>) {
     // construct a fast-lookup cache of the delimiters, as we're going to be
     // consulting the delimiter list a *lot*.
     let delims: HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x| *x));
@@ -279,12 +279,12 @@ mod test {
                     vec![FilterPrototype::new(
                         "def",
                         vec![Argument::Val(Value::str("1")),
-                        Argument::Val(Value::Num(2.0)),
-                        Argument::Val(Value::str("3"))]
-                        ),
-                        FilterPrototype::new("blabla", vec![])],
-                        )
-                );
+                             Argument::Val(Value::Num(2.0)),
+                             Argument::Val(Value::str("3"))]
+                    ),
+                         FilterPrototype::new("blabla", vec![])],
+                )
+            );
         }
 
         #[test]
@@ -293,7 +293,7 @@ mod test {
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
-            "Parsing error: Expected an identifier, found 1");
+                       "Parsing error: Expected an identifier, found 1");
         }
 
         #[test]
@@ -302,7 +302,7 @@ mod test {
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
-            "Parsing error: Expected a comma or a pipe, found blabla");
+                       "Parsing error: Expected a comma or a pipe, found blabla");
         }
 
         #[test]
@@ -311,7 +311,7 @@ mod test {
 
             let result = parse_output(&tokens);
             assert_eq!(result.unwrap_err().to_string(),
-            "Parsing error: Expected :, found 1");
+                       "Parsing error: Expected :, found 1");
         }
     }
 
@@ -341,7 +341,7 @@ mod test {
             // top level, which is where it should split.
             let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
                                    else tag")
-                         .unwrap();
+                .unwrap();
 
             // note that we need an options block that has been initilaised with
             // the supported block list; otherwise the split_tag function won't know
@@ -360,16 +360,16 @@ mod test {
             // A stream of tokens with lots of `else`s in it, but only one at the
             // top level, which is where it should split.
             let tokens = tokenize(concat!("{% for x in (1..10) %}",
-            "{% if x == 2 %}",
-            "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
-            "{% else %}",
-            "c",
-            "{% endif %}",
-            "{% else %}",
-            "something",
-            "{% endfor %}",
-            "{% else %}",
-            "trailing tags"))
+                                          "{% if x == 2 %}",
+                                          "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
+                                          "{% else %}",
+                                          "c",
+                                          "{% endif %}",
+                                          "{% else %}",
+                                          "something",
+                                          "{% endfor %}",
+                                          "{% else %}",
+                                          "trailing tags"))
                 .unwrap();
 
             // note that we need an options block that has been initilaised with
@@ -383,8 +383,8 @@ mod test {
                     assert_eq!(split.args, &[Identifier("else".to_owned())]);
                     assert_eq!(split.trailing,
                                &[Tag(vec![Identifier("else".to_owned())],
-                               "{% else %}".to_owned()),
-                               Raw("trailing tags".to_owned())]);
+                                     "{% else %}".to_owned()),
+                                 Raw("trailing tags".to_owned())]);
                 }
                 None => panic!("split failed"),
             }

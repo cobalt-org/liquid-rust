@@ -16,47 +16,45 @@ impl Renderable for IdentifierPath {
         println!("{:?}", self);
         let value = context
             .get_val(&self.value)
-            .ok_or(Error::Render(
-                format!("{} not found in context", self.value),
-            ))?
+            .ok_or_else(|| Error::Render(format!("{} not found in context", self.value)))?
             .clone();
 
         let mut counter = self.indexes.len();
-        let result = self.indexes
-            .iter()
-            .fold(Ok(&value), |value, index| {
-                // go through error
-                let value = if let Ok(ref value) = value {
-                    value
-                } else {
-                    return value
-                };
-                counter-=1;
-       match (value, index) {
-            (&&Value::Array(ref value), &Value::Num(ref x)) => {
-                if (*x != 0f32 && !x.is_normal()) // only is_normal is not enough, because zero is not counted normal
-                    || *x < 0f32 ||
-                    x.round() > (::std::usize::MAX as f32)
-                {
-                    return Error::renderer("bad array index");
+        let result = self.indexes.iter().fold(Ok(&value), |value, index| {
+            // go through error
+            let value = if let Ok(value) = value {
+                value
+            } else {
+                return value;
+            };
+            counter -= 1;
+            match (value, index) {
+                (&Value::Array(ref value), &Value::Num(ref x)) => {
+                    // at the first condition only is_normal is not enough
+                    // because zero is not counted normal
+                    if (*x != 0f32 && !x.is_normal()) || *x < 0f32 ||
+                       x.round() > (::std::usize::MAX as f32) {
+                        return Error::renderer("bad array index");
+                    }
+                    let idx = x.round() as usize;
+                    let value =
+                        value
+                            .get(idx)
+                            .ok_or_else(|| Error::Render("index out of range".to_string()))?;
+                    Ok(value)
                 }
-                let idx = x.round() as usize;
-                let value = value.get(idx).ok_or(Error::Render(
-                    "index out of range".to_string(),
-                ))?;
-                Ok(&value)
+                (&Value::Array(_), _) => Error::renderer("bad array index type"),
+                (&Value::Object(ref value), &Value::Str(ref x)) => {
+                    let value =
+                        value
+                            .get(x)
+                            .ok_or_else(|| Error::Render("object element not found".to_string()))?;
+                    Ok(value)
+                }
+                (&Value::Object(_), _) => Error::renderer("bad object index"),
+                (value, _) if counter == 0 => Ok(value),
+                _ => Error::renderer("non-indexable element found while indexable expected"),
             }
-            (&&Value::Array(_), _) => Error::renderer("bad array index type"),
-            (&&Value::Object(ref value), &Value::Str(ref x)) => {
-                let value = value.get(x).ok_or(Error::Render(
-                    "object element not found".to_string(),
-                ))?;
-                Ok(&value)
-            }
-            (&&Value::Object(_), _) => Error::renderer("bad object index"),
-            (&value, _) if counter == 0  => Ok(value),
-            _ => Error::renderer("non-indexable element found while indexable expected")
-        }
         });
 
         match result {
@@ -121,11 +119,9 @@ mod test {
     #[test]
     fn identifier_path() {
         let options = LiquidOptions::with_known_blocks();
-        let template = concat!(
-            "array: {{ test_a[0] }}\n",
-            "complex_dot: {{ test_a[0].test_h }}\n",
-            "complex_string: {{ test_a[0][\"test_h\"] }}\n"
-        );
+        let template = concat!("array: {{ test_a[0] }}\n",
+                               "complex_dot: {{ test_a[0].test_h }}\n",
+                               "complex_string: {{ test_a[0][\"test_h\"] }}\n");
 
         let mut context = Context::new();
         let mut internal = HashMap::new();
@@ -135,15 +131,10 @@ mod test {
         context.set_val("test_a", test);
 
         let template = parse(template, options).unwrap();
-        assert_eq!(
-            template.render(&mut context).unwrap(),
-            Some(
-                concat!(
-                    "array: test_h: 5\n",
-                    "complex_dot: 5\n",
-                    "complex_string: 5\n"
-                ).to_owned(),
-            )
-        );
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some(concat!("array: test_h: 5\n",
+                                "complex_dot: 5\n",
+                                "complex_string: 5\n")
+                            .to_owned()));
     }
 }

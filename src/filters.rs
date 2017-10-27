@@ -535,7 +535,7 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
         .filter_map(|v| {
                         v.as_object()
                             .map(|o| o.get(&property).cloned())
-                            .map_or(None, |o| o)
+                            .and_then(|o| o)
                     })
         .collect();
     Ok(Value::Array(result))
