@@ -99,6 +99,7 @@ fn split_atom(block: &str) -> Vec<&str> {
 
 lazy_static! {
     static ref IDENTIFIER: Regex = Regex::new(r"[a-zA-Z_][\w-]*\??").unwrap();
+    static ref INDEX: Regex = Regex::new(r"^\.[a-zA-Z_][a-zA-Z0-9_-]*").unwrap();
     static ref SINGLE_STRING_LITERAL: Regex = Regex::new(r"'[^']*'").unwrap();
     static ref DOUBLE_STRING_LITERAL: Regex = Regex::new("\"[^\"]*\"").unwrap();
     static ref NUMBER_LITERAL: Regex = Regex::new(r"^-?\d+(\.\d+)?$").unwrap();
@@ -108,7 +109,10 @@ lazy_static! {
 pub fn granularize(block: &str) -> Result<Vec<Token>> {
     let mut result = vec![];
 
+
+    let mut push_more;
     for el in split_atom(block) {
+        push_more = None;
         result.push(match &*el.trim() {
                         "" => continue,
 
@@ -134,8 +138,9 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                         "contains" => Comparison(Contains),
                         ".." => DotDot,
 
-                        x if SINGLE_STRING_LITERAL.is_match(x) ||
-                             DOUBLE_STRING_LITERAL.is_match(x) => {
+                        x
+                            if SINGLE_STRING_LITERAL.is_match(x) ||
+                               DOUBLE_STRING_LITERAL.is_match(x) => {
                             StringLiteral(x[1..x.len() - 1].to_owned())
                         }
                         x if NUMBER_LITERAL.is_match(x) => {
@@ -146,9 +151,18 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                             BooleanLiteral(x.parse::<bool>()
                                                .expect(&format!("Could not parse {:?} as bool", x)))
                         }
+                        x if INDEX.is_match(x) => {
+                            let mut parts = x.splitn(2, '.');
+                            parts.next().unwrap();
+                            push_more = Some(vec![Identifier(parts.next().unwrap().to_owned())]);
+                            Dot
+                        }
                         x if IDENTIFIER.is_match(x) => Identifier(x.to_owned()),
                         x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
                     });
+        if let Some(v) = push_more {
+            result.extend(v);
+        }
     }
 
     Ok(result)

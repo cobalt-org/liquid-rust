@@ -75,6 +75,7 @@ mod filters;
 mod value;
 mod variable;
 mod context;
+mod path;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///
