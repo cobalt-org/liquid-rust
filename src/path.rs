@@ -13,7 +13,6 @@ pub struct IdentifierPath {
 
 impl Renderable for IdentifierPath {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        println!("{:?}", self);
         let value = context
             .get_val(&self.value)
             .ok_or_else(|| Error::Render(format!("{} not found in context", self.value)))?
@@ -33,34 +32,31 @@ impl Renderable for IdentifierPath {
                     // at the first condition only is_normal is not enough
                     // because zero is not counted normal
                     if (*x != 0f32 && !x.is_normal()) || *x < 0f32 ||
-                       x.round() > (::std::usize::MAX as f32) {
-                        return Error::renderer("bad array index");
-                    }
+                        x.round() > (::std::usize::MAX as f32) {
+                            return Error::renderer(&format!("bad array index: '{:?}'", x));
+                        }
                     let idx = x.round() as usize;
                     let value =
                         value
-                            .get(idx)
-                            .ok_or_else(|| Error::Render("index out of range".to_string()))?;
+                        .get(idx)
+                        .ok_or_else(|| Error::Render(format!("index out of range: got '{:?}' while array len is '{:?}'", idx, value.len())))?;
                     Ok(value)
                 }
-                (&Value::Array(_), _) => Error::renderer("bad array index type"),
+                (&Value::Array(_), x) => Error::renderer(&format!("bad array index type: got array indexed by '{:?}'", x)),
                 (&Value::Object(ref value), &Value::Str(ref x)) => {
                     let value =
                         value
-                            .get(x)
-                            .ok_or_else(|| Error::Render("object element not found".to_string()))?;
+                        .get(x)
+                        .ok_or_else(|| Error::Render(format!("object element '{:?}' not found", x)))?;
                     Ok(value)
                 }
-                (&Value::Object(_), _) => Error::renderer("bad object index"),
+                (&Value::Object(_), x) => Error::renderer(&format!("bad object index type: expected string, but got '{:?}'", x)),
                 (value, _) if counter == 0 => Ok(value),
-                _ => Error::renderer("non-indexable element found while indexable expected"),
+                (value, _) => Error::renderer(&format!("expected indexable element, but founr '{:?}'", value)),
             }
         });
 
-        match result {
-            Ok(result) => result.render(context),
-            Err(e) => Error::renderer(&format!("rendering error: {}", e)),
-        }
+        result?.render(context)
     }
 }
 
@@ -117,11 +113,24 @@ mod test {
     use std::collections::HashMap;
 
     #[test]
-    fn identifier_path() {
+    fn identifier_path_array_index() {
         let options = LiquidOptions::with_known_blocks();
-        let template = concat!("array: {{ test_a[0] }}\n",
-                               "complex_dot: {{ test_a[0].test_h }}\n",
-                               "complex_string: {{ test_a[0][\"test_h\"] }}\n");
+        let template = "array: {{ test_a[0] }}";
+
+        let mut context = Context::new();
+        let test = Value::Array(vec![Value::Str("test".to_owned())]);
+        context.set_val("test_a", test);
+
+        let template = parse(template, options).unwrap();
+        assert_eq!(template.render(&mut context).unwrap(),
+        Some("array: test".to_owned()));
+    }
+
+    #[test]
+    fn identifier_path_object_dot() {
+
+        let options = LiquidOptions::with_known_blocks();
+        let template = "object_dot: {{ test_a[0].test_h }}\n";
 
         let mut context = Context::new();
         let mut internal = HashMap::new();
@@ -132,9 +141,23 @@ mod test {
 
         let template = parse(template, options).unwrap();
         assert_eq!(template.render(&mut context).unwrap(),
-                   Some(concat!("array: test_h: 5\n",
-                                "complex_dot: 5\n",
-                                "complex_string: 5\n")
-                            .to_owned()));
+        Some("object_dot: 5\n".to_owned()));
+    }
+
+    #[test]
+    fn identifier_path_object_string() {
+        let options = LiquidOptions::with_known_blocks();
+        let template = "object_string: {{ test_a[0][\"test_h\"] }}\n";
+
+        let mut context = Context::new();
+        let mut internal = HashMap::new();
+        internal.insert("test_h".to_string(), Value::Num(5f32));
+
+        let test = Value::Array(vec![Value::Object(internal)]);
+        context.set_val("test_a", test);
+
+        let template = parse(template, options).unwrap();
+        assert_eq!(template.render(&mut context).unwrap(),
+        Some("object_string: 5\n".to_owned()));
     }
 }
