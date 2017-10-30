@@ -67,6 +67,22 @@ pub fn deserialize_bool() {
 }
 
 #[test]
+pub fn serialize_nil() {
+    let actual = liquid::Value::Nil;
+    let actual = serde_yaml::to_string(&actual).unwrap();
+    assert_diff!(&actual, "---\n~", "", 0);
+}
+
+#[test]
+pub fn deserialize_nil() {
+    let actual: liquid::Value = serde_yaml::from_str("---\n~").unwrap();
+    assert_eq!(actual, liquid::Value::Nil);
+
+    let actual: liquid::Value = serde_yaml::from_str("---\n- ").unwrap();
+    assert_eq!(actual, liquid::Value::Array(vec![liquid::Value::Nil]));
+}
+
+#[test]
 pub fn serialize_str() {
     let actual = liquid::Value::str("Hello");
     let actual = serde_yaml::to_string(&actual).unwrap();

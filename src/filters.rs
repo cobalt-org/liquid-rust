@@ -849,6 +849,7 @@ pub fn default(input: &Value, args: &[Value]) -> FilterResult {
         Array(ref a) => a.is_empty(),
         Bool(b) => !b,
         Num(_) => false,
+        Value::Nil => true,
     };
 
     if use_default {

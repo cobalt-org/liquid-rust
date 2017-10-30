@@ -16,6 +16,7 @@ pub enum Value {
     Str(String),
     Array(Array),
     Object(Object),
+    Nil,
 }
 
 /// Type representing a Liquid array, payload of the `Value::Array` variant
@@ -132,6 +133,7 @@ impl PartialEq<Value> for Value {
             (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
             (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
             (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
+            (&Value::Nil, &Value::Nil) => true,
 
             // encode Ruby truthiness; all values except false and nil
             // are true, and we don't have a notion of nil
@@ -164,6 +166,7 @@ impl ToString for Value {
             Value::Num(ref x) => x.to_string(),
             Value::Bool(ref x) => x.to_string(),
             Value::Str(ref x) => x.to_owned(),
+            Value::Nil => "".to_owned(),
             Value::Array(ref x) => {
                 let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
                 arr.join(", ")
@@ -267,6 +270,11 @@ mod test {
     fn numbers_have_ruby_truthiness() {
         assert_eq!(TRUE, Value::Num(42f32));
         assert_eq!(TRUE, Value::Num(0f32));
+    }
+
+    #[test]
+    fn nil_equality() {
+        assert_eq!(Value::Nil, Value::Nil);
     }
 
     #[test]
