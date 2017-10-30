@@ -21,38 +21,60 @@ impl Renderable for IdentifierPath {
         let mut counter = self.indexes.len();
         let result = self.indexes.iter().fold(Ok(&value), |value, index| {
             // go through error
-            let value = if let Ok(value) = value {
-                value
-            } else {
-                return value;
-            };
+            let value = value?;
             counter -= 1;
             match (value, index) {
                 (&Value::Array(ref value), &Value::Num(ref x)) => {
                     // at the first condition only is_normal is not enough
                     // because zero is not counted normal
-                    if (*x != 0f32 && !x.is_normal()) || *x < 0f32 ||
-                        x.round() > (::std::usize::MAX as f32) {
-                            return Error::renderer(&format!("bad array index: '{:?}'", x));
-                        }
-                    let idx = x.round() as usize;
+                    if (*x != 0f32 && !x.is_normal()) ||
+                        x.round() > (::std::isize::MAX as f32) ||
+                            x.round() < (::std::isize::MIN as f32) {
+                                return Error::renderer(&format!("bad array index: '{:?}'", x));
+                            }
+
+                    let idx = if *x >= 0f32 {
+                        x.round() as usize
+                    } else {
+                        value.len() - (-x.round() as usize)
+                    };
+                    let err = ||
+                        Error::Render(
+                            format!("index out of range: got '{:?}' while array len is '{:?}'",
+                                    idx,
+                                    value.len()
+                                   )
+                            );
                     let value =
                         value
                         .get(idx)
-                        .ok_or_else(|| Error::Render(format!("index out of range: got '{:?}' while array len is '{:?}'", idx, value.len())))?;
+                        .ok_or_else(err)?;
                     Ok(value)
                 }
-                (&Value::Array(_), x) => Error::renderer(&format!("bad array index type: got array indexed by '{:?}'", x)),
+                (&Value::Array(_), x) => {
+                    Error::renderer(
+                        &format!("bad array index type: got array indexed by '{:?}'", x)
+                    )
+                }
                 (&Value::Object(ref value), &Value::Str(ref x)) => {
+                    let err = || Error::Render(format!("object element '{:?}' not found", x));
                     let value =
                         value
                         .get(x)
-                        .ok_or_else(|| Error::Render(format!("object element '{:?}' not found", x)))?;
+                        .ok_or_else(err)?;
                     Ok(value)
                 }
-                (&Value::Object(_), x) => Error::renderer(&format!("bad object index type: expected string, but got '{:?}'", x)),
+                (&Value::Object(_), x) => {
+                    Error::renderer(
+                        &format!("bad object index type: expected string, but got '{:?}'", x)
+                    )
+                }
                 (value, _) if counter == 0 => Ok(value),
-                (value, _) => Error::renderer(&format!("expected indexable element, but founr '{:?}'", value)),
+                (value, _) => {
+                    Error::renderer(
+                        &format!("expected indexable element, but founr '{:?}'", value)
+                    )
+                }
             }
         });
 
@@ -123,7 +145,22 @@ mod test {
 
         let template = parse(template, options).unwrap();
         assert_eq!(template.render(&mut context).unwrap(),
-        Some("array: test".to_owned()));
+                   Some("array: test".to_owned()));
+    }
+
+    #[test]
+    fn identifier_path_array_index_negative() {
+        let options = LiquidOptions::with_known_blocks();
+        let template = "array: {{ test_a[-1] }}";
+
+        let mut context = Context::new();
+        let test = Value::Array(vec![Value::Str("test1".to_owned()),
+                                     Value::Str("test2".to_owned())]);
+        context.set_val("test_a", test);
+
+        let template = parse(template, options).unwrap();
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("array: test2".to_owned()));
     }
 
     #[test]
@@ -141,7 +178,7 @@ mod test {
 
         let template = parse(template, options).unwrap();
         assert_eq!(template.render(&mut context).unwrap(),
-        Some("object_dot: 5\n".to_owned()));
+                   Some("object_dot: 5\n".to_owned()));
     }
 
     #[test]
@@ -158,6 +195,6 @@ mod test {
 
         let template = parse(template, options).unwrap();
         assert_eq!(template.render(&mut context).unwrap(),
-        Some("object_string: 5\n".to_owned()));
+                   Some("object_string: 5\n".to_owned()));
     }
 }
