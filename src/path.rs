@@ -5,7 +5,7 @@ use token::Token;
 use token::Token::*;
 use error::{Error, Result};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct IdentifierPath {
     value: String,
     indexes: Vec<Value>,
@@ -72,7 +72,7 @@ impl Renderable for IdentifierPath {
                 (value, _) if counter == 0 => Ok(value),
                 (value, _) => {
                     Error::renderer(
-                        &format!("expected indexable element, but founr '{:?}'", value)
+                        &format!("expected indexable element, but found '{:?}'", value)
                     )
                 }
             }
@@ -185,6 +185,25 @@ mod test {
     fn identifier_path_object_string() {
         let options = LiquidOptions::with_known_blocks();
         let template = "object_string: {{ test_a[0][\"test_h\"] }}\n";
+
+        let mut context = Context::new();
+        let mut internal = HashMap::new();
+        internal.insert("test_h".to_string(), Value::Num(5f32));
+
+        let test = Value::Array(vec![Value::Object(internal)]);
+        context.set_val("test_a", test);
+
+        let template = parse(template, options).unwrap();
+        assert_eq!(template.render(&mut context).unwrap(),
+                   Some("object_string: 5\n".to_owned()));
+    }
+
+    #[test]
+    #[should_panic]
+    fn identifier_path_subexpression() {
+        let options = LiquidOptions::with_known_blocks();
+        let template = concat!("{% assign somevar=\"test_h\" %}",
+                               "result_string: {{ test_a[0][somevar] }}\n");
 
         let mut context = Context::new();
         let mut internal = HashMap::new();
