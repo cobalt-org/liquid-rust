@@ -138,9 +138,8 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                         "contains" => Comparison(Contains),
                         ".." => DotDot,
 
-                        x
-                            if SINGLE_STRING_LITERAL.is_match(x) ||
-                               DOUBLE_STRING_LITERAL.is_match(x) => {
+                        x if SINGLE_STRING_LITERAL.is_match(x) ||
+                             DOUBLE_STRING_LITERAL.is_match(x) => {
                             StringLiteral(x[1..x.len() - 1].to_owned())
                         }
                         x if NUMBER_LITERAL.is_match(x) => {
