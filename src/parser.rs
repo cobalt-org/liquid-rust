@@ -9,6 +9,7 @@ use value::Value;
 use variable::Variable;
 use text::Text;
 use output::{Output, FilterPrototype, Argument};
+use path::IdentifierPath;
 use token::Token;
 use token::Token::*;
 use lexer::Element::{self, Expression, Tag, Raw};
@@ -41,6 +42,11 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
 // creates an expression, which wraps everything that gets rendered
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens[0] {
+        Identifier(ref x) if tokens.len() > 1 && (tokens[1] == Dot || tokens[1] == OpenSquare) => {
+            let mut result = IdentifierPath::new(x.clone());
+            try!(result.append_indexes(&tokens[1..]));
+            Ok(Box::new(result))
+        }
         Identifier(ref x) if options.tags.contains_key(x) => {
             options.tags[x](x, &tokens[1..], options)
         }
