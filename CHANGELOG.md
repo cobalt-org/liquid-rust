@@ -1,3 +1,14 @@
+<a name="0.11.0"></a>
+## 0.11.0 (2017-11-08)
+
+
+#### Features
+
+* **syntax:** Add `arr[0]` and `obj["name"]` indexing (PR #141, fixes #127)
+* **value:**  Add nil value to support foreign data (PR #140, [89f6660d](https://github.com/cobalt-org/liquid-rust/commit/89f6660d61ee3a59d3e29e7ad8fe6b31791b1d6f))
+
+
+
 <a name="0.10.1"></a>
 ## 0.10.1 (2017-09-24)
 
