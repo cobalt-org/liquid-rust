@@ -86,7 +86,7 @@ mod path;
 ///
 /// ## Minimal Example
 /// ```
-/// # use liquid::{Renderable, LiquidOptions, Context, Error};
+/// # use liquid::{Renderable, LiquidOptions, Context, Error, FnTagParser};
 ///
 /// struct HelloWorld;
 ///
@@ -97,16 +97,47 @@ mod path;
 /// }
 ///
 /// let mut options : LiquidOptions = Default::default();
-/// options.tags.insert("hello_world".to_owned(), Box::new(|_tag_name, _arguments, _options| {
-///      Ok(Box::new(HelloWorld))
-/// }));
+/// options.tags.insert(
+///     "hello_world".to_owned(),
+///     Box::new(FnTagParser::new(|_tag_name, _arguments, _options| {
+///         Ok(Box::new(HelloWorld))
+///     })),
+/// );
 ///
 /// let template = liquid::parse("{{hello_world}}", options).unwrap();
 /// let mut data = Context::new();
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Hello World!".to_owned()));
 /// ```
-pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
+pub trait ParseTag {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>>;
+}
+
+pub type FnParseTag = fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
+
+pub struct FnTagParser {
+    pub parser: FnParseTag,
+}
+
+impl FnTagParser {
+    pub fn new(parser: FnParseTag) -> Self {
+        Self { parser }
+    }
+}
+
+impl ParseTag for FnTagParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        (self.parser)(tag_name, arguments, options)
+    }
+}
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
@@ -162,7 +193,7 @@ pub struct LiquidOptions {
     /// Holds all custom block-size tags
     pub blocks: HashMap<String, Box<Block>>,
     /// Holds all custom tags
-    pub tags: HashMap<String, Box<Tag>>,
+    pub tags: HashMap<String, Box<ParseTag>>,
     /// The path to which paths in include tags should be relative to
     pub template_repository: Box<TemplateRepository>,
 }
@@ -189,11 +220,11 @@ impl LiquidOptions {
     /// Registers all known tags and blocks in an existing options
     /// struct
     pub fn register_known_blocks(&mut self) {
-        self.register_tag("assign", Box::new(assign_tag));
-        self.register_tag("break", Box::new(break_tag));
-        self.register_tag("continue", Box::new(continue_tag));
-        self.register_tag("cycle", Box::new(cycle_tag));
-        self.register_tag("include", Box::new(include_tag));
+        self.register_tag("assign", Box::new(FnTagParser::new(assign_tag)));
+        self.register_tag("break", Box::new(FnTagParser::new(break_tag)));
+        self.register_tag("continue", Box::new(FnTagParser::new(continue_tag)));
+        self.register_tag("cycle", Box::new(FnTagParser::new(cycle_tag)));
+        self.register_tag("include", Box::new(FnTagParser::new(include_tag)));
 
         self.register_block("raw", Box::new(raw_block));
         self.register_block("if", Box::new(if_block));
@@ -210,7 +241,7 @@ impl LiquidOptions {
     }
 
     /// Inserts a new custom tag into the options object
-    pub fn register_tag(&mut self, name: &str, tag: Box<Tag>) {
+    pub fn register_tag(&mut self, name: &str, tag: Box<ParseTag>) {
         self.tags.insert(name.to_owned(), tag);
     }
 }

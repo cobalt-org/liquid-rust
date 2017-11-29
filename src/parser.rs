@@ -48,7 +48,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             Ok(Box::new(result))
         }
         Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x](x, &tokens[1..], options)
+            options.tags[x].parse(x, &tokens[1..], options)
         }
         _ => {
             let output = try!(parse_output(tokens));
@@ -134,7 +134,7 @@ fn parse_tag(iter: &mut Iter<Element>,
     match *tag {
         // is a tag
         Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x](x, &tokens[1..], options)
+            options.tags[x].parse(x, &tokens[1..], options)
         }
 
         // is a block

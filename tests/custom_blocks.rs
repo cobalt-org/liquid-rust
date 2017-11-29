@@ -38,7 +38,7 @@ fn run() {
     }
 
     let mut options: LiquidOptions = Default::default();
-    options.register_tag("multiply", Box::new(multiply_tag));
+    options.register_tag("multiply", Box::new(liquid::FnTagParser::new(multiply_tag)));
 
     let template = parse("wat\n{{hello}}\n{{multiply 5 3}}{%raw%}{{multiply 5 3}}{%endraw%} test",
                          options)
