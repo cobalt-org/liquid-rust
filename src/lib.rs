@@ -166,7 +166,38 @@ impl ParseTag for FnTagParser {
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`LiquidOptions`](struct.LiquidOptions.html).
-pub type Block = Fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+pub trait ParseBlock: Send + Sync {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>>;
+}
+
+pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+
+#[derive(Clone)]
+pub struct FnBlockParser {
+    pub parser: FnParseBlock,
+}
+
+impl FnBlockParser {
+    pub fn new(parser: FnParseBlock) -> Self {
+        Self { parser }
+    }
+}
+
+impl ParseBlock for FnBlockParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        (self.parser)(tag_name, arguments, tokens, options)
+    }
+}
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable: Send + Sync {
@@ -210,7 +241,7 @@ impl TemplateRepository for LocalTemplateRepository {
 /// Options that `liquid::parse` takes
 pub struct LiquidOptions {
     /// Holds all custom block-size tags
-    pub blocks: HashMap<String, Box<Block>>,
+    pub blocks: HashMap<String, Box<ParseBlock>>,
     /// Holds all custom tags
     pub tags: HashMap<String, Box<ParseTag>>,
     /// The path to which paths in include tags should be relative to
@@ -245,17 +276,17 @@ impl LiquidOptions {
         self.register_tag("cycle", Box::new(FnTagParser::new(cycle_tag)));
         self.register_tag("include", Box::new(FnTagParser::new(include_tag)));
 
-        self.register_block("raw", Box::new(raw_block));
-        self.register_block("if", Box::new(if_block));
-        self.register_block("unless", Box::new(unless_block));
-        self.register_block("for", Box::new(for_block));
-        self.register_block("comment", Box::new(comment_block));
-        self.register_block("capture", Box::new(capture_block));
-        self.register_block("case", Box::new(case_block));
+        self.register_block("raw", Box::new(FnBlockParser::new(raw_block)));
+        self.register_block("if", Box::new(FnBlockParser::new(if_block)));
+        self.register_block("unless", Box::new(FnBlockParser::new(unless_block)));
+        self.register_block("for", Box::new(FnBlockParser::new(for_block)));
+        self.register_block("comment", Box::new(FnBlockParser::new(comment_block)));
+        self.register_block("capture", Box::new(FnBlockParser::new(capture_block)));
+        self.register_block("case", Box::new(FnBlockParser::new(case_block)));
     }
 
     /// Inserts a new custom block into the options object
-    pub fn register_block(&mut self, name: &str, block: Box<Block>) {
+    pub fn register_block(&mut self, name: &str, block: Box<ParseBlock>) {
         self.blocks.insert(name.to_owned(), block);
     }
 

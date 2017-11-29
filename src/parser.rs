@@ -167,7 +167,7 @@ fn parse_tag(iter: &mut Iter<Element>,
                 };
                 children.push(t.clone())
             }
-            options.blocks[x](x, &tokens[1..], &children, options)
+            options.blocks[x].parse(x, &tokens[1..], &children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
