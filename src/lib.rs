@@ -166,13 +166,31 @@ impl ParseTag for FnTagParser {
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`LiquidOptions`](struct.LiquidOptions.html).
-pub trait ParseBlock: Send + Sync {
+pub trait ParseBlock: Send + Sync + ParseBlockClone {
     fn parse(&self,
              tag_name: &str,
              arguments: &[Token],
              tokens: &[Element],
              options: &LiquidOptions)
              -> Result<Box<Renderable>>;
+}
+
+pub trait ParseBlockClone {
+    fn clone_box(&self) -> Box<ParseBlock>;
+}
+
+impl<T> ParseBlockClone for T
+    where T: 'static + ParseBlock + Clone
+{
+    fn clone_box(&self) -> Box<ParseBlock> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<ParseBlock> {
+    fn clone(&self) -> Box<ParseBlock> {
+        self.clone_box()
+    }
 }
 
 pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
