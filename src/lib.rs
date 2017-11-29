@@ -226,11 +226,30 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
-pub trait TemplateRepository {
+pub trait TemplateRepository: Send + Sync + TemplateRepositoryClone {
     fn read_template(&self, path: &str) -> Result<String>;
 }
 
+pub trait TemplateRepositoryClone {
+    fn clone_box(&self) -> Box<TemplateRepository>;
+}
+
+impl<T> TemplateRepositoryClone for T
+    where T: 'static + TemplateRepository + Clone
+{
+    fn clone_box(&self) -> Box<TemplateRepository> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<TemplateRepository> {
+    fn clone(&self) -> Box<TemplateRepository> {
+        self.clone_box()
+    }
+}
+
 /// `TemplateRepository` to load files relative to the root
+#[derive(Clone)]
 pub struct LocalTemplateRepository {
     root: PathBuf,
 }
