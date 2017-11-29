@@ -86,7 +86,7 @@ mod path;
 ///
 /// ## Minimal Example
 /// ```
-/// # use liquid::{Renderable, LiquidOptions, Context, Error};
+/// # use liquid::{Renderable, LiquidOptions, Context, Error, FnTagParser};
 ///
 /// struct HelloWorld;
 ///
@@ -97,16 +97,66 @@ mod path;
 /// }
 ///
 /// let mut options : LiquidOptions = Default::default();
-/// options.tags.insert("hello_world".to_owned(), Box::new(|_tag_name, _arguments, _options| {
-///      Ok(Box::new(HelloWorld))
-/// }));
+/// options.tags.insert(
+///     "hello_world".to_owned(),
+///     Box::new(FnTagParser::new(|_tag_name, _arguments, _options| {
+///         Ok(Box::new(HelloWorld))
+///     })),
+/// );
 ///
 /// let template = liquid::parse("{{hello_world}}", options).unwrap();
 /// let mut data = Context::new();
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Hello World!".to_owned()));
 /// ```
-pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
+pub trait ParseTag: Send + Sync + ParseTagClone {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>>;
+}
+
+pub trait ParseTagClone {
+    fn clone_box(&self) -> Box<ParseTag>;
+}
+
+impl<T> ParseTagClone for T
+    where T: 'static + ParseTag + Clone
+{
+    fn clone_box(&self) -> Box<ParseTag> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<ParseTag> {
+    fn clone(&self) -> Box<ParseTag> {
+        self.clone_box()
+    }
+}
+
+pub type FnParseTag = fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
+
+#[derive(Clone)]
+pub struct FnTagParser {
+    pub parser: FnParseTag,
+}
+
+impl FnTagParser {
+    pub fn new(parser: FnParseTag) -> Self {
+        Self { parser }
+    }
+}
+
+impl ParseTag for FnTagParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        (self.parser)(tag_name, arguments, options)
+    }
+}
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
@@ -116,7 +166,56 @@ pub type Tag = Fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`LiquidOptions`](struct.LiquidOptions.html).
-pub type Block = Fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+pub trait ParseBlock: Send + Sync + ParseBlockClone {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>>;
+}
+
+pub trait ParseBlockClone {
+    fn clone_box(&self) -> Box<ParseBlock>;
+}
+
+impl<T> ParseBlockClone for T
+    where T: 'static + ParseBlock + Clone
+{
+    fn clone_box(&self) -> Box<ParseBlock> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<ParseBlock> {
+    fn clone(&self) -> Box<ParseBlock> {
+        self.clone_box()
+    }
+}
+
+pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+
+#[derive(Clone)]
+pub struct FnBlockParser {
+    pub parser: FnParseBlock,
+}
+
+impl FnBlockParser {
+    pub fn new(parser: FnParseBlock) -> Self {
+        Self { parser }
+    }
+}
+
+impl ParseBlock for FnBlockParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        (self.parser)(tag_name, arguments, tokens, options)
+    }
+}
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable: Send + Sync {
@@ -127,11 +226,30 @@ pub trait Renderable: Send + Sync {
     fn render(&self, context: &mut Context) -> Result<Option<String>>;
 }
 
-pub trait TemplateRepository {
+pub trait TemplateRepository: Send + Sync + TemplateRepositoryClone {
     fn read_template(&self, path: &str) -> Result<String>;
 }
 
+pub trait TemplateRepositoryClone {
+    fn clone_box(&self) -> Box<TemplateRepository>;
+}
+
+impl<T> TemplateRepositoryClone for T
+    where T: 'static + TemplateRepository + Clone
+{
+    fn clone_box(&self) -> Box<TemplateRepository> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<TemplateRepository> {
+    fn clone(&self) -> Box<TemplateRepository> {
+        self.clone_box()
+    }
+}
+
 /// `TemplateRepository` to load files relative to the root
+#[derive(Clone)]
 pub struct LocalTemplateRepository {
     root: PathBuf,
 }
@@ -158,11 +276,12 @@ impl TemplateRepository for LocalTemplateRepository {
 }
 
 /// Options that `liquid::parse` takes
+#[derive(Clone)]
 pub struct LiquidOptions {
     /// Holds all custom block-size tags
-    pub blocks: HashMap<String, Box<Block>>,
+    pub blocks: HashMap<String, Box<ParseBlock>>,
     /// Holds all custom tags
-    pub tags: HashMap<String, Box<Tag>>,
+    pub tags: HashMap<String, Box<ParseTag>>,
     /// The path to which paths in include tags should be relative to
     pub template_repository: Box<TemplateRepository>,
 }
@@ -189,28 +308,28 @@ impl LiquidOptions {
     /// Registers all known tags and blocks in an existing options
     /// struct
     pub fn register_known_blocks(&mut self) {
-        self.register_tag("assign", Box::new(assign_tag));
-        self.register_tag("break", Box::new(break_tag));
-        self.register_tag("continue", Box::new(continue_tag));
-        self.register_tag("cycle", Box::new(cycle_tag));
-        self.register_tag("include", Box::new(include_tag));
+        self.register_tag("assign", Box::new(FnTagParser::new(assign_tag)));
+        self.register_tag("break", Box::new(FnTagParser::new(break_tag)));
+        self.register_tag("continue", Box::new(FnTagParser::new(continue_tag)));
+        self.register_tag("cycle", Box::new(FnTagParser::new(cycle_tag)));
+        self.register_tag("include", Box::new(FnTagParser::new(include_tag)));
 
-        self.register_block("raw", Box::new(raw_block));
-        self.register_block("if", Box::new(if_block));
-        self.register_block("unless", Box::new(unless_block));
-        self.register_block("for", Box::new(for_block));
-        self.register_block("comment", Box::new(comment_block));
-        self.register_block("capture", Box::new(capture_block));
-        self.register_block("case", Box::new(case_block));
+        self.register_block("raw", Box::new(FnBlockParser::new(raw_block)));
+        self.register_block("if", Box::new(FnBlockParser::new(if_block)));
+        self.register_block("unless", Box::new(FnBlockParser::new(unless_block)));
+        self.register_block("for", Box::new(FnBlockParser::new(for_block)));
+        self.register_block("comment", Box::new(FnBlockParser::new(comment_block)));
+        self.register_block("capture", Box::new(FnBlockParser::new(capture_block)));
+        self.register_block("case", Box::new(FnBlockParser::new(case_block)));
     }
 
     /// Inserts a new custom block into the options object
-    pub fn register_block(&mut self, name: &str, block: Box<Block>) {
+    pub fn register_block(&mut self, name: &str, block: Box<ParseBlock>) {
         self.blocks.insert(name.to_owned(), block);
     }
 
     /// Inserts a new custom tag into the options object
-    pub fn register_tag(&mut self, name: &str, tag: Box<Tag>) {
+    pub fn register_tag(&mut self, name: &str, tag: Box<ParseTag>) {
         self.tags.insert(name.to_owned(), tag);
     }
 }

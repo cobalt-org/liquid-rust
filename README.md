@@ -75,7 +75,7 @@ designated name. You will have to specify a function or closure that will
 then return a `Renderable` object to do the rendering.
 
 ```rust
-use liquid::{LiquidOptions, Renderable, Context, Error};
+use liquid::{LiquidOptions, Renderable, Context, Error, FnTagParser};
 
 // our renderable object
 struct Shout {
@@ -90,9 +90,9 @@ impl Renderable for Shout {
 let mut options : LiquidOptions = Default::default();
 
 // initialize the tag and pass a closure that will return a new Shout renderable
-options.register_tag("shout", Box::new(|_tag_name, arguments, _options| {
+options.register_tag("shout", Box::new(FnTagParser::new(|_tag_name, arguments, _options| {
     Ok(Box::new(Shout{text: arguments[0].to_string()}))
-}));
+})));
 
 // use our new tag
 let template = liquid::parse("{{shout 'hello'}}", options).unwrap();
