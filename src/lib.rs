@@ -276,6 +276,7 @@ impl TemplateRepository for LocalTemplateRepository {
 }
 
 /// Options that `liquid::parse` takes
+#[derive(Clone)]
 pub struct LiquidOptions {
     /// Holds all custom block-size tags
     pub blocks: HashMap<String, Box<ParseBlock>>,
