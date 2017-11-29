@@ -109,7 +109,7 @@ mod path;
 /// let output = template.render(&mut data);
 /// assert_eq!(output.unwrap(), Some("Hello World!".to_owned()));
 /// ```
-pub trait ParseTag {
+pub trait ParseTag: Send + Sync + ParseTagClone {
     fn parse(&self,
              tag_name: &str,
              arguments: &[Token],
@@ -117,8 +117,27 @@ pub trait ParseTag {
              -> Result<Box<Renderable>>;
 }
 
+pub trait ParseTagClone {
+    fn clone_box(&self) -> Box<ParseTag>;
+}
+
+impl<T> ParseTagClone for T
+    where T: 'static + ParseTag + Clone
+{
+    fn clone_box(&self) -> Box<ParseTag> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<ParseTag> {
+    fn clone(&self) -> Box<ParseTag> {
+        self.clone_box()
+    }
+}
+
 pub type FnParseTag = fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 
+#[derive(Clone)]
 pub struct FnTagParser {
     pub parser: FnParseTag,
 }
