@@ -1,8 +1,9 @@
 use error::{Error, Result};
 use context::{Context, Interrupt};
-use Token;
 use LiquidOptions;
-use Renderable;
+
+use syntax::Token;
+use syntax::Renderable;
 
 struct Break;
 
@@ -48,10 +49,8 @@ pub fn continue_tag(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use Context;
-    use LiquidOptions;
-    use Renderable;
-    use parse;
+    use super::*;
+    use super::super::super::parse;
 
     #[test]
     fn test_simple_break() {

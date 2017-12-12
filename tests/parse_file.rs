@@ -2,6 +2,7 @@
 extern crate difference;
 extern crate liquid;
 
+use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
 use liquid::*;
@@ -10,12 +11,18 @@ use liquid::*;
 // tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to
 // fixtures that might necessitate changes to the parse_file method tested here.
 
+fn options() -> LiquidOptions {
+    LiquidOptions {
+        include_source: Box::new(FilesystemInclude::new(PathBuf::from("."))),
+        ..Default::default()
+    }
+}
+
 fn compare_by_file(name: &str, context: &mut Context) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
-    let options: LiquidOptions = Default::default();
-    let template = parse_file(&input_file, options).unwrap();
+    let template = parse_file(&input_file, options()).unwrap();
 
     let output = template.render(context).unwrap();
 

@@ -1,12 +1,12 @@
-
-use Renderable;
-use context::Context;
-use token::Token;
+use Context;
 use LiquidOptions;
-use template::Template;
-use parser;
-use lexer;
 use error::{Result, Error};
+
+use syntax::Renderable;
+use syntax::Template;
+use syntax::Token;
+use syntax::parse;
+use syntax::tokenize;
 
 struct Include {
     partial: Template,
@@ -19,10 +19,10 @@ impl Renderable for Include {
 }
 
 fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
-    let content = options.template_repository.read_template(name)?;
+    let content = options.include_source.include(name)?;
 
-    let tokens = try!(lexer::tokenize(&content));
-    parser::parse(&tokens, options).map(Template::new)
+    let tokens = tokenize(&content)?;
+    parse(&tokens, options).map(Template::new)
 }
 
 pub fn include_tag(_tag_name: &str,
@@ -43,19 +43,14 @@ pub fn include_tag(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use context::Context;
-    use Renderable;
-    use parse;
-    use error::Error;
-    use LiquidOptions;
-    use LocalTemplateRepository;
-    use std::path::PathBuf;
+    use super::*;
+    use std::path;
+    use FilesystemInclude;
+    use super::super::super::parse;
 
     fn options() -> LiquidOptions {
         LiquidOptions {
-            template_repository: Box::new(LocalTemplateRepository {
-                                              root: PathBuf::from("tests/fixtures/input"),
-                                          }),
+            include_source: Box::new(FilesystemInclude::new(path::PathBuf::from("tests/fixtures/input"))),
             ..Default::default()
         }
     }

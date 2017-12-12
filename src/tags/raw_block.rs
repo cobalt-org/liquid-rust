@@ -1,9 +1,10 @@
-use Renderable;
-use context::Context;
 use LiquidOptions;
-use token::Token;
-use lexer::Element::{self, Expression, Tag, Raw};
+use context::Context;
 use error::Result;
+
+use syntax::Element;
+use syntax::Renderable;
+use syntax::Token;
 
 struct RawT {
     content: String,
@@ -22,9 +23,9 @@ pub fn raw_block(_tag_name: &str,
                  -> Result<Box<Renderable>> {
     let content = tokens.iter().fold("".to_owned(), |a, b| {
         match *b {
-            Expression(_, ref text) |
-            Tag(_, ref text) |
-            Raw(ref text) => text,
+            Element::Expression(_, ref text) |
+            Element::Tag(_, ref text) |
+            Element::Raw(ref text) => text,
         }.to_owned() + &a
     });
     Ok(Box::new(RawT { content: content }))
@@ -32,12 +33,12 @@ pub fn raw_block(_tag_name: &str,
 
 #[test]
 fn test_raw() {
-    use std::default::Default;
+    use super::*;
 
     let options: LiquidOptions = Default::default();
     let raw = raw_block("raw",
                         &[],
-                        &vec![Expression(vec![], "This is a test".to_owned())],
+                        &vec![Element::Expression(vec![], "This is a test".to_owned())],
                         &options);
     assert_eq!(raw.unwrap().render(&mut Default::default()).unwrap(),
                Some("This is a test".to_owned()));

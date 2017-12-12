@@ -1,8 +1,9 @@
-use Renderable;
-use context::Context;
+use Context;
 use error::Result;
 
-#[derive(Debug, PartialEq)]
+use super::Renderable;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Variable {
     name: String,
 }

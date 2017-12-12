@@ -1,12 +1,13 @@
-use context::Context;
-use error::{Error, Result};
-use lexer::Element;
+use Context;
 use LiquidOptions;
-use Renderable;
-use template::Template;
-use token::Token::{self, Identifier};
-use value::Value;
-use parser::parse;
+use error::{Error, Result};
+
+use syntax::Element;
+use syntax::Renderable;
+use syntax::Template;
+use syntax::Token;
+use syntax::Value;
+use syntax::parse;
 
 struct Capture {
     id: String,
@@ -33,7 +34,7 @@ pub fn capture_block(_tag_name: &str,
                      -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let id = match args.next() {
-        Some(&Identifier(ref x)) => x.clone(),
+        Some(&Token::Identifier(ref x)) => x.clone(),
         x @ Some(_) | x @ None => return Error::parser("Identifier", x),
     };
 
@@ -42,7 +43,7 @@ pub fn capture_block(_tag_name: &str,
         return Error::parser("%}", t);
     };
 
-    let t = Template::new(try!(parse(tokens, options)));
+    let t = Template::new(parse(tokens, options)?);
 
     Ok(Box::new(Capture {
                     id: id,
@@ -52,12 +53,8 @@ pub fn capture_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use parse;
-    use LiquidOptions;
-    use Renderable;
-    use value::Value;
-    use std::default::Default;
-    use context::Context;
+    use super::*;
+    use super::super::super::parse;
 
     #[test]
     fn test_capture() {

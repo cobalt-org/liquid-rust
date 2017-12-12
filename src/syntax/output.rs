@@ -1,8 +1,9 @@
-use Renderable;
-use context::Context;
-use value::Value;
-use variable::Variable;
+use Context;
 use error::{Error, Result};
+
+use super::Renderable;
+use super::Value;
+use super::variable::Variable;
 
 #[derive(Debug, PartialEq)]
 pub struct FilterPrototype {

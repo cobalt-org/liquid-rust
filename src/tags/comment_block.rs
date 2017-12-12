@@ -1,9 +1,10 @@
-use Renderable;
-use context::Context;
+use Context;
 use LiquidOptions;
-use token::Token;
-use lexer::Element;
 use error::Result;
+
+use syntax::Renderable;
+use syntax::Token;
+use syntax::Element;
 
 struct Comment;
 
@@ -23,17 +24,15 @@ pub fn comment_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use LiquidOptions;
-    use super::comment_block;
-    use std::default::Default;
-    use lexer::Element::Expression;
+    use super::*;
 
     #[test]
     fn test_comment() {
         let options: LiquidOptions = Default::default();
         let comment = comment_block("comment",
                                     &[],
-                                    &vec![Expression(vec![], "This is a test".to_string())],
+                                    &vec![Element::Expression(vec![],
+                                                              "This is a test".to_string())],
                                     &options);
         assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
                    None);

@@ -1,13 +1,13 @@
-use Renderable;
 use LiquidOptions;
 use error::{Error, Result};
-use context::Context;
-use lexer::Element::{self, Tag};
-use token::Token::{self, Or, Identifier};
-use parser::{parse, consume_value_token, split_block};
+use Context;
 
-use template::Template;
-use value::Value;
+use syntax::Renderable;
+use syntax::Element;
+use syntax::Token;
+use syntax::{parse, consume_value_token, split_block};
+use syntax::Template;
+use syntax::Value;
 
 struct CaseOption {
     tokens: Vec<Token>,
@@ -24,7 +24,7 @@ impl CaseOption {
 
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
         for t in &self.tokens {
-            match try!(context.evaluate(t)) {
+            match context.evaluate(t)? {
                 Some(ref v) if *v == *value => return Ok(true),
                 _ => {}
             }
@@ -43,7 +43,7 @@ impl Renderable for Case {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         if let Some(value) = try!(context.evaluate(&self.target)) {
             for case in &self.cases {
-                if try!(case.evaluate(&value, context)) {
+                if case.evaluate(&value, context)? {
                     return case.template.render(context);
                 }
             }
@@ -63,11 +63,11 @@ enum Conditional {
 }
 
 fn parse_condition(element: &Element) -> Result<Conditional> {
-    if let Tag(ref tokens, _) = *element {
+    if let Element::Tag(ref tokens, _) = *element {
         match tokens[0] {
-            Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
+            Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
 
-            Identifier(ref name) if name == "when" => {
+            Token::Identifier(ref name) if name == "when" => {
                 let mut values: Vec<Token> = Vec::new();
                 let mut args = tokens[1..].iter();
 
@@ -75,7 +75,7 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
 
                 loop {
                     match args.next() {
-                        Some(&Or) => {}
+                        Some(&Token::Or) => {}
                         Some(x) => return Error::parser("or", Some(x)),
                         None => break,
                     }
@@ -100,7 +100,7 @@ pub fn case_block(_tag_name: &str,
                   -> Result<Box<Renderable>> {
     let delims = &["when", "else"];
     let mut args = arguments.iter();
-    let value = try!(consume_value_token(&mut args));
+    let value = consume_value_token(&mut args)?;
 
     // fast forward to the first arm of the case block,
     let mut children = match split_block(&tokens[..], delims, options) {
@@ -116,7 +116,7 @@ pub fn case_block(_tag_name: &str,
 
     loop {
         let (leading, trailing) = split_block(&children[1..], delims, options);
-        let template = Template::new(try!(parse(leading, options)));
+        let template = Template::new(parse(leading, options)?);
 
         match try!(parse_condition(&children[0])) {
             Conditional::Cond(conds) => {
@@ -142,11 +142,8 @@ pub fn case_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use LiquidOptions;
-    use Renderable;
-    use parse;
-    use value::Value;
-    use context::Context;
+    use super::*;
+    use super::super::super::parse;
 
     #[test]
     fn test_case_block() {

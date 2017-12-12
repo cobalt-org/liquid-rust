@@ -1,9 +1,9 @@
-use Renderable;
-use value::Value;
-use context::Context;
-use token::Token;
-use token::Token::*;
+use Context;
 use error::{Error, Result};
+
+use super::Value;
+use super::Renderable;
+use super::Token;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct IdentifierPath {
@@ -91,26 +91,26 @@ impl IdentifierPath {
     }
     pub fn append_indexes(&mut self, tokens: &[Token]) -> Result<()> {
         let rest = match tokens[0] {
-            Dot if tokens.len() > 1 => {
+            Token::Dot if tokens.len() > 1 => {
                 match tokens[1] {
-                    Identifier(ref x) => self.indexes.push(Value::Str(x.clone())),
+                    Token::Identifier(ref x) => self.indexes.push(Value::Str(x.clone())),
                     _ => {
                         return Error::parser("identifier", Some(&tokens[0]));
                     }
                 };
                 2
             }
-            OpenSquare if tokens.len() > 2 => {
+            Token::OpenSquare if tokens.len() > 2 => {
                 let index = match tokens[1] {
-                    StringLiteral(ref x) => Value::Str(x.clone()),
-                    NumberLiteral(ref x) => Value::Num(*x),
+                    Token::StringLiteral(ref x) => Value::Str(x.clone()),
+                    Token::NumberLiteral(ref x) => Value::Num(*x),
                     _ => {
                         return Error::parser("number | string", Some(&tokens[0]));
                     }
                 };
                 self.indexes.push(index);
 
-                if tokens[2] != CloseSquare {
+                if tokens[2] != Token::CloseSquare {
                     return Error::parser("]", Some(&tokens[1]));
                 }
                 3
@@ -127,12 +127,12 @@ impl IdentifierPath {
 }
 #[cfg(test)]
 mod test {
-    use value::Value;
-    use parse;
-    use Renderable;
-    use Context;
-    use LiquidOptions;
     use std::collections::HashMap;
+
+    use super::*;
+    use super::super::super::parse;
+    use LiquidOptions;
+    use Context;
 
     #[test]
     fn identifier_path_array_index() {

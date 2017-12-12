@@ -1,0 +1,65 @@
+use error::Result;
+use LiquidOptions;
+
+use super::Element;
+use super::Renderable;
+use super::Token;
+
+/// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
+/// This is a simple type alias for a function.
+///
+/// This function will be called whenever the parser encounters a block and returns
+/// a new `Renderable` based on its parameters. The received parameters specify the name
+/// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
+/// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
+/// the global [`LiquidOptions`](struct.LiquidOptions.html).
+pub trait ParseBlock: Send + Sync + ParseBlockClone {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>>;
+}
+
+pub trait ParseBlockClone {
+    fn clone_box(&self) -> Box<ParseBlock>;
+}
+
+impl<T> ParseBlockClone for T
+    where T: 'static + ParseBlock + Clone
+{
+    fn clone_box(&self) -> Box<ParseBlock> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<ParseBlock> {
+    fn clone(&self) -> Box<ParseBlock> {
+        self.clone_box()
+    }
+}
+
+pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+
+#[derive(Clone)]
+pub struct FnBlockParser {
+    pub parser: FnParseBlock,
+}
+
+impl FnBlockParser {
+    pub fn new(parser: FnParseBlock) -> Self {
+        Self { parser }
+    }
+}
+
+impl ParseBlock for FnBlockParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        (self.parser)(tag_name, arguments, tokens, options)
+    }
+}

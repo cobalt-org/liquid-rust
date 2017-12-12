@@ -1,15 +1,16 @@
-use Renderable;
-use context::{Context, Interrupt};
-use LiquidOptions;
-use lexer::Element;
-use token::Token::{self, Identifier, OpenRound, CloseRound, NumberLiteral, DotDot, Colon};
-use parser::{parse, expect, split_block};
-use template::Template;
-use value::Value;
-use error::{Error, Result};
-
 use std::collections::HashMap;
 use std::slice::Iter;
+
+use context::{Context, Interrupt};
+use LiquidOptions;
+use error::{Error, Result};
+
+use syntax::Renderable;
+use syntax::Element;
+use syntax::Token;
+use syntax::{parse, expect, split_block};
+use syntax::Template;
+use syntax::Value;
 
 enum Range {
     Array(String),
@@ -120,17 +121,17 @@ impl Renderable for For {
 
 /// Extracts an attribute with an integer value from the token stream
 fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
-    try!(expect(args, &Colon));
+    expect(args, &Token::Colon)?;
     match args.next() {
-        Some(&NumberLiteral(ref n)) => Ok(Some(*n as usize)),
+        Some(&Token::NumberLiteral(ref n)) => Ok(Some(*n as usize)),
         x => Error::parser("number", x),
     }
 }
 
 fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
-        Some(id @ &NumberLiteral(_)) |
-        Some(id @ &Identifier(_)) => Ok(id.clone()),
+        Some(id @ &Token::NumberLiteral(_)) |
+        Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
         x => Error::parser("number | Identifier", x),
     }
 }
@@ -142,23 +143,23 @@ pub fn for_block(_tag_name: &str,
                  -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let var_name = match args.next() {
-        Some(&Identifier(ref x)) => x.clone(),
+        Some(&Token::Identifier(ref x)) => x.clone(),
         x => return Error::parser("Identifier", x),
     };
 
-    try!(expect(&mut args, &Identifier("in".to_owned())));
+    expect(&mut args, &Token::Identifier("in".to_owned()))?;
 
     let range = match args.next() {
-        Some(&Identifier(ref x)) => Range::Array(x.clone()),
-        Some(&OpenRound) => {
+        Some(&Token::Identifier(ref x)) => Range::Array(x.clone()),
+        Some(&Token::OpenRound) => {
             // this might be a range, let's try and see
-            let start = try!(range_end_point(&mut args));
+            let start = range_end_point(&mut args)?;
 
-            try!(expect(&mut args, &DotDot));
+            expect(&mut args, &Token::DotDot)?;
 
-            let stop = try!(range_end_point(&mut args));
+            let stop = range_end_point(&mut args)?;
 
-            try!(expect(&mut args, &CloseRound));
+            expect(&mut args, &Token::CloseRound)?;
 
             Range::Counted(start, stop)
         }
@@ -172,10 +173,10 @@ pub fn for_block(_tag_name: &str,
 
     while let Some(token) = args.next() {
         match *token {
-            Identifier(ref attr) => {
+            Token::Identifier(ref attr) => {
                 match attr.as_ref() {
-                    "limit" => limit = try!(int_attr(&mut args)),
-                    "offset" => offset = try!(int_attr(&mut args)).unwrap_or(0),
+                    "limit" => limit = int_attr(&mut args)?,
+                    "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
                     "reversed" => reversed = true,
                     _ => return Error::parser("limit | offset | reversed", Some(token)),
                 }
@@ -185,11 +186,11 @@ pub fn for_block(_tag_name: &str,
     }
 
     let (leading, trailing) = split_block(tokens, &["else"], options);
-    let item_template = Template::new(try!(parse(leading, options)));
+    let item_template = Template::new(parse(leading, options)?);
 
     let else_template = match trailing {
         Some(split) => {
-            let parsed = try!(parse(&split.trailing[1..], options));
+            let parsed = parse(&split.trailing[1..], options)?;
             Some(Template::new(parsed))
         }
         None => None,
@@ -208,23 +209,17 @@ pub fn for_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use super::for_block;
-    use parse;
-    use LiquidOptions;
-    use Renderable;
-    use token::Token::{Identifier, OpenRound, CloseRound, NumberLiteral, DotDot};
-    use lexer::tokenize;
-    use value::Value;
-    use std::default::Default;
-    use context::Context;
+    use super::*;
+    use syntax::tokenize;
+    use super::super::super::parse;
 
     #[test]
     fn loop_over_array() {
         let options: LiquidOptions = Default::default();
         let for_tag = for_block("for",
-                                &[Identifier("name".to_owned()),
-                                  Identifier("in".to_owned()),
-                                  Identifier("array".to_owned())],
+                                &[Token::Identifier("name".to_owned()),
+                                  Token::Identifier("in".to_owned()),
+                                  Token::Identifier("array".to_owned())],
                                 &tokenize("test {{name}} ").unwrap(),
                                 &options);
 
@@ -243,13 +238,13 @@ mod test {
     fn loop_over_range_literals() {
         let options: LiquidOptions = Default::default();
         let for_tag = for_block("for",
-                                &[Identifier("name".to_owned()),
-                                  Identifier("in".to_owned()),
-                                  OpenRound,
-                                  NumberLiteral(42f32),
-                                  DotDot,
-                                  NumberLiteral(46f32),
-                                  CloseRound],
+                                &[Token::Identifier("name".to_owned()),
+                                  Token::Identifier("in".to_owned()),
+                                  Token::OpenRound,
+                                  Token::NumberLiteral(42f32),
+                                  Token::DotDot,
+                                  Token::NumberLiteral(46f32),
+                                  Token::CloseRound],
                                 &tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
                                 &options);
 
@@ -413,13 +408,13 @@ mod test {
     fn loop_variables() {
         let options: LiquidOptions = Default::default();
         let for_tag = for_block("for",
-                                &[Identifier("v".to_owned()),
-                                  Identifier("in".to_owned()),
-                                  OpenRound,
-                                  NumberLiteral(100f32),
-                                  DotDot,
-                                  NumberLiteral(103f32),
-                                  CloseRound],
+                                &[Token::Identifier("v".to_owned()),
+                                  Token::Identifier("in".to_owned()),
+                                  Token::OpenRound,
+                                  Token::NumberLiteral(100f32),
+                                  Token::DotDot,
+                                  Token::NumberLiteral(103f32),
+                                  Token::CloseRound],
                                 &tokenize(concat!("length: {{forloop.length}}, ",
                                                   "index: {{forloop.index}}, ",
                                                   "index0: {{forloop.index0}}, ",
@@ -451,9 +446,9 @@ mod test {
 
         let options: LiquidOptions = Default::default();
         let for_tag = for_block("for",
-                                &[Identifier("name".to_owned()),
-                                  Identifier("in".to_owned()),
-                                  Identifier("array".to_owned())],
+                                &[Token::Identifier("name".to_owned()),
+                                  Token::Identifier("in".to_owned()),
+                                  Token::Identifier("array".to_owned())],
                                 &tokenize("test {{name | shout}} ").unwrap(),
                                 &options);
 

@@ -1,10 +1,11 @@
-use Renderable;
-use context::Context;
+use Context;
 use LiquidOptions;
-use output::Output;
-use parser::{parse_output, expect};
-use token::Token::{self, Identifier, Assignment};
 use error::{Error, Result};
+
+use syntax::Output;
+use syntax::Renderable;
+use syntax::Token;
+use syntax::{parse_output, expect};
 
 struct Assign {
     dst: String,
@@ -25,23 +26,22 @@ pub fn assign_tag(_tag_name: &str,
                   -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let dst = match args.next() {
-        Some(&Identifier(ref id)) => id.clone(),
+        Some(&Token::Identifier(ref id)) => id.clone(),
         x => return Error::parser("Identifier", x),
     };
 
-    try!(expect(&mut args, &Assignment));
+    expect(&mut args, &Token::Assignment)?;
 
-    let src = try!(parse_output(&arguments[2..]));
+    let src = parse_output(&arguments[2..])?;
 
     Ok(Box::new(Assign { dst: dst, src: src }))
 }
 
 #[cfg(test)]
 mod test {
-    use parse;
-    use Renderable;
-    use context::Context;
-    use value::Value;
+    use super::*;
+    use syntax::Value;
+    use super::super::super::parse;
 
     #[test]
     fn assignment_in_loop_persists_on_loop_exit() {

@@ -1,9 +1,10 @@
-use Renderable;
-use context::Context;
+use Context;
 use LiquidOptions;
-use token::Token::{self, Comma, Colon};
 use error::{Error, Result};
-use parser::{consume_value_token, value_token};
+
+use syntax::Renderable;
+use syntax::Token;
+use syntax::{consume_value_token, value_token};
 
 struct Cycle {
     name: String,
@@ -25,11 +26,12 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     let first = try!(consume_value_token(&mut args));
 
     match args.next() {
-        Some(&Colon) => {
+        Some(&Token::Colon) => {
             // the first argument is the name of the cycle block
             name = first.to_string();
         }
-        Some(&Comma) | None => {
+        Some(&Token::Comma) |
+        None => {
             // first argument is the first item in the cycle
             values.push(first);
         }
@@ -46,7 +48,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         }
 
         match args.next() {
-            Some(&Comma) => {}
+            Some(&Token::Comma) => {}
             None => break,
             x => return Error::parser("Comma", x),
         }
@@ -73,32 +75,27 @@ pub fn cycle_tag(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use syntax::Value;
+    use super::super::super::parse;
 
     #[test]
     fn unnamed_cycle_gets_a_name() {
-        use super::parse_cycle;
-        use token::Token::{StringLiteral, Identifier, Comma};
-        use LiquidOptions;
-
-        let tokens = vec![Identifier("this".to_owned()),
-                          Comma,
-                          StringLiteral("cycle".to_owned()),
-                          Comma,
-                          Identifier("has".to_owned()),
-                          Comma,
-                          Identifier("no".to_owned()),
-                          Comma,
-                          Identifier("name".to_owned())];
+        let tokens = vec![Token::Identifier("this".to_owned()),
+                          Token::Comma,
+                          Token::StringLiteral("cycle".to_owned()),
+                          Token::Comma,
+                          Token::Identifier("has".to_owned()),
+                          Token::Comma,
+                          Token::Identifier("no".to_owned()),
+                          Token::Comma,
+                          Token::Identifier("name".to_owned())];
         let cycle = parse_cycle(&tokens[..], &LiquidOptions::default()).unwrap();
         assert_eq!("thiscyclehasnoname", cycle.name);
     }
 
     #[test]
     fn named_values_are_independent() {
-        use context::Context;
-        use parse;
-        use Renderable;
-
         let text = concat!("{% cycle 'a': 'one', 'two', 'three' %}\n",
                            "{% cycle 'a': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n",
@@ -114,10 +111,6 @@ mod test {
 
     #[test]
     fn values_are_cycled() {
-        use context::Context;
-        use parse;
-        use Renderable;
-
         let text = concat!("{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n",
@@ -133,11 +126,6 @@ mod test {
 
     #[test]
     fn values_can_be_variables() {
-        use context::Context;
-        use parse;
-        use value::Value;
-        use Renderable;
-
         let text = concat!("{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n",
@@ -157,10 +145,6 @@ mod test {
 
     #[test]
     fn bad_cycle_indices_dont_crash() {
-        use context::Context;
-        use parse;
-        use Renderable;
-
         // note the pair of cycle tags with the same name but a differing
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n").to_owned();

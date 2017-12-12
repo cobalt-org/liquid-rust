@@ -1,10 +1,10 @@
-use Renderable;
-use context::Context;
 use std::collections::HashMap;
 use std::cmp::Ordering;
-use error::{Result, Error};
-use token::Token;
-use token::Token::*;
+
+use Context;
+use error::Result;
+
+use super::Renderable;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
@@ -29,18 +29,6 @@ impl<'a> Value {
     /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
-    }
-
-    /// Parses a token that can possibly represent a Value
-    /// to said Value. Returns an Err if the token can not
-    /// be interpreted as a Value.
-    pub fn from_token(t: &Token) -> Result<Value> {
-        match t {
-            &StringLiteral(ref x) => Ok(Value::Str(x.to_owned())),
-            &NumberLiteral(x) => Ok(Value::Num(x)),
-            &BooleanLiteral(x) => Ok(Value::Bool(x)),
-            x => Error::parser("Value", Some(x)),
-        }
     }
 
     /// Extracts the float value if it is a float.

@@ -1,7 +1,8 @@
-use Renderable;
-use context::Context;
-use filters;
 use error::Result;
+use Context;
+use filters;
+
+use super::Renderable;
 
 pub struct Template {
     pub elements: Vec<Box<Renderable>>,

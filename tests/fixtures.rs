@@ -2,10 +2,17 @@
 extern crate difference;
 extern crate liquid;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::io::Read;
 use liquid::*;
+
+fn options() -> LiquidOptions {
+    LiquidOptions {
+        include_source: Box::new(FilesystemInclude::new(PathBuf::from("."))),
+        ..Default::default()
+    }
+}
 
 fn compare(name: &str, context: &mut Context) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
@@ -16,8 +23,7 @@ fn compare(name: &str, context: &mut Context) {
         .read_to_string(&mut input)
         .unwrap();
 
-    let options: LiquidOptions = Default::default();
-    let template = parse(&input, options).unwrap();
+    let template = parse(&input, options()).unwrap();
 
     let output = template.render(context).unwrap();
 

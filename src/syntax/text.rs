@@ -1,6 +1,7 @@
-use Renderable;
-use context::Context;
+use Context;
 use error::Result;
+
+use super::Renderable;
 
 pub struct Text {
     text: String,

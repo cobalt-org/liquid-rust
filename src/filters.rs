@@ -1,22 +1,18 @@
-use std::fmt;
-use std::error::Error;
 use std::cmp;
-use url::percent_encoding::EncodeSet;
-use url::percent_encoding;
-
-use value::Value;
-use value::Value::{Array, Bool, Num, Object, Str};
+use std::error::Error;
+use std::fmt;
 
 use chrono::DateTime;
+use itertools;
+use regex::Regex;
+use unicode_segmentation::UnicodeSegmentation;
+use url::percent_encoding::EncodeSet;
+use url::percent_encoding;
 
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;
 
-use self::FilterError::*;
-
-use regex::Regex;
-use itertools;
-use unicode_segmentation::UnicodeSegmentation;
+use syntax::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
@@ -34,9 +30,11 @@ impl FilterError {
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            InvalidType(ref e) => write!(f, "Invalid type : {}", e),
-            InvalidArgumentCount(ref e) => write!(f, "Invalid number of arguments : {}", e),
-            InvalidArgument(ref pos, ref e) => {
+            FilterError::InvalidType(ref e) => write!(f, "Invalid type : {}", e),
+            FilterError::InvalidArgumentCount(ref e) => {
+                write!(f, "Invalid number of arguments : {}", e)
+            }
+            FilterError::InvalidArgument(ref pos, ref e) => {
                 write!(f, "Invalid argument given at position {} : {}", pos, e)
             }
         }
@@ -46,9 +44,9 @@ impl fmt::Display for FilterError {
 impl Error for FilterError {
     fn description(&self) -> &str {
         match *self {
-            InvalidType(ref e) |
-            InvalidArgumentCount(ref e) |
-            InvalidArgument(_, ref e) => e,
+            FilterError::InvalidType(ref e) |
+            FilterError::InvalidArgumentCount(ref e) |
+            FilterError::InvalidArgument(_, ref e) => e,
         }
     }
 }
@@ -59,14 +57,14 @@ pub type Filter = Fn(&Value, &[Value]) -> FilterResult;
 // Helper functions for the filters.
 fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {
     if args.len() < required {
-        return Err(InvalidArgumentCount(format!("expected at least {}, {} given",
-                                                required,
-                                                args.len())));
+        return Err(FilterError::InvalidArgumentCount(format!("expected at least {}, {} given",
+                                                             required,
+                                                             args.len())));
     }
     if required + optional < args.len() {
-        return Err(InvalidArgumentCount(format!("expected at most {}, {} given",
-                                                required + optional,
-                                                args.len())));
+        return Err(FilterError::InvalidArgumentCount(format!("expected at most {}, {} given",
+                                                             required + optional,
+                                                             args.len())));
     }
     Ok(())
 }
@@ -89,7 +87,7 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
 
     let s = input
         .as_str()
-        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
     let mut result = String::new();
     let mut last = 0;
     let mut skip = 0;
@@ -123,17 +121,17 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     if last < s.len() {
         result.push_str(&s[last..]);
     }
-    Ok(Str(result))
+    Ok(Value::Str(result))
 }
 
 // standardfilters.rb
 
 pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
     match *input {
-        Str(ref x) => Ok(Num(x.len() as f32)),
-        Array(ref x) => Ok(Num(x.len() as f32)),
-        Object(ref x) => Ok(Num(x.len() as f32)),
-        _ => Ok(Num(0f32)),
+        Value::Str(ref x) => Ok(Value::Num(x.len() as f32)),
+        Value::Array(ref x) => Ok(Value::Num(x.len() as f32)),
+        Value::Object(ref x) => Ok(Value::Num(x.len() as f32)),
+        _ => Ok(Value::Num(0f32)),
     }
 }
 
@@ -141,14 +139,14 @@ pub fn downcase(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let s = input.to_string();
-    Ok(Str(s.to_lowercase()))
+    Ok(Value::Str(s.to_lowercase()))
 }
 
 pub fn upcase(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let s = input.to_string();
-    Ok(Str(s.to_uppercase()))
+    Ok(Value::Str(s.to_uppercase()))
 }
 
 pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
@@ -161,7 +159,7 @@ pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
         None => String::new(),
     };
 
-    Ok(Str(capitalized))
+    Ok(Value::Str(capitalized))
 }
 
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
@@ -208,7 +206,7 @@ pub fn url_encode(input: &Value, args: &[Value]) -> FilterResult {
 
     let result = percent_encoding::utf8_percent_encode(s.as_str(), URL_ENCODE_SET.clone())
         .collect();
-    Ok(Str(result))
+    Ok(Value::Str(result))
 }
 
 pub fn url_decode(input: &Value, args: &[Value]) -> FilterResult {
@@ -218,9 +216,9 @@ pub fn url_decode(input: &Value, args: &[Value]) -> FilterResult {
 
     let result = percent_encoding::percent_decode(s.as_bytes())
         .decode_utf8()
-        .map_err(|_| InvalidType("Malformed UTF-8".to_owned()))?
+        .map_err(|_| FilterError::InvalidType("Malformed UTF-8".to_owned()))?
         .into_owned();
-    Ok(Str(result))
+    Ok(Value::Str(result))
 }
 
 fn canonicalize_slice(slice_offset: isize,
@@ -251,14 +249,17 @@ fn canonicalize_slice(slice_offset: isize,
 pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1, 1));
 
-    let offset = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let offset =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
     let offset = offset as isize;
 
     let length = match args.get(1) {
-        Some(&Num(x)) if x > 0f32 => x as isize,
-        Some(_) => return Err(InvalidArgument(1, "Positive number expected".to_owned())),
+        Some(&Value::Num(x)) if x > 0f32 => x as isize,
+        Some(_) => {
+            return Err(FilterError::InvalidArgument(1, "Positive number expected".to_owned()))
+        }
         None => 1,
     };
 
@@ -310,10 +311,11 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 2));
 
-    let length = args.get(0)
-        .unwrap_or(&Value::Num(50f32))
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let length =
+        args.get(0)
+            .unwrap_or(&Value::Num(50f32))
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
     let length = length as usize;
 
     let truncate_string = args.get(1)
@@ -333,16 +335,17 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
     } else {
         input
     };
-    Ok(Str(result))
+    Ok(Value::Str(result))
 }
 
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 2));
 
-    let words = args.get(0)
-        .unwrap_or(&Value::Num(15f32))
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let words =
+        args.get(0)
+            .unwrap_or(&Value::Num(15f32))
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
     let words = words as usize;
 
     let truncate_string = args.get(1)
@@ -355,7 +358,7 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     let word_list: Vec<&str> = input_string.split(' ').collect();
     let result = if words < word_list.len() {
         let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_str();
-        Str(result)
+        Value::Str(result)
     } else {
         input.clone()
     };
@@ -370,10 +373,10 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     let pattern = args[0].to_string();
 
     // Split and construct resulting Array
-    Ok(Array(input
-                 .split(pattern.as_str())
-                 .map(|x| Str(x.to_owned()))
-                 .collect()))
+    Ok(Value::Array(input
+                        .split(pattern.as_str())
+                        .map(|x| Value::Str(x.to_owned()))
+                        .collect()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
@@ -387,7 +390,7 @@ pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let input = input.to_string();
-    Ok(Str(input.trim().to_string()))
+    Ok(Value::Str(input.trim().to_string()))
 }
 
 /// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
@@ -400,7 +403,7 @@ pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let input = input.to_string();
-    Ok(Str(input.trim_left().to_string()))
+    Ok(Value::Str(input.trim_left().to_string()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
@@ -413,7 +416,7 @@ pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let input = input.to_string();
-    Ok(Str(input.trim_right().to_string()))
+    Ok(Value::Str(input.trim_right().to_string()))
 }
 
 pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
@@ -431,7 +434,7 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
     let result = MATCHERS.iter().fold(input, |acc, matcher| {
         matcher.replace_all(&acc, "").into_owned()
     });
-    Ok(Str(result))
+    Ok(Value::Str(result))
 }
 
 /// Removes any newline characters (line breaks) from a string.
@@ -439,7 +442,7 @@ pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     let input = input.to_string();
-    Ok(Str(input.chars().filter(|c| *c != '\n' && *c != '\r').collect()))
+    Ok(Value::Str(input.chars().filter(|c| *c != '\n' && *c != '\r').collect()))
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
@@ -449,13 +452,14 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
         .map(|v| v.to_string())
         .unwrap_or_else(|| " ".to_owned());
 
-    let input = input
-        .as_array()
-        .ok_or_else(|| InvalidType("Array of strings expected".to_owned()))?;
-    // use ToStr to stringify the values in case they aren't strings...
+    let input =
+        input
+            .as_array()
+            .ok_or_else(|| FilterError::InvalidType("Array of strings expected".to_owned()))?;
+    // use ToValue::Str to stringify the values in case they aren't strings...
     let input = input.iter().map(|x| x.to_string());
 
-    Ok(Str(itertools::join(input, glue.as_str())))
+    Ok(Value::Str(itertools::join(input, glue.as_str())))
 }
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
@@ -465,7 +469,7 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut sorted = array.clone();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
     Ok(Value::Array(sorted))
@@ -478,7 +482,7 @@ pub fn sort_natural(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut sorted: Vec<_> = array
         .iter()
         .map(|v| (v.to_string().to_lowercase(), v.clone()))
@@ -498,7 +502,7 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut deduped: Vec<Value> = Vec::new();
     for x in array.iter() {
         if !deduped.contains(x) {
@@ -514,7 +518,7 @@ pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut reversed = array.clone();
     reversed.reverse();
     Ok(Value::Array(reversed))
@@ -526,7 +530,7 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
 
     let property = args[0].to_string();
 
@@ -562,7 +566,7 @@ pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
         .map(|v| v.to_string())
         .unwrap_or_else(|| "".to_owned());
 
-    Ok(Str(input.replace(search.as_str(), replace.as_str())))
+    Ok(Value::Str(input.replace(search.as_str(), replace.as_str())))
 }
 
 pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
@@ -579,10 +583,10 @@ pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
         let tokens: Vec<&str> = input.splitn(2, search.as_str()).collect();
         if tokens.len() == 2 {
             let result = [tokens[0], replace.as_str(), tokens[1]].join("");
-            return Ok(Str(result));
+            return Ok(Value::Str(result));
         }
     }
-    Ok(Str(input))
+    Ok(Value::Str(input))
 }
 
 pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
@@ -592,7 +596,7 @@ pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
 
     let string = args[0].to_string();
 
-    Ok(Str(input.replace(string.as_str(), "")))
+    Ok(Value::Str(input.replace(string.as_str(), "")))
 }
 
 pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
@@ -602,7 +606,7 @@ pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
 
     let string = args[0].to_string();
 
-    Ok(Str(input.splitn(2, string.as_str()).collect()))
+    Ok(Value::Str(input.splitn(2, string.as_str()).collect()))
 }
 
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
@@ -614,7 +618,7 @@ pub fn append(input: &Value, args: &[Value]) -> FilterResult {
 
     input.push_str(string.as_str());
 
-    Ok(Str(input))
+    Ok(Value::Str(input))
 }
 
 pub fn concat(input: &Value, args: &[Value]) -> FilterResult {
@@ -622,17 +626,17 @@ pub fn concat(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_array()
-        .ok_or_else(|| InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let input = input.iter().map(|v| v.to_owned());
 
     let array = args[0]
         .as_array()
-        .ok_or_else(|| InvalidArgument(0, "Array expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Array expected".to_owned()))?;
     let array = array.iter().map(|v| v.to_owned());
 
     let result = input.chain(array);
     let result: Vec<_> = result.collect();
-    Ok(Array(result))
+    Ok(Value::Array(result))
 }
 
 pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
@@ -644,7 +648,7 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
 
     string.push_str(input.as_str());
 
-    Ok(Str(string))
+    Ok(Value::Str(string))
 }
 
 /// Replaces every newline (`\n`) with an HTML line break (`<br>`).
@@ -653,7 +657,7 @@ pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
 
     // TODO handle windows line endings
     let input = input.to_string();
-    Ok(Str(input.replace("\n", "<br />")))
+    Ok(Value::Str(input.replace("\n", "<br />")))
 }
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
@@ -666,7 +670,7 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
 
     let input_string = input
         .as_str()
-        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
     let date = DateTime::parse_from_str(input_string, "%d %B %Y %H:%M:%S %z");
     let date = match date {
         Ok(d) => d,
@@ -682,15 +686,15 @@ pub fn first(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     match *input {
-        Str(ref x) => {
+        Value::Str(ref x) => {
             let c = x.chars()
                 .next()
                 .map(|c| c.to_string())
                 .unwrap_or_else(|| "".to_owned());
-            Ok(Str(c))
+            Ok(Value::Str(c))
         }
-        Array(ref x) => Ok(x.first().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
+        Value::Array(ref x) => Ok(x.first().unwrap_or(&Value::Str("".to_owned())).to_owned()),
+        _ => Err(FilterError::InvalidType(" or Array expected".to_owned())),
     }
 }
 
@@ -698,15 +702,15 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
 
     match *input {
-        Str(ref x) => {
+        Value::Str(ref x) => {
             let c = x.chars()
                 .last()
                 .map(|c| c.to_string())
                 .unwrap_or_else(|| "".to_owned());
-            Ok(Str(c))
+            Ok(Value::Str(c))
         }
-        Array(ref x) => Ok(x.last().unwrap_or(&Str("".to_owned())).to_owned()),
-        _ => Err(InvalidType("String or Array expected".to_owned())),
+        Value::Array(ref x) => Ok(x.last().unwrap_or(&Value::Str("".to_owned())).to_owned()),
+        _ => Err(FilterError::InvalidType(" or Array expected".to_owned())),
     }
 }
 
@@ -714,17 +718,17 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
 pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
     match *input {
-        Str(ref s) => {
+        Value::Str(ref s) => {
             match s.parse::<f32>() {
-                Ok(n) => Ok(Num(n.abs())),
+                Ok(n) => Ok(Value::Num(n.abs())),
                 Err(e) => {
-                    Err(InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
-                                            e.to_string())))
+                    Err(FilterError::InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
+                                                         e.to_string())))
                 }
             }
         }
-        Num(n) => Ok(Num(n.abs())),
-        _ => Err(InvalidType("String or number expected".to_owned())),
+        Value::Num(n) => Ok(Value::Num(n.abs())),
+        _ => Err(FilterError::InvalidType(" or number expected".to_owned())),
     }
 }
 
@@ -733,13 +737,14 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
-    let operand = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let operand =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
 
-    Ok(Num(input + operand))
+    Ok(Value::Num(input + operand))
 }
 
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
@@ -747,13 +752,14 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
-    let operand = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let operand =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
 
-    Ok(Num(input - operand))
+    Ok(Value::Num(input - operand))
 }
 
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
@@ -761,13 +767,14 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
-    let operand = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let operand =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
 
-    Ok(Num(input * operand))
+    Ok(Value::Num(input * operand))
 }
 
 pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
@@ -775,14 +782,15 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
-    let operand = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let operand =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
 
     // TODO only do `.floor` if its an integer
-    Ok(Num((input / operand).floor()))
+    Ok(Value::Num((input / operand).floor()))
 }
 
 pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
@@ -790,35 +798,37 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
-    let operand = args[0]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let operand =
+        args[0]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
 
-    Ok(Num(input % operand))
+    Ok(Value::Num(input % operand))
 }
 
 pub fn round(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 1));
 
-    let n = args.get(0)
-        .unwrap_or(&Value::Num(0_f32))
-        .as_float()
-        .ok_or_else(|| InvalidArgument(0, "Number expected".to_owned()))?;
+    let n =
+        args.get(0)
+            .unwrap_or(&Value::Num(0_f32))
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
     let n = n as i32;
 
     let input = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
 
     if n == 0 {
-        Ok(Num(input.round()))
+        Ok(Value::Num(input.round()))
     } else if n < 0 {
-        Err(InvalidArgument(0, "Positive number expected".to_owned()))
+        Err(FilterError::InvalidArgument(0, "Positive number expected".to_owned()))
     } else {
         let multiplier = 10.0_f32.powi(n);
-        Ok(Num((input * multiplier).round() / multiplier))
+        Ok(Value::Num((input * multiplier).round() / multiplier))
     }
 }
 
@@ -827,8 +837,8 @@ pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    Ok(Num(n.ceil()))
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+    Ok(Value::Num(n.ceil()))
 }
 
 pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
@@ -836,19 +846,19 @@ pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
-    Ok(Num(n.floor()))
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+    Ok(Value::Num(n.floor()))
 }
 
 pub fn default(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1, 0));
 
     let use_default = match *input {
-        Str(ref s) => s.is_empty(),
-        Object(ref o) => o.is_empty(),
-        Array(ref a) => a.is_empty(),
-        Bool(b) => !b,
-        Num(_) => false,
+        Value::Str(ref s) => s.is_empty(),
+        Value::Object(ref o) => o.is_empty(),
+        Value::Array(ref a) => a.is_empty(),
+        Value::Bool(b) => !b,
+        Value::Num(_) => false,
         Value::Nil => true,
     };
 
@@ -867,7 +877,7 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
     if (n as isize) == 1 {
         Ok(args[0].clone())
     } else {
@@ -883,17 +893,18 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
 
     let s = input
         .as_str()
-        .ok_or_else(|| InvalidType("String expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
     let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
         .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
 
     let format = args[0]
         .as_str()
-        .ok_or_else(|| InvalidArgument(0, "String expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidArgument(0, " expected".to_owned()))?;
 
-    let n = args[1]
-        .as_float()
-        .ok_or_else(|| InvalidArgument(1, "Number expected".to_owned()))?;
+    let n =
+        args[1]
+            .as_float()
+            .ok_or_else(|| FilterError::InvalidArgument(1, "Value::Number expected".to_owned()))?;
     let timezone = FixedOffset::east((n * 3600.0) as i32);
 
     Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
@@ -925,15 +936,15 @@ mod tests {
 
     macro_rules! tos {
         ( $a:expr ) => {{
-            Str($a.to_owned())
+            Value::Str($a.to_owned())
         }};
     }
 
     #[test]
     fn unit_abs() {
-        let input = Num(-1f32);
+        let input = Value::Num(-1f32);
         let args = &[];
-        let desired_result = Num(1f32);
+        let desired_result = Value::Num(1f32);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
@@ -941,22 +952,22 @@ mod tests {
     fn unit_abs_positive_in_string() {
         let input = &tos!("42");
         let args = &[];
-        let desired_result = Num(42f32);
+        let desired_result = Value::Num(42f32);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
     #[test]
     fn unit_abs_not_number_or_string() {
-        let input = &Bool(true);
+        let input = &Value::Bool(true);
         let args = &[];
-        let desired_result = FilterError::InvalidType("String or number expected".to_owned());
+        let desired_result = FilterError::InvalidType(" or number expected".to_owned());
         assert_eq!(failed!(abs, input, args), desired_result);
     }
 
     #[test]
     fn unit_abs_one_argument() {
-        let input = &Num(-1f32);
-        let args = &[Num(0f32)];
+        let input = &Value::Num(-1f32);
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(abs, input, args), desired_result);
@@ -965,9 +976,9 @@ mod tests {
     #[test]
     fn unit_abs_shopify_liquid() {
         // Three tests from https://shopify.github.io/liquid/filters/abs/
-        assert_eq!(unit!(abs, Num(-17f32), &[]), Num(17f32));
-        assert_eq!(unit!(abs, Num(4f32), &[]), Num(4f32));
-        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Num(19.86f32));
+        assert_eq!(unit!(abs, Value::Num(-17f32), &[]), Value::Num(17f32));
+        assert_eq!(unit!(abs, Value::Num(4f32), &[]), Value::Num(4f32));
+        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::Num(19.86f32));
     }
 
     #[test]
@@ -977,39 +988,45 @@ mod tests {
 
     #[test]
     fn unit_concat_nothing() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
-        let args = &[Array(vec![])];
-        let result = Array(vec![Num(1f32), Num(2f32)]);
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Array(vec![])];
+        let result = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_something() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
-        let args = &[Array(vec![Num(3f32), Num(4f32)])];
-        let result = Array(vec![Num(1f32), Num(2f32), Num(3f32), Num(4f32)]);
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Array(vec![Value::Num(3f32), Value::Num(4f32)])];
+        let result = Value::Array(vec![Value::Num(1f32),
+                                       Value::Num(2f32),
+                                       Value::Num(3f32),
+                                       Value::Num(4f32)]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_mixed() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
-        let args = &[Array(vec![Num(3f32), Value::str("a")])];
-        let result = Array(vec![Num(1f32), Num(2f32), Num(3f32), Value::str("a")]);
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Array(vec![Value::Num(3f32), Value::str("a")])];
+        let result = Value::Array(vec![Value::Num(1f32),
+                                       Value::Num(2f32),
+                                       Value::Num(3f32),
+                                       Value::str("a")]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_wrong_type() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
-        let args = &[Num(1f32)];
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Num(1f32)];
         let result = FilterError::InvalidArgument(0, "Array expected".to_owned());
         assert_eq!(failed!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_no_args() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
         let args = &[];
         let result = FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned());
         assert_eq!(failed!(concat, input, args), result);
@@ -1017,8 +1034,9 @@ mod tests {
 
     #[test]
     fn unit_concat_extra_args() {
-        let input = Array(vec![Num(1f32), Num(2f32)]);
-        let args = &[Array(vec![Num(3f32), Value::str("a")]), Num(2f32)];
+        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Array(vec![Value::Num(3f32), Value::str("a")]),
+                     Value::Num(2f32)];
         let result = FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned());
         assert_eq!(failed!(concat, input, args), result);
     }
@@ -1043,9 +1061,9 @@ mod tests {
 
     #[test]
     fn unit_ceil() {
-        assert_eq!(unit!(ceil, Num(1.1f32), &[]), Num(2f32));
-        assert_eq!(unit!(ceil, Num(1f32), &[]), Num(1f32));
-        assert!(ceil(&Bool(true), &[]).is_err());
+        assert_eq!(unit!(ceil, Value::Num(1.1f32), &[]), Value::Num(2f32));
+        assert_eq!(unit!(ceil, Value::Num(1f32), &[]), Value::Num(1f32));
+        assert!(ceil(&Value::Bool(true), &[]).is_err());
     }
 
     #[test]
@@ -1058,8 +1076,8 @@ mod tests {
 
     #[test]
     fn unit_date_bad_input_type() {
-        assert_eq!(failed!(date, Num(0f32), &[tos!("%Y-%m-%d")]),
-                   FilterError::InvalidType("String expected".to_owned()));
+        assert_eq!(failed!(date, Value::Num(0f32), &[tos!("%Y-%m-%d")]),
+                   FilterError::InvalidType(" expected".to_owned()));
     }
 
     #[test]
@@ -1072,13 +1090,15 @@ mod tests {
     fn unit_date_format_empty() {
         assert_eq!(unit!(date,
                          tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Str("".to_owned())]),
+                         &[Value::Str("".to_owned())]),
                    tos!("13 Jun 2016 02:30:00 +0300"));
     }
 
     #[test]
     fn unit_date_bad_format_type() {
-        assert_eq!(unit!(date, tos!("13 Jun 2016 02:30:00 +0300"), &[Num(0f32)]),
+        assert_eq!(unit!(date,
+                         tos!("13 Jun 2016 02:30:00 +0300"),
+                         &[Value::Num(0f32)]),
                    tos!("0"));
     }
 
@@ -1092,7 +1112,7 @@ mod tests {
     fn unit_date_extra_param() {
         assert_eq!(failed!(date,
                            tos!("13 Jun 2016 02:30:00 +0300"),
-                           &[Num(0f32), Num(1f32)]),
+                           &[Value::Num(0f32), Value::Num(1f32)]),
                    FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned()));
     }
 
@@ -1100,7 +1120,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_same_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(3f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(3f32)];
         let desired_result = tos!("2016-06-13 15:00:00 +0300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1109,7 +1129,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_previous_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(-13f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(-13f32)];
         let desired_result = tos!("2016-06-12 23:00:00 -1300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1118,7 +1138,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_next_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(13f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(13f32)];
         let desired_result = tos!("2016-06-14 01:00:00 +1300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1126,9 +1146,9 @@ mod tests {
     #[test]
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_string() {
-        let input = &Num(0f32);
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
-        let desired_result = FilterError::InvalidType("String expected".to_owned());
+        let input = &Value::Num(0f32);
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(0f32)];
+        let desired_result = FilterError::InvalidType(" expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1136,7 +1156,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_date_string() {
         let input = &tos!("blah blah blah");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(0f32)];
         let desired_result = FilterError::InvalidType("Invalid date format: input contains \
                                                        invalid characters"
                                                           .to_owned());
@@ -1147,8 +1167,8 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_date_format_not_a_string() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[Num(0f32), Num(1f32)];
-        let desired_result = FilterError::InvalidArgument(0, "String expected".to_owned());
+        let args = &[Value::Num(0f32), Value::Num(1f32)];
+        let desired_result = FilterError::InvalidArgument(0, " expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1157,7 +1177,7 @@ mod tests {
     fn unit_date_in_tz_offset_not_a_num() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
-        let desired_result = FilterError::InvalidArgument(1, "Number expected".to_owned());
+        let desired_result = FilterError::InvalidArgument(1, "Value::Number expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1185,7 +1205,9 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_three_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Num(0f32), Num(1f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"),
+                     Value::Num(0f32),
+                     Value::Num(1f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
                                                                    .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
@@ -1193,11 +1215,13 @@ mod tests {
 
     #[test]
     fn unit_divided_by() {
-        assert_eq!(unit!(divided_by, Num(4f32), &[Num(2f32)]), Num(2f32));
-        assert_eq!(unit!(divided_by, Num(5f32), &[Num(2f32)]), Num(2f32));
-        assert!(divided_by(&Bool(true), &[Num(8.5)]).is_err());
-        assert!(divided_by(&Num(2.5), &[Bool(true)]).is_err());
-        assert!(divided_by(&Num(2.5), &[]).is_err());
+        assert_eq!(unit!(divided_by, Value::Num(4f32), &[Value::Num(2f32)]),
+                   Value::Num(2f32));
+        assert_eq!(unit!(divided_by, Value::Num(5f32), &[Value::Num(2f32)]),
+                   Value::Num(2f32));
+        assert!(divided_by(&Value::Bool(true), &[Value::Num(8.5)]).is_err());
+        assert!(divided_by(&Value::Num(2.5), &[Value::Bool(true)]).is_err());
+        assert!(divided_by(&Value::Num(2.5), &[]).is_err());
     }
 
     #[test]
@@ -1244,23 +1268,27 @@ mod tests {
     #[test]
     fn unit_first() {
         assert_eq!(unit!(first,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(0f32));
-        assert_eq!(unit!(first, Array(vec![tos!("test"), tos!("two")])),
+                         Value::Array(vec![Value::Num(0f32),
+                                           Value::Num(1f32),
+                                           Value::Num(2f32),
+                                           Value::Num(3f32),
+                                           Value::Num(4f32)])),
+                   Value::Num(0f32));
+        assert_eq!(unit!(first, Value::Array(vec![tos!("test"), tos!("two")])),
                    tos!("test"));
-        assert_eq!(unit!(first, Array(vec![])), tos!(""));
+        assert_eq!(unit!(first, Value::Array(vec![])), tos!(""));
     }
 
     #[test]
     fn unit_floor() {
-        assert_eq!(unit!(floor, Num(1.1f32), &[]), Num(1f32));
-        assert_eq!(unit!(floor, Num(1f32), &[]), Num(1f32));
-        assert!(floor(&Bool(true), &[]).is_err());
+        assert_eq!(unit!(floor, Value::Num(1.1f32), &[]), Value::Num(1f32));
+        assert_eq!(unit!(floor, Value::Num(1f32), &[]), Value::Num(1f32));
+        assert!(floor(&Value::Bool(true), &[]).is_err());
     }
 
     #[test]
     fn unit_join() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
         let args = &[tos!(",")];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a,b,c"));
@@ -1276,15 +1304,15 @@ mod tests {
 
     #[test]
     fn unit_join_bad_join_string() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[Num(1f32)];
+        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let args = &[Value::Num(1f32)];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a1b1c"));
     }
 
     #[test]
     fn unit_join_no_args() {
-        let input = Array(vec![tos!("a"), tos!("b"), tos!("c")]);
+        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
         let args = &[];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a b c"));
@@ -1292,7 +1320,7 @@ mod tests {
 
     #[test]
     fn unit_join_non_string_element() {
-        let input = Array(vec![tos!("a"), Num(1f32), tos!("c")]);
+        let input = Value::Array(vec![tos!("a"), Value::Num(1f32), tos!("c")]);
         let args = &[tos!(",")];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a,1,c"));
@@ -1300,28 +1328,32 @@ mod tests {
 
     #[test]
     fn unit_sort() {
-        let input = &Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
+        let input = &Value::Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("Z"), tos!("a"), tos!("b"), tos!("c")]);
+        let desired_result = Value::Array(vec![tos!("Z"), tos!("a"), tos!("b"), tos!("c")]);
         assert_eq!(unit!(sort, input, args), desired_result);
     }
 
     #[test]
     fn unit_sort_natural() {
-        let input = &Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
+        let input = &Value::Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("a"), tos!("b"), tos!("c"), tos!("Z")]);
+        let desired_result = Value::Array(vec![tos!("a"), tos!("b"), tos!("c"), tos!("Z")]);
         assert_eq!(unit!(sort_natural, input, args), desired_result);
     }
 
     #[test]
     fn unit_last() {
         assert_eq!(unit!(last,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(4f32));
-        assert_eq!(unit!(last, Array(vec![tos!("test"), tos!("last")])),
+                         Value::Array(vec![Value::Num(0f32),
+                                           Value::Num(1f32),
+                                           Value::Num(2f32),
+                                           Value::Num(3f32),
+                                           Value::Num(4f32)])),
+                   Value::Num(4f32));
+        assert_eq!(unit!(last, Value::Array(vec![tos!("test"), tos!("last")])),
                    tos!("last"));
-        assert_eq!(unit!(last, Array(vec![])), tos!(""));
+        assert_eq!(unit!(last, Value::Array(vec![])), tos!(""));
     }
 
     #[test]
@@ -1334,7 +1366,7 @@ mod tests {
 
     #[test]
     fn unit_lstrip_non_string() {
-        let input = &Num(0f32);
+        let input = &Value::Num(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(lstrip, input, args), desired_result);
@@ -1343,7 +1375,7 @@ mod tests {
     #[test]
     fn unit_lstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
-        let args = &[Num(0f32)];
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(lstrip, input, args), desired_result);
@@ -1376,16 +1408,22 @@ mod tests {
 
     #[test]
     fn unit_minus() {
-        assert_eq!(unit!(minus, Num(2f32), &[Num(1f32)]), Num(1f32));
-        assert_eq!(unit!(minus, Num(21.5), &[Num(1.25)]), Num(20.25));
+        assert_eq!(unit!(minus, Value::Num(2f32), &[Value::Num(1f32)]),
+                   Value::Num(1f32));
+        assert_eq!(unit!(minus, Value::Num(21.5), &[Value::Num(1.25)]),
+                   Value::Num(20.25));
     }
 
     #[test]
     fn unit_modulo() {
-        assert_eq!(unit!(modulo, Num(3_f32), &[Num(2_f32)]), Num(1_f32));
-        assert_eq!(unit!(modulo, Num(3_f32), &[Num(3.0)]), Num(0_f32));
-        assert_eq!(unit!(modulo, Num(24_f32), &[Num(7_f32)]), Num(3_f32));
-        assert_eq!(unit!(modulo, Num(183.357), &[Num(12_f32)]), Num(3.3569946));
+        assert_eq!(unit!(modulo, Value::Num(3_f32), &[Value::Num(2_f32)]),
+                   Value::Num(1_f32));
+        assert_eq!(unit!(modulo, Value::Num(3_f32), &[Value::Num(3.0)]),
+                   Value::Num(0_f32));
+        assert_eq!(unit!(modulo, Value::Num(24_f32), &[Value::Num(7_f32)]),
+                   Value::Num(3_f32));
+        assert_eq!(unit!(modulo, Value::Num(183.357), &[Value::Num(12_f32)]),
+                   Value::Num(3.3569946));
     }
 
     #[test]
@@ -1408,7 +1446,7 @@ mod tests {
     #[test]
     fn unit_newline_to_br_one_argument() {
         let input = &tos!("a\nb");
-        let args = &[Num(0f32)];
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(newline_to_br, input, args), desired_result);
@@ -1417,17 +1455,19 @@ mod tests {
     #[test]
     #[cfg(feature = "extra-filters")]
     fn unit_pluralize() {
-        assert_eq!(unit!(pluralize, Num(1f32), &[tos!("one"), tos!("many")]),
+        assert_eq!(unit!(pluralize, Value::Num(1f32), &[tos!("one"), tos!("many")]),
                    tos!("one"));
 
-        assert_eq!(unit!(pluralize, Num(2f32), &[tos!("one"), tos!("many")]),
+        assert_eq!(unit!(pluralize, Value::Num(2f32), &[tos!("one"), tos!("many")]),
                    tos!("many"));
     }
 
     #[test]
     fn unit_plus() {
-        assert_eq!(unit!(plus, Num(2f32), &[Num(1f32)]), Num(3f32));
-        assert_eq!(unit!(plus, Num(21.5), &[Num(2.25)]), Num(23.75));
+        assert_eq!(unit!(plus, Value::Num(2f32), &[Value::Num(1f32)]),
+                   Value::Num(3f32));
+        assert_eq!(unit!(plus, Value::Num(21.5), &[Value::Num(2.25)]),
+                   Value::Num(23.75));
     }
 
     #[test]
@@ -1475,30 +1515,31 @@ mod tests {
     #[test]
     fn unit_reverse_apples_oranges_peaches_plums() {
         // First example from https://shopify.github.io/liquid/filters/reverse/
-        let input = &Array(vec![tos!("apples"),
-                                tos!("oranges"),
-                                tos!("peaches"),
-                                tos!("plums")]);
+        let input = &Value::Array(vec![tos!("apples"),
+                                       tos!("oranges"),
+                                       tos!("peaches"),
+                                       tos!("plums")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("plums"),
-                                        tos!("peaches"),
-                                        tos!("oranges"),
-                                        tos!("apples")]);
+        let desired_result = Value::Array(vec![tos!("plums"),
+                                               tos!("peaches"),
+                                               tos!("oranges"),
+                                               tos!("apples")]);
         assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
     #[test]
     fn unit_reverse_array() {
-        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
+        let input = &Value::Array(vec![Value::Num(3f32), Value::Num(1f32), Value::Num(2f32)]);
         let args = &[];
-        let desired_result = Array(vec![Num(2f32), Num(1f32), Num(3f32)]);
+        let desired_result =
+            Value::Array(vec![Value::Num(2f32), Value::Num(1f32), Value::Num(3f32)]);
         assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
     #[test]
     fn unit_reverse_array_extra_args() {
-        let input = &Array(vec![Num(3f32), Num(1f32), Num(2f32)]);
-        let args = &[Num(0f32)];
+        let input = &Value::Array(vec![Value::Num(3f32), Value::Num(1f32), Value::Num(2f32)]);
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(reverse, input, args), desired_result);
@@ -1507,18 +1548,19 @@ mod tests {
     #[test]
     fn unit_reverse_ground_control_major_tom() {
         // Second example from https://shopify.github.io/liquid/filters/reverse/
-        let input = &Array(vec![tos!("G"), tos!("r"), tos!("o"), tos!("u"), tos!("n"), tos!("d"),
-                                tos!(" "), tos!("c"), tos!("o"), tos!("n"), tos!("t"), tos!("r"),
-                                tos!("o"), tos!("l"), tos!(" "), tos!("t"), tos!("o"), tos!(" "),
-                                tos!("M"), tos!("a"), tos!("j"), tos!("o"), tos!("r"), tos!(" "),
-                                tos!("T"), tos!("o"), tos!("m"), tos!(".")]);
+        let input = &Value::Array(vec![tos!("G"), tos!("r"), tos!("o"), tos!("u"), tos!("n"),
+                                       tos!("d"), tos!(" "), tos!("c"), tos!("o"), tos!("n"),
+                                       tos!("t"), tos!("r"), tos!("o"), tos!("l"), tos!(" "),
+                                       tos!("t"), tos!("o"), tos!(" "), tos!("M"), tos!("a"),
+                                       tos!("j"), tos!("o"), tos!("r"), tos!(" "), tos!("T"),
+                                       tos!("o"), tos!("m"), tos!(".")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("."), tos!("m"), tos!("o"), tos!("T"), tos!(" "),
-                                        tos!("r"), tos!("o"), tos!("j"), tos!("a"), tos!("M"),
-                                        tos!(" "), tos!("o"), tos!("t"), tos!(" "), tos!("l"),
-                                        tos!("o"), tos!("r"), tos!("t"), tos!("n"), tos!("o"),
-                                        tos!("c"), tos!(" "), tos!("d"), tos!("n"), tos!("u"),
-                                        tos!("o"), tos!("r"), tos!("G")]);
+        let desired_result =
+            Value::Array(vec![tos!("."), tos!("m"), tos!("o"), tos!("T"), tos!(" "), tos!("r"),
+                              tos!("o"), tos!("j"), tos!("a"), tos!("M"), tos!(" "), tos!("o"),
+                              tos!("t"), tos!(" "), tos!("l"), tos!("o"), tos!("r"), tos!("t"),
+                              tos!("n"), tos!("o"), tos!("c"), tos!(" "), tos!("d"), tos!("n"),
+                              tos!("u"), tos!("o"), tos!("r"), tos!("G")]);
         assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
@@ -1556,7 +1598,7 @@ mod tests {
 
     #[test]
     fn unit_rstrip_non_string() {
-        let input = &Num(0f32);
+        let input = &Value::Num(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(rstrip, input, args), desired_result);
@@ -1565,7 +1607,7 @@ mod tests {
     #[test]
     fn unit_rstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
-        let args = &[Num(0f32)];
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(rstrip, input, args), desired_result);
@@ -1582,41 +1624,49 @@ mod tests {
 
     #[test]
     fn unit_round() {
-        assert_eq!(unit!(round, Num(1.1f32), &[]), Num(1f32));
-        assert_eq!(unit!(round, Num(1.5f32), &[]), Num(2f32));
-        assert_eq!(unit!(round, Num(2f32), &[]), Num(2f32));
-        assert!(round(&Bool(true), &[]).is_err());
+        assert_eq!(unit!(round, Value::Num(1.1f32), &[]), Value::Num(1f32));
+        assert_eq!(unit!(round, Value::Num(1.5f32), &[]), Value::Num(2f32));
+        assert_eq!(unit!(round, Value::Num(2f32), &[]), Value::Num(2f32));
+        assert!(round(&Value::Bool(true), &[]).is_err());
     }
 
     #[test]
     fn unit_round_precision() {
-        assert_eq!(unit!(round, Num(1.1f32), &[Num(0f32)]), Num(1f32));
-        assert_eq!(unit!(round, Num(1.5f32), &[Num(1f32)]), Num(1.5f32));
-        assert_eq!(unit!(round, Num(3.14159f32), &[Num(3f32)]), Num(3.142f32));
+        assert_eq!(unit!(round, Value::Num(1.1f32), &[Value::Num(0f32)]),
+                   Value::Num(1f32));
+        assert_eq!(unit!(round, Value::Num(1.5f32), &[Value::Num(1f32)]),
+                   Value::Num(1.5f32));
+        assert_eq!(unit!(round, Value::Num(3.14159f32), &[Value::Num(3f32)]),
+                   Value::Num(3.142f32));
     }
 
     #[test]
     fn unit_size() {
-        assert_eq!(unit!(size, tos!("abc")), Num(3f32));
-        assert_eq!(unit!(size, tos!("this has 22 characters")), Num(22f32));
+        assert_eq!(unit!(size, tos!("abc")), Value::Num(3f32));
+        assert_eq!(unit!(size, tos!("this has 22 characters")),
+                   Value::Num(22f32));
         assert_eq!(unit!(size,
-                         Array(vec![Num(0f32), Num(1f32), Num(2f32), Num(3f32), Num(4f32)])),
-                   Num(5f32));
+                         Value::Array(vec![Value::Num(0f32),
+                                           Value::Num(1f32),
+                                           Value::Num(2f32),
+                                           Value::Num(3f32),
+                                           Value::Num(4f32)])),
+                   Value::Num(5f32));
     }
 
     #[test]
     fn unit_split() {
         assert_eq!(unit!(split, tos!("a, b, c"), &[tos!(", ")]),
-                   Array(vec![tos!("a"), tos!("b"), tos!("c")]));
+                   Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]));
         assert_eq!(unit!(split, tos!("a~b"), &[tos!("~")]),
-                   Array(vec![tos!("a"), tos!("b")]));
+                   Value::Array(vec![tos!("a"), tos!("b")]));
     }
 
     #[test]
     fn unit_split_bad_split_string() {
         let input = tos!("a,b,c");
-        let args = &[Num(1f32)];
-        let desired_result = Array(vec![tos!("a,b,c")]);
+        let args = &[Value::Num(1f32)];
+        let desired_result = Value::Array(vec![tos!("a,b,c")]);
         assert_eq!(unit!(split, input, args), desired_result);
     }
 
@@ -1646,7 +1696,7 @@ mod tests {
 
     #[test]
     fn unit_strip_non_string() {
-        let input = &Num(0f32);
+        let input = &Value::Num(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(strip, input, args), desired_result);
@@ -1655,7 +1705,7 @@ mod tests {
     #[test]
     fn unit_strip_one_argument() {
         let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let args = &[Num(0f32)];
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(strip, input, args), desired_result);
@@ -1728,7 +1778,7 @@ mod tests {
 
     #[test]
     fn unit_strip_newlines_non_string() {
-        let input = &Num(0f32);
+        let input = &Value::Num(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(strip_newlines, input, args), desired_result);
@@ -1737,7 +1787,7 @@ mod tests {
     #[test]
     fn unit_strip_newlines_one_argument() {
         let input = &tos!("ab\n");
-        let args = &[Num(0f32)];
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(strip_newlines, input, args), desired_result);
@@ -1762,17 +1812,19 @@ mod tests {
 
     #[test]
     fn unit_times() {
-        assert_eq!(unit!(times, Num(2f32), &[Num(3f32)]), Num(6f32));
-        assert_eq!(unit!(times, Num(8.5), &[Num(0.5)]), Num(4.25));
-        assert!(times(&Bool(true), &[Num(8.5)]).is_err());
-        assert!(times(&Num(2.5), &[Bool(true)]).is_err());
-        assert!(times(&Num(2.5), &[]).is_err());
+        assert_eq!(unit!(times, Value::Num(2f32), &[Value::Num(3f32)]),
+                   Value::Num(6f32));
+        assert_eq!(unit!(times, Value::Num(8.5), &[Value::Num(0.5)]),
+                   Value::Num(4.25));
+        assert!(times(&Value::Bool(true), &[Value::Num(8.5)]).is_err());
+        assert!(times(&Value::Num(2.5), &[Value::Bool(true)]).is_err());
+        assert!(times(&Value::Num(2.5), &[]).is_err());
     }
 
     #[test]
     fn unit_truncate() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Num(17f32)];
+        let args = &[Value::Num(17f32)];
         let desired_result = tos!("I often quote ...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1780,15 +1832,15 @@ mod tests {
     #[test]
     fn unit_truncate_negative_length() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Num(-17f32)];
+        let args = &[Value::Num(-17f32)];
         let desired_result = tos!("I often quote myself.  It adds spice to my conversation.");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
 
     #[test]
     fn unit_truncate_non_string() {
-        let input = &Num(10000000f32);
-        let args = &[Num(5f32)];
+        let input = &Value::Num(10000000f32);
+        let args = &[Value::Num(5f32)];
         let desired_result = tos!("10...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1797,15 +1849,15 @@ mod tests {
     fn unit_truncate_shopify_liquid() {
         // Tests from https://shopify.github.io/liquid/filters/truncate/
         let input = &tos!("Ground control to Major Tom.");
-        let args = &[Num(20f32)];
+        let args = &[Value::Num(20f32)];
         let desired_result = tos!("Ground control to...");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
-        let args = &[Num(25f32), tos!(", and so on")];
+        let args = &[Value::Num(25f32), tos!(", and so on")];
         let desired_result = tos!("Ground control, and so on");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
-        let args = &[Num(20f32), tos!("")];
+        let args = &[Value::Num(20f32), tos!("")];
         let desired_result = tos!("Ground control to Ma");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1813,7 +1865,7 @@ mod tests {
     #[test]
     fn unit_truncate_three_arguments() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Num(17f32), tos!("..."), Num(0f32)];
+        let args = &[Value::Num(17f32), tos!("..."), Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
                                                                    .to_string());
         assert_eq!(failed!(truncate, input, args), desired_result);
@@ -1829,13 +1881,13 @@ mod tests {
         // Note that the accents applied to each letter are treated as part of the single grapheme
         // cluster for the applicable letter.
         let input = &tos!("Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.");
-        let args = &[Num(20f32)];
+        let args = &[Value::Num(20f32)];
         let desired_result = tos!("Here is an a\u{310}, e\u{301}, ...");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
         // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
         let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
-        let args = &[Num(20f32)];
+        let args = &[Value::Num(20f32)];
         let desired_result = tos!("Here is a RUST: 🇷🇺...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1850,48 +1902,49 @@ mod tests {
 
     #[test]
     fn unit_truncatewords_negative_length() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Num(-1_f32)]),
+        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(-1_f32)]),
                    tos!("one two three"));
     }
 
     #[test]
     fn unit_truncatewords_zero_length() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Num(0_f32)]),
+        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(0_f32)]),
                    tos!("..."));
     }
 
     #[test]
     fn unit_truncatewords_no_truncation() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Num(4_f32)]),
+        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(4_f32)]),
                    tos!("one two three"));
     }
 
     #[test]
     fn unit_truncatewords_truncate() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Num(2_f32)]),
+        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(2_f32)]),
                    tos!("one two..."));
         assert_eq!(unit!(truncatewords,
                          tos!("one two three"),
-                         &[Num(2_f32), Num(1_f32)]),
+                         &[Value::Num(2_f32), Value::Num(1_f32)]),
                    tos!("one two1"));
     }
 
     #[test]
     fn unit_truncatewords_empty_string() {
-        assert_eq!(unit!(truncatewords, tos!(""), &[Num(1_f32)]), tos!(""));
+        assert_eq!(unit!(truncatewords, tos!(""), &[Value::Num(1_f32)]),
+                   tos!(""));
     }
 
     #[test]
     fn unit_uniq() {
-        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("a"), tos!("b")]);
+        let desired_result = Value::Array(vec![tos!("a"), tos!("b")]);
         assert_eq!(unit!(uniq, input, args), desired_result);
     }
 
     #[test]
     fn unit_uniq_non_array() {
-        let input = &Num(0f32);
+        let input = &Value::Num(0f32);
         let args = &[];
         let desired_result = FilterError::InvalidType("Array expected".to_string());
         assert_eq!(failed!(uniq, input, args), desired_result);
@@ -1899,8 +1952,8 @@ mod tests {
 
     #[test]
     fn unit_uniq_one_argument() {
-        let input = &Array(vec![tos!("a"), tos!("b"), tos!("a")]);
-        let args = &[Num(0f32)];
+        let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
+        let args = &[Value::Num(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_string());
         assert_eq!(failed!(uniq, input, args), desired_result);
@@ -1909,13 +1962,13 @@ mod tests {
     #[test]
     fn unit_uniq_shopify_liquid() {
         // Test from https://shopify.github.io/liquid/filters/uniq/
-        let input = &Array(vec![tos!("ants"),
-                                tos!("bugs"),
-                                tos!("bees"),
-                                tos!("bugs"),
-                                tos!("ants")]);
+        let input = &Value::Array(vec![tos!("ants"),
+                                       tos!("bugs"),
+                                       tos!("bees"),
+                                       tos!("bugs"),
+                                       tos!("ants")]);
         let args = &[];
-        let desired_result = Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
+        let desired_result = Value::Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
         assert_eq!(unit!(uniq, input, args), desired_result);
     }
 
@@ -1930,13 +1983,17 @@ mod tests {
     fn unit_default() {
         assert_eq!(unit!(default, tos!(""), &[tos!("bar")]), tos!("bar"));
         assert_eq!(unit!(default, tos!("foo"), &[tos!("bar")]), tos!("foo"));
-        assert_eq!(unit!(default, Num(0_f32), &[tos!("bar")]), Num(0_f32));
-        assert_eq!(unit!(default, Array(vec![]), &[Num(1_f32)]), Num(1_f32));
-        assert_eq!(unit!(default, Array(vec![tos!("")]), &[Num(1_f32)]),
-                   Array(vec![tos!("")]));
-        assert_eq!(unit!(default, Object(HashMap::new()), &[Num(1_f32)]),
-                   Num(1_f32));
-        assert_eq!(unit!(default, Bool(false), &[Num(1_f32)]), Num(1_f32));
-        assert_eq!(unit!(default, Bool(true), &[Num(1_f32)]), Bool(true));
+        assert_eq!(unit!(default, Value::Num(0_f32), &[tos!("bar")]),
+                   Value::Num(0_f32));
+        assert_eq!(unit!(default, Value::Array(vec![]), &[Value::Num(1_f32)]),
+                   Value::Num(1_f32));
+        assert_eq!(unit!(default, Value::Array(vec![tos!("")]), &[Value::Num(1_f32)]),
+                   Value::Array(vec![tos!("")]));
+        assert_eq!(unit!(default, Value::Object(HashMap::new()), &[Value::Num(1_f32)]),
+                   Value::Num(1_f32));
+        assert_eq!(unit!(default, Value::Bool(false), &[Value::Num(1_f32)]),
+                   Value::Num(1_f32));
+        assert_eq!(unit!(default, Value::Bool(true), &[Value::Num(1_f32)]),
+                   Value::Bool(true));
     }
 }
