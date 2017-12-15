@@ -30,7 +30,7 @@ mod test {
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.blocks.insert("comment".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(comment_block)));
+                              (comment_block as syntax::FnParseBlock).into());
         options
     }
 

@@ -53,11 +53,11 @@ mod test {
         let mut options = LiquidOptions::default();
         options.include_source = Box::new(syntax::FilesystemInclude::new(path::PathBuf::from("tests/fixtures/input")));
         options.tags.insert("include".to_owned(),
-                            Box::new(syntax::FnTagParser::new(include_tag)));
+                            (include_tag as syntax::FnParseTag).into());
         options.blocks.insert("comment".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(tags::comment_block)));
+                              (tags::comment_block as syntax::FnParseBlock).into());
         options.blocks.insert("if".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(tags::if_block)));
+                              (tags::if_block as syntax::FnParseBlock).into());
         options
     }
 
@@ -70,7 +70,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.add_filter("size", Box::new(filters::size));
+        context.add_filter("size", (filters::size as syntax::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wot wot\n".to_owned()));
     }
@@ -84,7 +84,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.add_filter("size", Box::new(filters::size));
+        context.add_filter("size", (filters::size as syntax::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wot wot\n".to_owned()));
     }

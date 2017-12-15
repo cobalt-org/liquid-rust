@@ -81,8 +81,9 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.tags.insert("cycle".to_owned(),
-                            Box::new(syntax::FnTagParser::new(cycle_tag)));
+        options
+            .tags
+            .insert("cycle".to_owned(), (cycle_tag as syntax::FnParseTag).into());
         options
     }
 

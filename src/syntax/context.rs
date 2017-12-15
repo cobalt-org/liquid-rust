@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use error::{Result, Error};
-use super::Filter;
+use super::{BoxedValueFilter, FilterValue};
 use super::Token;
 use super::{Value, Object};
 
@@ -28,7 +28,7 @@ pub struct Context {
     cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
-    filters: HashMap<String, Box<Filter>>,
+    filters: HashMap<String, BoxedValueFilter>,
 }
 
 impl Context {
@@ -42,7 +42,7 @@ impl Context {
         self
     }
 
-    pub fn with_filters(mut self, filters: HashMap<String, Box<Filter>>) -> Self {
+    pub fn with_filters(mut self, filters: HashMap<String, BoxedValueFilter>) -> Self {
         self.filters = filters;
         self
     }
@@ -64,19 +64,15 @@ impl Context {
         self.evaluate(&values[index])
     }
 
-    /// Only add the given filter to the context if a filter with this name doesn't already exist.
-    pub fn maybe_add_filter(&mut self, name: &str, filter: Box<Filter>) {
-        if !self.filters.contains_key(name) {
-            self.add_filter(name, filter)
-        }
-    }
-
-    pub fn add_filter(&mut self, name: &str, filter: Box<Filter>) {
+    pub fn add_filter(&mut self, name: &str, filter: BoxedValueFilter) {
         self.filters.insert(name.to_owned(), filter);
     }
 
-    pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b Filter> {
-        self.filters.get(name).map(|f| f.as_ref())
+    pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {
+        self.filters.get(name).map(|f| {
+                                       let f: &FilterValue = f;
+                                       f
+                                   })
     }
 
     pub fn interrupted(&self) -> bool {

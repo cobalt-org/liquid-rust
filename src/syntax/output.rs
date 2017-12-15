@@ -61,9 +61,13 @@ impl Output {
 
         // apply all specified filters
         for filter in &self.filters {
-            let f = try!(context.get_filter(&filter.name).ok_or_else(|| {
-                Error::Render(format!("Filter {} not implemented", &filter.name))
-            }));
+            let f =
+                context
+                    .get_filter(&filter.name)
+                    .ok_or_else(|| {
+                                    Error::Render(format!("Filter {} not implemented",
+                                                          &filter.name))
+                                })?;
 
             let mut arguments = Vec::new();
             for arg in &filter.arguments {
@@ -77,7 +81,7 @@ impl Output {
                     Argument::Val(ref x) => arguments.push(x.clone()),
                 }
             }
-            entry = try!(f(&entry, &*arguments));
+            entry = f.filter(&entry, &*arguments)?;
         }
 
         Ok(entry)

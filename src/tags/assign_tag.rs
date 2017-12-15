@@ -47,11 +47,11 @@ mod test {
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.tags.insert("assign".to_owned(),
-                            Box::new(syntax::FnTagParser::new(assign_tag)));
+                            (assign_tag as syntax::FnParseTag).into());
         options.blocks.insert("if".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(tags::if_block)));
+                              (tags::if_block as syntax::FnParseBlock).into());
         options.blocks.insert("for".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(tags::for_block)));
+                              (tags::for_block as syntax::FnParseBlock).into());
         options
     }
 

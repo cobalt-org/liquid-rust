@@ -43,7 +43,7 @@ impl Clone for Box<ParseBlock> {
 pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
 
 #[derive(Clone)]
-pub struct FnBlockParser {
+struct FnBlockParser {
     pub parser: FnParseBlock,
 }
 
@@ -61,5 +61,45 @@ impl ParseBlock for FnBlockParser {
              options: &LiquidOptions)
              -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, tokens, options)
+    }
+}
+
+#[derive(Clone)]
+enum BlockParserEnum {
+    Fun(FnBlockParser),
+    Heap(Box<ParseBlock>),
+}
+
+#[derive(Clone)]
+pub struct BoxedBlockParser {
+    parser: BlockParserEnum,
+}
+
+impl ParseBlock for BoxedBlockParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             tokens: &[Element],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        match self.parser {
+            BlockParserEnum::Fun(ref f) => f.parse(tag_name, arguments, tokens, options),
+            BlockParserEnum::Heap(ref f) => f.parse(tag_name, arguments, tokens, options),
+        }
+    }
+}
+
+impl From<FnParseBlock> for BoxedBlockParser {
+    fn from(parser: fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>)
+            -> BoxedBlockParser {
+        let parser = BlockParserEnum::Fun(FnBlockParser::new(parser));
+        Self { parser }
+    }
+}
+
+impl From<Box<ParseBlock>> for BoxedBlockParser {
+    fn from(parser: Box<ParseBlock>) -> BoxedBlockParser {
+        let parser = BlockParserEnum::Heap(parser);
+        Self { parser }
     }
 }

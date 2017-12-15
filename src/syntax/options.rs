@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use super::ParseBlock;
-use super::ParseTag;
+use super::BoxedBlockParser;
+use super::BoxedTagParser;
 use super::Include;
 use super::NullInclude;
 
 #[derive(Clone)]
 pub struct LiquidOptions {
-    pub blocks: HashMap<String, Box<ParseBlock>>,
-    pub tags: HashMap<String, Box<ParseTag>>,
+    pub blocks: HashMap<String, BoxedBlockParser>,
+    pub tags: HashMap<String, BoxedTagParser>,
     pub include_source: Box<Include>,
 }
 

@@ -59,7 +59,7 @@ mod test {
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.blocks.insert("capture".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(capture_block)));
+                              (capture_block as syntax::FnParseBlock).into());
         options
     }
 

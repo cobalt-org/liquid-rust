@@ -13,6 +13,8 @@ use super::LiquidOptions;
 use super::Element;
 use super::Renderable;
 use super::Token;
+use super::ParseTag;
+use super::ParseBlock;
 use super::output::{Output, FilterPrototype, Argument};
 use super::path::IdentifierPath;
 use super::text::Text;
@@ -331,8 +333,8 @@ mod test_split_block {
     use super::*;
     use super::super::tokenize;
     use super::super::split_block;
-    use super::super::FnBlockParser;
-    use super::super::ParseBlock;
+    use super::super::BoxedBlockParser;
+    use super::super::FnParseBlock;
     use super::super::Renderable;
     use super::super::Context;
 
@@ -354,12 +356,9 @@ mod test_split_block {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        let blocks: HashMap<String, Box<ParseBlock>> = ["comment", "for", "if"]
+        let blocks: HashMap<String, BoxedBlockParser> = ["comment", "for", "if"]
             .into_iter()
-            .map(|name| {
-                     let block: Box<ParseBlock> = Box::new(FnBlockParser::new(null_block));
-                     (name.to_string(), block)
-                 })
+            .map(|name| (name.to_string(), (null_block as FnParseBlock).into()))
             .collect();
         options.blocks = blocks;
         options

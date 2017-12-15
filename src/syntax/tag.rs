@@ -39,7 +39,7 @@ impl Clone for Box<ParseTag> {
 pub type FnParseTag = fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>;
 
 #[derive(Clone)]
-pub struct FnTagParser {
+struct FnTagParser {
     pub parser: FnParseTag,
 }
 
@@ -56,5 +56,44 @@ impl ParseTag for FnTagParser {
              options: &LiquidOptions)
              -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, options)
+    }
+}
+
+#[derive(Clone)]
+enum TagParserEnum {
+    Fun(FnTagParser),
+    Heap(Box<ParseTag>),
+}
+
+#[derive(Clone)]
+pub struct BoxedTagParser {
+    parser: TagParserEnum,
+}
+
+impl ParseTag for BoxedTagParser {
+    fn parse(&self,
+             tag_name: &str,
+             arguments: &[Token],
+             options: &LiquidOptions)
+             -> Result<Box<Renderable>> {
+        match self.parser {
+            TagParserEnum::Fun(ref f) => f.parse(tag_name, arguments, options),
+            TagParserEnum::Heap(ref f) => f.parse(tag_name, arguments, options),
+        }
+    }
+}
+
+impl From<FnParseTag> for BoxedTagParser {
+    fn from(parser: fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>)
+            -> BoxedTagParser {
+        let parser = TagParserEnum::Fun(FnTagParser::new(parser));
+        Self { parser }
+    }
+}
+
+impl From<Box<ParseTag>> for BoxedTagParser {
+    fn from(parser: Box<ParseTag>) -> BoxedTagParser {
+        let parser = TagParserEnum::Heap(parser);
+        Self { parser }
     }
 }

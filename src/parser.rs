@@ -11,9 +11,9 @@ use super::Template;
 
 #[derive(Default)]
 pub struct ParserBuilder {
-    blocks: HashMap<String, Box<syntax::ParseBlock>>,
-    tags: HashMap<String, Box<syntax::ParseTag>>,
-    filters: HashMap<String, Box<syntax::Filter>>,
+    blocks: HashMap<String, syntax::BoxedBlockParser>,
+    tags: HashMap<String, syntax::BoxedTagParser>,
+    filters: HashMap<String, syntax::BoxedValueFilter>,
     include_source: Option<Box<syntax::Include>>,
 }
 
@@ -33,78 +33,77 @@ impl ParserBuilder {
 
     /// Register built-in Liquid tags
     pub fn liquid_tags(self) -> Self {
-        self.tag("assign",
-                 Box::new(syntax::FnTagParser::new(tags::assign_tag)))
-            .tag("break", Box::new(syntax::FnTagParser::new(tags::break_tag)))
-            .tag("continue",
-                 Box::new(syntax::FnTagParser::new(tags::continue_tag)))
-            .tag("cycle", Box::new(syntax::FnTagParser::new(tags::cycle_tag)))
-            .tag("include",
-                 Box::new(syntax::FnTagParser::new(tags::include_tag)))
+        self.tag("assign", tags::assign_tag as syntax::FnParseTag)
+            .tag("break", tags::break_tag as syntax::FnParseTag)
+            .tag("continue", tags::continue_tag as syntax::FnParseTag)
+            .tag("cycle", tags::cycle_tag as syntax::FnParseTag)
+            .tag("include", tags::include_tag as syntax::FnParseTag)
     }
 
     /// Register built-in Liquid blocks
     pub fn liquid_blocks(self) -> Self {
-        self.block("raw", Box::new(syntax::FnBlockParser::new(tags::raw_block)))
-            .block("if", Box::new(syntax::FnBlockParser::new(tags::if_block)))
-            .block("unless",
-                   Box::new(syntax::FnBlockParser::new(tags::unless_block)))
-            .block("for", Box::new(syntax::FnBlockParser::new(tags::for_block)))
-            .block("comment",
-                   Box::new(syntax::FnBlockParser::new(tags::comment_block)))
-            .block("capture",
-                   Box::new(syntax::FnBlockParser::new(tags::capture_block)))
-            .block("case",
-                   Box::new(syntax::FnBlockParser::new(tags::case_block)))
+        self.block("raw", tags::raw_block as syntax::FnParseBlock)
+            .block("if", tags::if_block as syntax::FnParseBlock)
+            .block("unless", tags::unless_block as syntax::FnParseBlock)
+            .block("for", tags::for_block as syntax::FnParseBlock)
+            .block("comment", tags::comment_block as syntax::FnParseBlock)
+            .block("capture", tags::capture_block as syntax::FnParseBlock)
+            .block("case", tags::case_block as syntax::FnParseBlock)
     }
 
     /// Register built-in Liquid filters
     pub fn liquid_filters(self) -> Self {
-        self.filter("abs", Box::new(filters::abs))
-            .filter("append", Box::new(filters::append))
-            .filter("capitalize", Box::new(filters::capitalize))
-            .filter("ceil", Box::new(filters::ceil))
-            .filter("compact", Box::new(filters::compact))
-            .filter("concat", Box::new(filters::concat))
-            .filter("date", Box::new(filters::date))
-            .filter("default", Box::new(filters::default))
-            .filter("divided_by", Box::new(filters::divided_by))
-            .filter("downcase", Box::new(filters::downcase))
-            .filter("escape", Box::new(filters::escape))
-            .filter("escape_once", Box::new(filters::escape_once))
-            .filter("first", Box::new(filters::first))
-            .filter("floor", Box::new(filters::floor))
-            .filter("join", Box::new(filters::join))
-            .filter("last", Box::new(filters::last))
-            .filter("lstrip", Box::new(filters::lstrip))
-            .filter("map", Box::new(filters::map))
-            .filter("minus", Box::new(filters::minus))
-            .filter("modulo", Box::new(filters::modulo))
-            .filter("newline_to_br", Box::new(filters::newline_to_br))
-            .filter("plus", Box::new(filters::plus))
-            .filter("prepend", Box::new(filters::prepend))
-            .filter("remove", Box::new(filters::remove))
-            .filter("remove_first", Box::new(filters::remove_first))
-            .filter("replace", Box::new(filters::replace))
-            .filter("replace_first", Box::new(filters::replace_first))
-            .filter("reverse", Box::new(filters::reverse))
-            .filter("round", Box::new(filters::round))
-            .filter("rstrip", Box::new(filters::rstrip))
-            .filter("size", Box::new(filters::size))
-            .filter("slice", Box::new(filters::slice))
-            .filter("sort", Box::new(filters::sort))
-            .filter("sort_natural", Box::new(filters::sort_natural))
-            .filter("split", Box::new(filters::split))
-            .filter("strip", Box::new(filters::strip))
-            .filter("strip_html", Box::new(filters::strip_html))
-            .filter("strip_newlines", Box::new(filters::strip_newlines))
-            .filter("times", Box::new(filters::times))
-            .filter("truncate", Box::new(filters::truncate))
-            .filter("truncatewords", Box::new(filters::truncatewords))
-            .filter("uniq", Box::new(filters::uniq))
-            .filter("upcase", Box::new(filters::upcase))
-            .filter("url_decode", Box::new(filters::url_decode))
-            .filter("url_encode", Box::new(filters::url_encode))
+        self.filter("abs", filters::abs as syntax::FnFilterValue)
+            .filter("append", filters::append as syntax::FnFilterValue)
+            .filter("capitalize", filters::capitalize as syntax::FnFilterValue)
+            .filter("ceil", filters::ceil as syntax::FnFilterValue)
+            .filter("compact", filters::compact as syntax::FnFilterValue)
+            .filter("concat", filters::concat as syntax::FnFilterValue)
+            .filter("date", filters::date as syntax::FnFilterValue)
+            .filter("default", filters::default as syntax::FnFilterValue)
+            .filter("divided_by", filters::divided_by as syntax::FnFilterValue)
+            .filter("downcase", filters::downcase as syntax::FnFilterValue)
+            .filter("escape", filters::escape as syntax::FnFilterValue)
+            .filter("escape_once", filters::escape_once as syntax::FnFilterValue)
+            .filter("first", filters::first as syntax::FnFilterValue)
+            .filter("floor", filters::floor as syntax::FnFilterValue)
+            .filter("join", filters::join as syntax::FnFilterValue)
+            .filter("last", filters::last as syntax::FnFilterValue)
+            .filter("lstrip", filters::lstrip as syntax::FnFilterValue)
+            .filter("map", filters::map as syntax::FnFilterValue)
+            .filter("minus", filters::minus as syntax::FnFilterValue)
+            .filter("modulo", filters::modulo as syntax::FnFilterValue)
+            .filter("newline_to_br",
+                    filters::newline_to_br as syntax::FnFilterValue)
+            .filter("plus", filters::plus as syntax::FnFilterValue)
+            .filter("prepend", filters::prepend as syntax::FnFilterValue)
+            .filter("remove", filters::remove as syntax::FnFilterValue)
+            .filter("remove_first",
+                    filters::remove_first as syntax::FnFilterValue)
+            .filter("replace", filters::replace as syntax::FnFilterValue)
+            .filter("replace_first",
+                    filters::replace_first as syntax::FnFilterValue)
+            .filter("reverse", filters::reverse as syntax::FnFilterValue)
+            .filter("round", filters::round as syntax::FnFilterValue)
+            .filter("rstrip", filters::rstrip as syntax::FnFilterValue)
+            .filter("size", filters::size as syntax::FnFilterValue)
+            .filter("slice", filters::slice as syntax::FnFilterValue)
+            .filter("sort", filters::sort as syntax::FnFilterValue)
+            .filter("sort_natural",
+                    filters::sort_natural as syntax::FnFilterValue)
+            .filter("split", filters::split as syntax::FnFilterValue)
+            .filter("strip", filters::strip as syntax::FnFilterValue)
+            .filter("strip_html", filters::strip_html as syntax::FnFilterValue)
+            .filter("strip_newlines",
+                    filters::strip_newlines as syntax::FnFilterValue)
+            .filter("times", filters::times as syntax::FnFilterValue)
+            .filter("truncate", filters::truncate as syntax::FnFilterValue)
+            .filter("truncatewords",
+                    filters::truncatewords as syntax::FnFilterValue)
+            .filter("uniq", filters::uniq as syntax::FnFilterValue)
+            .filter("upcase", filters::upcase as syntax::FnFilterValue)
+            .filter("url_decode", filters::url_decode as syntax::FnFilterValue)
+            .filter("url_encode", filters::url_encode as syntax::FnFilterValue)
     }
 
     #[cfg(not(feature = "extra-filters"))]
@@ -114,25 +113,25 @@ impl ParserBuilder {
 
     #[cfg(feature = "extra-filters")]
     pub fn extra_filters(self) -> Self {
-        self.filter("pluralize", Box::new(filters::pluralize))
-            .filter("date_in_tz", Box::new(filters::date_in_tz))
+        self.filter("pluralize", filters::pluralize as syntax::FnFilterValue)
+            .filter("date_in_tz", filters::date_in_tz as syntax::FnFilterValue)
     }
 
     /// Inserts a new custom block into the parser
-    pub fn block(mut self, name: &str, block: Box<syntax::ParseBlock>) -> Self {
-        self.blocks.insert(name.to_owned(), block);
+    pub fn block<B: Into<syntax::BoxedBlockParser>>(mut self, name: &str, block: B) -> Self {
+        self.blocks.insert(name.to_owned(), block.into());
         self
     }
 
     /// Inserts a new custom tag into the parser
-    pub fn tag(mut self, name: &str, tag: Box<syntax::ParseTag>) -> Self {
-        self.tags.insert(name.to_owned(), tag);
+    pub fn tag<T: Into<syntax::BoxedTagParser>>(mut self, name: &str, tag: T) -> Self {
+        self.tags.insert(name.to_owned(), tag.into());
         self
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter(mut self, name: &str, filter: Box<syntax::Filter>) -> Self {
-        self.filters.insert(name.to_owned(), filter);
+    pub fn filter<F: Into<syntax::BoxedValueFilter>>(mut self, name: &str, filter: F) -> Self {
+        self.filters.insert(name.to_owned(), filter.into());
         self
     }
 
@@ -163,7 +162,7 @@ impl ParserBuilder {
 #[derive(Default)]
 pub struct Parser {
     options: syntax::LiquidOptions,
-    filters: HashMap<String, Box<syntax::Filter>>,
+    filters: HashMap<String, syntax::BoxedValueFilter>,
 }
 
 impl Parser {
@@ -186,11 +185,11 @@ impl Parser {
     /// assert_eq!(output, "Liquid!".to_string());
     /// ```
     ///
-    pub fn parse(self, text: &str) -> Result<Template> {
+    pub fn parse(&self, text: &str) -> Result<Template> {
         let tokens = syntax::tokenize(text)?;
         let template = syntax::parse(&tokens, &self.options)
             .map(syntax::Template::new)?;
-        let filters = self.filters;
+        let filters = self.filters.clone();
         Ok(Template { template, filters })
     }
 

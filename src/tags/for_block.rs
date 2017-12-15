@@ -214,8 +214,9 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert("for".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(for_block)));
+        options
+            .blocks
+            .insert("for".to_owned(), (for_block as syntax::FnParseBlock).into());
         options
     }
 
@@ -503,11 +504,12 @@ mod test {
 
         let mut data: Context = Default::default();
         data.add_filter("shout",
-                        Box::new(|input, _args| if let &Value::Str(ref s) = input {
-                                     Ok(Value::Str(s.to_uppercase()))
-                                 } else {
-                                     syntax::FilterError::invalid_type("Expected a string")
-                                 }));
+                        ((|input, _args| if let &Value::Str(ref s) = input {
+                              Ok(Value::Str(s.to_uppercase()))
+                          } else {
+                              syntax::FilterError::invalid_type("Expected a string")
+                          }) as syntax::FnFilterValue)
+                            .into());
 
         data.set_val("array",
                      Value::Array(vec![Value::str("alpha"),

@@ -140,10 +140,11 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert("if".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(if_block)));
+        options
+            .blocks
+            .insert("if".to_owned(), (if_block as syntax::FnParseBlock).into());
         options.blocks.insert("unless".to_owned(),
-                              Box::new(syntax::FnBlockParser::new(unless_block)));
+                              (unless_block as syntax::FnParseBlock).into());
         options
     }
 
