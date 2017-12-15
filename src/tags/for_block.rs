@@ -10,7 +10,7 @@ use syntax::Element;
 use syntax::Token;
 use syntax::{parse, expect, split_block};
 use syntax::Template;
-use syntax::Value;
+use value::Value;
 
 enum Range {
     Array(String),

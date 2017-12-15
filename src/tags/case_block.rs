@@ -7,7 +7,7 @@ use syntax::Element;
 use syntax::Token;
 use syntax::{parse, consume_value_token, split_block};
 use syntax::Template;
-use syntax::Value;
+use value::Value;
 
 struct CaseOption {
     tokens: Vec<Token>,

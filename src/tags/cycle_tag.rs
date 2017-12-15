@@ -76,7 +76,7 @@ pub fn cycle_tag(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax::Value;
+    use value::Value;
     use syntax;
 
     fn options() -> LiquidOptions {

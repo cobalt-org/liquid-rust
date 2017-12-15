@@ -1,7 +1,7 @@
-use std::error::Error;
 use std::fmt;
 
-use syntax::Value;
+use std::error::Error;
+use value::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {

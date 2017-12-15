@@ -16,7 +16,6 @@ use super::Token;
 use super::ParseTag;
 use super::ParseBlock;
 use super::output::{Output, FilterPrototype, Argument};
-use super::path::IdentifierPath;
 use super::text::Text;
 use super::variable::Variable;
 
@@ -46,15 +45,15 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
     match tokens[0] {
         Token::Identifier(ref x) if tokens.len() > 1 &&
                                     (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) => {
-            let mut result = IdentifierPath::new(x.clone());
-            try!(result.append_indexes(&tokens[1..]));
+            let mut result = Variable::new(x.clone());
+            result.append_indexes(&tokens[1..])?;
             Ok(Box::new(result))
         }
         Token::Identifier(ref x) if options.tags.contains_key(x) => {
             options.tags[x].parse(x, &tokens[1..], options)
         }
         _ => {
-            let output = try!(parse_output(tokens));
+            let output = parse_output(tokens)?;
             Ok(Box::new(output))
         }
     }
@@ -65,7 +64,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
     let entry = match tokens[0] {
-        Token::Identifier(ref x) => Argument::Var(Variable::new(x)),
+        Token::Identifier(ref x) => Argument::Var(Variable::new(x.as_ref())),
         ref x => Argument::Val(x.to_value()?),
     };
 
@@ -101,7 +100,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
                 x @ &Token::StringLiteral(_) |
                 x @ &Token::NumberLiteral(_) |
                 x @ &Token::BooleanLiteral(_) => args.push(Argument::Val(x.to_value()?)),
-                &Token::Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
+                &Token::Identifier(ref v) => args.push(Argument::Var(Variable::new(v.as_ref()))),
                 x => {
                     return Error::parser("a comma or a pipe", Some(x));
                 }
@@ -267,7 +266,7 @@ pub fn split_block<'a>(tokens: &'a [Element],
 #[cfg(test)]
 mod test_parse_output {
     use super::*;
-    use syntax::Value;
+    use value::Value;
     use super::super::lexer::granularize;
 
     #[test]

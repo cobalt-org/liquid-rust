@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use error::{Result, Error};
+use value::{Value, Object, Index};
+
 use super::{BoxedValueFilter, FilterValue};
 use super::Token;
-use super::{Value, Object};
 
 
 #[derive(Clone)]
@@ -152,6 +153,33 @@ impl Context {
         }
 
         rval
+    }
+
+    pub fn get_val_by_index<'v, 'i, I: Iterator<Item = &'i Index>>(&'v self,
+                                                                   mut indexes: I)
+                                                                   -> Result<&'v Value> {
+        let key = indexes
+            .next()
+            .ok_or_else(|| Error::Render("No index provided".to_owned()))?;
+        let key = key.as_key()
+            .ok_or_else(|| {
+                            Error::Render(format!("Root index must be an object key, found {:?}",
+                                                  key))
+                        })?;
+        let value = self.get_val(key)
+            .ok_or_else(|| Error::Render(format!("Object key not found: {:?}", key)))?;
+
+        indexes.fold(Ok(value), |value, index| {
+            let value = value?;
+            let child = value.get(index);
+            let child = child
+                .ok_or_else(|| {
+                                Error::Render(format!("Invalid index `{}` for value `{:?}`",
+                                                      index,
+                                                      value))
+                            })?;
+            Ok(child)
+        })
     }
 
     /// Sets a value in the global context.

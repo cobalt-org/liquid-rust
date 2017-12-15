@@ -10,7 +10,7 @@ use url::percent_encoding;
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;
 
-use syntax::Value;
+use value::Value;
 use syntax::{FilterError, FilterResult};
 
 // Helper functions for the filters.

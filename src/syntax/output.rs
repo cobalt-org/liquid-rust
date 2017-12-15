@@ -1,8 +1,8 @@
 use error::{Error, Result};
+use value::Value;
 
 use super::Context;
 use super::Renderable;
-use super::Value;
 use super::variable::Variable;
 
 #[derive(Debug, PartialEq)]
@@ -34,8 +34,8 @@ pub struct Output {
 
 impl Renderable for Output {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let entry = try!(self.apply_filters(context));
-        entry.render(context)
+        let entry = self.apply_filters(context)?;
+        Ok(Some(entry.to_string()))
     }
 }
 
@@ -51,12 +51,7 @@ impl Output {
         // take either the provided value or the value from the provided variable
         let mut entry = match self.entry {
             Argument::Val(ref x) => x.clone(),
-            Argument::Var(ref x) => {
-                context
-                    .get_val(&*x.name())
-                    .cloned()
-                    .unwrap_or_else(|| Value::Str("".to_owned()))
-            }
+            Argument::Var(ref x) => context.get_val_by_index(x.indexes().iter())?.clone(),
         };
 
         // apply all specified filters
@@ -73,9 +68,7 @@ impl Output {
             for arg in &filter.arguments {
                 match *arg {
                     Argument::Var(ref x) => {
-                        let val = try!(context.get_val(&*x.name()).cloned().ok_or_else(|| {
-                            Error::Render(format!("undefined variable {}", x.name()))
-                        }));
+                        let val = context.get_val_by_index(x.indexes().iter())?.clone();
                         arguments.push(val);
                     }
                     Argument::Val(ref x) => arguments.push(x.clone()),

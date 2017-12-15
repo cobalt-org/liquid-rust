@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 use std::cmp::Ordering;
 
-use error::Result;
-
-use super::Context;
-use super::Renderable;
+use super::Index;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
@@ -25,7 +22,7 @@ pub type Array = Vec<Value>;
 /// Type representing a Liquid object, payload of the `Value::Object` variant
 pub type Object = HashMap<String, Value>;
 
-impl<'a> Value {
+impl Value {
     /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
@@ -58,7 +55,7 @@ impl<'a> Value {
     }
 
     /// Extracts the str value if it is a str.
-    pub fn as_str(&'a self) -> Option<&'a str> {
+    pub fn as_str<'a>(&'a self) -> Option<&'a str> {
         match *self {
             Value::Str(ref v) => Some(v),
             _ => None,
@@ -110,6 +107,32 @@ impl<'a> Value {
     /// Extracts the object value if it is a object.
     pub fn is_object(&self) -> bool {
         self.as_object().is_some()
+    }
+
+    pub fn get<'v, 'i, I: Into<&'i Index>>(&'v self, index: I) -> Option<&'v Self> {
+        let index: &Index = index.into();
+        match self {
+            &Value::Array(ref x) => {
+                if let Some(index) = index.as_index() {
+                    let index = if 0 <= index {
+                        index as isize
+                    } else {
+                        (x.len() as isize) + index
+                    };
+                    x.get(index as usize)
+                } else {
+                    None
+                }
+            }
+            &Value::Object(ref x) => {
+                if let Some(key) = index.as_key() {
+                    x.get(key)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
     }
 }
 
@@ -166,12 +189,6 @@ impl ToString for Value {
                 arr.join(", ")
             }
         }
-    }
-}
-
-impl Renderable for Value {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        Ok(Some(self.to_string()))
     }
 }
 

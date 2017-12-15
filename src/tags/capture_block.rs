@@ -6,8 +6,8 @@ use syntax::Element;
 use syntax::Renderable;
 use syntax::Template;
 use syntax::Token;
-use syntax::Value;
 use syntax::parse;
+use value::Value;
 
 struct Capture {
     id: String,

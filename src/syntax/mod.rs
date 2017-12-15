@@ -6,13 +6,11 @@ mod lexer;
 mod options;
 mod output;
 mod parser;
-mod path;
 mod renderable;
 mod tag;
 mod template;
 mod text;
 mod token;
-mod value;
 mod variable;
 
 pub use self::block::{ParseBlock, ParseBlockClone, BoxedBlockParser, FnParseBlock};
@@ -27,4 +25,3 @@ pub use self::renderable::Renderable;
 pub use self::tag::{ParseTag, ParseTagClone, BoxedTagParser, FnParseTag};
 pub use self::template::Template;
 pub use self::token::{Token, ComparisonOperator};
-pub use self::value::{Value, Array, Object};

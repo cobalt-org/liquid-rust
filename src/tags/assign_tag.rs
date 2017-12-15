@@ -41,7 +41,7 @@ pub fn assign_tag(_tag_name: &str,
 mod test {
     use super::*;
     use syntax;
-    use syntax::Value;
+    use value::Value;
     use tags;
 
     fn options() -> LiquidOptions {

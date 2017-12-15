@@ -577,7 +577,11 @@ text: "first second third"
 #[test]
 pub fn default_use() {
     let text = "{{ text | default: 'bar' }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::Object = serde_yaml::from_str(
+        r#"
+text: false
+"#,
+    ).unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
