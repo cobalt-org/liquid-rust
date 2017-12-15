@@ -1,8 +1,8 @@
-use LiquidOptions;
-use context::Context;
 use error::Result;
 
+use syntax::Context;
 use syntax::Element;
+use syntax::LiquidOptions;
 use syntax::Renderable;
 use syntax::Token;
 
@@ -31,15 +31,26 @@ pub fn raw_block(_tag_name: &str,
     Ok(Box::new(RawT { content: content }))
 }
 
-#[test]
-fn test_raw() {
+#[cfg(test)]
+mod test {
     use super::*;
+    use syntax;
 
-    let options: LiquidOptions = Default::default();
-    let raw = raw_block("raw",
-                        &[],
-                        &vec![Element::Expression(vec![], "This is a test".to_owned())],
-                        &options);
-    assert_eq!(raw.unwrap().render(&mut Default::default()).unwrap(),
-               Some("This is a test".to_owned()));
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("raw".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(raw_block)));
+        options
+    }
+
+    #[test]
+    fn test_raw() {
+        let raw = raw_block("raw",
+                            &[],
+                            &vec![Element::Expression(vec![], "This is a test".to_owned())],
+                            &options())
+            .unwrap();
+        let output = raw.render(&mut Default::default()).unwrap();
+        assert_eq!(output, Some("This is a test".to_owned()));
+    }
 }

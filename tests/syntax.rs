@@ -1,27 +1,27 @@
+#[macro_use]
+extern crate difference;
 extern crate liquid;
 
-use liquid::LiquidOptions;
-use liquid::Renderable;
-use liquid::Context;
-use liquid::parse;
-use std::default::Default;
+use liquid::*;
 
-macro_rules! compare {
-    ($input:expr, $output:expr) => {
-        let input = $input.replace("…", " ");
-        let expected = $output.replace("…", " ");
-        let options: LiquidOptions = Default::default();
-        let template = parse(&input, options).unwrap();
+fn compare(input: &str, expected: &str) {
+    let input = input.replace("…", " ");
+    let expected = expected.replace("…", " ");
 
-        let mut data = Context::new();
-        let output = template.render(&mut data);
-        assert_eq!(output.unwrap(), Some(expected));
-    }
+    let template = ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .parse(&input)
+        .unwrap();
+
+    let output = template.render(&Default::default()).unwrap();
+
+    assert_diff!(&expected, &output, " ", 0);
 }
 
 #[test]
 pub fn no_whitespace_control() {
-    compare!(
+    compare(
         "
 topic1
 ……{% assign foo = \"bar\" %}
@@ -35,13 +35,13 @@ topic1
 ……
 …………-……bar
 ……
-"
+",
     );
 }
 
 #[test]
 pub fn simple_whitespace_control() {
-    compare!(
+    compare(
         "
 topic1
 ……{% assign foo = \"bar\" -%}
@@ -52,13 +52,13 @@ topic1
         "
 topic1
 ……-bar
-"
+",
     );
 }
 
 #[test]
 pub fn double_sided_whitespace_control() {
-    compare!(
+    compare(
         "
 topic1
 ……{%- assign foo = \"bar\" -%}
@@ -67,6 +67,6 @@ topic1
 ",
         "
 topic1-bar\
-"
+",
     );
 }

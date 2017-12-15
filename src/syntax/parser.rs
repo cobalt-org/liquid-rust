@@ -7,9 +7,9 @@ use std::slice::Iter;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use LiquidOptions;
 use error::{Error, Result};
 
+use super::LiquidOptions;
 use super::Element;
 use super::Renderable;
 use super::Token;
@@ -327,9 +327,43 @@ mod test_expect {
 
 #[cfg(test)]
 mod test_split_block {
+    use std::collections::HashMap;
     use super::*;
     use super::super::tokenize;
     use super::super::split_block;
+    use super::super::FnBlockParser;
+    use super::super::ParseBlock;
+    use super::super::Renderable;
+    use super::super::Context;
+
+    struct NullBlock;
+
+    impl Renderable for NullBlock {
+        fn render(&self, _context: &mut Context) -> Result<Option<String>> {
+            Ok(None)
+        }
+    }
+
+    pub fn null_block(_tag_name: &str,
+                      _arguments: &[Token],
+                      _tokens: &[Element],
+                      _options: &LiquidOptions)
+                      -> Result<Box<Renderable>> {
+        Ok(Box::new(NullBlock))
+    }
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        let blocks: HashMap<String, Box<ParseBlock>> = ["comment", "for", "if"]
+            .into_iter()
+            .map(|name| {
+                     let block: Box<ParseBlock> = Box::new(FnBlockParser::new(null_block));
+                     (name.to_string(), block)
+                 })
+            .collect();
+        options.blocks = blocks;
+        options
+    }
 
     #[test]
     fn handles_nonmatching_stream() {
@@ -342,7 +376,7 @@ mod test_split_block {
         // note that we need an options block that has been initilaised with
         // the supported block list; otherwise the split_tag function won't know
         // which things start a nested block.
-        let options = LiquidOptions::with_known_blocks();
+        let options = options();
         let (_, trailing) = split_block(&tokens[..], &["else"], &options);
         assert!(trailing.is_none());
     }
@@ -368,7 +402,7 @@ mod test_split_block {
         // note that we need an options block that has been initilaised with
         // the supported block list; otherwise the split_tag function won't know
         // which things start a nested block.
-        let options = LiquidOptions::with_known_blocks();
+        let options = options();
         let (_, trailing) = split_block(&tokens[..], &["else"], &options);
         match trailing {
             Some(split) => {

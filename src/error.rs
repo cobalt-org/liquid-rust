@@ -3,7 +3,7 @@ use std::error;
 use std::fmt;
 use std::io;
 
-use filters::FilterError;
+use syntax::FilterError;
 use syntax::Token;
 
 // type alias because we always want to deal with CobaltErrors

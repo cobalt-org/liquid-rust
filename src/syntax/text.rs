@@ -1,6 +1,6 @@
-use Context;
 use error::Result;
 
+use super::Context;
 use super::Renderable;
 
 pub struct Text {

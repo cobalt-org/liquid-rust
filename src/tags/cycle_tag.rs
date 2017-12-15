@@ -1,7 +1,7 @@
-use Context;
-use LiquidOptions;
 use error::{Error, Result};
 
+use syntax::Context;
+use syntax::LiquidOptions;
 use syntax::Renderable;
 use syntax::Token;
 use syntax::{consume_value_token, value_token};
@@ -77,7 +77,14 @@ pub fn cycle_tag(_tag_name: &str,
 mod test {
     use super::*;
     use syntax::Value;
-    use super::super::super::parse;
+    use syntax;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.tags.insert("cycle".to_owned(),
+                            Box::new(syntax::FnTagParser::new(cycle_tag)));
+        options
+    }
 
     #[test]
     fn unnamed_cycle_gets_a_name() {
@@ -90,7 +97,8 @@ mod test {
                           Token::Identifier("no".to_owned()),
                           Token::Comma,
                           Token::Identifier("name".to_owned())];
-        let cycle = parse_cycle(&tokens[..], &LiquidOptions::default()).unwrap();
+        let options = LiquidOptions::default();
+        let cycle = parse_cycle(&tokens[..], &options).unwrap();
         assert_eq!("thiscyclehasnoname", cycle.name);
     }
 
@@ -101,10 +109,13 @@ mod test {
                            "{% cycle 'b': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n")
             .to_owned();
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
-        let output = t.render(&mut context);
+        let output = template.render(&mut context);
 
         assert_eq!(output.unwrap(), Some("one\ntwo\none\ntwo\n".to_owned()));
     }
@@ -116,10 +127,13 @@ mod test {
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n")
             .to_owned();
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
-        let output = t.render(&mut context);
+        let output = template.render(&mut context);
 
         assert_eq!(output.unwrap(), Some("one\ntwo\nthree\none\n".to_owned()));
     }
@@ -131,14 +145,17 @@ mod test {
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n")
             .to_owned();
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let t = parse(&text, Default::default()).unwrap();
         let mut context = Context::new();
         context.set_val("alpha", Value::Num(1f32));
         context.set_val("beta", Value::Num(2f32));
         context.set_val("gamma", Value::Num(3f32));
 
-        let output = t.render(&mut context);
+        let output = template.render(&mut context);
 
         assert_eq!(output.unwrap(), Some("1\n2\n3\n1\n".to_owned()));
     }
@@ -149,8 +166,12 @@ mod test {
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n").to_owned();
 
-        let t = parse(&text, Default::default()).unwrap();
-        let mut context = Context::new();
-        assert!(t.render(&mut context).is_err());
+        let tokens = syntax::tokenize(&text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options)
+            .map(syntax::Template::new)
+            .unwrap();
+        let output = template.render(&mut Default::default());
+        assert!(output.is_err());
     }
 }

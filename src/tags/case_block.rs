@@ -1,7 +1,7 @@
-use LiquidOptions;
 use error::{Error, Result};
-use Context;
 
+use syntax::LiquidOptions;
+use syntax::Context;
 use syntax::Renderable;
 use syntax::Element;
 use syntax::Token;
@@ -143,7 +143,14 @@ pub fn case_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use super::super::super::parse;
+    use syntax;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("case".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(case_block)));
+        options
+    }
 
     #[test]
     fn test_case_block() {
@@ -155,8 +162,12 @@ mod test {
                            "{% else %}",
                            "otherwise",
                            "{% endcase %}");
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options)
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
         context.set_val("x", Value::Num(2f32));
         assert_eq!(template.render(&mut context).unwrap(),
@@ -184,8 +195,12 @@ mod test {
                            "{% when 3 or 4 %}",
                            "three and a half",
                            "{% endcase %}");
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options)
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
         context.set_val("x", Value::str("nope"));
         assert_eq!(template.render(&mut context).unwrap(), Some("".to_owned()));
@@ -201,7 +216,9 @@ mod test {
                            "{% else %}",
                            "else # 2",
                            "{% endcase %}");
-
-        assert!(parse(text, LiquidOptions::default()).is_err());
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options).map(syntax::Template::new);
+        assert!(template.is_err());
     }
 }

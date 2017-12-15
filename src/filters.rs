@@ -1,6 +1,4 @@
 use std::cmp;
-use std::error::Error;
-use std::fmt;
 
 use chrono::DateTime;
 use itertools;
@@ -13,46 +11,7 @@ use url::percent_encoding;
 use chrono::FixedOffset;
 
 use syntax::Value;
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum FilterError {
-    InvalidType(String),
-    InvalidArgumentCount(String),
-    InvalidArgument(u16, String), // (position, "expected / given ")
-}
-
-impl FilterError {
-    pub fn invalid_type<T>(s: &str) -> Result<T, FilterError> {
-        Err(FilterError::InvalidType(s.to_owned()))
-    }
-}
-
-impl fmt::Display for FilterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            FilterError::InvalidType(ref e) => write!(f, "Invalid type : {}", e),
-            FilterError::InvalidArgumentCount(ref e) => {
-                write!(f, "Invalid number of arguments : {}", e)
-            }
-            FilterError::InvalidArgument(ref pos, ref e) => {
-                write!(f, "Invalid argument given at position {} : {}", pos, e)
-            }
-        }
-    }
-}
-
-impl Error for FilterError {
-    fn description(&self) -> &str {
-        match *self {
-            FilterError::InvalidType(ref e) |
-            FilterError::InvalidArgumentCount(ref e) |
-            FilterError::InvalidArgument(_, ref e) => e,
-        }
-    }
-}
-
-pub type FilterResult = Result<Value, FilterError>;
-pub type Filter = Fn(&Value, &[Value]) -> FilterResult;
+use syntax::{FilterError, FilterResult};
 
 // Helper functions for the filters.
 fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {
@@ -249,10 +208,9 @@ fn canonicalize_slice(slice_offset: isize,
 pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 1, 1));
 
-    let offset =
-        args[0]
-            .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+    let offset = args[0]
+        .as_float()
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
     let offset = offset as isize;
 
     let length = match args.get(1) {
@@ -311,11 +269,10 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 2));
 
-    let length =
-        args.get(0)
-            .unwrap_or(&Value::Num(50f32))
-            .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+    let length = args.get(0)
+        .unwrap_or(&Value::Num(50f32))
+        .as_float()
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
     let length = length as usize;
 
     let truncate_string = args.get(1)
@@ -341,11 +298,10 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 2));
 
-    let words =
-        args.get(0)
-            .unwrap_or(&Value::Num(15f32))
-            .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+    let words = args.get(0)
+        .unwrap_or(&Value::Num(15f32))
+        .as_float()
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
     let words = words as usize;
 
     let truncate_string = args.get(1)
@@ -737,12 +693,12 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
             .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Value::Num(input + operand))
 }
@@ -752,12 +708,12 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
             .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Value::Num(input - operand))
 }
@@ -767,12 +723,12 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
             .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Value::Num(input * operand))
 }
@@ -782,12 +738,12 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
             .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
     // TODO only do `.floor` if its an integer
     Ok(Value::Num((input / operand).floor()))
@@ -798,12 +754,12 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
             .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
     Ok(Value::Num(input % operand))
 }
@@ -811,16 +767,15 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
 pub fn round(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 1));
 
-    let n =
-        args.get(0)
-            .unwrap_or(&Value::Num(0_f32))
-            .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(0, "Value::Number expected".to_owned()))?;
+    let n = args.get(0)
+        .unwrap_or(&Value::Num(0_f32))
+        .as_float()
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
     let n = n as i32;
 
     let input = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     if n == 0 {
         Ok(Value::Num(input.round()))
@@ -837,7 +792,7 @@ pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
     Ok(Value::Num(n.ceil()))
 }
 
@@ -846,7 +801,7 @@ pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
     Ok(Value::Num(n.floor()))
 }
 
@@ -877,7 +832,7 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 
     let n = input
         .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Value::Number expected".to_owned()))?;
+        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
     if (n as isize) == 1 {
         Ok(args[0].clone())
     } else {
@@ -901,10 +856,9 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
         .as_str()
         .ok_or_else(|| FilterError::InvalidArgument(0, " expected".to_owned()))?;
 
-    let n =
-        args[1]
-            .as_float()
-            .ok_or_else(|| FilterError::InvalidArgument(1, "Value::Number expected".to_owned()))?;
+    let n = args[1]
+        .as_float()
+        .ok_or_else(|| FilterError::InvalidArgument(1, "Number expected".to_owned()))?;
     let timezone = FixedOffset::east((n * 3600.0) as i32);
 
     Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
@@ -1177,7 +1131,7 @@ mod tests {
     fn unit_date_in_tz_offset_not_a_num() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
-        let desired_result = FilterError::InvalidArgument(1, "Value::Number expected".to_owned());
+        let desired_result = FilterError::InvalidArgument(1, "Number expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 

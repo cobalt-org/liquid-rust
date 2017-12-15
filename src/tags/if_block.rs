@@ -1,7 +1,7 @@
-use Context;
-use LiquidOptions;
 use error::{Error, Result};
 
+use syntax::Context;
+use syntax::LiquidOptions;
 use syntax::Renderable;
 use syntax::Template;
 use syntax::Token;
@@ -136,38 +136,61 @@ pub fn if_block(_tag_name: &str,
 mod test {
     use super::*;
     use syntax::Value;
-    use super::super::super::parse;
+    use syntax;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("if".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(if_block)));
+        options.blocks.insert("unless".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(unless_block)));
+        options
+    }
 
     #[test]
     fn number_comparison() {
-        let a = parse("{% if 6 < 7  %}if true{% endif %}",
-                      LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
-        assert_eq!(a.unwrap(), Some("if true".to_owned()));
+        let text = "{% if 6 < 7  %}if true{% endif %}";
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
 
-        let b = parse("{% if 7 < 6  %}if true{% else %}if false{% endif %}",
-                      LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
-        assert_eq!(b.unwrap(), Some("if false".to_owned()));
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+
+        let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
     }
 
     #[test]
     fn string_comparison() {
-        // "one" == "one" then "if true" else "if false"
-        let a = parse("{% if \"one\" == \"one\" %}if true{% endif %}",
-                      LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
-        assert_eq!(a.unwrap(), Some("if true".to_owned()));
+        let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
 
-        // "one" == "two"
-        let b = parse("{% if \"one\" == \"two\" %}if true{% endif %}",
-                      LiquidOptions::default())
-            .unwrap()
-            .render(&mut Context::new());
-        assert_eq!(b.unwrap(), Some("".to_owned()));
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+
+        let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
     }
 
     #[test]
@@ -178,18 +201,25 @@ mod test {
                            "nope",
                            "{% endif %}");
 
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
         let mut context = Context::new();
-
-        // first pass, "truthy" == false
         context.set_val("truthy", Value::Bool(false));
-        let output = template.render(&mut context);
-        assert_eq!(output.unwrap(), Some("nope".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("nope".to_owned()));
 
-        // second pass, "truthy" == true
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
         context.set_val("truthy", Value::Bool(true));
-        let output = template.render(&mut context);
-        assert_eq!(output.unwrap(), Some("yep".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("yep".to_owned()));
     }
 
     #[test]
@@ -197,15 +227,26 @@ mod test {
         let text = concat!("{% unless some_value == 1 %}",
                            "unless body",
                            "{% endunless %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
         let mut context = Context::new();
-
         context.set_val("some_value", Value::Num(1f32));
-        assert_eq!(template.render(&mut context).unwrap(), Some("".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("".to_owned()));
 
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
         context.set_val("some_value", Value::Num(42f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("unless body".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("unless body".to_owned()));
     }
 
     #[test]
@@ -220,13 +261,16 @@ mod test {
                            "{% else %}",
                            "nope",
                            "{% endif %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
         let mut context = Context::new();
         context.set_val("truthy", Value::Bool(true));
         context.set_val("also_truthy", Value::Bool(false));
-
-        let output = template.render(&mut context);
-        assert_eq!(output.unwrap(), Some("yep, not also truthy".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("yep, not also truthy".to_owned()));
     }
 
     #[test]
@@ -240,23 +284,45 @@ mod test {
                            "{% else %}",
                            "fourth",
                            "{% endif %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
         let mut context = Context::new();
-
         context.set_val("a", Value::Num(1f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("first".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("first".to_owned()));
 
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
         context.set_val("a", Value::Num(2f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("second".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("second".to_owned()));
 
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
         context.set_val("a", Value::Num(3f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("third".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("third".to_owned()));
 
+        let tokens = syntax::tokenize(&text).unwrap();
+        let template = syntax::parse(&tokens, &options())
+            .map(syntax::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
         context.set_val("a", Value::str("else"));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("fourth".to_string()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("fourth".to_owned()));
     }
 }

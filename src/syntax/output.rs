@@ -1,6 +1,6 @@
-use Context;
 use error::{Error, Result};
 
+use super::Context;
 use super::Renderable;
 use super::Value;
 use super::variable::Variable;

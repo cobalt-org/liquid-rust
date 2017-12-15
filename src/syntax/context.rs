@@ -1,8 +1,9 @@
-use error::{Result, Error};
-use filters::Filter;
 use std::collections::HashMap;
-use syntax::Token;
-use syntax::{Value, Object};
+
+use error::{Result, Error};
+use super::Filter;
+use super::Token;
+use super::{Value, Object};
 
 
 #[derive(Clone)]
@@ -27,41 +28,23 @@ pub struct Context {
     cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
-    pub filters: HashMap<String, Box<Filter>>,
+    filters: HashMap<String, Box<Filter>>,
 }
 
 impl Context {
     /// Creates a new, empty rendering context.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use liquid::Context;
-    /// let ctx = Context::new();
-    /// assert_eq!(ctx.get_val("test"), None);
-    /// ```
-    pub fn new() -> Context {
-        Context::with_values_and_filters(Object::new(), HashMap::new())
+    pub fn new() -> Self {
+        Default::default()
     }
 
-    pub fn with_values(values: Object) -> Context {
-        Context::with_values_and_filters(values, HashMap::new())
+    pub fn with_values(mut self, values: Object) -> Self {
+        self.globals = values;
+        self
     }
 
-    pub fn with_filters(filters: HashMap<String, Box<Filter>>) -> Context {
-        Context::with_values_and_filters(Object::new(), filters)
-    }
-
-    pub fn with_values_and_filters(values: Object,
-                                   filters: HashMap<String, Box<Filter>>)
-                                   -> Context {
-        Context {
-            stack: vec![Object::new()],
-            interrupt: None,
-            cycles: HashMap::new(),
-            globals: values,
-            filters: filters,
-        }
+    pub fn with_filters(mut self, filters: HashMap<String, Box<Filter>>) -> Self {
+        self.filters = filters;
+        self
     }
 
     pub fn cycle_element(&mut self, name: &str, values: &[Token]) -> Result<Option<Value>> {
@@ -134,23 +117,6 @@ impl Context {
     /// Sets up a new stack frame, executes the supplied function and then
     /// tears the stack frame down before returning the function's result
     /// to the caller.
-    ///
-    /// # Examples
-    /// ```
-    /// # use liquid::{Value, Context};
-    /// let mut ctx = Context::new();
-    /// ctx.set_val("test", Value::Num(42f32));
-    /// ctx.run_in_scope(|mut stack_frame| {
-    ///   // stack_frame inherits values from its parent context
-    ///   assert_eq!(stack_frame.get_val("test"), Some(&Value::Num(42f32)));
-    ///
-    ///   // but can (optionally) override them
-    ///   stack_frame.set_local_val("test", Value::Num(3.14f32));
-    ///   assert_eq!(stack_frame.get_val("test"), Some(&Value::Num(3.14f32)));
-    /// });
-    /// // the original value is unchanged once the scope exits
-    /// assert_eq!(ctx.get_val("test"), Some(&Value::Num(42f32)));
-    /// ```
     pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
         where FnT: FnOnce(&mut Context) -> RvalT
     {
@@ -175,15 +141,6 @@ impl Context {
     /// dot-separated path to a value. A value will only be returned if
     /// each link in the chain (excluding the final name) refers to a
     /// value of type Object.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use liquid::{Value, Context};
-    /// let mut ctx = Context::new();
-    /// ctx.set_val("test", Value::Num(42f32));
-    /// assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
-    /// ```
     pub fn get_val<'b>(&'b self, name: &str) -> Option<&'b Value> {
         let mut path = name.split('.');
         let key = path.next().unwrap_or("");
@@ -202,15 +159,6 @@ impl Context {
     }
 
     /// Sets a value in the global context.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use liquid::{Value, Context};
-    /// let mut ctx = Context::new();
-    /// ctx.set_val("test", Value::Num(42f32));
-    /// assert_eq!(ctx.get_val("test"), Some(&Value::Num(42f32)));
-    /// ```
     pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
         self.globals.insert(name.to_owned(), val)
     }
@@ -238,22 +186,6 @@ impl Context {
     /// Panics if there is no frame on the local values stack. Context
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use liquid::{Value, Context};
-    /// let mut ctx = Context::new();
-    /// ctx.run_in_scope(|mut local_scope| {
-    ///   local_scope.set_val("global", Value::Num(42f32));
-    ///   local_scope.set_local_val("local", Value::Num(163f32));
-    ///
-    ///   assert_eq!(local_scope.get_val("global"), Some(&Value::Num(42f32)));
-    ///   assert_eq!(local_scope.get_val("local"), Some(&Value::Num(163f32)));
-    /// });
-    /// assert_eq!(ctx.get_val("global"), Some(&Value::Num(42f32)));
-    /// assert_eq!(ctx.get_val("local"), None);
-    /// ```
     pub fn set_local_val(&mut self, name: &str, val: Value) -> Option<Value> {
         match self.stack.last_mut() {
             Some(frame) => frame.insert(name.to_owned(), val),

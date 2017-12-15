@@ -1,7 +1,7 @@
-use Context;
-use LiquidOptions;
 use error::{Error, Result};
 
+use syntax::Context;
+use syntax::LiquidOptions;
 use syntax::Element;
 use syntax::Renderable;
 use syntax::Template;
@@ -54,23 +54,34 @@ pub fn capture_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use super::super::super::parse;
+    use syntax;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("capture".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(capture_block)));
+        options
+    }
 
     #[test]
     fn test_capture() {
         let text = concat!("{% capture attribute_name %}",
-                           "{{ item | upcase }}-{{ i }}-color",
+                           "{{ item }}-{{ i }}-color",
                            "{% endcapture %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options)
+            .map(syntax::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
         ctx.set_val("item", Value::str("potato"));
         ctx.set_val("i", Value::Num(42f32));
 
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(), Some("".to_owned()));
+        let output = template.render(&mut ctx).unwrap();
         assert_eq!(ctx.get_val("attribute_name"),
-                   Some(&Value::str("POTATO-42-color")));
+                   Some(&Value::str("potato-42-color")));
+        assert_eq!(output, Some("".to_owned()));
     }
 
     #[test]
@@ -78,6 +89,9 @@ mod test {
         let text = concat!("{% capture foo bar baz %}",
                            "We should never see this",
                            "{% endcapture %}");
-        assert!(parse(text, LiquidOptions::default()).is_err());
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options).map(syntax::Template::new);
+        assert!(template.is_err());
     }
 }

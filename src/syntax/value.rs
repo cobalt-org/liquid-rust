@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::cmp::Ordering;
 
-use Context;
 use error::Result;
 
+use super::Context;
 use super::Renderable;
 
 /// An enum to represent different value types

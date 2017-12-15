@@ -1,6 +1,6 @@
-use Context;
 use error::{Error, Result};
 
+use super::Context;
 use super::Value;
 use super::Renderable;
 use super::Token;
@@ -125,95 +125,91 @@ impl IdentifierPath {
         }
     }
 }
+
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    use serde_yaml;
 
-    use super::*;
-    use super::super::super::parse;
-    use LiquidOptions;
-    use Context;
+    use syntax::Object;
+    use Parser;
 
     #[test]
     fn identifier_path_array_index() {
-        let options = LiquidOptions::with_known_blocks();
+        let globals: Object = serde_yaml::from_str(
+            r#"
+test_a: ["test"]
+"#,
+        ).unwrap();
         let template = "array: {{ test_a[0] }}";
 
-        let mut context = Context::new();
-        let test = Value::Array(vec![Value::Str("test".to_owned())]);
-        context.set_val("test_a", test);
-
-        let template = parse(template, options).unwrap();
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("array: test".to_owned()));
+        let parser = Parser::new();
+        let template = parser.parse(template).unwrap();
+        let actual = template.render(&globals).unwrap();
+        assert_eq!(actual, "array: test".to_owned());
     }
 
     #[test]
     fn identifier_path_array_index_negative() {
-        let options = LiquidOptions::with_known_blocks();
+        let globals: Object = serde_yaml::from_str(
+            r#"
+test_a: ["test1", "test2"]
+"#,
+        ).unwrap();
         let template = "array: {{ test_a[-1] }}";
 
-        let mut context = Context::new();
-        let test = Value::Array(vec![Value::Str("test1".to_owned()),
-                                     Value::Str("test2".to_owned())]);
-        context.set_val("test_a", test);
-
-        let template = parse(template, options).unwrap();
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("array: test2".to_owned()));
+        let parser = Parser::new();
+        let template = parser.parse(template).unwrap();
+        let actual = template.render(&globals).unwrap();
+        assert_eq!(actual, "array: test2".to_owned());
     }
 
     #[test]
     fn identifier_path_object_dot() {
-
-        let options = LiquidOptions::with_known_blocks();
+        let globals: Object = serde_yaml::from_str(
+            r#"
+test_a:
+  - test_h: 5
+"#,
+        ).unwrap();
         let template = "object_dot: {{ test_a[0].test_h }}\n";
 
-        let mut context = Context::new();
-        let mut internal = HashMap::new();
-        internal.insert("test_h".to_string(), Value::Num(5f32));
-
-        let test = Value::Array(vec![Value::Object(internal)]);
-        context.set_val("test_a", test);
-
-        let template = parse(template, options).unwrap();
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("object_dot: 5\n".to_owned()));
+        let parser = Parser::new();
+        let template = parser.parse(template).unwrap();
+        let actual = template.render(&globals).unwrap();
+        assert_eq!(actual, "object_dot: 5\n".to_owned());
     }
 
     #[test]
     fn identifier_path_object_string() {
-        let options = LiquidOptions::with_known_blocks();
-        let template = "object_string: {{ test_a[0][\"test_h\"] }}\n";
+        let globals: Object = serde_yaml::from_str(
+            r#"
+test_a:
+  - test_h: 5
+"#,
+        ).unwrap();
+        let template = r#"object_string: {{ test_a[0]["test_h"] }}"#;
 
-        let mut context = Context::new();
-        let mut internal = HashMap::new();
-        internal.insert("test_h".to_string(), Value::Num(5f32));
-
-        let test = Value::Array(vec![Value::Object(internal)]);
-        context.set_val("test_a", test);
-
-        let template = parse(template, options).unwrap();
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("object_string: 5\n".to_owned()));
+        let parser = Parser::new();
+        let template = parser.parse(template).unwrap();
+        let actual = template.render(&globals).unwrap();
+        assert_eq!(actual, "object_string: 5".to_owned());
     }
 
     #[test]
     #[should_panic]
     fn identifier_path_subexpression() {
-        let options = LiquidOptions::with_known_blocks();
-        let template = concat!("{% assign somevar=\"test_h\" %}",
-                               "result_string: {{ test_a[0][somevar] }}\n");
+        let globals: Object = serde_yaml::from_str(
+            r#"
+somevar: test_h
+test_a:
+  - test_h: 5
+"#,
+        ).unwrap();
+        let template = r#"result_string: {{ test_a[0][somevar] }}"#;
 
-        let mut context = Context::new();
-        let mut internal = HashMap::new();
-        internal.insert("test_h".to_string(), Value::Num(5f32));
-
-        let test = Value::Array(vec![Value::Object(internal)]);
-        context.set_val("test_a", test);
-
-        let template = parse(template, options).unwrap();
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("object_string: 5\n".to_owned()));
+        let parser = Parser::new();
+        let template = parser.parse(template).unwrap();
+        let actual = template.render(&globals).unwrap();
+        assert_eq!(actual, "result_string: 5".to_owned());
     }
 }

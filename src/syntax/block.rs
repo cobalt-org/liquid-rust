@@ -1,6 +1,6 @@
 use error::Result;
-use LiquidOptions;
 
+use super::LiquidOptions;
 use super::Element;
 use super::Renderable;
 use super::Token;

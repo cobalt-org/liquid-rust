@@ -1,7 +1,7 @@
-use Context;
-use LiquidOptions;
 use error::Result;
 
+use syntax::Context;
+use syntax::LiquidOptions;
 use syntax::Renderable;
 use syntax::Token;
 use syntax::Element;
@@ -25,10 +25,18 @@ pub fn comment_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
+    use syntax;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("comment".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(comment_block)));
+        options
+    }
 
     #[test]
     fn test_comment() {
-        let options: LiquidOptions = Default::default();
+        let options = options();
         let comment = comment_block("comment",
                                     &[],
                                     &vec![Element::Expression(vec![],

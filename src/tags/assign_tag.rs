@@ -1,7 +1,7 @@
-use Context;
-use LiquidOptions;
 use error::{Error, Result};
 
+use syntax::Context;
+use syntax::LiquidOptions;
 use syntax::Output;
 use syntax::Renderable;
 use syntax::Token;
@@ -14,7 +14,7 @@ struct Assign {
 
 impl Renderable for Assign {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = try!(self.src.apply_filters(context));
+        let value = self.src.apply_filters(context)?;
         context.set_val(&self.dst, value);
         Ok(None)
     }
@@ -40,8 +40,20 @@ pub fn assign_tag(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
+    use syntax;
     use syntax::Value;
-    use super::super::super::parse;
+    use tags;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.tags.insert("assign".to_owned(),
+                            Box::new(syntax::FnTagParser::new(assign_tag)));
+        options.blocks.insert("if".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(tags::if_block)));
+        options.blocks.insert("for".to_owned(),
+                              Box::new(syntax::FnBlockParser::new(tags::for_block)));
+        options
+    }
 
     #[test]
     fn assignment_in_loop_persists_on_loop_exit() {
@@ -52,7 +64,11 @@ mod test {
                            "{% if freestyle %}",
                            "<p>Freestyle!</p>",
                            "{% endif %}");
-        let template = parse(text, Default::default()).unwrap();
+        let tokens = syntax::tokenize(text).unwrap();
+        let options = options();
+        let template = syntax::parse(&tokens, &options)
+            .map(syntax::Template::new)
+            .unwrap();
 
         // test one: no matching value in `tags`
         {
@@ -62,9 +78,9 @@ mod test {
                                               Value::str("beta"),
                                               Value::str("gamma")]));
 
-            let output = template.render(&mut context);
+            let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(false)));
-            assert_eq!(output.unwrap(), Some("".to_string()));
+            assert_eq!(output, Some("".to_string()));
         }
 
         // test two: matching value in `tags`
@@ -76,9 +92,9 @@ mod test {
                                               Value::str("freestyle"),
                                               Value::str("gamma")]));
 
-            let output = template.render(&mut context);
+            let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(true)));
-            assert_eq!(output.unwrap(), Some("<p>Freestyle!</p>".to_string()));
+            assert_eq!(output, Some("<p>Freestyle!</p>".to_string()));
         }
     }
 }

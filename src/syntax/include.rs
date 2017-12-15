@@ -49,7 +49,8 @@ pub struct FilesystemInclude {
 }
 
 impl FilesystemInclude {
-    pub fn new(root: path::PathBuf) -> Self {
+    pub fn new<P: Into<path::PathBuf>>(root: P) -> Self {
+        let root: path::PathBuf = root.into();
         Self { root }
     }
 }
@@ -59,7 +60,7 @@ impl Include for FilesystemInclude {
         let root = self.root.canonicalize()?;
         let path = root.join(relative_path);
         if !path.exists() {
-            return Err(Error::from(&*format!("{:?} does not exist", relative_path)));
+            return Err(Error::from(&*format!("{:?} does not exist", path)));
         }
         let path = path.canonicalize()?;
         if !path.starts_with(&root) {

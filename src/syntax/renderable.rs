@@ -1,5 +1,6 @@
-use Context;
 use error::Result;
+
+use super::Context;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable: Send + Sync {

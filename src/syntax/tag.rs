@@ -1,6 +1,6 @@
-use LiquidOptions;
 use error::Result;
 
+use super::LiquidOptions;
 use super::Token;
 use super::Renderable;
 
@@ -10,32 +10,6 @@ use super::Renderable;
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
-///
-/// ## Minimal Example
-/// ```
-/// # use liquid::{Renderable, LiquidOptions, Context, Error, FnTagParser};
-///
-/// struct HelloWorld;
-///
-/// impl Renderable for HelloWorld {
-///     fn render(&self, _context: &mut Context) -> Result<Option<String>, Error>{
-///         Ok(Some("Hello World!".to_owned()))
-///     }
-/// }
-///
-/// let mut options : LiquidOptions = Default::default();
-/// options.tags.insert(
-///     "hello_world".to_owned(),
-///     Box::new(FnTagParser::new(|_tag_name, _arguments, _options| {
-///         Ok(Box::new(HelloWorld))
-///     })),
-/// );
-///
-/// let template = liquid::parse("{{hello_world}}", options).unwrap();
-/// let mut data = Context::new();
-/// let output = template.render(&mut data);
-/// assert_eq!(output.unwrap(), Some("Hello World!".to_owned()));
-/// ```
 pub trait ParseTag: Send + Sync + ParseTagClone {
     fn parse(&self,
              tag_name: &str,
