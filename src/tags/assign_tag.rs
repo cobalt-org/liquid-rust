@@ -3,9 +3,9 @@ use error::{Error, Result};
 use interpreter::Context;
 use interpreter::Output;
 use interpreter::Renderable;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::{parse_output, expect};
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{parse_output, expect};
 
 #[derive(Clone, Debug)]
 struct Assign {
@@ -41,7 +41,7 @@ pub fn assign_tag(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax;
+    use compiler;
     use interpreter;
     use value::Value;
     use tags;
@@ -49,11 +49,11 @@ mod test {
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.tags.insert("assign".to_owned(),
-                            (assign_tag as syntax::FnParseTag).into());
+                            (assign_tag as compiler::FnParseTag).into());
         options.blocks.insert("if".to_owned(),
-                              (tags::if_block as syntax::FnParseBlock).into());
+                              (tags::if_block as compiler::FnParseBlock).into());
         options.blocks.insert("for".to_owned(),
-                              (tags::for_block as syntax::FnParseBlock).into());
+                              (tags::for_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -66,9 +66,9 @@ mod test {
                            "{% if freestyle %}",
                            "<p>Freestyle!</p>",
                            "{% endif %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options)
+        let template = compiler::parse(&tokens, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

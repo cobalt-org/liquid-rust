@@ -4,7 +4,7 @@ use std::fmt;
 use std::io;
 
 use interpreter::FilterError;
-use syntax::Token;
+use compiler::Token;
 
 // type alias because we always want to deal with CobaltErrors
 pub type Result<T> = result::Result<T, Error>;

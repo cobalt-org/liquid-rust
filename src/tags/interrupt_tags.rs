@@ -2,8 +2,8 @@ use error::{Error, Result};
 
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
-use syntax::LiquidOptions;
-use syntax::Token;
+use compiler::LiquidOptions;
+use compiler::Token;
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
@@ -52,21 +52,20 @@ pub fn continue_tag(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax;
+    use compiler;
     use tags;
     use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options
-            .tags
-            .insert("break".to_owned(), (break_tag as syntax::FnParseTag).into());
+        options.tags.insert("break".to_owned(),
+                            (break_tag as compiler::FnParseTag).into());
         options.tags.insert("continue".to_owned(),
-                            (continue_tag as syntax::FnParseTag).into());
+                            (continue_tag as compiler::FnParseTag).into());
         options.blocks.insert("for".to_owned(),
-                              (tags::for_block as syntax::FnParseBlock).into());
+                              (tags::for_block as compiler::FnParseBlock).into());
         options.blocks.insert("if".to_owned(),
-                              (tags::if_block as syntax::FnParseBlock).into());
+                              (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -77,8 +76,8 @@ mod test {
                            "{% if i == 2 %}break-{{i}}\n{% break %}{% endif %}",
                            "exit-{{i}}\n",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -100,8 +99,8 @@ mod test {
                            "{% endfor %}",
                            "exit-{{outer}}\n",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -121,8 +120,8 @@ mod test {
                            "{% if i == 2 %}continue-{{i}}\n{% continue %}{% endif %}",
                            "exit-{{i}}\n",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -148,8 +147,8 @@ mod test {
                            "{% endfor %}",
                            "exit-{{outer}}\n",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

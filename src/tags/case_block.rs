@@ -4,10 +4,10 @@ use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::{parse, consume_value_token, split_block};
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{parse, consume_value_token, split_block};
 use value::Value;
 
 #[derive(Debug)]
@@ -143,12 +143,12 @@ pub fn case_block(_tag_name: &str,
 mod test {
     use super::*;
     use interpreter;
-    use syntax;
+    use compiler;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.blocks.insert("case".to_owned(),
-                              (case_block as syntax::FnParseBlock).into());
+                              (case_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -162,9 +162,9 @@ mod test {
                            "{% else %}",
                            "otherwise",
                            "{% endcase %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options)
+        let template = compiler::parse(&tokens, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -195,9 +195,9 @@ mod test {
                            "{% when 3 or 4 %}",
                            "three and a half",
                            "{% endcase %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options)
+        let template = compiler::parse(&tokens, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -216,9 +216,9 @@ mod test {
                            "{% else %}",
                            "else # 2",
                            "{% endcase %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options).map(interpreter::Template::new);
+        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

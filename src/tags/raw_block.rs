@@ -2,9 +2,9 @@ use error::Result;
 
 use interpreter::Context;
 use interpreter::Renderable;
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
 
 #[derive(Clone, Debug)]
 struct RawT {
@@ -35,13 +35,12 @@ pub fn raw_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax;
+    use compiler;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options
-            .blocks
-            .insert("raw".to_owned(), (raw_block as syntax::FnParseBlock).into());
+        options.blocks.insert("raw".to_owned(),
+                              (raw_block as compiler::FnParseBlock).into());
         options
     }
 

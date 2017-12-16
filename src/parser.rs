@@ -6,16 +6,16 @@ use std::path;
 use error::Result;
 use tags;
 use filters;
-use syntax;
+use compiler;
 use interpreter;
 use super::Template;
 
 #[derive(Default)]
 pub struct ParserBuilder {
-    blocks: HashMap<String, syntax::BoxedBlockParser>,
-    tags: HashMap<String, syntax::BoxedTagParser>,
+    blocks: HashMap<String, compiler::BoxedBlockParser>,
+    tags: HashMap<String, compiler::BoxedTagParser>,
     filters: HashMap<String, interpreter::BoxedValueFilter>,
-    include_source: Option<Box<syntax::Include>>,
+    include_source: Option<Box<compiler::Include>>,
 }
 
 impl ParserBuilder {
@@ -34,22 +34,22 @@ impl ParserBuilder {
 
     /// Register built-in Liquid tags
     pub fn liquid_tags(self) -> Self {
-        self.tag("assign", tags::assign_tag as syntax::FnParseTag)
-            .tag("break", tags::break_tag as syntax::FnParseTag)
-            .tag("continue", tags::continue_tag as syntax::FnParseTag)
-            .tag("cycle", tags::cycle_tag as syntax::FnParseTag)
-            .tag("include", tags::include_tag as syntax::FnParseTag)
+        self.tag("assign", tags::assign_tag as compiler::FnParseTag)
+            .tag("break", tags::break_tag as compiler::FnParseTag)
+            .tag("continue", tags::continue_tag as compiler::FnParseTag)
+            .tag("cycle", tags::cycle_tag as compiler::FnParseTag)
+            .tag("include", tags::include_tag as compiler::FnParseTag)
     }
 
     /// Register built-in Liquid blocks
     pub fn liquid_blocks(self) -> Self {
-        self.block("raw", tags::raw_block as syntax::FnParseBlock)
-            .block("if", tags::if_block as syntax::FnParseBlock)
-            .block("unless", tags::unless_block as syntax::FnParseBlock)
-            .block("for", tags::for_block as syntax::FnParseBlock)
-            .block("comment", tags::comment_block as syntax::FnParseBlock)
-            .block("capture", tags::capture_block as syntax::FnParseBlock)
-            .block("case", tags::case_block as syntax::FnParseBlock)
+        self.block("raw", tags::raw_block as compiler::FnParseBlock)
+            .block("if", tags::if_block as compiler::FnParseBlock)
+            .block("unless", tags::unless_block as compiler::FnParseBlock)
+            .block("for", tags::for_block as compiler::FnParseBlock)
+            .block("comment", tags::comment_block as compiler::FnParseBlock)
+            .block("capture", tags::capture_block as compiler::FnParseBlock)
+            .block("case", tags::case_block as compiler::FnParseBlock)
     }
 
     /// Register built-in Liquid filters
@@ -127,13 +127,13 @@ impl ParserBuilder {
     }
 
     /// Inserts a new custom block into the parser
-    pub fn block<B: Into<syntax::BoxedBlockParser>>(mut self, name: &str, block: B) -> Self {
+    pub fn block<B: Into<compiler::BoxedBlockParser>>(mut self, name: &str, block: B) -> Self {
         self.blocks.insert(name.to_owned(), block.into());
         self
     }
 
     /// Inserts a new custom tag into the parser
-    pub fn tag<T: Into<syntax::BoxedTagParser>>(mut self, name: &str, tag: T) -> Self {
+    pub fn tag<T: Into<compiler::BoxedTagParser>>(mut self, name: &str, tag: T) -> Self {
         self.tags.insert(name.to_owned(), tag.into());
         self
     }
@@ -145,7 +145,7 @@ impl ParserBuilder {
     }
 
     /// Define the source for includes
-    pub fn include_source(mut self, includes: Box<syntax::Include>) -> Self {
+    pub fn include_source(mut self, includes: Box<compiler::Include>) -> Self {
         self.include_source = Some(includes);
         self
     }
@@ -157,9 +157,10 @@ impl ParserBuilder {
             filters,
             include_source,
         } = self;
-        let include_source = include_source.unwrap_or_else(|| Box::new(syntax::NullInclude::new()));
+        let include_source = include_source
+            .unwrap_or_else(|| Box::new(compiler::NullInclude::new()));
 
-        let options = syntax::LiquidOptions {
+        let options = compiler::LiquidOptions {
             blocks,
             tags,
             include_source,
@@ -170,7 +171,7 @@ impl ParserBuilder {
 
 #[derive(Default)]
 pub struct Parser {
-    options: syntax::LiquidOptions,
+    options: compiler::LiquidOptions,
     filters: HashMap<String, interpreter::BoxedValueFilter>,
 }
 
@@ -195,8 +196,8 @@ impl Parser {
     /// ```
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
-        let tokens = syntax::tokenize(text)?;
-        let template = syntax::parse(&tokens, &self.options)
+        let tokens = compiler::tokenize(text)?;
+        let template = compiler::parse(&tokens, &self.options)
             .map(interpreter::Template::new)?;
         let filters = self.filters.clone();
         Ok(Template { template, filters })

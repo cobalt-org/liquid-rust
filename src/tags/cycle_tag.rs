@@ -5,9 +5,9 @@ use error::{Error, Result};
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
-use syntax::Token;
-use syntax::LiquidOptions;
-use syntax::{consume_value_token, value_token};
+use compiler::Token;
+use compiler::LiquidOptions;
+use compiler::{consume_value_token, value_token};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -80,14 +80,13 @@ pub fn cycle_tag(_tag_name: &str,
 mod test {
     use super::*;
     use value::Value;
-    use syntax;
+    use compiler;
     use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options
-            .tags
-            .insert("cycle".to_owned(), (cycle_tag as syntax::FnParseTag).into());
+        options.tags.insert("cycle".to_owned(),
+                            (cycle_tag as compiler::FnParseTag).into());
         options
     }
 
@@ -114,8 +113,8 @@ mod test {
                            "{% cycle 'b': 'one', 'two', 'three' %}\n",
                            "{% cycle 'b': 'one', 'two', 'three' %}\n")
             .to_owned();
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -132,8 +131,8 @@ mod test {
                            "{% cycle 'one', 'two', 'three' %}\n",
                            "{% cycle 'one', 'two', 'three' %}\n")
             .to_owned();
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -150,8 +149,8 @@ mod test {
                            "{% cycle alpha, beta, gamma %}\n",
                            "{% cycle alpha, beta, gamma %}\n")
             .to_owned();
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -171,9 +170,9 @@ mod test {
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n").to_owned();
 
-        let tokens = syntax::tokenize(&text).unwrap();
+        let tokens = compiler::tokenize(&text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options)
+        let template = compiler::parse(&tokens, &options)
             .map(interpreter::Template::new)
             .unwrap();
         let output = template.render(&mut Default::default());

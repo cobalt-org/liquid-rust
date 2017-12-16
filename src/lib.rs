@@ -52,7 +52,7 @@ mod tags;
 mod template;
 mod value;
 
-pub mod syntax;
+pub mod compiler;
 pub mod interpreter;
 
 pub use parser::{ParserBuilder, Parser};

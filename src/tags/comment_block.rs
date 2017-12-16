@@ -2,9 +2,9 @@ use error::Result;
 
 use interpreter::Context;
 use interpreter::Renderable;
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;
@@ -26,12 +26,12 @@ pub fn comment_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax;
+    use compiler;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.blocks.insert("comment".to_owned(),
-                              (comment_block as syntax::FnParseBlock).into());
+                              (comment_block as compiler::FnParseBlock).into());
         options
     }
 

@@ -3,10 +3,10 @@ use error::{Result, Error};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::parse;
-use syntax::tokenize;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::parse;
+use compiler::tokenize;
 
 #[derive(Debug)]
 struct Include {
@@ -48,27 +48,27 @@ mod test {
     use std::path;
     use tags;
     use filters;
-    use syntax;
+    use compiler;
     use interpreter;
     use value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.include_source = Box::new(syntax::FilesystemInclude::new(path::PathBuf::from("tests/fixtures/input")));
+        options.include_source = Box::new(compiler::FilesystemInclude::new(path::PathBuf::from("tests/fixtures/input")));
         options.tags.insert("include".to_owned(),
-                            (include_tag as syntax::FnParseTag).into());
+                            (include_tag as compiler::FnParseTag).into());
         options.blocks.insert("comment".to_owned(),
-                              (tags::comment_block as syntax::FnParseBlock).into());
+                              (tags::comment_block as compiler::FnParseBlock).into());
         options.blocks.insert("if".to_owned(),
-                              (tags::if_block as syntax::FnParseBlock).into());
+                              (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 
     #[test]
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -83,8 +83,8 @@ mod test {
     #[test]
     fn include_non_string() {
         let text = "{% include example.txt %}";
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -99,8 +99,8 @@ mod test {
     #[test]
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options()).map(interpreter::Template::new);
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options()).map(interpreter::Template::new);
 
         assert!(template.is_err());
         if let Err(Error::Other(val)) = template {

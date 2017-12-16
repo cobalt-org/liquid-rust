@@ -17,7 +17,7 @@ fn compare_by_file(name: &str, globals: Object) {
 
     let template = ParserBuilder::with_liquid()
         .extra_filters()
-        .include_source(Box::new(syntax::FilesystemInclude::new(".")))
+        .include_source(Box::new(compiler::FilesystemInclude::new(".")))
         .build()
         .parse_file(input_file)
         .unwrap();

@@ -4,11 +4,11 @@ use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use syntax::ComparisonOperator;
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::{parse, split_block, consume_value_token};
+use compiler::ComparisonOperator;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{parse, split_block, consume_value_token};
 
 #[derive(Clone, Debug)]
 struct Condition {
@@ -135,24 +135,24 @@ pub fn if_block(_tag_name: &str,
 mod test {
     use super::*;
     use value::Value;
-    use syntax;
+    use compiler;
     use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("if".to_owned(), (if_block as syntax::FnParseBlock).into());
+            .insert("if".to_owned(), (if_block as compiler::FnParseBlock).into());
         options.blocks.insert("unless".to_owned(),
-                              (unless_block as syntax::FnParseBlock).into());
+                              (unless_block as compiler::FnParseBlock).into());
         options
     }
 
     #[test]
     fn number_comparison() {
         let text = "{% if 6 < 7  %}if true{% endif %}";
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -161,8 +161,8 @@ mod test {
         assert_eq!(output, Some("if true".to_owned()));
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -174,8 +174,8 @@ mod test {
     #[test]
     fn string_comparison() {
         let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -184,8 +184,8 @@ mod test {
         assert_eq!(output, Some("if true".to_owned()));
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -202,8 +202,8 @@ mod test {
                            "nope",
                            "{% endif %}");
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -212,8 +212,8 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("nope".to_owned()));
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -229,8 +229,8 @@ mod test {
                            "unless body",
                            "{% endunless %}");
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -239,8 +239,8 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("".to_owned()));
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -262,8 +262,8 @@ mod test {
                            "{% else %}",
                            "nope",
                            "{% endif %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -286,8 +286,8 @@ mod test {
                            "fourth",
                            "{% endif %}");
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -296,8 +296,8 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("first".to_owned()));
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -306,8 +306,8 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("second".to_owned()));
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -316,8 +316,8 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("third".to_owned()));
 
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

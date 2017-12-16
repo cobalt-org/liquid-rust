@@ -3,10 +3,10 @@ use error::{Error, Result};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::parse;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::parse;
 use value::Value;
 
 #[derive(Debug)]
@@ -56,12 +56,12 @@ pub fn capture_block(_tag_name: &str,
 mod test {
     use super::*;
     use interpreter;
-    use syntax;
+    use compiler;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
         options.blocks.insert("capture".to_owned(),
-                              (capture_block as syntax::FnParseBlock).into());
+                              (capture_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -70,9 +70,9 @@ mod test {
         let text = concat!("{% capture attribute_name %}",
                            "{{ item }}-{{ i }}-color",
                            "{% endcapture %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options)
+        let template = compiler::parse(&tokens, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -91,9 +91,9 @@ mod test {
         let text = concat!("{% capture foo bar baz %}",
                            "We should never see this",
                            "{% endcapture %}");
-        let tokens = syntax::tokenize(text).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options).map(interpreter::Template::new);
+        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

@@ -7,10 +7,10 @@ use interpreter::Argument;
 use interpreter::Renderable;
 use interpreter::Template;
 use interpreter::{Context, Interrupt};
-use syntax::Element;
-use syntax::LiquidOptions;
-use syntax::Token;
-use syntax::{parse, expect, split_block};
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{parse, expect, split_block};
 use value::Value;
 
 #[derive(Clone, Debug)]
@@ -212,14 +212,13 @@ pub fn for_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
-    use syntax;
+    use compiler;
     use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options
-            .blocks
-            .insert("for".to_owned(), (for_block as syntax::FnParseBlock).into());
+        options.blocks.insert("for".to_owned(),
+                              (for_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -230,7 +229,7 @@ mod test {
                                 &[Token::Identifier("name".to_owned()),
                                   Token::Identifier("in".to_owned()),
                                   Token::Identifier("array".to_owned())],
-                                &syntax::tokenize("test {{name}} ").unwrap(),
+                                &compiler::tokenize("test {{name}} ").unwrap(),
                                 &options)
             .unwrap();
 
@@ -256,7 +255,8 @@ mod test {
                                   Token::DotDot,
                                   Token::NumberLiteral(46f32),
                                   Token::CloseRound],
-                                &syntax::tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
+                                &compiler::tokenize("#{{forloop.index}} test {{name}} | ")
+                                    .unwrap(),
                                 &options)
             .unwrap();
 
@@ -271,8 +271,8 @@ mod test {
         let text = concat!("{% for x in (alpha .. omega) %}",
                            "#{{forloop.index}} test {{x}}, ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -296,8 +296,8 @@ mod test {
                            "{% endfor %}",
                            ">>{{outer}}>>\n",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -319,8 +319,8 @@ mod test {
                            "{% else %}",
                            "empty outer",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -342,8 +342,8 @@ mod test {
         // make sure that a degenerate range (i.e. where max < min)
         // doesn't result in an infinte loop
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -357,8 +357,8 @@ mod test {
         let text = concat!("{% for i in (1..100) limit:2 %}",
                            "{{ i }} ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -372,8 +372,8 @@ mod test {
         let text = concat!("{% for i in (1..10) offset:4 %}",
                            "{{ i }} ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -387,8 +387,8 @@ mod test {
         let text = concat!("{% for i in (1..10) offset:4 limit:2 %}",
                            "{{ i }} ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -402,8 +402,8 @@ mod test {
         let text = concat!("{% for i in (1..10) reversed %}",
                            "{{ i }} ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -417,8 +417,8 @@ mod test {
         let text = concat!("{% for i in (1..10) reversed offset:1 limit:5%}",
                            "{{ i }} ",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -434,8 +434,8 @@ mod test {
                            "{% else %}",
                            "There are no items!",
                            "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -447,8 +447,8 @@ mod test {
     #[test]
     fn limit_greater_than_iterator_length() {
         let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
-        let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options())
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -467,14 +467,14 @@ mod test {
                                   Token::DotDot,
                                   Token::NumberLiteral(103f32),
                                   Token::CloseRound],
-                                &syntax::tokenize(concat!("length: {{forloop.length}}, ",
-                                                          "index: {{forloop.index}}, ",
-                                                          "index0: {{forloop.index0}}, ",
-                                                          "rindex: {{forloop.rindex}}, ",
-                                                          "rindex0: {{forloop.rindex0}}, ",
-                                                          "value: {{v}}, ",
-                                                          "first: {{forloop.first}}, ",
-                                                          "last: {{forloop.last}}\n"))
+                                &compiler::tokenize(concat!("length: {{forloop.length}}, ",
+                                                            "index: {{forloop.index}}, ",
+                                                            "index0: {{forloop.index0}}, ",
+                                                            "rindex: {{forloop.rindex}}, ",
+                                                            "rindex0: {{forloop.rindex0}}, ",
+                                                            "value: {{v}}, ",
+                                                            "first: {{forloop.first}}, ",
+                                                            "last: {{forloop.last}}\n"))
                                     .unwrap(),
                                 &options())
             .unwrap();
@@ -501,7 +501,7 @@ mod test {
                                 &[Token::Identifier("name".to_owned()),
                                   Token::Identifier("in".to_owned()),
                                   Token::Identifier("array".to_owned())],
-                                &syntax::tokenize("test {{name | shout}} ").unwrap(),
+                                &compiler::tokenize("test {{name | shout}} ").unwrap(),
                                 &options())
             .unwrap();
 
