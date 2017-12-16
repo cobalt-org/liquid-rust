@@ -3,18 +3,12 @@ use value::Value;
 
 use super::Context;
 use super::Renderable;
-use super::variable::Variable;
+use super::Argument;
 
 #[derive(Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
     arguments: Vec<Argument>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Argument {
-    Var(Variable),
-    Val(Value),
 }
 
 impl FilterPrototype {
@@ -49,10 +43,7 @@ impl Output {
 
     pub fn apply_filters(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
-        let mut entry = match self.entry {
-            Argument::Val(ref x) => x.clone(),
-            Argument::Var(ref x) => context.get_val_by_index(x.indexes().iter())?.clone(),
-        };
+        let mut entry = self.entry.evaluate(&context)?;
 
         // apply all specified filters
         for filter in &self.filters {
@@ -64,16 +55,12 @@ impl Output {
                                                           &filter.name))
                                 })?;
 
-            let mut arguments = Vec::new();
-            for arg in &filter.arguments {
-                match *arg {
-                    Argument::Var(ref x) => {
-                        let val = context.get_val_by_index(x.indexes().iter())?.clone();
-                        arguments.push(val);
-                    }
-                    Argument::Val(ref x) => arguments.push(x.clone()),
-                }
-            }
+            let arguments: Result<Vec<Value>> = filter
+                .arguments
+                .iter()
+                .map(|a| a.evaluate(&context))
+                .collect();
+            let arguments = arguments?;
             entry = f.filter(&entry, &*arguments)?;
         }
 

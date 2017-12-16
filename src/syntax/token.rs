@@ -2,6 +2,8 @@ use std::fmt;
 
 use error::{Error, Result};
 use value::Value;
+use interpreter::Argument;
+use interpreter::Variable;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ComparisonOperator {
@@ -48,6 +50,18 @@ impl Token {
             x => Error::parser("Value", Some(x)),
         }
     }
+
+    /// Translates a Token to a Value, looking it up in the context if
+    /// necessary
+    pub fn to_arg(&self) -> Result<Argument> {
+        match *self {
+            Token::NumberLiteral(f) => Ok(Argument::Val(Value::Num(f))),
+            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::Str(s.clone()))),
+            Token::BooleanLiteral(b) => Ok(Argument::Val(Value::Bool(b))),
+            Token::Identifier(ref id) => Ok(Argument::Var(Variable::new(id.as_ref()))),
+            ref x => Error::parser("Argument", Some(x)),
+        }
+    }
 }
 
 impl fmt::Display for Token {
@@ -80,5 +94,70 @@ impl fmt::Display for Token {
             Token::BooleanLiteral(ref x) => x.to_string(),
         };
         write!(f, "{}", out)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use interpreter::Context;
+
+    #[test]
+    fn evaluate_handles_string_literals() {
+        let ctx = Context::new();
+        let t = Token::StringLiteral("hello".to_owned());
+        assert_eq!(t.to_arg().unwrap().evaluate(&ctx).unwrap(),
+                   Value::str("hello"));
+    }
+
+    #[test]
+    fn evaluate_handles_number_literals() {
+        let ctx = Context::new();
+        assert_eq!(Token::NumberLiteral(42f32)
+                       .to_arg()
+                       .unwrap()
+                       .evaluate(&ctx)
+                       .unwrap(),
+                   Value::Num(42f32));
+    }
+
+    #[test]
+    fn evaluate_handles_boolean_literals() {
+        let ctx = Context::new();
+        assert_eq!(Token::BooleanLiteral(true)
+                       .to_arg()
+                       .unwrap()
+                       .evaluate(&ctx)
+                       .unwrap(),
+                   Value::Bool(true));
+
+        assert_eq!(Token::BooleanLiteral(false)
+                       .to_arg()
+                       .unwrap()
+                       .evaluate(&ctx)
+                       .unwrap(),
+                   Value::Bool(false));
+    }
+
+    #[test]
+    fn evaluate_handles_identifiers() {
+        let mut ctx = Context::new();
+        ctx.set_val("var0", Value::Num(42f32));
+        assert_eq!(Token::Identifier("var0".to_owned())
+                       .to_arg()
+                       .unwrap()
+                       .evaluate(&ctx)
+                       .unwrap(),
+                   Value::Num(42f32));
+        assert!(Token::Identifier("nope".to_owned())
+                    .to_arg()
+                    .unwrap()
+                    .evaluate(&ctx)
+                    .is_err());
+    }
+
+    #[test]
+    fn evaluate_returns_none_on_invalid_token() {
+        assert!(Token::DotDot.to_arg().is_err());
     }
 }

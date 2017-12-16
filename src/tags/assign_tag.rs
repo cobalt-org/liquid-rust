@@ -1,9 +1,9 @@
 use error::{Error, Result};
 
-use syntax::Context;
+use interpreter::Context;
+use interpreter::Output;
+use interpreter::Renderable;
 use syntax::LiquidOptions;
-use syntax::Output;
-use syntax::Renderable;
 use syntax::Token;
 use syntax::{parse_output, expect};
 
@@ -41,6 +41,7 @@ pub fn assign_tag(_tag_name: &str,
 mod test {
     use super::*;
     use syntax;
+    use interpreter;
     use value::Value;
     use tags;
 
@@ -67,7 +68,7 @@ mod test {
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
         let template = syntax::parse(&tokens, &options)
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         // test one: no matching value in `tags`

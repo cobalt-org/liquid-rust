@@ -1,9 +1,9 @@
 use error::{Error, Result};
 
-use syntax::{Context, Interrupt};
+use interpreter::Renderable;
+use interpreter::{Context, Interrupt};
 use syntax::LiquidOptions;
 use syntax::Token;
-use syntax::Renderable;
 
 struct Break;
 
@@ -52,6 +52,7 @@ mod test {
     use super::*;
     use syntax;
     use tags;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -76,7 +77,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut ctx = Context::new();
@@ -99,7 +100,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut ctx = Context::new();
@@ -120,7 +121,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut ctx = Context::new();
@@ -147,7 +148,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut ctx = Context::new();

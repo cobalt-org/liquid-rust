@@ -1,10 +1,10 @@
 use error::{Error, Result};
 
-use syntax::Context;
-use syntax::LiquidOptions;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use syntax::Element;
-use syntax::Renderable;
-use syntax::Template;
+use syntax::LiquidOptions;
 use syntax::Token;
 use syntax::parse;
 use value::Value;
@@ -54,6 +54,7 @@ pub fn capture_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
+    use interpreter;
     use syntax;
 
     fn options() -> LiquidOptions {
@@ -71,7 +72,7 @@ mod test {
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
         let template = syntax::parse(&tokens, &options)
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut ctx = Context::new();
@@ -91,7 +92,7 @@ mod test {
                            "{% endcapture %}");
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options).map(syntax::Template::new);
+        let template = syntax::parse(&tokens, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

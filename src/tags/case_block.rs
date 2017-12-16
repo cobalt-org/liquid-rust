@@ -1,32 +1,30 @@
 use error::{Error, Result};
 
-use syntax::LiquidOptions;
-use syntax::Context;
-use syntax::Renderable;
+use interpreter::Argument;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use syntax::Element;
+use syntax::LiquidOptions;
 use syntax::Token;
 use syntax::{parse, consume_value_token, split_block};
-use syntax::Template;
 use value::Value;
 
 struct CaseOption {
-    tokens: Vec<Token>,
+    args: Vec<Argument>,
     template: Template,
 }
 
 impl CaseOption {
-    fn new(tokens: Vec<Token>, template: Template) -> CaseOption {
-        CaseOption {
-            tokens: tokens,
-            template: template,
-        }
+    fn new(args: Vec<Argument>, template: Template) -> CaseOption {
+        CaseOption { args, template }
     }
 
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
-        for t in &self.tokens {
-            match context.evaluate(t)? {
-                Some(ref v) if *v == *value => return Ok(true),
-                _ => {}
+        for a in &self.args {
+            let v = a.evaluate(&context)?;
+            if v == *value {
+                return Ok(true);
             }
         }
         Ok(false)
@@ -34,18 +32,17 @@ impl CaseOption {
 }
 
 struct Case {
-    target: Token,
+    target: Argument,
     cases: Vec<CaseOption>,
     else_block: Option<Template>,
 }
 
 impl Renderable for Case {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        if let Some(value) = try!(context.evaluate(&self.target)) {
-            for case in &self.cases {
-                if case.evaluate(&value, context)? {
-                    return case.template.render(context);
-                }
+        let value = self.target.evaluate(context)?;
+        for case in &self.cases {
+            if case.evaluate(&value, context)? {
+                return case.template.render(context);
             }
         }
 
@@ -58,7 +55,7 @@ impl Renderable for Case {
 }
 
 enum Conditional {
-    Cond(Vec<Token>),
+    Cond(Vec<Argument>),
     Else,
 }
 
@@ -68,10 +65,10 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
             Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
 
             Token::Identifier(ref name) if name == "when" => {
-                let mut values: Vec<Token> = Vec::new();
+                let mut values: Vec<Argument> = Vec::new();
                 let mut args = tokens[1..].iter();
 
-                values.push(try!(consume_value_token(&mut args)));
+                values.push(consume_value_token(&mut args)?.to_arg()?);
 
                 loop {
                     match args.next() {
@@ -80,7 +77,7 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
                         None => break,
                     }
 
-                    values.push(try!(consume_value_token(&mut args)))
+                    values.push(consume_value_token(&mut args)?.to_arg()?);
                 }
 
                 return Ok(Conditional::Cond(values));
@@ -100,7 +97,7 @@ pub fn case_block(_tag_name: &str,
                   -> Result<Box<Renderable>> {
     let delims = &["when", "else"];
     let mut args = arguments.iter();
-    let value = consume_value_token(&mut args)?;
+    let value = consume_value_token(&mut args)?.to_arg()?;
 
     // fast forward to the first arm of the case block,
     let mut children = match split_block(&tokens[..], delims, options) {
@@ -143,6 +140,7 @@ pub fn case_block(_tag_name: &str,
 #[cfg(test)]
 mod test {
     use super::*;
+    use interpreter;
     use syntax;
 
     fn options() -> LiquidOptions {
@@ -165,7 +163,7 @@ mod test {
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
         let template = syntax::parse(&tokens, &options)
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -198,7 +196,7 @@ mod test {
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
         let template = syntax::parse(&tokens, &options)
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -218,7 +216,7 @@ mod test {
                            "{% endcase %}");
         let tokens = syntax::tokenize(text).unwrap();
         let options = options();
-        let template = syntax::parse(&tokens, &options).map(syntax::Template::new);
+        let template = syntax::parse(&tokens, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

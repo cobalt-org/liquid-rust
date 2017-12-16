@@ -52,7 +52,9 @@ numTwo: 6
 
 #[test]
 pub fn include() {
-    let globals: liquid::Object = Default::default();
+    let mut globals: liquid::Object = Default::default();
+    globals.insert("num".to_owned(), Value::Num(5f32));
+    globals.insert("numTwo".to_owned(), Value::Num(10f32));
     compare_by_file("include", globals);
 }
 

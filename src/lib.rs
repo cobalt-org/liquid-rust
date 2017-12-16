@@ -47,6 +47,7 @@ extern crate serde_yaml;
 
 mod error;
 mod filters;
+mod interpreter;
 mod parser;
 mod tags;
 mod template;

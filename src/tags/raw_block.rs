@@ -1,9 +1,9 @@
 use error::Result;
 
-use syntax::Context;
+use interpreter::Context;
+use interpreter::Renderable;
 use syntax::Element;
 use syntax::LiquidOptions;
-use syntax::Renderable;
 use syntax::Token;
 
 struct RawT {

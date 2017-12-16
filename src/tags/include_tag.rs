@@ -1,9 +1,9 @@
 use error::{Result, Error};
 
-use syntax::Context;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use syntax::LiquidOptions;
-use syntax::Renderable;
-use syntax::Template;
 use syntax::Token;
 use syntax::parse;
 use syntax::tokenize;
@@ -48,6 +48,8 @@ mod test {
     use tags;
     use filters;
     use syntax;
+    use interpreter;
+    use value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -66,13 +68,15 @@ mod test {
         let text = "{% include 'example.txt' %}";
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
-        context.add_filter("size", (filters::size as syntax::FnFilterValue).into());
+        context.set_val("num", value::Value::Num(5f32));
+        context.set_val("numTwo", value::Value::Num(10f32));
+        context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 wot wot\n".to_owned()));
+        assert_eq!(output, Some("5 wat wot\n".to_owned()));
     }
 
     #[test]
@@ -80,20 +84,22 @@ mod test {
         let text = "{% include example.txt %}";
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
-        context.add_filter("size", (filters::size as syntax::FnFilterValue).into());
+        context.set_val("num", value::Value::Num(5f32));
+        context.set_val("numTwo", value::Value::Num(10f32));
+        context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 wot wot\n".to_owned()));
+        assert_eq!(output, Some("5 wat wot\n".to_owned()));
     }
 
     #[test]
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
         let tokens = syntax::tokenize(&text).unwrap();
-        let template = syntax::parse(&tokens, &options()).map(syntax::Template::new);
+        let template = syntax::parse(&tokens, &options()).map(interpreter::Template::new);
 
         assert!(template.is_err());
         if let Err(Error::Other(val)) = template {

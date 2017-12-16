@@ -11,7 +11,7 @@ use url::percent_encoding;
 use chrono::FixedOffset;
 
 use value::Value;
-use syntax::{FilterError, FilterResult};
+use interpreter::{FilterError, FilterResult};
 
 // Helper functions for the filters.
 fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {

@@ -1,19 +1,22 @@
+use itertools;
+
 use error::{Error, Result};
 
-use syntax::Context;
-use syntax::LiquidOptions;
-use syntax::Renderable;
+use interpreter::Argument;
+use interpreter::Context;
+use interpreter::Renderable;
 use syntax::Token;
+use syntax::LiquidOptions;
 use syntax::{consume_value_token, value_token};
 
 struct Cycle {
     name: String,
-    values: Vec<Token>,
+    values: Vec<Argument>,
 }
 
 impl Renderable for Cycle {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = try!(context.cycle_element(&self.name, &self.values));
+        let value = context.cycle_element(&self.name, &self.values)?;
         Ok(value.map(|v| v.to_string()))
     }
 }
@@ -21,9 +24,9 @@ impl Renderable for Cycle {
 /// Internal implementation of cycle, to allow easier testing.
 fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     let mut args = arguments.iter();
-    let mut values = Vec::new();
     let mut name = String::new();
-    let first = try!(consume_value_token(&mut args));
+    let mut values = Vec::new();
+    let first = consume_value_token(&mut args)?;
 
     match args.next() {
         Some(&Token::Colon) => {
@@ -33,7 +36,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         Some(&Token::Comma) |
         None => {
             // first argument is the first item in the cycle
-            values.push(first);
+            values.push(first.to_arg()?);
         }
         x => return Error::parser(": | Number | String | Identifier", x),
     }
@@ -41,7 +44,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     loop {
         match args.next() {
             Some(a) => {
-                let v = try!(value_token(a.clone()));
+                let v = value_token(a.clone())?.to_arg()?;
                 values.push(v);
             }
             None => break,
@@ -55,10 +58,9 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     }
 
     if name.is_empty() {
-        name = values
-            .iter()
-            .fold(String::new(), |acc, n| acc + n.to_string().as_str())
+        name = itertools::join(values.iter(), "-");
     }
+    println!("name={}", name);
 
     Ok(Cycle {
            name: name,
@@ -78,6 +80,7 @@ mod test {
     use super::*;
     use value::Value;
     use syntax;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -100,7 +103,7 @@ mod test {
                           Token::Identifier("name".to_owned())];
         let options = LiquidOptions::default();
         let cycle = parse_cycle(&tokens[..], &options).unwrap();
-        assert_eq!("thiscyclehasnoname", cycle.name);
+        assert!(!cycle.name.is_empty());
     }
 
     #[test]
@@ -112,7 +115,7 @@ mod test {
             .to_owned();
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -130,7 +133,7 @@ mod test {
             .to_owned();
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -148,7 +151,7 @@ mod test {
             .to_owned();
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -170,7 +173,7 @@ mod test {
         let tokens = syntax::tokenize(&text).unwrap();
         let options = options();
         let template = syntax::parse(&tokens, &options)
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
         let output = template.render(&mut Default::default());
         assert!(output.is_err());

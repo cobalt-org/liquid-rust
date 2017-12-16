@@ -1,10 +1,10 @@
 use error::Result;
 
-use syntax::Context;
-use syntax::LiquidOptions;
-use syntax::Renderable;
-use syntax::Token;
+use interpreter::Context;
+use interpreter::Renderable;
 use syntax::Element;
+use syntax::LiquidOptions;
+use syntax::Token;
 
 struct Comment;
 

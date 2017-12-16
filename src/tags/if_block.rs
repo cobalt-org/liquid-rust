@@ -1,18 +1,19 @@
 use error::{Error, Result};
 
-use syntax::Context;
-use syntax::LiquidOptions;
-use syntax::Renderable;
-use syntax::Template;
-use syntax::Token;
+use interpreter::Argument;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use syntax::ComparisonOperator;
-use syntax::{parse, split_block, consume_value_token};
 use syntax::Element;
+use syntax::LiquidOptions;
+use syntax::Token;
+use syntax::{parse, split_block, consume_value_token};
 
 struct Condition {
-    lh: Token,
+    lh: Argument,
     comparison: ComparisonOperator,
-    rh: Token,
+    rh: Argument,
 }
 
 struct Conditional {
@@ -24,12 +25,8 @@ struct Conditional {
 
 impl Conditional {
     fn compare(&self, context: &Context) -> Result<bool> {
-        let a = context.evaluate(&self.condition.lh)?;
-        let b = context.evaluate(&self.condition.rh)?;
-
-        if a == None || b == None {
-            return Ok(false);
-        }
+        let a = self.condition.lh.evaluate(context)?;
+        let b = self.condition.rh.evaluate(context)?;
 
         let result = match self.condition.comparison {
             ComparisonOperator::Equals => a == b,
@@ -62,16 +59,16 @@ impl Renderable for Conditional {
 fn condition(arguments: &[Token]) -> Result<Condition> {
     let mut args = arguments.iter();
 
-    let lh = consume_value_token(&mut args)?;
+    let lh = consume_value_token(&mut args)?.to_arg()?;
 
     let (comp, rh) = match args.next() {
         Some(&Token::Comparison(ref x)) => {
-            let rhs = consume_value_token(&mut args)?;
+            let rhs = consume_value_token(&mut args)?.to_arg()?;
             (x.clone(), rhs)
         }
         None => {
             // no trailing operator or RHS value implies "== true"
-            (ComparisonOperator::Equals, Token::BooleanLiteral(true))
+            (ComparisonOperator::Equals, Token::BooleanLiteral(true).to_arg()?)
         }
         x @ Some(_) => return Error::parser("comparison operator", x),
     };
@@ -137,6 +134,7 @@ mod test {
     use super::*;
     use value::Value;
     use syntax;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -153,7 +151,7 @@ mod test {
         let text = "{% if 6 < 7  %}if true{% endif %}";
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -163,7 +161,7 @@ mod test {
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -176,7 +174,7 @@ mod test {
         let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -186,7 +184,7 @@ mod test {
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -204,7 +202,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -214,7 +212,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -231,7 +229,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -241,7 +239,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -264,7 +262,7 @@ mod test {
                            "{% endif %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -288,7 +286,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -298,7 +296,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -308,7 +306,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -318,7 +316,7 @@ mod test {
 
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();

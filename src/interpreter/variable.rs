@@ -1,24 +1,16 @@
-use error::{Error, Result};
+use std::fmt;
+
+use itertools;
+
+use error::Result;
 use value::Index;
 
 use super::Context;
 use super::Renderable;
-use super::Token;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Variable {
     indexes: Vec<Index>,
-}
-
-fn coerce(index: f32) -> Option<isize> {
-    // at the first condition only is_normal is not enough
-    // because zero is not counted normal
-    if (index != 0f32 && !index.is_normal()) || index.round() > (::std::isize::MAX as f32) ||
-       index.round() < (::std::isize::MIN as f32) {
-        None
-    } else {
-        Some(index.round() as isize)
-    }
 }
 
 impl Variable {
@@ -30,45 +22,18 @@ impl Variable {
     pub fn indexes(&self) -> &[Index] {
         &self.indexes
     }
+}
 
-    pub fn append_indexes(&mut self, tokens: &[Token]) -> Result<()> {
-        let rest = match tokens[0] {
-            Token::Dot if tokens.len() > 1 => {
-                match tokens[1] {
-                    Token::Identifier(ref x) => self.indexes.push(Index::with_key(x.as_ref())),
-                    _ => {
-                        return Error::parser("identifier", Some(&tokens[0]));
-                    }
-                };
-                2
-            }
-            Token::OpenSquare if tokens.len() > 2 => {
-                let index = match tokens[1] {
-                    Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
-                    Token::NumberLiteral(ref x) => {
-                        let x = coerce(*x)
-                            .ok_or_else(|| Error::Parser(format!("Invalid index {}", x)))?;
-                        Index::with_index(x)
-                    }
-                    _ => {
-                        return Error::parser("number | string", Some(&tokens[0]));
-                    }
-                };
-                self.indexes.push(index);
+impl Extend<Index> for Variable {
+    fn extend<T: IntoIterator<Item = Index>>(&mut self, iter: T) {
+        self.indexes.extend(iter);
+    }
+}
 
-                if tokens[2] != Token::CloseSquare {
-                    return Error::parser("]", Some(&tokens[1]));
-                }
-                3
-            }
-            _ => return Ok(()),
-        };
-
-        if tokens.len() > rest {
-            self.append_indexes(&tokens[rest..])
-        } else {
-            Ok(())
-        }
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = itertools::join(self.indexes().iter(), ".");
+        write!(f, "{}", data)
     }
 }
 

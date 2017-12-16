@@ -3,17 +3,17 @@ use std::collections::HashMap;
 use error::Result;
 use super::Object;
 
-use syntax;
-use syntax::Renderable;
+use interpreter;
+use interpreter::Renderable;
 
 pub struct Template {
-    pub(crate) template: syntax::Template,
-    pub(crate) filters: HashMap<String, syntax::BoxedValueFilter>,
+    pub(crate) template: interpreter::Template,
+    pub(crate) filters: HashMap<String, interpreter::BoxedValueFilter>,
 }
 
 impl Template {
     pub fn render(&self, globals: &Object) -> Result<String> {
-        let mut data = syntax::Context::new()
+        let mut data = interpreter::Context::new()
             .with_filters(self.filters.clone())
             .with_values(globals.clone());
         let output = self.template

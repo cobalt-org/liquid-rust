@@ -1,8 +1,8 @@
 use error::Result;
 
-use super::LiquidOptions;
+use interpreter::Renderable;
 use super::Element;
-use super::Renderable;
+use super::LiquidOptions;
 use super::Token;
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).

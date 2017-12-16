@@ -3,18 +3,19 @@ use std::slice::Iter;
 
 use error::{Error, Result};
 
-use syntax::{Context, Interrupt};
-use syntax::LiquidOptions;
-use syntax::Renderable;
+use interpreter::Argument;
+use interpreter::Renderable;
+use interpreter::Template;
+use interpreter::{Context, Interrupt};
 use syntax::Element;
+use syntax::LiquidOptions;
 use syntax::Token;
 use syntax::{parse, expect, split_block};
-use syntax::Template;
 use value::Value;
 
 enum Range {
     Array(String),
-    Counted(Token, Token),
+    Counted(Argument, Argument),
 }
 
 struct For {
@@ -34,11 +35,10 @@ fn get_array(context: &Context, array_id: &str) -> Result<Vec<Value>> {
     }
 }
 
-fn token_as_int(token: &Token, context: &Context) -> Result<isize> {
-    let value = match try!(context.evaluate(token)) {
-        Some(Value::Num(ref n)) => *n,
-        Some(_) => return Error::renderer(&format!("{} is not a number.", token)),
-        None => return Error::renderer(&format!("No such value: {}", token)),
+fn token_as_int(arg: &Argument, context: &Context) -> Result<isize> {
+    let value = match arg.evaluate(context)? {
+        Value::Num(ref n) => *n,
+        _ => return Error::renderer(&format!("{:?} is not a number.", arg)),
     };
 
     Ok(value as isize)
@@ -49,9 +49,9 @@ impl Renderable for For {
         let mut range = match self.range {
             Range::Array(ref array_id) => try!(get_array(context, array_id)),
 
-            Range::Counted(ref start_token, ref stop_token) => {
-                let start = try!(token_as_int(start_token, context));
-                let stop = try!(token_as_int(stop_token, context));
+            Range::Counted(ref start_arg, ref stop_arg) => {
+                let start = token_as_int(start_arg, context)?;
+                let stop = token_as_int(stop_arg, context)?;
                 (start..stop).map(|x| Value::Num(x as f32)).collect()
             }
         };
@@ -153,11 +153,11 @@ pub fn for_block(_tag_name: &str,
         Some(&Token::Identifier(ref x)) => Range::Array(x.clone()),
         Some(&Token::OpenRound) => {
             // this might be a range, let's try and see
-            let start = range_end_point(&mut args)?;
+            let start = range_end_point(&mut args)?.to_arg()?;
 
             expect(&mut args, &Token::DotDot)?;
 
-            let stop = range_end_point(&mut args)?;
+            let stop = range_end_point(&mut args)?.to_arg()?;
 
             expect(&mut args, &Token::CloseRound)?;
 
@@ -211,6 +211,7 @@ pub fn for_block(_tag_name: &str,
 mod test {
     use super::*;
     use syntax;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -270,7 +271,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -295,7 +296,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -318,7 +319,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -341,7 +342,7 @@ mod test {
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -356,7 +357,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -371,7 +372,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -386,7 +387,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -401,7 +402,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -416,7 +417,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -433,7 +434,7 @@ mod test {
                            "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -446,7 +447,7 @@ mod test {
         let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
         let tokens = syntax::tokenize(&text).unwrap();
         let template = syntax::parse(&tokens, &options())
-            .map(syntax::Template::new)
+            .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
@@ -507,8 +508,8 @@ mod test {
                         ((|input, _args| if let &Value::Str(ref s) = input {
                               Ok(Value::Str(s.to_uppercase()))
                           } else {
-                              syntax::FilterError::invalid_type("Expected a string")
-                          }) as syntax::FnFilterValue)
+                              interpreter::FilterError::invalid_type("Expected a string")
+                          }) as interpreter::FnFilterValue)
                             .into());
 
         data.set_val("array",

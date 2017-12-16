@@ -7,13 +7,14 @@ use error::Result;
 use tags;
 use filters;
 use syntax;
+use interpreter;
 use super::Template;
 
 #[derive(Default)]
 pub struct ParserBuilder {
     blocks: HashMap<String, syntax::BoxedBlockParser>,
     tags: HashMap<String, syntax::BoxedTagParser>,
-    filters: HashMap<String, syntax::BoxedValueFilter>,
+    filters: HashMap<String, interpreter::BoxedValueFilter>,
     include_source: Option<Box<syntax::Include>>,
 }
 
@@ -53,57 +54,63 @@ impl ParserBuilder {
 
     /// Register built-in Liquid filters
     pub fn liquid_filters(self) -> Self {
-        self.filter("abs", filters::abs as syntax::FnFilterValue)
-            .filter("append", filters::append as syntax::FnFilterValue)
-            .filter("capitalize", filters::capitalize as syntax::FnFilterValue)
-            .filter("ceil", filters::ceil as syntax::FnFilterValue)
-            .filter("compact", filters::compact as syntax::FnFilterValue)
-            .filter("concat", filters::concat as syntax::FnFilterValue)
-            .filter("date", filters::date as syntax::FnFilterValue)
-            .filter("default", filters::default as syntax::FnFilterValue)
-            .filter("divided_by", filters::divided_by as syntax::FnFilterValue)
-            .filter("downcase", filters::downcase as syntax::FnFilterValue)
-            .filter("escape", filters::escape as syntax::FnFilterValue)
-            .filter("escape_once", filters::escape_once as syntax::FnFilterValue)
-            .filter("first", filters::first as syntax::FnFilterValue)
-            .filter("floor", filters::floor as syntax::FnFilterValue)
-            .filter("join", filters::join as syntax::FnFilterValue)
-            .filter("last", filters::last as syntax::FnFilterValue)
-            .filter("lstrip", filters::lstrip as syntax::FnFilterValue)
-            .filter("map", filters::map as syntax::FnFilterValue)
-            .filter("minus", filters::minus as syntax::FnFilterValue)
-            .filter("modulo", filters::modulo as syntax::FnFilterValue)
+        self.filter("abs", filters::abs as interpreter::FnFilterValue)
+            .filter("append", filters::append as interpreter::FnFilterValue)
+            .filter("capitalize",
+                    filters::capitalize as interpreter::FnFilterValue)
+            .filter("ceil", filters::ceil as interpreter::FnFilterValue)
+            .filter("compact", filters::compact as interpreter::FnFilterValue)
+            .filter("concat", filters::concat as interpreter::FnFilterValue)
+            .filter("date", filters::date as interpreter::FnFilterValue)
+            .filter("default", filters::default as interpreter::FnFilterValue)
+            .filter("divided_by",
+                    filters::divided_by as interpreter::FnFilterValue)
+            .filter("downcase", filters::downcase as interpreter::FnFilterValue)
+            .filter("escape", filters::escape as interpreter::FnFilterValue)
+            .filter("escape_once",
+                    filters::escape_once as interpreter::FnFilterValue)
+            .filter("first", filters::first as interpreter::FnFilterValue)
+            .filter("floor", filters::floor as interpreter::FnFilterValue)
+            .filter("join", filters::join as interpreter::FnFilterValue)
+            .filter("last", filters::last as interpreter::FnFilterValue)
+            .filter("lstrip", filters::lstrip as interpreter::FnFilterValue)
+            .filter("map", filters::map as interpreter::FnFilterValue)
+            .filter("minus", filters::minus as interpreter::FnFilterValue)
+            .filter("modulo", filters::modulo as interpreter::FnFilterValue)
             .filter("newline_to_br",
-                    filters::newline_to_br as syntax::FnFilterValue)
-            .filter("plus", filters::plus as syntax::FnFilterValue)
-            .filter("prepend", filters::prepend as syntax::FnFilterValue)
-            .filter("remove", filters::remove as syntax::FnFilterValue)
+                    filters::newline_to_br as interpreter::FnFilterValue)
+            .filter("plus", filters::plus as interpreter::FnFilterValue)
+            .filter("prepend", filters::prepend as interpreter::FnFilterValue)
+            .filter("remove", filters::remove as interpreter::FnFilterValue)
             .filter("remove_first",
-                    filters::remove_first as syntax::FnFilterValue)
-            .filter("replace", filters::replace as syntax::FnFilterValue)
+                    filters::remove_first as interpreter::FnFilterValue)
+            .filter("replace", filters::replace as interpreter::FnFilterValue)
             .filter("replace_first",
-                    filters::replace_first as syntax::FnFilterValue)
-            .filter("reverse", filters::reverse as syntax::FnFilterValue)
-            .filter("round", filters::round as syntax::FnFilterValue)
-            .filter("rstrip", filters::rstrip as syntax::FnFilterValue)
-            .filter("size", filters::size as syntax::FnFilterValue)
-            .filter("slice", filters::slice as syntax::FnFilterValue)
-            .filter("sort", filters::sort as syntax::FnFilterValue)
+                    filters::replace_first as interpreter::FnFilterValue)
+            .filter("reverse", filters::reverse as interpreter::FnFilterValue)
+            .filter("round", filters::round as interpreter::FnFilterValue)
+            .filter("rstrip", filters::rstrip as interpreter::FnFilterValue)
+            .filter("size", filters::size as interpreter::FnFilterValue)
+            .filter("slice", filters::slice as interpreter::FnFilterValue)
+            .filter("sort", filters::sort as interpreter::FnFilterValue)
             .filter("sort_natural",
-                    filters::sort_natural as syntax::FnFilterValue)
-            .filter("split", filters::split as syntax::FnFilterValue)
-            .filter("strip", filters::strip as syntax::FnFilterValue)
-            .filter("strip_html", filters::strip_html as syntax::FnFilterValue)
+                    filters::sort_natural as interpreter::FnFilterValue)
+            .filter("split", filters::split as interpreter::FnFilterValue)
+            .filter("strip", filters::strip as interpreter::FnFilterValue)
+            .filter("strip_html",
+                    filters::strip_html as interpreter::FnFilterValue)
             .filter("strip_newlines",
-                    filters::strip_newlines as syntax::FnFilterValue)
-            .filter("times", filters::times as syntax::FnFilterValue)
-            .filter("truncate", filters::truncate as syntax::FnFilterValue)
+                    filters::strip_newlines as interpreter::FnFilterValue)
+            .filter("times", filters::times as interpreter::FnFilterValue)
+            .filter("truncate", filters::truncate as interpreter::FnFilterValue)
             .filter("truncatewords",
-                    filters::truncatewords as syntax::FnFilterValue)
-            .filter("uniq", filters::uniq as syntax::FnFilterValue)
-            .filter("upcase", filters::upcase as syntax::FnFilterValue)
-            .filter("url_decode", filters::url_decode as syntax::FnFilterValue)
-            .filter("url_encode", filters::url_encode as syntax::FnFilterValue)
+                    filters::truncatewords as interpreter::FnFilterValue)
+            .filter("uniq", filters::uniq as interpreter::FnFilterValue)
+            .filter("upcase", filters::upcase as interpreter::FnFilterValue)
+            .filter("url_decode",
+                    filters::url_decode as interpreter::FnFilterValue)
+            .filter("url_encode",
+                    filters::url_encode as interpreter::FnFilterValue)
     }
 
     #[cfg(not(feature = "extra-filters"))]
@@ -113,8 +120,10 @@ impl ParserBuilder {
 
     #[cfg(feature = "extra-filters")]
     pub fn extra_filters(self) -> Self {
-        self.filter("pluralize", filters::pluralize as syntax::FnFilterValue)
-            .filter("date_in_tz", filters::date_in_tz as syntax::FnFilterValue)
+        self.filter("pluralize",
+                    filters::pluralize as interpreter::FnFilterValue)
+            .filter("date_in_tz",
+                    filters::date_in_tz as interpreter::FnFilterValue)
     }
 
     /// Inserts a new custom block into the parser
@@ -130,7 +139,7 @@ impl ParserBuilder {
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<syntax::BoxedValueFilter>>(mut self, name: &str, filter: F) -> Self {
+    pub fn filter<F: Into<interpreter::BoxedValueFilter>>(mut self, name: &str, filter: F) -> Self {
         self.filters.insert(name.to_owned(), filter.into());
         self
     }
@@ -162,7 +171,7 @@ impl ParserBuilder {
 #[derive(Default)]
 pub struct Parser {
     options: syntax::LiquidOptions,
-    filters: HashMap<String, syntax::BoxedValueFilter>,
+    filters: HashMap<String, interpreter::BoxedValueFilter>,
 }
 
 impl Parser {
@@ -188,7 +197,7 @@ impl Parser {
     pub fn parse(&self, text: &str) -> Result<Template> {
         let tokens = syntax::tokenize(text)?;
         let template = syntax::parse(&tokens, &self.options)
-            .map(syntax::Template::new)?;
+            .map(interpreter::Template::new)?;
         let filters = self.filters.clone();
         Ok(Template { template, filters })
     }

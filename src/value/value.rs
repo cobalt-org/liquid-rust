@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::fmt;
 
 use super::Index;
 
@@ -171,9 +172,9 @@ impl PartialOrd<Value> for Value {
     }
 }
 
-impl ToString for Value {
-    fn to_string(&self) -> String {
-        match *self {
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = match *self {
             Value::Num(ref x) => x.to_string(),
             Value::Bool(ref x) => x.to_string(),
             Value::Str(ref x) => x.to_owned(),
@@ -188,7 +189,8 @@ impl ToString for Value {
                     .collect();
                 arr.join(", ")
             }
-        }
+        };
+        write!(f, "{}", data)
     }
 }
 

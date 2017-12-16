@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use error::{Result, Error};
 use value::{Value, Object, Index};
 
+use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
-use super::Token;
 
 
 #[derive(Clone)]
@@ -48,7 +48,7 @@ impl Context {
         self
     }
 
-    pub fn cycle_element(&mut self, name: &str, values: &[Token]) -> Result<Option<Value>> {
+    pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Option<Value>> {
         let index = {
             let i = self.cycles.entry(name.to_owned()).or_insert(0);
             let j = *i;
@@ -62,7 +62,8 @@ impl Context {
                                              values.len())));
         }
 
-        self.evaluate(&values[index])
+        let val = values[index].evaluate(self)?;
+        Ok(Some(val))
     }
 
     pub fn add_filter(&mut self, name: &str, filter: BoxedValueFilter) {
@@ -187,21 +188,6 @@ impl Context {
         self.globals.insert(name.to_owned(), val)
     }
 
-    /// Translates a Token to a Value, looking it up in the context if
-    /// necessary
-    pub fn evaluate(&self, t: &Token) -> Result<Option<Value>> {
-        match *t {
-            Token::NumberLiteral(f) => Ok(Some(Value::Num(f))),
-            Token::StringLiteral(ref s) => Ok(Some(Value::Str(s.clone()))),
-            Token::BooleanLiteral(b) => Ok(Some(Value::Bool(b))),
-            Token::Identifier(ref id) => Ok(self.get_val(id).cloned()),
-            _ => {
-                let msg = format!("Cannot evaluate {}", t);
-                Err(Error::Other(msg))
-            }
-        }
-    }
-
     /// Sets a value to the rendering context.
     /// Note that it needs to be wrapped in a liquid::Value.
     ///
@@ -252,45 +238,5 @@ mod test {
         // assert that the value has reverted to the old one
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
         assert_eq!(ctx.get_val("global").unwrap(), &Value::str("some value"));
-    }
-
-    #[test]
-    fn evaluate_handles_string_literals() {
-        let ctx = Context::new();
-        let t = Token::StringLiteral("hello".to_owned());
-        assert_eq!(ctx.evaluate(&t).unwrap(), Some(Value::str("hello")));
-    }
-
-    #[test]
-    fn evaluate_handles_number_literals() {
-        let ctx = Context::new();
-        assert_eq!(ctx.evaluate(&Token::NumberLiteral(42f32)).unwrap(),
-                   Some(Value::Num(42f32)));
-    }
-
-    #[test]
-    fn evaluate_handles_boolean_literals() {
-        let ctx = Context::new();
-        assert_eq!(ctx.evaluate(&Token::BooleanLiteral(true)).unwrap(),
-                   Some(Value::Bool(true)));
-
-        assert_eq!(ctx.evaluate(&Token::BooleanLiteral(false)).unwrap(),
-                   Some(Value::Bool(false)));
-    }
-
-    #[test]
-    fn evaluate_handles_identifiers() {
-        let mut ctx = Context::new();
-        ctx.set_val("var0", Value::Num(42f32));
-        assert_eq!(ctx.evaluate(&Token::Identifier("var0".to_owned())).unwrap(),
-                   Some(Value::Num(42f32)));
-        assert_eq!(ctx.evaluate(&Token::Identifier("nope".to_owned())).unwrap(),
-                   None);
-    }
-
-    #[test]
-    fn evaluate_returns_none_on_invalid_token() {
-        let ctx = Context::new();
-        assert!(ctx.evaluate(&Token::DotDot).is_err());
     }
 }

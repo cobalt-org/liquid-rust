@@ -9,15 +9,27 @@ use std::iter::FromIterator;
 
 use error::{Error, Result};
 
-use super::LiquidOptions;
+use interpreter::Renderable;
+use interpreter::Text;
+use interpreter::Variable;
+use interpreter::{Output, FilterPrototype, Argument};
 use super::Element;
-use super::Renderable;
-use super::Token;
-use super::ParseTag;
+use super::LiquidOptions;
 use super::ParseBlock;
-use super::output::{Output, FilterPrototype, Argument};
-use super::text::Text;
-use super::variable::Variable;
+use super::ParseTag;
+use super::Token;
+use value::Index;
+
+fn coerce(index: f32) -> Option<isize> {
+    // at the first condition only is_normal is not enough
+    // because zero is not counted normal
+    if (index != 0f32 && !index.is_normal()) || index.round() > (::std::isize::MAX as f32) ||
+       index.round() < (::std::isize::MIN as f32) {
+        None
+    } else {
+        Some(index.round() as isize)
+    }
+}
 
 /// Parses the provided elements into a number of Renderable items
 /// This is the internal version of parse that accepts Elements tokenized
@@ -45,8 +57,9 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
     match tokens[0] {
         Token::Identifier(ref x) if tokens.len() > 1 &&
                                     (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) => {
+            let indexes = parse_indexes(&tokens[1..])?;
             let mut result = Variable::new(x.clone());
-            result.append_indexes(&tokens[1..])?;
+            result.extend(indexes);
             Ok(Box::new(result))
         }
         Token::Identifier(ref x) if options.tags.contains_key(x) => {
@@ -57,6 +70,48 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             Ok(Box::new(output))
         }
     }
+}
+
+pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
+    let mut indexes: Vec<Index> = Vec::new();
+
+    let mut rest = 0;
+    while tokens.len() > rest {
+        tokens = &tokens[rest..];
+        rest = match tokens[0] {
+            Token::Dot if tokens.len() > 1 => {
+                match tokens[1] {
+                    Token::Identifier(ref x) => indexes.push(Index::with_key(x.as_ref())),
+                    _ => {
+                        return Error::parser("identifier", Some(&tokens[0]));
+                    }
+                };
+                2
+            }
+            Token::OpenSquare if tokens.len() > 2 => {
+                let index = match tokens[1] {
+                    Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
+                    Token::NumberLiteral(ref x) => {
+                        let x = coerce(*x)
+                            .ok_or_else(|| Error::Parser(format!("Invalid index {}", x)))?;
+                        Index::with_index(x)
+                    }
+                    _ => {
+                        return Error::parser("number | string", Some(&tokens[0]));
+                    }
+                };
+                indexes.push(index);
+
+                if tokens[2] != Token::CloseSquare {
+                    return Error::parser("]", Some(&tokens[1]));
+                }
+                3
+            }
+            _ => return Ok(indexes),
+        };
+    }
+
+    Ok(indexes)
 }
 
 /// Creates an Output, a wrapper around values, variables and filters
@@ -334,8 +389,8 @@ mod test_split_block {
     use super::super::split_block;
     use super::super::BoxedBlockParser;
     use super::super::FnParseBlock;
-    use super::super::Renderable;
-    use super::super::Context;
+    use interpreter::Renderable;
+    use interpreter::Context;
 
     struct NullBlock;
 
