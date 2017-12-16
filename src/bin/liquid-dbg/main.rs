@@ -25,7 +25,6 @@ use std::fs;
 use std::io;
 use std::io::Write;
 use std::path;
-use liquid::Renderable;
 
 error_chain! {
     links {
@@ -69,7 +68,7 @@ fn load_json(_path: &path::Path) -> Result<liquid::Value> {
     bail!("json is unsupported");
 }
 
-fn build_context(path: &path::Path) -> Result<liquid::Context> {
+fn build_context(path: &path::Path) -> Result<liquid::Object> {
     let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
     let value = if extension == ffi::OsStr::new("yaml") {
         load_yaml(path)
@@ -82,9 +81,8 @@ fn build_context(path: &path::Path) -> Result<liquid::Context> {
         liquid::Value::Object(o) => Ok(o),
         _ => Err("File must be an object"),
     }?;
-    let data = liquid::Context::with_values(value);
 
-    Ok(data)
+    Ok(value)
 }
 
 fn run() -> Result<()> {
@@ -97,30 +95,30 @@ fn run() -> Result<()> {
         .arg(option("include-root", "PATH"))
         .get_matches_safe()?;
 
-    let mut options = liquid::LiquidOptions::default();
     let root = matches
         .value_of("include-root")
         .map(path::PathBuf::from)
         .unwrap_or_default();
-    options.template_repository = Box::new(liquid::LocalTemplateRepository::new(root));
 
-    let mut data = matches
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .include_source(Box::new(liquid::compiler::FilesystemInclude::new(root)))
+        .build();
+    let template_path = matches
+        .value_of("input")
+        .map(path::PathBuf::from)
+        .expect("Parameter was required");
+    let template = parser.parse_file(template_path)?;
+
+    let data = matches
         .value_of("context")
         .map(|s| {
                  let p = path::PathBuf::from(s);
                  build_context(p.as_path())
              })
         .map_or(Ok(None), |r| r.map(Some))?
-        .unwrap_or_else(liquid::Context::new);
-
-    let template_path = matches
-        .value_of("input")
-        .map(path::PathBuf::from)
-        .expect("Parameter was required");
-    let template = liquid::parse_file(template_path, options)?;
-    let output = template
-        .render(&mut data)?
-        .unwrap_or_else(|| "".to_string());
+        .unwrap_or_else(liquid::Object::new);
+    let output = template.render(&data)?;
     match matches.value_of("output") {
         Some(path) => {
             let mut out = fs::File::create(path::PathBuf::from(path))?;
