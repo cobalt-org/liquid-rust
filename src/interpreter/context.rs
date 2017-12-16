@@ -134,9 +134,9 @@ impl Context {
         self.globals.get(name)
     }
 
-    pub fn get_val_by_index<'v, 'i, I: Iterator<Item = &'i Index>>(&'v self,
-                                                                   mut indexes: I)
-                                                                   -> Result<&'v Value> {
+    pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(&self,
+                                                               mut indexes: I)
+                                                               -> Result<&Value> {
         let key = indexes
             .next()
             .ok_or_else(|| Error::Render("No index provided".to_owned()))?;

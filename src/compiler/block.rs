@@ -90,8 +90,7 @@ impl ParseBlock for BoxedBlockParser {
 }
 
 impl From<FnParseBlock> for BoxedBlockParser {
-    fn from(parser: fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>)
-            -> BoxedBlockParser {
+    fn from(parser: FnParseBlock) -> BoxedBlockParser {
         let parser = BlockParserEnum::Fun(FnBlockParser::new(parser));
         Self { parser }
     }

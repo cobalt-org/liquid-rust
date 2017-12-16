@@ -23,7 +23,7 @@ impl CaseOption {
 
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
         for a in &self.args {
-            let v = a.evaluate(&context)?;
+            let v = a.evaluate(context)?;
             if v == *value {
                 return Ok(true);
             }

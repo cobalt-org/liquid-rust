@@ -84,8 +84,7 @@ impl ParseTag for BoxedTagParser {
 }
 
 impl From<FnParseTag> for BoxedTagParser {
-    fn from(parser: fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderable>>)
-            -> BoxedTagParser {
+    fn from(parser: FnParseTag) -> BoxedTagParser {
         let parser = TagParserEnum::Fun(FnTagParser::new(parser));
         Self { parser }
     }

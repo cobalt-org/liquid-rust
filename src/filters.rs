@@ -675,13 +675,10 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
     try!(check_args_len(args, 0, 0));
     match *input {
         Value::Str(ref s) => {
-            match s.parse::<f32>() {
-                Ok(n) => Ok(Value::Num(n.abs())),
-                Err(e) => {
-                    Err(FilterError::InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
-                                                         e.to_string())))
-                }
-            }
+            s.parse::<f32>().map(|n| Value::Num(n.abs())).map_err(|e| {
+                FilterError::InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
+                                                 e.to_string()))
+            })
         }
         Value::Num(n) => Ok(Value::Num(n.abs())),
         _ => Err(FilterError::InvalidType(" or number expected".to_owned())),

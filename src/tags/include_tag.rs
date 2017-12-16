@@ -53,8 +53,10 @@ mod test {
     use value;
 
     fn options() -> LiquidOptions {
+        let include_path = path::PathBuf::from("tests/fixtures/input");
+
         let mut options = LiquidOptions::default();
-        options.include_source = Box::new(compiler::FilesystemInclude::new(path::PathBuf::from("tests/fixtures/input")));
+        options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
         options.tags.insert("include".to_owned(),
                             (include_tag as compiler::FnParseTag).into());
         options.blocks.insert("comment".to_owned(),

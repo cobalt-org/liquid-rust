@@ -56,7 +56,7 @@ impl Value {
     }
 
     /// Extracts the str value if it is a str.
-    pub fn as_str<'a>(&'a self) -> Option<&'a str> {
+    pub fn as_str(&self) -> Option<&str> {
         match *self {
             Value::Str(ref v) => Some(v),
             _ => None,
@@ -110,10 +110,10 @@ impl Value {
         self.as_object().is_some()
     }
 
-    pub fn get<'v, 'i, I: Into<&'i Index>>(&'v self, index: I) -> Option<&'v Self> {
+    pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
         let index: &Index = index.into();
-        match self {
-            &Value::Array(ref x) => {
+        match *self {
+            Value::Array(ref x) => {
                 if let Some(index) = index.as_index() {
                     let index = if 0 <= index {
                         index as isize
@@ -125,7 +125,7 @@ impl Value {
                     None
                 }
             }
-            &Value::Object(ref x) => {
+            Value::Object(ref x) => {
                 if let Some(key) = index.as_key() {
                     x.get(key)
                 } else {

@@ -27,7 +27,7 @@ impl Clone for Box<Include> {
 }
 
 /// `Include` no files
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct NullInclude {}
 
 impl NullInclude {

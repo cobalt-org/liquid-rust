@@ -11,7 +11,7 @@ use liquid::*;
 // tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to
 // fixtures that might necessitate changes to the parse_file method tested here.
 
-fn compare_by_file(name: &str, globals: Object) {
+fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
@@ -22,7 +22,7 @@ fn compare_by_file(name: &str, globals: Object) {
         .parse_file(input_file)
         .unwrap();
 
-    let output = template.render(&globals).unwrap();
+    let output = template.render(globals).unwrap();
 
     let mut comp = String::new();
     File::open(output_file)
@@ -49,7 +49,7 @@ pub fn chained_filters_by_file() {
 foo: foofoo
 "#,
     ).unwrap();
-    compare_by_file("chained_filters", globals);
+    compare_by_file("chained_filters", &globals);
 }
 
 #[test]
@@ -60,7 +60,7 @@ num: 5
 numTwo: 6
 "#,
     ).unwrap();
-    compare_by_file("example", globals);
+    compare_by_file("example", &globals);
 }
 
 #[test]
@@ -68,7 +68,7 @@ pub fn include_by_file() {
     let mut globals: Object = Default::default();
     globals.insert("num".to_owned(), Value::Num(5f32));
     globals.insert("numTwo".to_owned(), Value::Num(10f32));
-    compare_by_file("include", globals);
+    compare_by_file("include", &globals);
 }
 
 #[test]
@@ -78,5 +78,5 @@ pub fn include_with_context_by_file() {
 content: "hello, world!"
 "#,
     ).unwrap();
-    compare_by_file("include_with_context", globals);
+    compare_by_file("include_with_context", &globals);
 }

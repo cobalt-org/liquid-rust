@@ -43,7 +43,7 @@ impl Output {
 
     pub fn apply_filters(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(&context)?;
+        let mut entry = self.entry.evaluate(context)?;
 
         // apply all specified filters
         for filter in &self.filters {
@@ -58,7 +58,7 @@ impl Output {
             let arguments: Result<Vec<Value>> = filter
                 .arguments
                 .iter()
-                .map(|a| a.evaluate(&context))
+                .map(|a| a.evaluate(context))
                 .collect();
             let arguments = arguments?;
             entry = f.filter(&entry, &*arguments)?;

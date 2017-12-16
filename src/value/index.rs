@@ -38,7 +38,7 @@ impl Index {
 
     pub fn as_key(&self) -> Option<&str> {
         match self.part {
-            EnumIndex::Key(ref k) => Some(&k),
+            EnumIndex::Key(ref k) => Some(k),
             EnumIndex::Index(_) => None,
         }
     }

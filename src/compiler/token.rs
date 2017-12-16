@@ -60,7 +60,7 @@ impl Token {
             Token::BooleanLiteral(b) => Ok(Argument::Val(Value::Bool(b))),
             Token::Identifier(ref id) => {
                 let mut var = Variable::default();
-                var.extend(id.split('.').map(|s| Index::with_key(s)));
+                var.extend(id.split('.').map(Index::with_key));
                 Ok(Argument::Var(var))
             }
             ref x => Error::parser("Argument", Some(x)),
