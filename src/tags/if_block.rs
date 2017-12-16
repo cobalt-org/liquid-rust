@@ -208,7 +208,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("truthy", Value::Bool(false));
+        context.set_global_val("truthy", Value::Bool(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("nope".to_owned()));
 
@@ -218,7 +218,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("truthy", Value::Bool(true));
+        context.set_global_val("truthy", Value::Bool(true));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("yep".to_owned()));
     }
@@ -235,7 +235,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("some_value", Value::Num(1f32));
+        context.set_global_val("some_value", Value::Num(1f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("".to_owned()));
 
@@ -245,7 +245,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("some_value", Value::Num(42f32));
+        context.set_global_val("some_value", Value::Num(42f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("unless body".to_owned()));
     }
@@ -268,8 +268,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("truthy", Value::Bool(true));
-        context.set_val("also_truthy", Value::Bool(false));
+        context.set_global_val("truthy", Value::Bool(true));
+        context.set_global_val("also_truthy", Value::Bool(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("yep, not also truthy".to_owned()));
     }
@@ -292,7 +292,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("a", Value::Num(1f32));
+        context.set_global_val("a", Value::Num(1f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("first".to_owned()));
 
@@ -302,7 +302,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("a", Value::Num(2f32));
+        context.set_global_val("a", Value::Num(2f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("second".to_owned()));
 
@@ -312,7 +312,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("a", Value::Num(3f32));
+        context.set_global_val("a", Value::Num(3f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("third".to_owned()));
 
@@ -322,7 +322,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("a", Value::str("else"));
+        context.set_global_val("a", Value::str("else"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("fourth".to_owned()));
     }

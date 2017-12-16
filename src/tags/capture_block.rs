@@ -23,7 +23,7 @@ impl Renderable for Capture {
             Err(x) => return Err(x),
         };
 
-        context.set_val(&self.id, Value::Str(output));
+        context.set_global_val(&self.id, Value::Str(output));
         Ok(None)
     }
 }
@@ -77,8 +77,8 @@ mod test {
             .unwrap();
 
         let mut ctx = Context::new();
-        ctx.set_val("item", Value::str("potato"));
-        ctx.set_val("i", Value::Num(42f32));
+        ctx.set_global_val("item", Value::str("potato"));
+        ctx.set_global_val("i", Value::Num(42f32));
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(ctx.get_val("attribute_name"),

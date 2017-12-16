@@ -8,7 +8,7 @@ use value::Index;
 use super::Context;
 use super::Renderable;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Variable {
     indexes: Vec<Index>,
 }

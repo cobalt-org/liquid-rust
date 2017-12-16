@@ -97,10 +97,9 @@ impl Renderable for For {
                         helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
                         helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
 
-                        scope.set_local_val("forloop", Value::Object(helper_vars.clone()));
-                        scope.set_local_val(&self.var_name, v.clone());
-                        let inner = self.item_template
-                            .render(&mut scope)?
+                        scope.set_val("forloop", Value::Object(helper_vars.clone()));
+                        scope.set_val(&self.var_name, v.clone());
+                        let inner = try!(self.item_template.render(&mut scope))
                             .unwrap_or_else(String::new);
                         ret = ret + &inner;
 
@@ -234,11 +233,11 @@ mod test {
             .unwrap();
 
         let mut data: Context = Default::default();
-        data.set_val("array",
-                     Value::Array(vec![Value::Num(22f32),
-                                       Value::Num(23f32),
-                                       Value::Num(24f32),
-                                       Value::Str("wat".to_owned())]));
+        data.set_global_val("array",
+                            Value::Array(vec![Value::Num(22f32),
+                                              Value::Num(23f32),
+                                              Value::Num(24f32),
+                                              Value::Str("wat".to_owned())]));
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test 22 test 23 test 24 test wat ".to_owned()));
     }
@@ -277,8 +276,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("alpha", Value::Num(42f32));
-        context.set_val("omega", Value::Num(46f32));
+        context.set_global_val("alpha", Value::Num(42f32));
+        context.set_global_val("omega", Value::Num(46f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output,
                    Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
@@ -325,13 +324,13 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_val("i", Value::Num(0f32));
-        context.set_val("j", Value::Num(0f32));
+        context.set_global_val("i", Value::Num(0f32));
+        context.set_global_val("j", Value::Num(0f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("empty outer".to_owned()));
 
-        context.set_val("i", Value::Num(1f32));
-        context.set_val("j", Value::Num(0f32));
+        context.set_global_val("i", Value::Num(1f32));
+        context.set_global_val("j", Value::Num(0f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("empty inner".to_owned()));
     }
@@ -514,10 +513,10 @@ mod test {
                           }) as interpreter::FnFilterValue)
                             .into());
 
-        data.set_val("array",
-                     Value::Array(vec![Value::str("alpha"),
-                                       Value::str("beta"),
-                                       Value::str("gamma")]));
+        data.set_global_val("array",
+                            Value::Array(vec![Value::str("alpha"),
+                                              Value::str("beta"),
+                                              Value::str("gamma")]));
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test ALPHA test BETA test GAMMA ".to_owned()));
     }

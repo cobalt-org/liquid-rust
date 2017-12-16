@@ -1,7 +1,7 @@
 use std::fmt;
 
 use error::{Error, Result};
-use value::Value;
+use value::{Index, Value};
 use interpreter::Argument;
 use interpreter::Variable;
 
@@ -58,7 +58,11 @@ impl Token {
             Token::NumberLiteral(f) => Ok(Argument::Val(Value::Num(f))),
             Token::StringLiteral(ref s) => Ok(Argument::Val(Value::Str(s.clone()))),
             Token::BooleanLiteral(b) => Ok(Argument::Val(Value::Bool(b))),
-            Token::Identifier(ref id) => Ok(Argument::Var(Variable::new(id.as_ref()))),
+            Token::Identifier(ref id) => {
+                let mut var = Variable::default();
+                var.extend(id.split('.').map(|s| Index::with_key(s)));
+                Ok(Argument::Var(var))
+            }
             ref x => Error::parser("Argument", Some(x)),
         }
     }
@@ -142,7 +146,7 @@ mod test {
     #[test]
     fn evaluate_handles_identifiers() {
         let mut ctx = Context::new();
-        ctx.set_val("var0", Value::Num(42f32));
+        ctx.set_global_val("var0", Value::Num(42f32));
         assert_eq!(Token::Identifier("var0".to_owned())
                        .to_arg()
                        .unwrap()

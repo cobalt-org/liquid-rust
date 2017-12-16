@@ -12,7 +12,7 @@ use error::{Error, Result};
 use interpreter::Renderable;
 use interpreter::Text;
 use interpreter::Variable;
-use interpreter::{Output, FilterPrototype, Argument};
+use interpreter::{Output, FilterPrototype};
 use super::Element;
 use super::LiquidOptions;
 use super::ParseBlock;
@@ -118,10 +118,7 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
 /// used internally, from a list of Tokens. This is mostly useful
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<Output> {
-    let entry = match tokens[0] {
-        Token::Identifier(ref x) => Argument::Var(Variable::new(x.as_ref())),
-        ref x => Argument::Val(x.to_value()?),
-    };
+    let entry = tokens[0].to_arg()?;
 
     let mut filters = vec![];
     let mut iter = tokens.iter().peekable();
@@ -151,15 +148,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
 
         // loops through the argument list after the filter name
         while iter.peek() != None && iter.peek().unwrap() != &&Token::Pipe {
-            match iter.next().unwrap() {
-                x @ &Token::StringLiteral(_) |
-                x @ &Token::NumberLiteral(_) |
-                x @ &Token::BooleanLiteral(_) => args.push(Argument::Val(x.to_value()?)),
-                &Token::Identifier(ref v) => args.push(Argument::Var(Variable::new(v.as_ref()))),
-                x => {
-                    return Error::parser("a comma or a pipe", Some(x));
-                }
-            }
+            args.push(iter.next().unwrap().to_arg()?);
 
             // ensure that the next token is either a Comma or a Pipe
             match iter.peek() {
@@ -323,6 +312,7 @@ mod test_parse_output {
     use super::*;
     use value::Value;
     use super::super::lexer::granularize;
+    use interpreter::Argument;
 
     #[test]
     fn parses_filters() {

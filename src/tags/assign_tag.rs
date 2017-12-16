@@ -16,7 +16,7 @@ struct Assign {
 impl Renderable for Assign {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let value = self.src.apply_filters(context)?;
-        context.set_val(&self.dst, value);
+        context.set_global_val(&self.dst, value);
         Ok(None)
     }
 }
@@ -75,10 +75,10 @@ mod test {
         // test one: no matching value in `tags`
         {
             let mut context = Context::new();
-            context.set_val("tags",
-                            Value::Array(vec![Value::str("alpha"),
-                                              Value::str("beta"),
-                                              Value::str("gamma")]));
+            context.set_global_val("tags",
+                                   Value::Array(vec![Value::str("alpha"),
+                                                     Value::str("beta"),
+                                                     Value::str("gamma")]));
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(false)));
@@ -88,11 +88,11 @@ mod test {
         // test two: matching value in `tags`
         {
             let mut context = Context::new();
-            context.set_val("tags",
-                            Value::Array(vec![Value::str("alpha"),
-                                              Value::str("beta"),
-                                              Value::str("freestyle"),
-                                              Value::str("gamma")]));
+            context.set_global_val("tags",
+                                   Value::Array(vec![Value::str("alpha"),
+                                                     Value::str("beta"),
+                                                     Value::str("freestyle"),
+                                                     Value::str("gamma")]));
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(true)));

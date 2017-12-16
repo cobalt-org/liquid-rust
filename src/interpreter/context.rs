@@ -124,36 +124,14 @@ impl Context {
         result
     }
 
-    /// Internal part of get_val. Walks the scope stack to try and find the
-    /// reqested variable, and failing that checks the global pool.
-    fn get<'a>(&'a self, name: &str) -> Option<&'a Value> {
+    /// Gets a value from the rendering context.
+    pub fn get_val<'a>(&'a self, name: &str) -> Option<&'a Value> {
         for frame in self.stack.iter().rev() {
             if let rval @ Some(_) = frame.get(name) {
                 return rval;
             }
         }
         self.globals.get(name)
-    }
-
-    /// Gets a value from the rendering context. The name value can be a
-    /// dot-separated path to a value. A value will only be returned if
-    /// each link in the chain (excluding the final name) refers to a
-    /// value of type Object.
-    pub fn get_val<'b>(&'b self, name: &str) -> Option<&'b Value> {
-        let mut path = name.split('.');
-        let key = path.next().unwrap_or("");
-        let mut rval = self.get(key);
-
-        // walk the chain of Object values, as specified by the path
-        // passed in name
-        for id in path {
-            match rval {
-                Some(&Value::Object(ref x)) => rval = x.get(id),
-                _ => return None,
-            }
-        }
-
-        rval
     }
 
     pub fn get_val_by_index<'v, 'i, I: Iterator<Item = &'i Index>>(&'v self,
@@ -184,7 +162,7 @@ impl Context {
     }
 
     /// Sets a value in the global context.
-    pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
+    pub fn set_global_val(&mut self, name: &str, val: Value) -> Option<Value> {
         self.globals.insert(name.to_owned(), val)
     }
 
@@ -196,7 +174,7 @@ impl Context {
     /// Panics if there is no frame on the local values stack. Context
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
-    pub fn set_local_val(&mut self, name: &str, val: Value) -> Option<Value> {
+    pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
         match self.stack.last_mut() {
             Some(frame) => frame.insert(name.to_owned(), val),
             None => panic!("Cannot insert into an empty stack"),
@@ -211,16 +189,34 @@ mod test {
     #[test]
     fn get_val() {
         let mut ctx = Context::new();
-        let mut post = HashMap::new();
+        ctx.set_global_val("number", Value::Num(42f32));
+        assert_eq!(ctx.get_val("number").unwrap(), &Value::Num(42f32));
+    }
+
+    #[test]
+    fn get_val_failure() {
+        let mut ctx = Context::new();
+        let mut post = Object::new();
         post.insert("number".to_owned(), Value::Num(42f32));
-        ctx.set_val("post", Value::Object(post));
-        assert_eq!(ctx.get_val("post.number").unwrap(), &Value::Num(42f32));
+        ctx.set_global_val("post", Value::Object(post));
+        assert!(ctx.get_val("post.number").is_none());
+    }
+
+    #[test]
+    fn get_val_by_index() {
+        let mut ctx = Context::new();
+        let mut post = Object::new();
+        post.insert("number".to_owned(), Value::Num(42f32));
+        ctx.set_global_val("post", Value::Object(post));
+        let indexes = vec![Index::with_key("post"), Index::with_key("number")];
+        assert_eq!(ctx.get_val_by_index(indexes.iter()).unwrap(),
+                   &Value::Num(42f32));
     }
 
     #[test]
     fn scoped_variables() {
         let mut ctx = Context::new();
-        ctx.set_val("test", Value::Num(42f32));
+        ctx.set_global_val("test", Value::Num(42f32));
         assert_eq!(ctx.get_val("test").unwrap(), &Value::Num(42f32));
 
         ctx.run_in_scope(|new_scope| {
@@ -228,11 +224,11 @@ mod test {
             assert_eq!(new_scope.get_val("test").unwrap(), &Value::Num(42f32));
 
             // set a new local value, and assert that it overrides the previous value
-            new_scope.set_local_val("test", Value::Num(3.14f32));
+            new_scope.set_val("test", Value::Num(3.14f32));
             assert_eq!(new_scope.get_val("test").unwrap(), &Value::Num(3.14f32));
 
             // sat a new val that we will pick up outside the scope
-            new_scope.set_val("global", Value::str("some value"));
+            new_scope.set_global_val("global", Value::str("some value"));
         });
 
         // assert that the value has reverted to the old one
