@@ -97,10 +97,10 @@ impl Renderable for For {
                         helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
                         helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
 
-                        scope.set_local_val("for_loop", Value::Object(helper_vars.clone()));
                         scope.set_local_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_local_val(&self.var_name, v.clone());
-                        let inner = try!(self.item_template.render(&mut scope))
+                        let inner = self.item_template
+                            .render(&mut scope)?
                             .unwrap_or_else(String::new);
                         ret = ret + &inner;
 
