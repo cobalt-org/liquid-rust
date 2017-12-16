@@ -61,7 +61,6 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     if name.is_empty() {
         name = itertools::join(values.iter(), "-");
     }
-    println!("name={}", name);
 
     Ok(Cycle {
            name: name,
