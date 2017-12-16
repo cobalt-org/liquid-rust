@@ -10,6 +10,7 @@ use syntax::Token;
 use syntax::{parse, consume_value_token, split_block};
 use value::Value;
 
+#[derive(Debug)]
 struct CaseOption {
     args: Vec<Argument>,
     template: Template,
@@ -31,6 +32,7 @@ impl CaseOption {
     }
 }
 
+#[derive(Debug)]
 struct Case {
     target: Argument,
     cases: Vec<CaseOption>,

@@ -7,7 +7,7 @@ use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Interrupt {
     Continue,
     Break,

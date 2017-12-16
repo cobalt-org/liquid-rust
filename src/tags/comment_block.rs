@@ -6,6 +6,7 @@ use syntax::Element;
 use syntax::LiquidOptions;
 use syntax::Token;
 
+#[derive(Copy, Clone, Debug)]
 struct Comment;
 
 impl Renderable for Comment {

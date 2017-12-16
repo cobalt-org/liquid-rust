@@ -392,6 +392,7 @@ mod test_split_block {
     use interpreter::Renderable;
     use interpreter::Context;
 
+    #[derive(Debug)]
     struct NullBlock;
 
     impl Renderable for NullBlock {

@@ -7,6 +7,7 @@ use syntax::LiquidOptions;
 use syntax::Token;
 use syntax::{parse_output, expect};
 
+#[derive(Clone, Debug)]
 struct Assign {
     dst: String,
     src: Output,

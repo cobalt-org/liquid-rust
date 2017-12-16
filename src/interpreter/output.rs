@@ -5,7 +5,7 @@ use super::Context;
 use super::Renderable;
 use super::Argument;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
     arguments: Vec<Argument>,
@@ -20,7 +20,7 @@ impl FilterPrototype {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Output {
     entry: Argument,
     filters: Vec<FilterPrototype>,

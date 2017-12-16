@@ -47,13 +47,13 @@ extern crate serde_yaml;
 
 mod error;
 mod filters;
-mod interpreter;
 mod parser;
 mod tags;
 mod template;
 mod value;
 
 pub mod syntax;
+pub mod interpreter;
 
 pub use parser::{ParserBuilder, Parser};
 pub use template::Template;

@@ -9,6 +9,7 @@ use syntax::Token;
 use syntax::parse;
 use value::Value;
 
+#[derive(Debug)]
 struct Capture {
     id: String,
     template: Template,

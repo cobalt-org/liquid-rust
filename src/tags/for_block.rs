@@ -13,11 +13,13 @@ use syntax::Token;
 use syntax::{parse, expect, split_block};
 use value::Value;
 
+#[derive(Clone, Debug)]
 enum Range {
     Array(String),
     Counted(Argument, Argument),
 }
 
+#[derive(Debug)]
 struct For {
     var_name: String,
     range: Range,

@@ -9,6 +9,7 @@ use syntax::Token;
 use syntax::LiquidOptions;
 use syntax::{consume_value_token, value_token};
 
+#[derive(Clone, Debug)]
 struct Cycle {
     name: String,
     values: Vec<Argument>,

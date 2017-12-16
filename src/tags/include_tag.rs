@@ -8,6 +8,7 @@ use syntax::Token;
 use syntax::parse;
 use syntax::tokenize;
 
+#[derive(Debug)]
 struct Include {
     partial: Template,
 }

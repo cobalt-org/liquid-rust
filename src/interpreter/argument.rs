@@ -6,7 +6,7 @@ use value::Value;
 use super::Context;
 use super::variable::Variable;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Argument {
     Var(Variable),
     Val(Value),

@@ -6,6 +6,7 @@ use syntax::Element;
 use syntax::LiquidOptions;
 use syntax::Token;
 
+#[derive(Clone, Debug)]
 struct RawT {
     content: String,
 }

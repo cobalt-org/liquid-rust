@@ -10,12 +10,14 @@ use syntax::LiquidOptions;
 use syntax::Token;
 use syntax::{parse, split_block, consume_value_token};
 
+#[derive(Clone, Debug)]
 struct Condition {
     lh: Argument,
     comparison: ComparisonOperator,
     rh: Argument,
 }
 
+#[derive(Debug)]
 struct Conditional {
     condition: Condition,
     mode: bool,

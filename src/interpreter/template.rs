@@ -3,6 +3,7 @@ use error::Result;
 use super::Context;
 use super::Renderable;
 
+#[derive(Debug)]
 pub struct Template {
     pub elements: Vec<Box<Renderable>>,
 }

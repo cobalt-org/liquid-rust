@@ -5,6 +5,7 @@ use interpreter::{Context, Interrupt};
 use syntax::LiquidOptions;
 use syntax::Token;
 
+#[derive(Copy, Clone, Debug)]
 struct Break;
 
 impl Renderable for Break {
@@ -26,6 +27,7 @@ pub fn break_tag(_tag_name: &str,
     Ok(Box::new(Break))
 }
 
+#[derive(Copy, Clone, Debug)]
 struct Continue;
 
 impl Renderable for Continue {
