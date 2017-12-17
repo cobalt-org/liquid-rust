@@ -1,13 +1,15 @@
-use context::Context;
 use error::{Error, Result};
-use lexer::Element;
-use LiquidOptions;
-use Renderable;
-use template::Template;
-use token::Token::{self, Identifier};
-use value::Value;
-use parser::parse;
 
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::parse;
+use value::Value;
+
+#[derive(Debug)]
 struct Capture {
     id: String,
     template: Template,
@@ -21,7 +23,7 @@ impl Renderable for Capture {
             Err(x) => return Err(x),
         };
 
-        context.set_val(&self.id, Value::Str(output));
+        context.set_global_val(&self.id, Value::Str(output));
         Ok(None)
     }
 }
@@ -33,7 +35,7 @@ pub fn capture_block(_tag_name: &str,
                      -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let id = match args.next() {
-        Some(&Identifier(ref x)) => x.clone(),
+        Some(&Token::Identifier(ref x)) => x.clone(),
         x @ Some(_) | x @ None => return Error::parser("Identifier", x),
     };
 
@@ -42,7 +44,7 @@ pub fn capture_block(_tag_name: &str,
         return Error::parser("%}", t);
     };
 
-    let t = Template::new(try!(parse(tokens, options)));
+    let t = Template::new(parse(tokens, options)?);
 
     Ok(Box::new(Capture {
                     id: id,
@@ -52,28 +54,36 @@ pub fn capture_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use parse;
-    use LiquidOptions;
-    use Renderable;
-    use value::Value;
-    use std::default::Default;
-    use context::Context;
+    use super::*;
+    use interpreter;
+    use compiler;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("capture".to_owned(),
+                              (capture_block as compiler::FnParseBlock).into());
+        options
+    }
 
     #[test]
     fn test_capture() {
         let text = concat!("{% capture attribute_name %}",
-                           "{{ item | upcase }}-{{ i }}-color",
+                           "{{ item }}-{{ i }}-color",
                            "{% endcapture %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
-        ctx.set_val("item", Value::str("potato"));
-        ctx.set_val("i", Value::Num(42f32));
+        ctx.set_global_val("item", Value::str("potato"));
+        ctx.set_global_val("i", Value::Num(42f32));
 
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(), Some("".to_owned()));
+        let output = template.render(&mut ctx).unwrap();
         assert_eq!(ctx.get_val("attribute_name"),
-                   Some(&Value::str("POTATO-42-color")));
+                   Some(&Value::str("potato-42-color")));
+        assert_eq!(output, Some("".to_owned()));
     }
 
     #[test]
@@ -81,6 +91,9 @@ mod test {
         let text = concat!("{% capture foo bar baz %}",
                            "We should never see this",
                            "{% endcapture %}");
-        assert!(parse(text, LiquidOptions::default()).is_err());
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
+        assert!(template.is_err());
     }
 }

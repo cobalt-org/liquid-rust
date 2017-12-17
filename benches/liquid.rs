@@ -5,29 +5,24 @@ extern crate serde_yaml;
 
 extern crate liquid;
 
-use liquid::Renderable;
-
 static TEXT_ONLY: &'static str = "Hello World";
 
 #[bench]
 fn bench_parse_text(b: &mut test::Bencher) {
-    b.iter(|| {
-               let options = liquid::LiquidOptions::with_known_blocks();
-               liquid::parse(TEXT_ONLY, options)
-           });
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    b.iter(|| parser.parse(TEXT_ONLY));
 }
 
 #[bench]
 fn bench_render_text(b: &mut test::Bencher) {
-    let options = liquid::LiquidOptions::with_known_blocks();
-    let template = liquid::parse(TEXT_ONLY, options).expect("Benchmark template parsing failed");
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let template = parser
+        .parse(TEXT_ONLY)
+        .expect("Benchmark template parsing failed");
 
     let data = liquid::Object::new();
 
-    b.iter(|| {
-               let mut context = liquid::Context::with_values(data.clone());
-               template.render(&mut context)
-           });
+    b.iter(|| template.render(&data));
 }
 
 // Mirrors tera's VARIABLE_ONLY benchmark
@@ -43,25 +38,21 @@ product:
 
 #[bench]
 fn bench_parse_variable(b: &mut test::Bencher) {
-    b.iter(|| {
-               let options = liquid::LiquidOptions::with_known_blocks();
-               liquid::parse(VARIABLE_ONLY, options)
-           });
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    b.iter(|| parser.parse(VARIABLE_ONLY));
 }
 
 #[bench]
 fn bench_render_variable(b: &mut test::Bencher) {
-    let options = liquid::LiquidOptions::with_known_blocks();
-    let template = liquid::parse(VARIABLE_ONLY, options)
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let template = parser
+        .parse(VARIABLE_ONLY)
         .expect("Benchmark template parsing failed");
 
     let data: liquid::Object = serde_yaml::from_str(VARIABLE_ONLY_OBJECT)
         .expect("Benchmark object parsing failed");
 
-    b.iter(|| {
-               let mut context = liquid::Context::with_values(data.clone());
-               template.render(&mut context)
-           });
+    b.iter(|| template.render(&data));
 }
 
 // Mirrors handlebars' benchmark
@@ -95,22 +86,19 @@ teams:
 
 #[bench]
 fn bench_parse_template(b: &mut test::Bencher) {
-    b.iter(|| {
-               let options = liquid::LiquidOptions::with_known_blocks();
-               liquid::parse(ITERATE, options)
-           });
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    b.iter(|| parser.parse(ITERATE));
 }
 
 #[bench]
 fn bench_render_template(b: &mut test::Bencher) {
-    let options = liquid::LiquidOptions::with_known_blocks();
-    let template = liquid::parse(ITERATE, options).expect("Benchmark template parsing failed");
+    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let template = parser
+        .parse(ITERATE)
+        .expect("Benchmark template parsing failed");
 
     let data: liquid::Object = serde_yaml::from_str(ITERATE_OBJECT)
         .expect("Benchmark object parsing failed");
 
-    b.iter(|| {
-               let mut context = liquid::Context::with_values(data.clone());
-               template.render(&mut context)
-           });
+    b.iter(|| template.render(&data));
 }

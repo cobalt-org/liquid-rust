@@ -1,11 +1,10 @@
-use token::Token;
-
 use std::result;
 use std::error;
 use std::fmt;
 use std::io;
 
-use filters::FilterError;
+use interpreter::FilterError;
+use compiler::Token;
 
 // type alias because we always want to deal with CobaltErrors
 pub type Result<T> = result::Result<T, Error>;

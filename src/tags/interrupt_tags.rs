@@ -1,9 +1,11 @@
 use error::{Error, Result};
-use context::{Context, Interrupt};
-use Token;
-use LiquidOptions;
-use Renderable;
 
+use interpreter::Renderable;
+use interpreter::{Context, Interrupt};
+use compiler::LiquidOptions;
+use compiler::Token;
+
+#[derive(Copy, Clone, Debug)]
 struct Break;
 
 impl Renderable for Break {
@@ -25,6 +27,7 @@ pub fn break_tag(_tag_name: &str,
     Ok(Box::new(Break))
 }
 
+#[derive(Copy, Clone, Debug)]
 struct Continue;
 
 impl Renderable for Continue {
@@ -48,10 +51,23 @@ pub fn continue_tag(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use Context;
-    use LiquidOptions;
-    use Renderable;
-    use parse;
+    use super::*;
+    use compiler;
+    use tags;
+    use interpreter;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.tags.insert("break".to_owned(),
+                            (break_tag as compiler::FnParseTag).into());
+        options.tags.insert("continue".to_owned(),
+                            (continue_tag as compiler::FnParseTag).into());
+        options.blocks.insert("for".to_owned(),
+                              (tags::for_block as compiler::FnParseBlock).into());
+        options.blocks.insert("if".to_owned(),
+                              (tags::if_block as compiler::FnParseBlock).into());
+        options
+    }
 
     #[test]
     fn test_simple_break() {
@@ -60,11 +76,14 @@ mod test {
                            "{% if i == 2 %}break-{{i}}\n{% break %}{% endif %}",
                            "exit-{{i}}\n",
                            "{% endfor %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(),
+        let output = template.render(&mut ctx).unwrap();
+        assert_eq!(output,
                    Some(concat!("enter-0;exit-0\n", "enter-1;exit-1\n", "enter-2;break-2\n")
                             .to_owned()));
     }
@@ -80,11 +99,14 @@ mod test {
                            "{% endfor %}",
                            "exit-{{outer}}\n",
                            "{% endfor %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(),
+        let output = template.render(&mut ctx).unwrap();
+        assert_eq!(output,
                    Some(concat!("enter-0; 6, 7, break, exit-0\n",
                                 "enter-1; 6, 7, break, exit-1\n",
                                 "enter-2; 6, 7, break, exit-2\n")
@@ -98,11 +120,14 @@ mod test {
                            "{% if i == 2 %}continue-{{i}}\n{% continue %}{% endif %}",
                            "exit-{{i}}\n",
                            "{% endfor %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(),
+        let output = template.render(&mut ctx).unwrap();
+        assert_eq!(output,
                    Some(concat!("enter-0;exit-0\n",
                                 "enter-1;exit-1\n",
                                 "enter-2;continue-2\n",
@@ -122,11 +147,14 @@ mod test {
                            "{% endfor %}",
                            "exit-{{outer}}\n",
                            "{% endfor %}");
-        let template = parse(text, LiquidOptions::default()).unwrap();
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
 
         let mut ctx = Context::new();
-        let output = template.render(&mut ctx);
-        assert_eq!(output.unwrap(),
+        let output = template.render(&mut ctx).unwrap();
+        assert_eq!(output,
                    Some(concat!("enter-0; 6, 7, continue, 9, exit-0\n",
                                 "enter-1; 6, 7, continue, 9, exit-1\n",
                                 "enter-2; 6, 7, continue, 9, exit-2\n")

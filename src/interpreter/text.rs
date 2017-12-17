@@ -1,7 +1,9 @@
-use Renderable;
-use context::Context;
 use error::Result;
 
+use super::Context;
+use super::Renderable;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Text {
     text: String,
 }

@@ -1,10 +1,12 @@
-use Renderable;
-use context::Context;
-use LiquidOptions;
-use token::Token;
-use lexer::Element;
 use error::Result;
 
+use interpreter::Context;
+use interpreter::Renderable;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+
+#[derive(Copy, Clone, Debug)]
 struct Comment;
 
 impl Renderable for Comment {
@@ -23,17 +25,23 @@ pub fn comment_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use LiquidOptions;
-    use super::comment_block;
-    use std::default::Default;
-    use lexer::Element::Expression;
+    use super::*;
+    use compiler;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("comment".to_owned(),
+                              (comment_block as compiler::FnParseBlock).into());
+        options
+    }
 
     #[test]
     fn test_comment() {
-        let options: LiquidOptions = Default::default();
+        let options = options();
         let comment = comment_block("comment",
                                     &[],
-                                    &vec![Expression(vec![], "This is a test".to_string())],
+                                    &vec![Element::Expression(vec![],
+                                                              "This is a test".to_string())],
                                     &options);
         assert_eq!(comment.unwrap().render(&mut Default::default()).unwrap(),
                    None);

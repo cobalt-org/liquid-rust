@@ -1,10 +1,8 @@
-use Renderable;
-use context::Context;
 use std::collections::HashMap;
 use std::cmp::Ordering;
-use error::{Result, Error};
-use token::Token;
-use token::Token::*;
+use std::fmt;
+
+use super::Index;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
@@ -25,22 +23,10 @@ pub type Array = Vec<Value>;
 /// Type representing a Liquid object, payload of the `Value::Object` variant
 pub type Object = HashMap<String, Value>;
 
-impl<'a> Value {
+impl Value {
     /// Shorthand function to create Value::Str from a string slice.
     pub fn str(val: &str) -> Value {
         Value::Str(val.to_owned())
-    }
-
-    /// Parses a token that can possibly represent a Value
-    /// to said Value. Returns an Err if the token can not
-    /// be interpreted as a Value.
-    pub fn from_token(t: &Token) -> Result<Value> {
-        match t {
-            &StringLiteral(ref x) => Ok(Value::Str(x.to_owned())),
-            &NumberLiteral(x) => Ok(Value::Num(x)),
-            &BooleanLiteral(x) => Ok(Value::Bool(x)),
-            x => Error::parser("Value", Some(x)),
-        }
     }
 
     /// Extracts the float value if it is a float.
@@ -70,7 +56,7 @@ impl<'a> Value {
     }
 
     /// Extracts the str value if it is a str.
-    pub fn as_str(&'a self) -> Option<&'a str> {
+    pub fn as_str(&self) -> Option<&str> {
         match *self {
             Value::Str(ref v) => Some(v),
             _ => None,
@@ -123,6 +109,32 @@ impl<'a> Value {
     pub fn is_object(&self) -> bool {
         self.as_object().is_some()
     }
+
+    pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
+        let index: &Index = index.into();
+        match *self {
+            Value::Array(ref x) => {
+                if let Some(index) = index.as_index() {
+                    let index = if 0 <= index {
+                        index as isize
+                    } else {
+                        (x.len() as isize) + index
+                    };
+                    x.get(index as usize)
+                } else {
+                    None
+                }
+            }
+            Value::Object(ref x) => {
+                if let Some(key) = index.as_key() {
+                    x.get(key)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 impl PartialEq<Value> for Value {
@@ -160,9 +172,9 @@ impl PartialOrd<Value> for Value {
     }
 }
 
-impl ToString for Value {
-    fn to_string(&self) -> String {
-        match *self {
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = match *self {
             Value::Num(ref x) => x.to_string(),
             Value::Bool(ref x) => x.to_string(),
             Value::Str(ref x) => x.to_owned(),
@@ -177,13 +189,8 @@ impl ToString for Value {
                     .collect();
                 arr.join(", ")
             }
-        }
-    }
-}
-
-impl Renderable for Value {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        Ok(Some(self.to_string()))
+        };
+        write!(f, "{}", data)
     }
 }
 

@@ -1,393 +1,241 @@
-//! Parser
-//!
-//! This module contains functions than can be used for writing plugins
-//! but should be ignored for simple usage.
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::prelude::Read;
+use std::path;
 
-use Renderable;
-use LiquidOptions;
-use value::Value;
-use variable::Variable;
-use text::Text;
-use output::{Output, FilterPrototype, Argument};
-use path::IdentifierPath;
-use token::Token;
-use token::Token::*;
-use lexer::Element::{self, Expression, Tag, Raw};
-use error::{Error, Result};
-use std::slice::Iter;
-use std::collections::HashSet;
-use std::iter::FromIterator;
+use error::Result;
+use tags;
+use filters;
+use compiler;
+use interpreter;
+use super::Template;
 
-/// Parses the provided elements into a number of Renderable items
-/// This is the internal version of parse that accepts Elements tokenized
-/// by `lexer::tokenize` and does not register built-in blocks. The main use
-/// for this function is for writing custom blocks.
-///
-/// For parsing from a String you should refer to `liquid::parse`.
-pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {
-    let mut ret = vec![];
-    let mut iter = elements.iter();
-    let mut token = iter.next();
-    while token.is_some() {
-        match *token.unwrap() {
-            Expression(ref tokens, _) => ret.push(try!(parse_expression(tokens, options))),
-            Tag(ref tokens, _) => ret.push(try!(parse_tag(&mut iter, tokens, options))),
-            Raw(ref x) => ret.push(Box::new(Text::new(x))),
-        }
-        token = iter.next();
-    }
-    Ok(ret)
+#[derive(Default)]
+pub struct ParserBuilder {
+    blocks: HashMap<String, compiler::BoxedBlockParser>,
+    tags: HashMap<String, compiler::BoxedTagParser>,
+    filters: HashMap<String, interpreter::BoxedValueFilter>,
+    include_source: Option<Box<compiler::Include>>,
 }
 
-// creates an expression, which wraps everything that gets rendered
-fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
-    match tokens[0] {
-        Identifier(ref x) if tokens.len() > 1 && (tokens[1] == Dot || tokens[1] == OpenSquare) => {
-            let mut result = IdentifierPath::new(x.clone());
-            try!(result.append_indexes(&tokens[1..]));
-            Ok(Box::new(result))
-        }
-        Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
-        }
-        _ => {
-            let output = try!(parse_output(tokens));
-            Ok(Box::new(output))
-        }
+impl ParserBuilder {
+    /// Create an empty Liquid parser
+    pub fn new() -> Self {
+        Self::default()
     }
-}
 
-/// Creates an Output, a wrapper around values, variables and filters
-/// used internally, from a list of Tokens. This is mostly useful
-/// for correctly parsing complex expressions with filters.
-pub fn parse_output(tokens: &[Token]) -> Result<Output> {
-    let entry = match tokens[0] {
-        Identifier(ref x) => Argument::Var(Variable::new(x)),
-        ref x => Argument::Val(try!(Value::from_token(x))),
-    };
+    /// Create a Liquid parser with built-in Liquid features
+    pub fn with_liquid() -> Self {
+        Self::default()
+            .liquid_tags()
+            .liquid_blocks()
+            .liquid_filters()
+    }
 
-    let mut filters = vec![];
-    let mut iter = tokens.iter().peekable();
-    iter.next();
+    /// Register built-in Liquid tags
+    pub fn liquid_tags(self) -> Self {
+        self.tag("assign", tags::assign_tag as compiler::FnParseTag)
+            .tag("break", tags::break_tag as compiler::FnParseTag)
+            .tag("continue", tags::continue_tag as compiler::FnParseTag)
+            .tag("cycle", tags::cycle_tag as compiler::FnParseTag)
+            .tag("include", tags::include_tag as compiler::FnParseTag)
+    }
 
-    while iter.peek() != None {
-        try!(expect(&mut iter, &Pipe));
+    /// Register built-in Liquid blocks
+    pub fn liquid_blocks(self) -> Self {
+        self.block("raw", tags::raw_block as compiler::FnParseBlock)
+            .block("if", tags::if_block as compiler::FnParseBlock)
+            .block("unless", tags::unless_block as compiler::FnParseBlock)
+            .block("for", tags::for_block as compiler::FnParseBlock)
+            .block("comment", tags::comment_block as compiler::FnParseBlock)
+            .block("capture", tags::capture_block as compiler::FnParseBlock)
+            .block("case", tags::case_block as compiler::FnParseBlock)
+    }
 
-        let name = match iter.next() {
-            Some(&Identifier(ref name)) => name,
-            x => {
-                return Error::parser("an identifier", x);
-            }
+    /// Register built-in Liquid filters
+    pub fn liquid_filters(self) -> Self {
+        self.filter("abs", filters::abs as interpreter::FnFilterValue)
+            .filter("append", filters::append as interpreter::FnFilterValue)
+            .filter("capitalize",
+                    filters::capitalize as interpreter::FnFilterValue)
+            .filter("ceil", filters::ceil as interpreter::FnFilterValue)
+            .filter("compact", filters::compact as interpreter::FnFilterValue)
+            .filter("concat", filters::concat as interpreter::FnFilterValue)
+            .filter("date", filters::date as interpreter::FnFilterValue)
+            .filter("default", filters::default as interpreter::FnFilterValue)
+            .filter("divided_by",
+                    filters::divided_by as interpreter::FnFilterValue)
+            .filter("downcase", filters::downcase as interpreter::FnFilterValue)
+            .filter("escape", filters::escape as interpreter::FnFilterValue)
+            .filter("escape_once",
+                    filters::escape_once as interpreter::FnFilterValue)
+            .filter("first", filters::first as interpreter::FnFilterValue)
+            .filter("floor", filters::floor as interpreter::FnFilterValue)
+            .filter("join", filters::join as interpreter::FnFilterValue)
+            .filter("last", filters::last as interpreter::FnFilterValue)
+            .filter("lstrip", filters::lstrip as interpreter::FnFilterValue)
+            .filter("map", filters::map as interpreter::FnFilterValue)
+            .filter("minus", filters::minus as interpreter::FnFilterValue)
+            .filter("modulo", filters::modulo as interpreter::FnFilterValue)
+            .filter("newline_to_br",
+                    filters::newline_to_br as interpreter::FnFilterValue)
+            .filter("plus", filters::plus as interpreter::FnFilterValue)
+            .filter("prepend", filters::prepend as interpreter::FnFilterValue)
+            .filter("remove", filters::remove as interpreter::FnFilterValue)
+            .filter("remove_first",
+                    filters::remove_first as interpreter::FnFilterValue)
+            .filter("replace", filters::replace as interpreter::FnFilterValue)
+            .filter("replace_first",
+                    filters::replace_first as interpreter::FnFilterValue)
+            .filter("reverse", filters::reverse as interpreter::FnFilterValue)
+            .filter("round", filters::round as interpreter::FnFilterValue)
+            .filter("rstrip", filters::rstrip as interpreter::FnFilterValue)
+            .filter("size", filters::size as interpreter::FnFilterValue)
+            .filter("slice", filters::slice as interpreter::FnFilterValue)
+            .filter("sort", filters::sort as interpreter::FnFilterValue)
+            .filter("sort_natural",
+                    filters::sort_natural as interpreter::FnFilterValue)
+            .filter("split", filters::split as interpreter::FnFilterValue)
+            .filter("strip", filters::strip as interpreter::FnFilterValue)
+            .filter("strip_html",
+                    filters::strip_html as interpreter::FnFilterValue)
+            .filter("strip_newlines",
+                    filters::strip_newlines as interpreter::FnFilterValue)
+            .filter("times", filters::times as interpreter::FnFilterValue)
+            .filter("truncate", filters::truncate as interpreter::FnFilterValue)
+            .filter("truncatewords",
+                    filters::truncatewords as interpreter::FnFilterValue)
+            .filter("uniq", filters::uniq as interpreter::FnFilterValue)
+            .filter("upcase", filters::upcase as interpreter::FnFilterValue)
+            .filter("url_decode",
+                    filters::url_decode as interpreter::FnFilterValue)
+            .filter("url_encode",
+                    filters::url_encode as interpreter::FnFilterValue)
+    }
+
+    #[cfg(not(feature = "extra-filters"))]
+    pub fn extra_filters(self) -> Self {
+        self
+    }
+
+    #[cfg(feature = "extra-filters")]
+    pub fn extra_filters(self) -> Self {
+        self.filter("pluralize",
+                    filters::pluralize as interpreter::FnFilterValue)
+            .filter("date_in_tz",
+                    filters::date_in_tz as interpreter::FnFilterValue)
+    }
+
+    /// Inserts a new custom block into the parser
+    pub fn block<B: Into<compiler::BoxedBlockParser>>(mut self, name: &str, block: B) -> Self {
+        self.blocks.insert(name.to_owned(), block.into());
+        self
+    }
+
+    /// Inserts a new custom tag into the parser
+    pub fn tag<T: Into<compiler::BoxedTagParser>>(mut self, name: &str, tag: T) -> Self {
+        self.tags.insert(name.to_owned(), tag.into());
+        self
+    }
+
+    /// Inserts a new custom filter into the parser
+    pub fn filter<F: Into<interpreter::BoxedValueFilter>>(mut self, name: &str, filter: F) -> Self {
+        self.filters.insert(name.to_owned(), filter.into());
+        self
+    }
+
+    /// Define the source for includes
+    pub fn include_source(mut self, includes: Box<compiler::Include>) -> Self {
+        self.include_source = Some(includes);
+        self
+    }
+
+    pub fn build(self) -> Parser {
+        let Self {
+            blocks,
+            tags,
+            filters,
+            include_source,
+        } = self;
+        let include_source = include_source
+            .unwrap_or_else(|| Box::new(compiler::NullInclude::new()));
+
+        let options = compiler::LiquidOptions {
+            blocks,
+            tags,
+            include_source,
         };
-        let mut args = vec![];
-
-        match iter.peek() {
-            Some(&&Pipe) | None => {
-                filters.push(FilterPrototype::new(name, args));
-                continue;
-            }
-            _ => (),
-        }
-
-        try!(expect(&mut iter, &Colon));
-
-        // loops through the argument list after the filter name
-        while iter.peek() != None && iter.peek().unwrap() != &&Pipe {
-            match iter.next().unwrap() {
-                x @ &StringLiteral(_) |
-                x @ &NumberLiteral(_) |
-                x @ &BooleanLiteral(_) => args.push(Argument::Val(try!(Value::from_token(x)))),
-                &Identifier(ref v) => args.push(Argument::Var(Variable::new(v))),
-                x => {
-                    return Error::parser("a comma or a pipe", Some(x));
-                }
-            }
-
-            // ensure that the next token is either a Comma or a Pipe
-            match iter.peek() {
-                Some(&&Comma) => {
-                    let _ = iter.next().unwrap();
-                    continue;
-                }
-                Some(&&Pipe) | None => break,
-                _ => {
-                    return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
-                }
-            }
-        }
-
-        filters.push(FilterPrototype::new(name, args));
-    }
-
-    Ok(Output::new(entry, filters))
-}
-
-// a tag can be either a single-element tag or a block, which can contain other
-// elements and is delimited by a closing tag named {{end +
-// the_name_of_the_tag}}. Tags do not get rendered, but blocks may contain
-// renderable expressions
-fn parse_tag(iter: &mut Iter<Element>,
-             tokens: &[Token],
-             options: &LiquidOptions)
-             -> Result<Box<Renderable>> {
-    let tag = &tokens[0];
-    match *tag {
-        // is a tag
-        Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
-        }
-
-        // is a block
-        Identifier(ref x) if options.blocks.contains_key(x) => {
-            // Collect all the inner elements of this block until we find a
-            // matching "end<blockname>" tag. Note that there may be nested blocks
-            // of the same type (and hence have the same closing delimiter) *inside*
-            // the body of the block, which would premauturely stop the element
-            // collection early if we did a nesting-unaware search for the
-            // closing tag.
-            //
-            // The whole nesting count machinery below is to ensure we only stop
-            // collecting elements when we have an un-nested closing tag.
-
-            let end_tag = Identifier("end".to_owned() + x);
-            let mut children = vec![];
-            let mut nesting_depth = 0;
-            for t in iter {
-                if let Tag(ref tokens, _) = *t {
-                    match tokens[0] {
-                        ref n if n == tag => {
-                            nesting_depth += 1;
-                        }
-                        ref n if n == &end_tag && nesting_depth > 0 => {
-                            nesting_depth -= 1;
-                        }
-                        ref n if n == &end_tag && nesting_depth == 0 => break,
-                        _ => {}
-                    }
-                };
-                children.push(t.clone())
-            }
-            options.blocks[x].parse(x, &tokens[1..], &children, options)
-        }
-
-        ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
+        Parser { options, filters }
     }
 }
 
-/// Confirm that the next token in a token stream is what you want it
-/// to be. The token iterator is moved to the next token in the stream.
-pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
-    where T: Iterator<Item = &'a Token>
-{
-    match tokens.next() {
-        Some(x) if x == expected => Ok(x),
-        x => Error::parser(&expected.to_string(), x),
-    }
+#[derive(Default)]
+pub struct Parser {
+    options: compiler::LiquidOptions,
+    filters: HashMap<String, interpreter::BoxedValueFilter>,
 }
 
-/// Extracts a token from the token stream that can be used to express a
-/// value. For our purposes, this is either a string literal, number literal
-/// or an identifier that might refer to a variable.
-pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
-    match tokens.next() {
-        Some(t) => value_token(t.clone()),
-        None => Error::parser("string | number | identifier", None),
-    }
-}
-
-/// Recognises a value token, returning an error if a non-value token
-/// is presented.
-pub fn value_token(t: Token) -> Result<Token> {
-    match t {
-        v @ StringLiteral(_) |
-        v @ NumberLiteral(_) |
-        v @ BooleanLiteral(_) |
-        v @ Identifier(_) => Ok(v),
-        x => Error::parser("string | number | boolean | identifier", Some(&x)),
-    }
-}
-
-/// Describes the optional trailing part of a block split.
-pub struct BlockSplit<'a> {
-    pub delimiter: String,
-    pub args: &'a [Token],
-    pub trailing: &'a [Element],
-}
-
-/// A sub-block aware splitter that will only split the token stream
-/// when it finds a delimter at the top level of the token stream,
-/// ignoring any it finds in nested blocks.
-///
-/// Returns a slice contaiing all elements before the delimiter, and
-/// an optional `BlockSplit` struct describing the delimiter and
-/// trailing elements.
-pub fn split_block<'a>(tokens: &'a [Element],
-                       delimiters: &[&str],
-                       options: &LiquidOptions)
-                       -> (&'a [Element], Option<BlockSplit<'a>>) {
-    // construct a fast-lookup cache of the delimiters, as we're going to be
-    // consulting the delimiter list a *lot*.
-    let delims: HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x| *x));
-    let mut stack: Vec<String> = Vec::new();
-
-    for (i, t) in tokens.iter().enumerate() {
-        if let Tag(ref args, _) = *t {
-            match args[0] {
-                Identifier(ref name) if options.blocks.contains_key(name) => {
-                    stack.push("end".to_owned() + name);
-                }
-
-                Identifier(ref name) if Some(name) == stack.last() => {
-                    stack.pop();
-                }
-
-                Identifier(ref name) if stack.is_empty() && delims.contains(name.as_str()) => {
-                    let leading = &tokens[0..i];
-                    let split = BlockSplit {
-                        delimiter: name.clone(),
-                        args: args,
-                        trailing: &tokens[i..],
-                    };
-                    return (leading, Some(split));
-                }
-                _ => {}
-            }
-        }
+impl Parser {
+    pub fn new() -> Self {
+        Default::default()
     }
 
-    (&tokens[..], None)
-}
-
-#[cfg(test)]
-mod test {
-    mod test_parse_output {
-        use super::super::parse_output;
-        use lexer::granularize;
-        use output::{Output, Argument, FilterPrototype};
-        use variable::Variable;
-        use value::Value;
-
-        #[test]
-        fn parses_filters() {
-            let tokens = granularize("abc | def:'1',2,'3' | blabla").unwrap();
-
-            let result = parse_output(&tokens);
-            assert_eq!(
-                result.unwrap(),
-                Output::new(
-                    Argument::Var(Variable::new("abc")),
-                    vec![FilterPrototype::new(
-                        "def",
-                        vec![Argument::Val(Value::str("1")),
-                             Argument::Val(Value::Num(2.0)),
-                             Argument::Val(Value::str("3"))]
-                    ),
-                         FilterPrototype::new("blabla", vec![])],
-                )
-            );
-        }
-
-        #[test]
-        fn requires_filter_names() {
-            let tokens = granularize("abc | '1','2','3' | blabla").unwrap();
-
-            let result = parse_output(&tokens);
-            assert_eq!(result.unwrap_err().to_string(),
-                       "Parsing error: Expected an identifier, found 1");
-        }
-
-        #[test]
-        fn fails_on_missing_pipes() {
-            let tokens = granularize("abc | def:'1',2,'3' blabla").unwrap();
-
-            let result = parse_output(&tokens);
-            assert_eq!(result.unwrap_err().to_string(),
-                       "Parsing error: Expected a comma or a pipe, found blabla");
-        }
-
-        #[test]
-        fn fails_on_missing_colons() {
-            let tokens = granularize("abc | def '1',2,'3' | blabla").unwrap();
-
-            let result = parse_output(&tokens);
-            assert_eq!(result.unwrap_err().to_string(),
-                       "Parsing error: Expected :, found 1");
-        }
+    /// Parses a liquid template, returning a Template object.
+    /// # Examples
+    ///
+    /// ## Minimal Template
+    ///
+    /// ```
+    /// let template = liquid::ParserBuilder::with_liquid()
+    ///     .build()
+    ///     .parse("Liquid!").unwrap();
+    ///
+    /// let globals = liquid::Object::new();
+    /// let output = template.render(&globals).unwrap();
+    /// assert_eq!(output, "Liquid!".to_string());
+    /// ```
+    ///
+    pub fn parse(&self, text: &str) -> Result<Template> {
+        let tokens = compiler::tokenize(text)?;
+        let template = compiler::parse(&tokens, &self.options)
+            .map(interpreter::Template::new)?;
+        let filters = self.filters.clone();
+        Ok(Template { template, filters })
     }
 
-    mod test_expect {
-        use super::super::expect;
-
-        #[test]
-        fn rejects_unexpected_token() {
-            use token::Token::{Pipe, Dot, Colon, Comma};
-            let token_vec = vec![Pipe, Dot, Colon];
-            let mut tokens = token_vec.iter();
-
-            assert!(expect(&mut tokens, &Pipe).is_ok());
-            assert!(expect(&mut tokens, &Dot).is_ok());
-            assert!(expect(&mut tokens, &Comma).is_err());
-        }
+    /// Parse a liquid template from a file, returning a `Result<Template, Error>`.
+    /// # Examples
+    ///
+    /// ## Minimal Template
+    ///
+    /// `template.txt`:
+    ///
+    /// ```text
+    /// "Liquid {{data}}"
+    /// ```
+    ///
+    /// Your rust code:
+    ///
+    /// ```rust,no_run
+    /// let template = liquid::ParserBuilder::with_liquid()
+    ///     .build()
+    ///     .parse_file("path/to/template.txt").unwrap();
+    ///
+    /// let mut globals = liquid::Object::new();
+    /// globals.insert("data".to_owned(), liquid::Value::Num(4f32));
+    /// let output = template.render(&globals).unwrap();
+    /// assert_eq!(output, "Liquid! 4\n".to_string());
+    /// ```
+    ///
+    pub fn parse_file<P: AsRef<path::Path>>(self, file: P) -> Result<Template> {
+        self.parse_file_path(file.as_ref())
     }
 
-    mod test_split_block {
-        use lexer::tokenize;
-        use super::super::split_block;
-        use LiquidOptions;
+    fn parse_file_path(self, file: &path::Path) -> Result<Template> {
+        let mut f = File::open(file)?;
+        let mut buf = String::new();
+        f.read_to_string(&mut buf)?;
 
-        #[test]
-        fn handles_nonmatching_stream() {
-            // A stream of tokens with lots of `else`s in it, but only one at the
-            // top level, which is where it should split.
-            let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
-                                   else tag")
-                .unwrap();
-
-            // note that we need an options block that has been initilaised with
-            // the supported block list; otherwise the split_tag function won't know
-            // which things start a nested block.
-            let options = LiquidOptions::with_known_blocks();
-            let (_, trailing) = split_block(&tokens[..], &["else"], &options);
-            assert!(trailing.is_none());
-        }
-
-
-        #[test]
-        fn honours_nesting() {
-            use token::Token::Identifier;
-            use lexer::Element::{Tag, Raw};
-
-            // A stream of tokens with lots of `else`s in it, but only one at the
-            // top level, which is where it should split.
-            let tokens = tokenize(concat!("{% for x in (1..10) %}",
-                                          "{% if x == 2 %}",
-                                          "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
-                                          "{% else %}",
-                                          "c",
-                                          "{% endif %}",
-                                          "{% else %}",
-                                          "something",
-                                          "{% endfor %}",
-                                          "{% else %}",
-                                          "trailing tags"))
-                .unwrap();
-
-            // note that we need an options block that has been initilaised with
-            // the supported block list; otherwise the split_tag function won't know
-            // which things start a nested block.
-            let options = LiquidOptions::with_known_blocks();
-            let (_, trailing) = split_block(&tokens[..], &["else"], &options);
-            match trailing {
-                Some(split) => {
-                    assert_eq!(split.delimiter, "else");
-                    assert_eq!(split.args, &[Identifier("else".to_owned())]);
-                    assert_eq!(split.trailing,
-                               &[Tag(vec![Identifier("else".to_owned())],
-                                     "{% else %}".to_owned()),
-                                 Raw("trailing tags".to_owned())]);
-                }
-                None => panic!("split failed"),
-            }
-        }
+        self.parse(&buf)
     }
 }

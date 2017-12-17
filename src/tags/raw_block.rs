@@ -1,10 +1,12 @@
-use Renderable;
-use context::Context;
-use LiquidOptions;
-use token::Token;
-use lexer::Element::{self, Expression, Tag, Raw};
 use error::Result;
 
+use interpreter::Context;
+use interpreter::Renderable;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+
+#[derive(Clone, Debug)]
 struct RawT {
     content: String,
 }
@@ -22,23 +24,34 @@ pub fn raw_block(_tag_name: &str,
                  -> Result<Box<Renderable>> {
     let content = tokens.iter().fold("".to_owned(), |a, b| {
         match *b {
-            Expression(_, ref text) |
-            Tag(_, ref text) |
-            Raw(ref text) => text,
+            Element::Expression(_, ref text) |
+            Element::Tag(_, ref text) |
+            Element::Raw(ref text) => text,
         }.to_owned() + &a
     });
     Ok(Box::new(RawT { content: content }))
 }
 
-#[test]
-fn test_raw() {
-    use std::default::Default;
+#[cfg(test)]
+mod test {
+    use super::*;
+    use compiler;
 
-    let options: LiquidOptions = Default::default();
-    let raw = raw_block("raw",
-                        &[],
-                        &vec![Expression(vec![], "This is a test".to_owned())],
-                        &options);
-    assert_eq!(raw.unwrap().render(&mut Default::default()).unwrap(),
-               Some("This is a test".to_owned()));
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("raw".to_owned(),
+                              (raw_block as compiler::FnParseBlock).into());
+        options
+    }
+
+    #[test]
+    fn test_raw() {
+        let raw = raw_block("raw",
+                            &[],
+                            &vec![Element::Expression(vec![], "This is a test".to_owned())],
+                            &options())
+            .unwrap();
+        let output = raw.render(&mut Default::default()).unwrap();
+        assert_eq!(output, Some("This is a test".to_owned()));
+    }
 }

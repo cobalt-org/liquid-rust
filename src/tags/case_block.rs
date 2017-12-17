@@ -1,51 +1,50 @@
-use Renderable;
-use LiquidOptions;
 use error::{Error, Result};
-use context::Context;
-use lexer::Element::{self, Tag};
-use token::Token::{self, Or, Identifier};
-use parser::{parse, consume_value_token, split_block};
 
-use template::Template;
+use interpreter::Argument;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
+use compiler::Element;
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{parse, consume_value_token, split_block};
 use value::Value;
 
+#[derive(Debug)]
 struct CaseOption {
-    tokens: Vec<Token>,
+    args: Vec<Argument>,
     template: Template,
 }
 
 impl CaseOption {
-    fn new(tokens: Vec<Token>, template: Template) -> CaseOption {
-        CaseOption {
-            tokens: tokens,
-            template: template,
-        }
+    fn new(args: Vec<Argument>, template: Template) -> CaseOption {
+        CaseOption { args, template }
     }
 
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
-        for t in &self.tokens {
-            match try!(context.evaluate(t)) {
-                Some(ref v) if *v == *value => return Ok(true),
-                _ => {}
+        for a in &self.args {
+            let v = a.evaluate(context)?;
+            if v == *value {
+                return Ok(true);
             }
         }
         Ok(false)
     }
 }
 
+#[derive(Debug)]
 struct Case {
-    target: Token,
+    target: Argument,
     cases: Vec<CaseOption>,
     else_block: Option<Template>,
 }
 
 impl Renderable for Case {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        if let Some(value) = try!(context.evaluate(&self.target)) {
-            for case in &self.cases {
-                if try!(case.evaluate(&value, context)) {
-                    return case.template.render(context);
-                }
+        let value = self.target.evaluate(context)?;
+        for case in &self.cases {
+            if case.evaluate(&value, context)? {
+                return case.template.render(context);
             }
         }
 
@@ -58,29 +57,29 @@ impl Renderable for Case {
 }
 
 enum Conditional {
-    Cond(Vec<Token>),
+    Cond(Vec<Argument>),
     Else,
 }
 
 fn parse_condition(element: &Element) -> Result<Conditional> {
-    if let Tag(ref tokens, _) = *element {
+    if let Element::Tag(ref tokens, _) = *element {
         match tokens[0] {
-            Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
+            Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
 
-            Identifier(ref name) if name == "when" => {
-                let mut values: Vec<Token> = Vec::new();
+            Token::Identifier(ref name) if name == "when" => {
+                let mut values: Vec<Argument> = Vec::new();
                 let mut args = tokens[1..].iter();
 
-                values.push(try!(consume_value_token(&mut args)));
+                values.push(consume_value_token(&mut args)?.to_arg()?);
 
                 loop {
                     match args.next() {
-                        Some(&Or) => {}
+                        Some(&Token::Or) => {}
                         Some(x) => return Error::parser("or", Some(x)),
                         None => break,
                     }
 
-                    values.push(try!(consume_value_token(&mut args)))
+                    values.push(consume_value_token(&mut args)?.to_arg()?);
                 }
 
                 return Ok(Conditional::Cond(values));
@@ -100,7 +99,7 @@ pub fn case_block(_tag_name: &str,
                   -> Result<Box<Renderable>> {
     let delims = &["when", "else"];
     let mut args = arguments.iter();
-    let value = try!(consume_value_token(&mut args));
+    let value = consume_value_token(&mut args)?.to_arg()?;
 
     // fast forward to the first arm of the case block,
     let mut children = match split_block(&tokens[..], delims, options) {
@@ -116,9 +115,9 @@ pub fn case_block(_tag_name: &str,
 
     loop {
         let (leading, trailing) = split_block(&children[1..], delims, options);
-        let template = Template::new(try!(parse(leading, options)));
+        let template = Template::new(parse(leading, options)?);
 
-        match try!(parse_condition(&children[0])) {
+        match parse_condition(&children[0])? {
             Conditional::Cond(conds) => {
                 result.cases.push(CaseOption::new(conds, template));
             }
@@ -142,11 +141,16 @@ pub fn case_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use LiquidOptions;
-    use Renderable;
-    use parse;
-    use value::Value;
-    use context::Context;
+    use super::*;
+    use interpreter;
+    use compiler;
+
+    fn options() -> LiquidOptions {
+        let mut options = LiquidOptions::default();
+        options.blocks.insert("case".to_owned(),
+                              (case_block as compiler::FnParseBlock).into());
+        options
+    }
 
     #[test]
     fn test_case_block() {
@@ -158,23 +162,27 @@ mod test {
                            "{% else %}",
                            "otherwise",
                            "{% endcase %}");
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
 
-        let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
-        context.set_val("x", Value::Num(2f32));
+        context.set_global_val("x", Value::Num(2f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("two".to_owned()));
 
-        context.set_val("x", Value::Num(3f32));
+        context.set_global_val("x", Value::Num(3f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("three and a half".to_owned()));
 
-        context.set_val("x", Value::Num(4f32));
+        context.set_global_val("x", Value::Num(4f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("three and a half".to_owned()));
 
 
-        context.set_val("x", Value::str("nope"));
+        context.set_global_val("x", Value::str("nope"));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("otherwise".to_owned()));
     }
@@ -187,10 +195,14 @@ mod test {
                            "{% when 3 or 4 %}",
                            "three and a half",
                            "{% endcase %}");
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
 
-        let template = parse(text, LiquidOptions::default()).unwrap();
         let mut context = Context::new();
-        context.set_val("x", Value::str("nope"));
+        context.set_global_val("x", Value::str("nope"));
         assert_eq!(template.render(&mut context).unwrap(), Some("".to_owned()));
     }
 
@@ -204,7 +216,9 @@ mod test {
                            "{% else %}",
                            "else # 2",
                            "{% endcase %}");
-
-        assert!(parse(text, LiquidOptions::default()).is_err());
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
+        assert!(template.is_err());
     }
 }
