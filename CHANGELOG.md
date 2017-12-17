@@ -1,3 +1,22 @@
+<a name="0.13.0"></a>
+## 0.13.0 (2017-12-17)
+
+
+#### Features
+
+* **api:**  Make Renderable debuggable ([802b0af0](https://github.com/cobalt-org/liquid-rust/commit/802b0af0045874565d68a4c4f3b957ddef1b44bd))
+
+#### Bug Fixes
+
+* **dbg:**  Remove debug code ([7bf2a3d4](https://github.com/cobalt-org/liquid-rust/commit/7bf2a3d4754252a0c67c7c514e1dca542e565e4c))
+* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+
+#### Breaking Changes
+
+* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+
+
+
 <a name="0.12.0"></a>
 ## 0.12.0 (2017-11-29)
 
