@@ -58,7 +58,8 @@ impl FilesystemInclude {
 impl Include for FilesystemInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
         let root = self.root.canonicalize()?;
-        let path = root.join(relative_path);
+        let mut path = root.clone();
+        path.extend(relative_path.split('/'));
         if !path.exists() {
             return Err(Error::from(&*format!("{:?} does not exist", path)));
         }

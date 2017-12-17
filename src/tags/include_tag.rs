@@ -46,6 +46,7 @@ pub fn include_tag(_tag_name: &str,
 mod test {
     use super::*;
     use std::path;
+    use std::iter::FromIterator;
     use tags;
     use filters;
     use compiler;
@@ -53,7 +54,7 @@ mod test {
     use value;
 
     fn options() -> LiquidOptions {
-        let include_path = path::PathBuf::from("tests/fixtures/input");
+        let include_path = path::PathBuf::from_iter("tests/fixtures/input".split('/'));
 
         let mut options = LiquidOptions::default();
         options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
