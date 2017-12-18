@@ -147,8 +147,9 @@ impl PartialEq<Value> for Value {
             (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
             (&Value::Nil, &Value::Nil) => true,
 
-            // encode Ruby truthiness; all values except false and nil
-            // are true, and we don't have a notion of nil
+            // encode Ruby truthiness: all values except false and nil are true
+            (&Value::Nil, &Value::Bool(b)) |
+            (&Value::Bool(b), &Value::Nil) => !b,
             (_, &Value::Bool(b)) |
             (&Value::Bool(b), _) => b,
 
