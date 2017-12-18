@@ -10,7 +10,7 @@ use compiler;
 use interpreter;
 use super::Template;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ParserBuilder {
     blocks: HashMap<String, compiler::BoxedBlockParser>,
     tags: HashMap<String, compiler::BoxedTagParser>,
@@ -113,11 +113,13 @@ impl ParserBuilder {
                     filters::url_encode as interpreter::FnFilterValue)
     }
 
+    /// Register non-standard filters
     #[cfg(not(feature = "extra-filters"))]
     pub fn extra_filters(self) -> Self {
         self
     }
 
+    /// Register non-standard filters
     #[cfg(feature = "extra-filters")]
     pub fn extra_filters(self) -> Self {
         self.filter("pluralize",
@@ -150,6 +152,7 @@ impl ParserBuilder {
         self
     }
 
+    /// Create a parser
     pub fn build(self) -> Parser {
         let Self {
             blocks,
@@ -169,7 +172,7 @@ impl ParserBuilder {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Parser {
     options: compiler::LiquidOptions,
     filters: HashMap<String, interpreter::BoxedValueFilter>,

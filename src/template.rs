@@ -12,6 +12,7 @@ pub struct Template {
 }
 
 impl Template {
+    /// Renders an instance of the Template, using the given globals.
     pub fn render(&self, globals: &Object) -> Result<String> {
         let mut data = interpreter::Context::new()
             .with_filters(self.filters.clone())

@@ -87,7 +87,7 @@ pub fn unless_block(_tag_name: &str,
                     tokens: &[Element],
                     options: &LiquidOptions)
                     -> Result<Box<Renderable>> {
-    let cond = try!(condition(arguments));
+    let cond = condition(arguments)?;
     Ok(Box::new(Conditional {
                     condition: cond,
                     mode: false,
@@ -101,7 +101,7 @@ pub fn if_block(_tag_name: &str,
                 tokens: &[Element],
                 options: &LiquidOptions)
                 -> Result<Box<Renderable>> {
-    let cond = try!(condition(arguments));
+    let cond = condition(arguments)?;
 
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
     let if_false = match trailing_tokens {
@@ -201,6 +201,16 @@ mod test {
                            "{% else %}",
                            "nope",
                            "{% endif %}");
+
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        context.set_global_val("truthy", Value::Nil);
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("nope".to_owned()));
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
