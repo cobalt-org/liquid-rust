@@ -15,7 +15,7 @@ use value::Value;
 
 #[derive(Clone, Debug)]
 enum Range {
-    Array(String),
+    Array(Argument),
     Counted(Argument, Argument),
 }
 
@@ -30,10 +30,15 @@ struct For {
     reversed: bool,
 }
 
-fn get_array(context: &Context, array_id: &str) -> Result<Vec<Value>> {
-    match context.get_val(array_id) {
-        Some(&Value::Array(ref x)) => Ok(x.clone()),
-        x => Err(Error::Render(format!("Tried to iterate over {:?}, which is not supported.", x))),
+fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
+    let array = array_id.evaluate(context)?;
+    match array {
+        Value::Array(x) => Ok(x),
+        x => {
+            Err(Error::Render(format!("Tried to iterate over {:?} ({}), which is not supported.",
+                                      x,
+                                      array_id)))
+        }
     }
 }
 
@@ -49,7 +54,7 @@ fn token_as_int(arg: &Argument, context: &Context) -> Result<isize> {
 impl Renderable for For {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let mut range = match self.range {
-            Range::Array(ref array_id) => try!(get_array(context, array_id)),
+            Range::Array(ref array_id) => get_array(context, array_id)?,
 
             Range::Counted(ref start_arg, ref stop_arg) => {
                 let start = token_as_int(start_arg, context)?;
@@ -150,21 +155,28 @@ pub fn for_block(_tag_name: &str,
 
     expect(&mut args, &Token::Identifier("in".to_owned()))?;
 
-    let range = match args.next() {
-        Some(&Token::Identifier(ref x)) => Range::Array(x.clone()),
-        Some(&Token::OpenRound) => {
-            // this might be a range, let's try and see
-            let start = range_end_point(&mut args)?.to_arg()?;
+    let range = if let Some(token) = args.next() {
+        match token {
+            &Token::Identifier(_) => {
+                let arg = token.to_arg()?;
+                Range::Array(arg)
+            }
+            &Token::OpenRound => {
+                // this might be a range, let's try and see
+                let start = range_end_point(&mut args)?.to_arg()?;
 
-            expect(&mut args, &Token::DotDot)?;
+                expect(&mut args, &Token::DotDot)?;
 
-            let stop = range_end_point(&mut args)?.to_arg()?;
+                let stop = range_end_point(&mut args)?.to_arg()?;
 
-            expect(&mut args, &Token::CloseRound)?;
+                expect(&mut args, &Token::CloseRound)?;
 
-            Range::Counted(start, stop)
+                Range::Counted(start, stop)
+            }
+            x => return Error::parser("Identifier or (", Some(x)),
         }
-        x => return Error::parser("Identifier or (", x),
+    } else {
+        return Error::parser("Identifier or (", None);
     };
 
     // now we get to check for parameters...
