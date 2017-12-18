@@ -1,3 +1,17 @@
+<a name="0.13.2"></a>
+## 0.13.2 (2017-12-18)
+
+
+#### Features
+
+* **api:**  Add missing traits ([e0f82705](https://github.com/cobalt-org/liquid-rust/commit/e0f82705e25e7ff40d246749e7d8b0da04637813))
+
+#### Bug Fixes
+
+* **nil:**  Equality logic missed a case ([111d10a6](https://github.com/cobalt-org/liquid-rust/commit/111d10a695eaf8d906c77569aac627042d52f8eb))
+
+
+
 <a name="0.13.1"></a>
 ## 0.13.1 (2017-12-17)
 
