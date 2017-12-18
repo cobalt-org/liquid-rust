@@ -1,3 +1,13 @@
+<a name="0.13.3"></a>
+## 0.13.3 (2017-12-18)
+
+
+#### Bug Fixes
+
+* **for:**  Re-enable support for object.access ([cc9998b5](https://github.com/cobalt-org/liquid-rust/commit/cc9998b55a225941fc5d402f414c32abf64c4500))
+
+
+
 <a name="0.13.2"></a>
 ## 0.13.2 (2017-12-18)
 
