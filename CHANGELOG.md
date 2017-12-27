@@ -1,3 +1,14 @@
+<a name="0.13.4"></a>
+## 0.13.4 (2017-12-27)
+
+
+#### Bug Fixes
+
+* **parse:**  Error on empty expressions ([5cffe44a](https://github.com/cobalt-org/liquid-rust/commit/5cffe44a5fb3821dab8a41b8662596421f387659), closes [#139](https://github.com/cobalt-org/liquid-rust/issues/139))
+* **raw:**  Stop swapping the text's order ([bd45c14b](https://github.com/cobalt-org/liquid-rust/commit/bd45c14b58e1b22e156b42f3c5629e3a0692e7d4), closes [#79](https://github.com/cobalt-org/liquid-rust/issues/79))
+
+
+
 <a name="0.13.3"></a>
 ## 0.13.3 (2017-12-18)
 
