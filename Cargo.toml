@@ -32,7 +32,7 @@ dev = []
 
 [dependencies]
 regex = "0.2"
-lazy_static = "0.2"
+lazy_static = "1.0"
 chrono = "0.4"
 unicode-segmentation = "1.2"
 itertools = "0.7.0"
