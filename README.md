@@ -14,7 +14,7 @@ liquid = "0.13"
 ```
 
 Now you can use the crate in your code
-```
+```rust
 extern crate liquid;
 ```
 
