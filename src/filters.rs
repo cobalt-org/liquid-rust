@@ -627,10 +627,14 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     let input_string = input
         .as_str()
         .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
-    let date = DateTime::parse_from_str(input_string, "%d %B %Y %H:%M:%S %z");
+    let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
+    let date = formats
+        .iter()
+        .filter_map(|f| DateTime::parse_from_str(input_string, f).ok())
+        .next();
     let date = match date {
-        Ok(d) => d,
-        Err(_) => {
+        Some(d) => d,
+        None => {
             return Ok(input.clone());
         }
     };
@@ -1022,6 +1026,12 @@ mod tests {
         assert_eq!(unit!(date,
                          tos!("13 Jun 2016 02:30:00 +0300"),
                          &[tos!("%Y-%m-%d")]),
+                   tos!("2016-06-13"));
+    }
+
+    #[test]
+    fn unit_date_cobalt_format() {
+        assert_eq!(unit!(date, tos!("2016-06-13 02:30:00 +0300"), &[tos!("%Y-%m-%d")]),
                    tos!("2016-06-13"));
     }
 
