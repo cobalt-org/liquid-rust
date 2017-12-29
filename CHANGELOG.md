@@ -1,3 +1,13 @@
+<a name="0.13.6"></a>
+## 0.13.6 (2017-12-29)
+
+
+#### Features
+
+* **filters:**  date can parse YYYY-MM-DD HH:MM:SS TTTT ([59ab76dc](https://github.com/cobalt-org/liquid-rust/commit/59ab76dcd343a6d9d0fff497e6ba2ff1140b3f2a))
+
+
+
 <a name="0.13.5"></a>
 ## 0.13.5 (2017-12-27)
 
