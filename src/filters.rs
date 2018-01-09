@@ -10,6 +10,8 @@ use url::percent_encoding;
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;
 
+use value::Index;
+use value::Scalar;
 use value::Value;
 use interpreter::{FilterError, FilterResult};
 
@@ -42,11 +44,9 @@ fn nr_escaped(text: &str) -> usize {
 // https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
 // Retrieved 2016-11-19.
 fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let s = input
-        .as_str()
-        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
+    let s = input.to_str();
     let mut result = String::new();
     let mut last = 0;
     let mut skip = 0;
@@ -80,45 +80,47 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
     if last < s.len() {
         result.push_str(&s[last..]);
     }
-    Ok(Value::Str(result))
+    Ok(Value::scalar(result))
 }
 
 // standardfilters.rb
 
-pub fn size(input: &Value, _args: &[Value]) -> FilterResult {
+pub fn size(input: &Value, args: &[Value]) -> FilterResult {
+    check_args_len(args, 0, 0)?;
+
     match *input {
-        Value::Str(ref x) => Ok(Value::Num(x.len() as f32)),
-        Value::Array(ref x) => Ok(Value::Num(x.len() as f32)),
-        Value::Object(ref x) => Ok(Value::Num(x.len() as f32)),
-        _ => Ok(Value::Num(0f32)),
+        Value::Scalar(ref x) => Ok(Value::scalar(x.to_str().len() as i32)),
+        Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
+        Value::Object(ref x) => Ok(Value::scalar(x.len() as i32)),
+        _ => Ok(Value::scalar(0i32)),
     }
 }
 
 pub fn downcase(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let s = input.to_string();
-    Ok(Value::Str(s.to_lowercase()))
+    let s = input.to_str();
+    Ok(Value::scalar(s.to_lowercase()))
 }
 
 pub fn upcase(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let s = input.to_string();
-    Ok(Value::Str(s.to_uppercase()))
+    let s = input.to_str();
+    Ok(Value::scalar(s.to_uppercase()))
 }
 
 pub fn capitalize(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let s = input.to_string();
+    let s = input.to_str().to_owned();
     let mut chars = s.chars();
     let capitalized = match chars.next() {
         Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
         None => String::new(),
     };
 
-    Ok(Value::Str(capitalized))
+    Ok(Value::scalar(capitalized))
 }
 
 pub fn escape(input: &Value, args: &[Value]) -> FilterResult {
@@ -155,29 +157,29 @@ impl EncodeSet for UrlEncodeSet {
 }
 
 pub fn url_encode(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     lazy_static! {
         static ref URL_ENCODE_SET: UrlEncodeSet = UrlEncodeSet("".to_owned());
     }
 
-    let s = input.to_string();
+    let s = input.to_str();
 
-    let result = percent_encoding::utf8_percent_encode(s.as_str(), URL_ENCODE_SET.clone())
+    let result: String = percent_encoding::utf8_percent_encode(s.as_ref(), URL_ENCODE_SET.clone())
         .collect();
-    Ok(Value::Str(result))
+    Ok(Value::scalar(result))
 }
 
 pub fn url_decode(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let s = input.to_string();
+    let s = input.to_str();
 
     let result = percent_encoding::percent_decode(s.as_bytes())
         .decode_utf8()
         .map_err(|_| FilterError::InvalidType("Malformed UTF-8".to_owned()))?
         .into_owned();
-    Ok(Value::Str(result))
+    Ok(Value::scalar(result))
 }
 
 fn canonicalize_slice(slice_offset: isize,
@@ -206,37 +208,41 @@ fn canonicalize_slice(slice_offset: isize,
 }
 
 pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 1));
+    check_args_len(args, 1, 1)?;
 
-    let offset = args[0]
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+    let offset =
+        args[0]
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let offset = offset as isize;
 
-    let length = match args.get(1) {
-        Some(&Value::Num(x)) if x > 0f32 => x as isize,
-        Some(_) => {
-            return Err(FilterError::InvalidArgument(1, "Positive number expected".to_owned()))
-        }
-        None => 1,
-    };
+    let length =
+        args.get(1)
+            .unwrap_or(&Value::scalar(1))
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+    if length < 1 {
+        return Err(FilterError::InvalidArgument(1, "Positive number expected".to_owned()));
+    }
+    let length = length as isize;
 
     if let Value::Array(ref input) = *input {
         let (offset, length) = canonicalize_slice(offset, length, input.len());
-        Ok(Value::Array(input
+        Ok(Value::array(input
                             .iter()
                             .skip(offset as usize)
                             .take(length as usize)
-                            .cloned()
-                            .collect()))
+                            .cloned()))
     } else {
-        let input = input.to_string();
+        let input = input.to_str();
         let (offset, length) = canonicalize_slice(offset, length, input.len());
-        Ok(Value::Str(input
-                          .chars()
-                          .skip(offset as usize)
-                          .take(length as usize)
-                          .collect()))
+        Ok(Value::scalar(input
+                             .chars()
+                             .skip(offset as usize)
+                             .take(length as usize)
+                             .collect::<String>()))
     }
 }
 
@@ -267,54 +273,60 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 /// You can truncate to the exact number of characters specified by the first parameter and show no
 /// trailing characters by passing a blank string as the second parameter.
 pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 2));
+    check_args_len(args, 0, 2)?;
 
-    let length = args.get(0)
-        .unwrap_or(&Value::Num(50f32))
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+    let length =
+        args.get(0)
+            .unwrap_or(&Value::scalar(50i32))
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let length = length as usize;
 
     let truncate_string = args.get(1)
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "...".to_owned());
+        .map(Value::to_str)
+        .unwrap_or_else(|| "...".into());
 
     let l = cmp::max(length - truncate_string.len(), 0);
 
-    let input = input.to_string();
+    let input_string = input.to_str();
 
-    let result = if length < input.len() {
-        UnicodeSegmentation::graphemes(input.as_str(), true)
+    let result = if length < input_string.len() {
+        let result = UnicodeSegmentation::graphemes(input_string.as_ref(), true)
             .take(l)
             .collect::<Vec<&str>>()
             .join("")
-            .to_string() + truncate_string.as_str()
+            .to_string() + truncate_string.as_ref();
+        Value::scalar(result)
     } else {
-        input
+        input.clone()
     };
-    Ok(Value::Str(result))
+    Ok(result)
 }
 
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 2));
+    check_args_len(args, 0, 2)?;
 
-    let words = args.get(0)
-        .unwrap_or(&Value::Num(15f32))
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+    let words =
+        args.get(0)
+            .unwrap_or(&Value::scalar(50i32))
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let words = words as usize;
 
     let truncate_string = args.get(1)
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "...".to_owned());
+        .map(Value::to_str)
+        .unwrap_or_else(|| "...".into());
 
     let l = cmp::max(words, 0);
 
-    let input_string = input.to_string();
+    let input_string = input.to_str();
+
     let word_list: Vec<&str> = input_string.split(' ').collect();
     let result = if words < word_list.len() {
-        let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_str();
-        Value::Str(result)
+        let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_ref();
+        Value::scalar(result)
     } else {
         input.clone()
     };
@@ -322,16 +334,16 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn split(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
-    let pattern = args[0].to_string();
+    let pattern = args[0].to_str();
 
     // Split and construct resulting Array
     Ok(Value::Array(input
-                        .split(pattern.as_str())
-                        .map(|x| Value::Str(x.to_owned()))
+                        .split(pattern.as_ref())
+                        .map(|x| Value::scalar(x))
                         .collect()))
 }
 
@@ -343,10 +355,10 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
 /// Property `White_Space` (per [rust
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let input = input.to_string();
-    Ok(Value::Str(input.trim().to_string()))
+    let input = input.to_str();
+    Ok(Value::scalar(input.trim()))
 }
 
 /// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
@@ -356,10 +368,10 @@ pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
 /// Core Property `White_Space` (per [rust
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let input = input.to_string();
-    Ok(Value::Str(input.trim_left().to_string()))
+    let input = input.to_str();
+    Ok(Value::scalar(input.trim_left()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
@@ -369,10 +381,10 @@ pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
 /// Core Property `White_Space` (per [rust
 /// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
 pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let input = input.to_string();
-    Ok(Value::Str(input.trim_right().to_string()))
+    let input = input.to_str();
+    Ok(Value::scalar(input.trim_right()))
 }
 
 pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
@@ -383,43 +395,43 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
                                            Regex::new(r"(?is)<!--.*?-->").unwrap(),
                                            Regex::new(r"(?is)<.*?>").unwrap()];
     }
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     let input = input.to_string();
 
     let result = MATCHERS.iter().fold(input, |acc, matcher| {
         matcher.replace_all(&acc, "").into_owned()
     });
-    Ok(Value::Str(result))
+    Ok(Value::scalar(result))
 }
 
 /// Removes any newline characters (line breaks) from a string.
 pub fn strip_newlines(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
-    let input = input.to_string();
-    Ok(Value::Str(input.chars().filter(|c| *c != '\n' && *c != '\r').collect()))
+    let input = input.to_str();
+    Ok(Value::scalar(input
+                         .chars()
+                         .filter(|c| *c != '\n' && *c != '\r')
+                         .collect::<String>()))
 }
 
 pub fn join(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 1));
+    check_args_len(args, 0, 1)?;
 
-    let glue = args.get(0)
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| " ".to_owned());
+    let glue = args.get(0).map(Value::to_str).unwrap_or_else(|| " ".into());
 
     let input =
         input
             .as_array()
             .ok_or_else(|| FilterError::InvalidType("Array of strings expected".to_owned()))?;
-    // use ToValue::Str to stringify the values in case they aren't strings...
-    let input = input.iter().map(|x| x.to_string());
+    let input = input.iter().map(|x| x.to_str());
 
-    Ok(Value::Str(itertools::join(input, glue.as_str())))
+    Ok(Value::scalar(itertools::join(input, glue.as_ref())))
 }
 
 pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     // TODO optional property parameter
 
@@ -428,11 +440,11 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
         .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut sorted = array.clone();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
-    Ok(Value::Array(sorted))
+    Ok(Value::array(sorted))
 }
 
 pub fn sort_natural(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     // TODO optional property parameter
 
@@ -441,18 +453,18 @@ pub fn sort_natural(input: &Value, args: &[Value]) -> FilterResult {
         .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut sorted: Vec<_> = array
         .iter()
-        .map(|v| (v.to_string().to_lowercase(), v.clone()))
+        .map(|v| (v.to_str().to_lowercase(), v.clone()))
         .collect();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
-    let result = sorted.into_iter().map(|(_, v)| v).collect();
-    Ok(Value::Array(result))
+    let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
+    Ok(Value::array(result))
 }
 
 /// Removes any duplicate elements in an array.
 ///
 /// This has an O(n^2) worst-case complexity.
 pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     // TODO optional property parameter
 
@@ -465,46 +477,43 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
             deduped.push(x.clone())
         }
     }
-    Ok(Value::Array(deduped))
+    Ok(Value::array(deduped))
 }
 
 /// Reverses the order of the items in an array. `reverse` cannot `reverse` a string.
 pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     let array = input
         .as_array()
         .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
     let mut reversed = array.clone();
     reversed.reverse();
-    Ok(Value::Array(reversed))
+    Ok(Value::array(reversed))
 }
 
 /// Extract `property` from the `Value::Object` elements of an array
 pub fn map(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let array = input
         .as_array()
         .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
 
-    let property = args[0].to_string();
+    let property = args[0].to_str();
+    let property = Index::with_key(property.into_owned());
 
-    let result = array
+    let result: Vec<_> = array
         .iter()
-        .filter_map(|v| {
-                        v.as_object()
-                            .map(|o| o.get(&property).cloned())
-                            .and_then(|o| o)
-                    })
+        .filter_map(|v| v.get(&property).cloned())
         .collect();
-    Ok(Value::Array(result))
+    Ok(Value::array(result))
 }
 
 /// Remove nulls from an iterable.  For hashes, you can specify which property you
 /// want to filter out if it maps to Null.
 pub fn compact(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 1));
+    check_args_len(args, 0, 1)?;
 
     // No-op.  liquid-rust doesn't have Null but this is left in for compatibility with existing
     // shopofy/liquid code.  Should it be a no-op, error, or not exist?
@@ -513,124 +522,118 @@ pub fn compact(input: &Value, args: &[Value]) -> FilterResult {
 }
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 1));
+    check_args_len(args, 1, 1)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
-    let search = args[0].to_string();
-    let replace = args.get(1)
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "".to_owned());
+    let search = args[0].to_str();
+    let replace = args.get(1).map(Value::to_str).unwrap_or_else(|| "".into());
 
-    Ok(Value::Str(input.replace(search.as_str(), replace.as_str())))
+    Ok(Value::scalar(input.replace(search.as_ref(), replace.as_ref())))
 }
 
 pub fn replace_first(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 1));
+    check_args_len(args, 1, 1)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
-    let search = args[0].to_string();
-    let replace = args.get(1)
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "".to_owned());
+    let search = args[0].to_str();
+    let replace = args.get(1).map(Value::to_str).unwrap_or_else(|| "".into());
 
     {
-        let tokens: Vec<&str> = input.splitn(2, search.as_str()).collect();
+        let tokens: Vec<&str> = input.splitn(2, search.as_ref()).collect();
         if tokens.len() == 2 {
-            let result = [tokens[0], replace.as_str(), tokens[1]].join("");
-            return Ok(Value::Str(result));
+            let result = [tokens[0], replace.as_ref(), tokens[1]].join("");
+            return Ok(Value::scalar(result));
         }
     }
-    Ok(Value::Str(input))
+    Ok(Value::scalar(input.into_owned()))
 }
 
 pub fn remove(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
-    let string = args[0].to_string();
+    let string = args[0].to_str();
 
-    Ok(Value::Str(input.replace(string.as_str(), "")))
+    Ok(Value::scalar(input.replace(string.as_ref(), "")))
 }
 
 pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
-    let string = args[0].to_string();
+    let string = args[0].to_str();
 
-    Ok(Value::Str(input.splitn(2, string.as_str()).collect()))
+    Ok(Value::scalar(input.splitn(2, string.as_ref()).collect::<String>()))
 }
 
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let mut input = input.to_string();
 
-    let string = args[0].to_string();
+    let string = args[0].to_str();
 
-    input.push_str(string.as_str());
+    input.push_str(string.as_ref());
 
-    Ok(Value::Str(input))
+    Ok(Value::scalar(input))
 }
 
 pub fn concat(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
         .as_array()
         .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
-    let input = input.iter().map(|v| v.to_owned());
+    let input = input.iter().cloned();
 
     let array = args[0]
         .as_array()
         .ok_or_else(|| FilterError::InvalidArgument(0, "Array expected".to_owned()))?;
-    let array = array.iter().map(|v| v.to_owned());
+    let array = array.iter().cloned();
 
     let result = input.chain(array);
     let result: Vec<_> = result.collect();
-    Ok(Value::Array(result))
+    Ok(Value::array(result))
 }
 
 pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let input = input.to_string();
+    let input = input.to_str();
 
     let mut string = args[0].to_string();
 
-    string.push_str(input.as_str());
+    string.push_str(input.as_ref());
 
-    Ok(Value::Str(string))
+    Ok(Value::scalar(string))
 }
 
 /// Replaces every newline (`\n`) with an HTML line break (`<br>`).
 pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     // TODO handle windows line endings
-    let input = input.to_string();
-    Ok(Value::Str(input.replace("\n", "<br />")))
+    let input = input.to_str();
+    Ok(Value::scalar(input.replace("\n", "<br />")))
 }
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let format = args[0].to_string();
+    let format = args[0].to_str();
     if format.is_empty() {
         return Ok(input.clone());
     }
 
-    let input_string = input
-        .as_str()
-        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
+    let input_string = input.to_str();
     let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
     let date = formats
         .iter()
-        .filter_map(|f| DateTime::parse_from_str(input_string, f).ok())
+        .filter_map(|f| DateTime::parse_from_str(input_string.as_ref(), f).ok())
         .next();
     let date = match date {
         Some(d) => d,
@@ -639,186 +642,232 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         }
     };
 
-    Ok(Value::Str(date.format(format.as_str()).to_string()))
+    Ok(Value::scalar(date.format(format.as_ref()).to_string()))
 }
 
 pub fn first(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     match *input {
-        Value::Str(ref x) => {
-            let c = x.chars()
+        Value::Scalar(ref x) => {
+            let c = x.to_str()
+                .chars()
                 .next()
                 .map(|c| c.to_string())
                 .unwrap_or_else(|| "".to_owned());
-            Ok(Value::Str(c))
+            Ok(Value::scalar(c))
         }
-        Value::Array(ref x) => Ok(x.first().unwrap_or(&Value::Str("".to_owned())).to_owned()),
-        _ => Err(FilterError::InvalidType(" or Array expected".to_owned())),
+        Value::Array(ref x) => Ok(x.first().cloned().unwrap_or(Value::scalar(""))),
+        _ => Err(FilterError::InvalidType("String or Array expected".to_owned())),
     }
 }
 
 pub fn last(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     match *input {
-        Value::Str(ref x) => {
-            let c = x.chars()
+        Value::Scalar(ref x) => {
+            let c = x.to_str()
+                .chars()
                 .last()
                 .map(|c| c.to_string())
                 .unwrap_or_else(|| "".to_owned());
-            Ok(Value::Str(c))
+            Ok(Value::scalar(c))
         }
-        Value::Array(ref x) => Ok(x.last().unwrap_or(&Value::Str("".to_owned())).to_owned()),
-        _ => Err(FilterError::InvalidType(" or Array expected".to_owned())),
+        Value::Array(ref x) => Ok(x.last().cloned().unwrap_or(Value::scalar(""))),
+        _ => Err(FilterError::InvalidType("String or Array expected".to_owned())),
     }
 }
 
 /// Returns the absolute value of a number.
 pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
+
     match *input {
-        Value::Str(ref s) => {
-            s.parse::<f32>().map(|n| Value::Num(n.abs())).map_err(|e| {
-                FilterError::InvalidType(format!("Non-numeric-string, parse error ``{}'' occurred",
-                                                 e.to_string()))
-            })
+        Value::Scalar(ref s) => {
+            s.to_integer()
+                .map(|i| Value::scalar(i.abs()))
+                .or_else(|| s.to_float().map(|i| Value::scalar(i.abs())))
+                .ok_or_else(|| FilterError::InvalidType("Numeric value expected".to_owned()))
         }
-        Value::Num(n) => Ok(Value::Num(n.abs())),
-        _ => Err(FilterError::InvalidType(" or number expected".to_owned())),
+        _ => Err(FilterError::InvalidType("Number expected".to_owned())),
     }
 }
 
 pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
-        .as_float()
+        .as_scalar()
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
-            .as_float()
+            .as_scalar()
             .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
-    Ok(Value::Num(input + operand))
+    let result = input
+        .to_integer()
+        .and_then(|i| operand.to_integer().map(|o| Value::scalar(i + o)))
+        .or_else(|| {
+                     input
+                         .to_float()
+                         .and_then(|i| operand.to_float().map(|o| Value::scalar(i + o)))
+                 })
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(result)
 }
 
 pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
-        .as_float()
+        .as_scalar()
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
-            .as_float()
+            .as_scalar()
             .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
-    Ok(Value::Num(input - operand))
+    let result = input
+        .to_integer()
+        .and_then(|i| operand.to_integer().map(|o| Value::scalar(i - o)))
+        .or_else(|| {
+                     input
+                         .to_float()
+                         .and_then(|i| operand.to_float().map(|o| Value::scalar(i - o)))
+                 })
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(result)
 }
 
 pub fn times(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
-        .as_float()
+        .as_scalar()
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
-            .as_float()
+            .as_scalar()
             .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
-    Ok(Value::Num(input * operand))
+    let result = input
+        .to_integer()
+        .and_then(|i| operand.to_integer().map(|o| Value::scalar(i * o)))
+        .or_else(|| {
+                     input
+                         .to_float()
+                         .and_then(|i| operand.to_float().map(|o| Value::scalar(i * o)))
+                 })
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(result)
 }
 
 pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
-        .as_float()
+        .as_scalar()
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
-            .as_float()
+            .as_scalar()
             .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
-    // TODO only do `.floor` if its an integer
-    Ok(Value::Num((input / operand).floor()))
+    let result = input
+        .to_integer()
+        .and_then(|i| operand.to_integer().map(|o| Value::scalar(i / o)))
+        .or_else(|| {
+                     input
+                         .to_float()
+                         .and_then(|i| operand.to_float().map(|o| Value::scalar(i / o)))
+                 })
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(result)
 }
 
 pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
     let input = input
-        .as_float()
+        .as_scalar()
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     let operand =
         args[0]
-            .as_float()
+            .as_scalar()
             .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
 
-    Ok(Value::Num(input % operand))
+    let result = input
+        .to_integer()
+        .and_then(|i| operand.to_integer().map(|o| Value::scalar(i % o)))
+        .or_else(|| {
+                     input
+                         .to_float()
+                         .and_then(|i| operand.to_float().map(|o| Value::scalar(i % o)))
+                 })
+        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+
+    Ok(result)
 }
 
 pub fn round(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 1));
+    check_args_len(args, 0, 1)?;
 
-    let n = args.get(0)
-        .unwrap_or(&Value::Num(0_f32))
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
-    let n = n as i32;
+    let n =
+        args.get(0)
+            .unwrap_or(&Value::scalar(0i32))
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
 
     let input = input
-        .as_float()
+        .as_scalar()
+        .and_then(Scalar::to_float)
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
 
     if n == 0 {
-        Ok(Value::Num(input.round()))
+        Ok(Value::scalar(input.round() as i32))
     } else if n < 0 {
         Err(FilterError::InvalidArgument(0, "Positive number expected".to_owned()))
     } else {
         let multiplier = 10.0_f32.powi(n);
-        Ok(Value::Num((input * multiplier).round() / multiplier))
+        Ok(Value::scalar((input * multiplier).round() / multiplier))
     }
 }
 
 pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     let n = input
-        .as_float()
+        .as_scalar()
+        .and_then(Scalar::to_float)
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
-    Ok(Value::Num(n.ceil()))
+    Ok(Value::scalar(n.ceil() as i32))
 }
 
 pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 0, 0));
+    check_args_len(args, 0, 0)?;
 
     let n = input
-        .as_float()
+        .as_scalar()
+        .and_then(Scalar::to_float)
         .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
-    Ok(Value::Num(n.floor()))
+    Ok(Value::scalar(n.floor() as i32))
 }
 
 pub fn default(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 1, 0));
+    check_args_len(args, 1, 0)?;
 
-    let use_default = match *input {
-        Value::Str(ref s) => s.is_empty(),
-        Value::Object(ref o) => o.is_empty(),
-        Value::Array(ref a) => a.is_empty(),
-        Value::Bool(b) => !b,
-        Value::Num(_) => false,
-        Value::Nil => true,
-    };
-
-    if use_default {
+    if input.is_default() {
         Ok(args[0].clone())
     } else {
         Ok(input.clone())
@@ -829,11 +878,12 @@ pub fn default(input: &Value, args: &[Value]) -> FilterResult {
 
 #[cfg(feature = "extra-filters")]
 pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2, 0));
+    check_args_len(args, 2, 0)?;
 
     let n = input
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .as_scalar()
+        .and_then(Scalar::to_integer)
+        .ok_or_else(|| FilterError::InvalidType("Whole number expected".to_owned()))?;
     if (n as isize) == 1 {
         Ok(args[0].clone())
     } else {
@@ -845,24 +895,24 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 
 #[cfg(feature = "extra-filters")]
 pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
-    try!(check_args_len(args, 2, 0));
+    check_args_len(args, 2, 0)?;
 
-    let s = input
-        .as_str()
-        .ok_or_else(|| FilterError::InvalidType(" expected".to_owned()))?;
-    let date = DateTime::parse_from_str(s, "%d %B %Y %H:%M:%S %z")
+    let s = input.to_str();
+    let date = DateTime::parse_from_str(s.as_ref(), "%d %B %Y %H:%M:%S %z")
         .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
 
-    let format = args[0]
-        .as_str()
-        .ok_or_else(|| FilterError::InvalidArgument(0, " expected".to_owned()))?;
+    let format = args[0].to_str();
 
-    let n = args[1]
-        .as_float()
-        .ok_or_else(|| FilterError::InvalidArgument(1, "Number expected".to_owned()))?;
-    let timezone = FixedOffset::east((n * 3600.0) as i32);
+    let n =
+        args[1]
+            .as_scalar()
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| FilterError::InvalidArgument(1, "Whole number expected".to_owned()))?;
+    let timezone = FixedOffset::east(n * 3600);
 
-    Ok(Value::Str(date.with_timezone(&timezone).format(format).to_string()))
+    Ok(Value::scalar(date.with_timezone(&timezone)
+                         .format(format.as_ref())
+                         .to_string()))
 }
 
 #[cfg(test)]
@@ -891,15 +941,15 @@ mod tests {
 
     macro_rules! tos {
         ( $a:expr ) => {{
-            Value::Str($a.to_owned())
+            Value::scalar($a.to_owned())
         }};
     }
 
     #[test]
     fn unit_abs() {
-        let input = Value::Num(-1f32);
+        let input = Value::scalar(-1f32);
         let args = &[];
-        let desired_result = Value::Num(1f32);
+        let desired_result = Value::scalar(1f32);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
@@ -907,22 +957,22 @@ mod tests {
     fn unit_abs_positive_in_string() {
         let input = &tos!("42");
         let args = &[];
-        let desired_result = Value::Num(42f32);
+        let desired_result = Value::scalar(42f32);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
     #[test]
     fn unit_abs_not_number_or_string() {
-        let input = &Value::Bool(true);
+        let input = &Value::scalar(true);
         let args = &[];
-        let desired_result = FilterError::InvalidType(" or number expected".to_owned());
+        let desired_result = FilterError::InvalidType("Numeric value expected".to_owned());
         assert_eq!(failed!(abs, input, args), desired_result);
     }
 
     #[test]
     fn unit_abs_one_argument() {
-        let input = &Value::Num(-1f32);
-        let args = &[Value::Num(0f32)];
+        let input = &Value::scalar(-1f32);
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(abs, input, args), desired_result);
@@ -931,9 +981,9 @@ mod tests {
     #[test]
     fn unit_abs_shopify_liquid() {
         // Three tests from https://shopify.github.io/liquid/filters/abs/
-        assert_eq!(unit!(abs, Value::Num(-17f32), &[]), Value::Num(17f32));
-        assert_eq!(unit!(abs, Value::Num(4f32), &[]), Value::Num(4f32));
-        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::Num(19.86f32));
+        assert_eq!(unit!(abs, Value::scalar(-17f32), &[]), Value::scalar(17f32));
+        assert_eq!(unit!(abs, Value::scalar(4f32), &[]), Value::scalar(4f32));
+        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::scalar(19.86f32));
     }
 
     #[test]
@@ -943,45 +993,45 @@ mod tests {
 
     #[test]
     fn unit_concat_nothing() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
         let args = &[Value::Array(vec![])];
-        let result = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let result = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_something() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
-        let args = &[Value::Array(vec![Value::Num(3f32), Value::Num(4f32)])];
-        let result = Value::Array(vec![Value::Num(1f32),
-                                       Value::Num(2f32),
-                                       Value::Num(3f32),
-                                       Value::Num(4f32)]);
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
+        let args = &[Value::Array(vec![Value::scalar(3f32), Value::scalar(4f32)])];
+        let result = Value::Array(vec![Value::scalar(1f32),
+                                       Value::scalar(2f32),
+                                       Value::scalar(3f32),
+                                       Value::scalar(4f32)]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_mixed() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
-        let args = &[Value::Array(vec![Value::Num(3f32), Value::str("a")])];
-        let result = Value::Array(vec![Value::Num(1f32),
-                                       Value::Num(2f32),
-                                       Value::Num(3f32),
-                                       Value::str("a")]);
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
+        let args = &[Value::Array(vec![Value::scalar(3f32), Value::scalar("a")])];
+        let result = Value::Array(vec![Value::scalar(1f32),
+                                       Value::scalar(2f32),
+                                       Value::scalar(3f32),
+                                       Value::scalar("a")]);
         assert_eq!(unit!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_wrong_type() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
-        let args = &[Value::Num(1f32)];
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
+        let args = &[Value::scalar(1f32)];
         let result = FilterError::InvalidArgument(0, "Array expected".to_owned());
         assert_eq!(failed!(concat, input, args), result);
     }
 
     #[test]
     fn unit_concat_no_args() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
         let args = &[];
         let result = FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned());
         assert_eq!(failed!(concat, input, args), result);
@@ -989,9 +1039,9 @@ mod tests {
 
     #[test]
     fn unit_concat_extra_args() {
-        let input = Value::Array(vec![Value::Num(1f32), Value::Num(2f32)]);
-        let args = &[Value::Array(vec![Value::Num(3f32), Value::str("a")]),
-                     Value::Num(2f32)];
+        let input = Value::Array(vec![Value::scalar(1f32), Value::scalar(2f32)]);
+        let args = &[Value::Array(vec![Value::scalar(3f32), Value::scalar("a")]),
+                     Value::scalar(2f32)];
         let result = FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned());
         assert_eq!(failed!(concat, input, args), result);
     }
@@ -1016,9 +1066,9 @@ mod tests {
 
     #[test]
     fn unit_ceil() {
-        assert_eq!(unit!(ceil, Value::Num(1.1f32), &[]), Value::Num(2f32));
-        assert_eq!(unit!(ceil, Value::Num(1f32), &[]), Value::Num(1f32));
-        assert!(ceil(&Value::Bool(true), &[]).is_err());
+        assert_eq!(unit!(ceil, Value::scalar(1.1f32), &[]), Value::scalar(2f32));
+        assert_eq!(unit!(ceil, Value::scalar(1f32), &[]), Value::scalar(1f32));
+        assert!(ceil(&Value::scalar(true), &[]).is_err());
     }
 
     #[test]
@@ -1037,8 +1087,8 @@ mod tests {
 
     #[test]
     fn unit_date_bad_input_type() {
-        assert_eq!(failed!(date, Value::Num(0f32), &[tos!("%Y-%m-%d")]),
-                   FilterError::InvalidType(" expected".to_owned()));
+        assert_eq!(unit!(date, Value::scalar(0f32), &[tos!("%Y-%m-%d")]),
+                   Value::scalar(0f32));
     }
 
     #[test]
@@ -1051,7 +1101,7 @@ mod tests {
     fn unit_date_format_empty() {
         assert_eq!(unit!(date,
                          tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::Str("".to_owned())]),
+                         &[Value::scalar("".to_owned())]),
                    tos!("13 Jun 2016 02:30:00 +0300"));
     }
 
@@ -1059,7 +1109,7 @@ mod tests {
     fn unit_date_bad_format_type() {
         assert_eq!(unit!(date,
                          tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::Num(0f32)]),
+                         &[Value::scalar(0f32)]),
                    tos!("0"));
     }
 
@@ -1073,7 +1123,7 @@ mod tests {
     fn unit_date_extra_param() {
         assert_eq!(failed!(date,
                            tos!("13 Jun 2016 02:30:00 +0300"),
-                           &[Value::Num(0f32), Value::Num(1f32)]),
+                           &[Value::scalar(0f32), Value::scalar(1f32)]),
                    FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned()));
     }
 
@@ -1081,7 +1131,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_same_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(3f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(3i32)];
         let desired_result = tos!("2016-06-13 15:00:00 +0300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1090,7 +1140,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_previous_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(-13f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(-13i32)];
         let desired_result = tos!("2016-06-12 23:00:00 -1300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1099,7 +1149,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_next_day() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(13f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(13i32)];
         let desired_result = tos!("2016-06-14 01:00:00 +1300");
         assert_eq!(unit!(date_in_tz, input, args), desired_result);
     }
@@ -1107,9 +1157,10 @@ mod tests {
     #[test]
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_string() {
-        let input = &Value::Num(0f32);
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(0f32)];
-        let desired_result = FilterError::InvalidType(" expected".to_owned());
+        let input = &Value::scalar(0f32);
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
+        let desired_result = FilterError::InvalidType("Invalid date format: premature end of input"
+                                                          .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1117,7 +1168,7 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_date_string() {
         let input = &tos!("blah blah blah");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::Num(0f32)];
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
         let desired_result = FilterError::InvalidType("Invalid date format: input contains \
                                                        invalid characters"
                                                           .to_owned());
@@ -1126,19 +1177,10 @@ mod tests {
 
     #[test]
     #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_date_format_not_a_string() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[Value::Num(0f32), Value::Num(1f32)];
-        let desired_result = FilterError::InvalidArgument(0, " expected".to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_offset_not_a_num() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("0")];
-        let desired_result = FilterError::InvalidArgument(1, "Number expected".to_owned());
+        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("Hello")];
+        let desired_result = FilterError::InvalidArgument(1, "Whole number expected".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -1167,8 +1209,8 @@ mod tests {
     fn unit_date_in_tz_three_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"),
-                     Value::Num(0f32),
-                     Value::Num(1f32)];
+                     Value::scalar(0f32),
+                     Value::scalar(1f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
                                                                    .to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
@@ -1176,13 +1218,13 @@ mod tests {
 
     #[test]
     fn unit_divided_by() {
-        assert_eq!(unit!(divided_by, Value::Num(4f32), &[Value::Num(2f32)]),
-                   Value::Num(2f32));
-        assert_eq!(unit!(divided_by, Value::Num(5f32), &[Value::Num(2f32)]),
-                   Value::Num(2f32));
-        assert!(divided_by(&Value::Bool(true), &[Value::Num(8.5)]).is_err());
-        assert!(divided_by(&Value::Num(2.5), &[Value::Bool(true)]).is_err());
-        assert!(divided_by(&Value::Num(2.5), &[]).is_err());
+        assert_eq!(unit!(divided_by, Value::scalar(4f32), &[Value::scalar(2f32)]),
+                   Value::scalar(2f32));
+        assert_eq!(unit!(divided_by, Value::scalar(5f32), &[Value::scalar(2f32)]),
+                   Value::scalar(2.5f32));
+        assert!(divided_by(&Value::scalar(true), &[Value::scalar(8.5)]).is_err());
+        assert!(divided_by(&Value::scalar(2.5), &[Value::scalar(true)]).is_err());
+        assert!(divided_by(&Value::scalar(2.5), &[]).is_err());
     }
 
     #[test]
@@ -1229,12 +1271,12 @@ mod tests {
     #[test]
     fn unit_first() {
         assert_eq!(unit!(first,
-                         Value::Array(vec![Value::Num(0f32),
-                                           Value::Num(1f32),
-                                           Value::Num(2f32),
-                                           Value::Num(3f32),
-                                           Value::Num(4f32)])),
-                   Value::Num(0f32));
+                         Value::Array(vec![Value::scalar(0f32),
+                                           Value::scalar(1f32),
+                                           Value::scalar(2f32),
+                                           Value::scalar(3f32),
+                                           Value::scalar(4f32)])),
+                   Value::scalar(0f32));
         assert_eq!(unit!(first, Value::Array(vec![tos!("test"), tos!("two")])),
                    tos!("test"));
         assert_eq!(unit!(first, Value::Array(vec![])), tos!(""));
@@ -1242,9 +1284,10 @@ mod tests {
 
     #[test]
     fn unit_floor() {
-        assert_eq!(unit!(floor, Value::Num(1.1f32), &[]), Value::Num(1f32));
-        assert_eq!(unit!(floor, Value::Num(1f32), &[]), Value::Num(1f32));
-        assert!(floor(&Value::Bool(true), &[]).is_err());
+        assert_eq!(unit!(floor, Value::scalar(1.1f32), &[]),
+                   Value::scalar(1f32));
+        assert_eq!(unit!(floor, Value::scalar(1f32), &[]), Value::scalar(1f32));
+        assert!(floor(&Value::scalar(true), &[]).is_err());
     }
 
     #[test]
@@ -1266,7 +1309,7 @@ mod tests {
     #[test]
     fn unit_join_bad_join_string() {
         let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        let args = &[Value::Num(1f32)];
+        let args = &[Value::scalar(1f32)];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a1b1c"));
     }
@@ -1281,7 +1324,7 @@ mod tests {
 
     #[test]
     fn unit_join_non_string_element() {
-        let input = Value::Array(vec![tos!("a"), Value::Num(1f32), tos!("c")]);
+        let input = Value::Array(vec![tos!("a"), Value::scalar(1f32), tos!("c")]);
         let args = &[tos!(",")];
         let result = join(&input, args);
         assert_eq!(result.unwrap(), tos!("a,1,c"));
@@ -1306,12 +1349,12 @@ mod tests {
     #[test]
     fn unit_last() {
         assert_eq!(unit!(last,
-                         Value::Array(vec![Value::Num(0f32),
-                                           Value::Num(1f32),
-                                           Value::Num(2f32),
-                                           Value::Num(3f32),
-                                           Value::Num(4f32)])),
-                   Value::Num(4f32));
+                         Value::Array(vec![Value::scalar(0f32),
+                                           Value::scalar(1f32),
+                                           Value::scalar(2f32),
+                                           Value::scalar(3f32),
+                                           Value::scalar(4f32)])),
+                   Value::scalar(4f32));
         assert_eq!(unit!(last, Value::Array(vec![tos!("test"), tos!("last")])),
                    tos!("last"));
         assert_eq!(unit!(last, Value::Array(vec![])), tos!(""));
@@ -1327,7 +1370,7 @@ mod tests {
 
     #[test]
     fn unit_lstrip_non_string() {
-        let input = &Value::Num(0f32);
+        let input = &Value::scalar(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(lstrip, input, args), desired_result);
@@ -1336,7 +1379,7 @@ mod tests {
     #[test]
     fn unit_lstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(lstrip, input, args), desired_result);
@@ -1369,22 +1412,22 @@ mod tests {
 
     #[test]
     fn unit_minus() {
-        assert_eq!(unit!(minus, Value::Num(2f32), &[Value::Num(1f32)]),
-                   Value::Num(1f32));
-        assert_eq!(unit!(minus, Value::Num(21.5), &[Value::Num(1.25)]),
-                   Value::Num(20.25));
+        assert_eq!(unit!(minus, Value::scalar(2f32), &[Value::scalar(1f32)]),
+                   Value::scalar(1f32));
+        assert_eq!(unit!(minus, Value::scalar(21.5), &[Value::scalar(1.25)]),
+                   Value::scalar(20.25));
     }
 
     #[test]
     fn unit_modulo() {
-        assert_eq!(unit!(modulo, Value::Num(3_f32), &[Value::Num(2_f32)]),
-                   Value::Num(1_f32));
-        assert_eq!(unit!(modulo, Value::Num(3_f32), &[Value::Num(3.0)]),
-                   Value::Num(0_f32));
-        assert_eq!(unit!(modulo, Value::Num(24_f32), &[Value::Num(7_f32)]),
-                   Value::Num(3_f32));
-        assert_eq!(unit!(modulo, Value::Num(183.357), &[Value::Num(12_f32)]),
-                   Value::Num(3.3569946));
+        assert_eq!(unit!(modulo, Value::scalar(3_f32), &[Value::scalar(2_f32)]),
+                   Value::scalar(1_f32));
+        assert_eq!(unit!(modulo, Value::scalar(3_f32), &[Value::scalar(3.0)]),
+                   Value::scalar(0_f32));
+        assert_eq!(unit!(modulo, Value::scalar(24_f32), &[Value::scalar(7_f32)]),
+                   Value::scalar(3_f32));
+        assert_eq!(unit!(modulo, Value::scalar(183.357), &[Value::scalar(12_f32)]),
+                   Value::scalar(3.3569946));
     }
 
     #[test]
@@ -1407,7 +1450,7 @@ mod tests {
     #[test]
     fn unit_newline_to_br_one_argument() {
         let input = &tos!("a\nb");
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(newline_to_br, input, args), desired_result);
@@ -1416,19 +1459,19 @@ mod tests {
     #[test]
     #[cfg(feature = "extra-filters")]
     fn unit_pluralize() {
-        assert_eq!(unit!(pluralize, Value::Num(1f32), &[tos!("one"), tos!("many")]),
+        assert_eq!(unit!(pluralize, Value::scalar(1i32), &[tos!("one"), tos!("many")]),
                    tos!("one"));
 
-        assert_eq!(unit!(pluralize, Value::Num(2f32), &[tos!("one"), tos!("many")]),
+        assert_eq!(unit!(pluralize, Value::scalar(2i32), &[tos!("one"), tos!("many")]),
                    tos!("many"));
     }
 
     #[test]
     fn unit_plus() {
-        assert_eq!(unit!(plus, Value::Num(2f32), &[Value::Num(1f32)]),
-                   Value::Num(3f32));
-        assert_eq!(unit!(plus, Value::Num(21.5), &[Value::Num(2.25)]),
-                   Value::Num(23.75));
+        assert_eq!(unit!(plus, Value::scalar(2f32), &[Value::scalar(1f32)]),
+                   Value::scalar(3f32));
+        assert_eq!(unit!(plus, Value::scalar(21.5), &[Value::scalar(2.25)]),
+                   Value::scalar(23.75));
     }
 
     #[test]
@@ -1490,17 +1533,22 @@ mod tests {
 
     #[test]
     fn unit_reverse_array() {
-        let input = &Value::Array(vec![Value::Num(3f32), Value::Num(1f32), Value::Num(2f32)]);
+        let input = &Value::Array(vec![Value::scalar(3f32),
+                                       Value::scalar(1f32),
+                                       Value::scalar(2f32)]);
         let args = &[];
-        let desired_result =
-            Value::Array(vec![Value::Num(2f32), Value::Num(1f32), Value::Num(3f32)]);
+        let desired_result = Value::Array(vec![Value::scalar(2f32),
+                                               Value::scalar(1f32),
+                                               Value::scalar(3f32)]);
         assert_eq!(unit!(reverse, input, args), desired_result);
     }
 
     #[test]
     fn unit_reverse_array_extra_args() {
-        let input = &Value::Array(vec![Value::Num(3f32), Value::Num(1f32), Value::Num(2f32)]);
-        let args = &[Value::Num(0f32)];
+        let input = &Value::Array(vec![Value::scalar(3f32),
+                                       Value::scalar(1f32),
+                                       Value::scalar(2f32)]);
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(reverse, input, args), desired_result);
@@ -1559,7 +1607,7 @@ mod tests {
 
     #[test]
     fn unit_rstrip_non_string() {
-        let input = &Value::Num(0f32);
+        let input = &Value::scalar(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(rstrip, input, args), desired_result);
@@ -1568,7 +1616,7 @@ mod tests {
     #[test]
     fn unit_rstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(rstrip, input, args), desired_result);
@@ -1585,34 +1633,36 @@ mod tests {
 
     #[test]
     fn unit_round() {
-        assert_eq!(unit!(round, Value::Num(1.1f32), &[]), Value::Num(1f32));
-        assert_eq!(unit!(round, Value::Num(1.5f32), &[]), Value::Num(2f32));
-        assert_eq!(unit!(round, Value::Num(2f32), &[]), Value::Num(2f32));
-        assert!(round(&Value::Bool(true), &[]).is_err());
+        assert_eq!(unit!(round, Value::scalar(1.1f32), &[]),
+                   Value::scalar(1i32));
+        assert_eq!(unit!(round, Value::scalar(1.5f32), &[]),
+                   Value::scalar(2i32));
+        assert_eq!(unit!(round, Value::scalar(2f32), &[]), Value::scalar(2i32));
+        assert!(round(&Value::scalar(true), &[]).is_err());
     }
 
     #[test]
     fn unit_round_precision() {
-        assert_eq!(unit!(round, Value::Num(1.1f32), &[Value::Num(0f32)]),
-                   Value::Num(1f32));
-        assert_eq!(unit!(round, Value::Num(1.5f32), &[Value::Num(1f32)]),
-                   Value::Num(1.5f32));
-        assert_eq!(unit!(round, Value::Num(3.14159f32), &[Value::Num(3f32)]),
-                   Value::Num(3.142f32));
+        assert_eq!(unit!(round, Value::scalar(1.1f32), &[Value::scalar(0i32)]),
+                   Value::scalar(1f32));
+        assert_eq!(unit!(round, Value::scalar(1.5f32), &[Value::scalar(1i32)]),
+                   Value::scalar(1.5f32));
+        assert_eq!(unit!(round, Value::scalar(3.14159f32), &[Value::scalar(3i32)]),
+                   Value::scalar(3.142f32));
     }
 
     #[test]
     fn unit_size() {
-        assert_eq!(unit!(size, tos!("abc")), Value::Num(3f32));
+        assert_eq!(unit!(size, tos!("abc")), Value::scalar(3f32));
         assert_eq!(unit!(size, tos!("this has 22 characters")),
-                   Value::Num(22f32));
+                   Value::scalar(22f32));
         assert_eq!(unit!(size,
-                         Value::Array(vec![Value::Num(0f32),
-                                           Value::Num(1f32),
-                                           Value::Num(2f32),
-                                           Value::Num(3f32),
-                                           Value::Num(4f32)])),
-                   Value::Num(5f32));
+                         Value::Array(vec![Value::scalar(0f32),
+                                           Value::scalar(1f32),
+                                           Value::scalar(2f32),
+                                           Value::scalar(3f32),
+                                           Value::scalar(4f32)])),
+                   Value::scalar(5f32));
     }
 
     #[test]
@@ -1626,7 +1676,7 @@ mod tests {
     #[test]
     fn unit_split_bad_split_string() {
         let input = tos!("a,b,c");
-        let args = &[Value::Num(1f32)];
+        let args = &[Value::scalar(1f32)];
         let desired_result = Value::Array(vec![tos!("a,b,c")]);
         assert_eq!(unit!(split, input, args), desired_result);
     }
@@ -1657,7 +1707,7 @@ mod tests {
 
     #[test]
     fn unit_strip_non_string() {
-        let input = &Value::Num(0f32);
+        let input = &Value::scalar(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(strip, input, args), desired_result);
@@ -1666,7 +1716,7 @@ mod tests {
     #[test]
     fn unit_strip_one_argument() {
         let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(strip, input, args), desired_result);
@@ -1739,7 +1789,7 @@ mod tests {
 
     #[test]
     fn unit_strip_newlines_non_string() {
-        let input = &Value::Num(0f32);
+        let input = &Value::scalar(0f32);
         let args = &[];
         let desired_result = tos!("0");
         assert_eq!(unit!(strip_newlines, input, args), desired_result);
@@ -1748,7 +1798,7 @@ mod tests {
     #[test]
     fn unit_strip_newlines_one_argument() {
         let input = &tos!("ab\n");
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_owned());
         assert_eq!(failed!(strip_newlines, input, args), desired_result);
@@ -1773,19 +1823,19 @@ mod tests {
 
     #[test]
     fn unit_times() {
-        assert_eq!(unit!(times, Value::Num(2f32), &[Value::Num(3f32)]),
-                   Value::Num(6f32));
-        assert_eq!(unit!(times, Value::Num(8.5), &[Value::Num(0.5)]),
-                   Value::Num(4.25));
-        assert!(times(&Value::Bool(true), &[Value::Num(8.5)]).is_err());
-        assert!(times(&Value::Num(2.5), &[Value::Bool(true)]).is_err());
-        assert!(times(&Value::Num(2.5), &[]).is_err());
+        assert_eq!(unit!(times, Value::scalar(2f32), &[Value::scalar(3f32)]),
+                   Value::scalar(6f32));
+        assert_eq!(unit!(times, Value::scalar(8.5), &[Value::scalar(0.5)]),
+                   Value::scalar(4.25));
+        assert!(times(&Value::scalar(true), &[Value::scalar(8.5)]).is_err());
+        assert!(times(&Value::scalar(2.5), &[Value::scalar(true)]).is_err());
+        assert!(times(&Value::scalar(2.5), &[]).is_err());
     }
 
     #[test]
     fn unit_truncate() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Value::Num(17f32)];
+        let args = &[Value::scalar(17i32)];
         let desired_result = tos!("I often quote ...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1793,15 +1843,15 @@ mod tests {
     #[test]
     fn unit_truncate_negative_length() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Value::Num(-17f32)];
+        let args = &[Value::scalar(-17i32)];
         let desired_result = tos!("I often quote myself.  It adds spice to my conversation.");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
 
     #[test]
     fn unit_truncate_non_string() {
-        let input = &Value::Num(10000000f32);
-        let args = &[Value::Num(5f32)];
+        let input = &Value::scalar(10000000f32);
+        let args = &[Value::scalar(5i32)];
         let desired_result = tos!("10...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1810,15 +1860,15 @@ mod tests {
     fn unit_truncate_shopify_liquid() {
         // Tests from https://shopify.github.io/liquid/filters/truncate/
         let input = &tos!("Ground control to Major Tom.");
-        let args = &[Value::Num(20f32)];
+        let args = &[Value::scalar(20i32)];
         let desired_result = tos!("Ground control to...");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
-        let args = &[Value::Num(25f32), tos!(", and so on")];
+        let args = &[Value::scalar(25i32), tos!(", and so on")];
         let desired_result = tos!("Ground control, and so on");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
-        let args = &[Value::Num(20f32), tos!("")];
+        let args = &[Value::scalar(20i32), tos!("")];
         let desired_result = tos!("Ground control to Ma");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1826,7 +1876,7 @@ mod tests {
     #[test]
     fn unit_truncate_three_arguments() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let args = &[Value::Num(17f32), tos!("..."), Value::Num(0f32)];
+        let args = &[Value::scalar(17i32), tos!("..."), Value::scalar(0i32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
                                                                    .to_string());
         assert_eq!(failed!(truncate, input, args), desired_result);
@@ -1842,13 +1892,13 @@ mod tests {
         // Note that the accents applied to each letter are treated as part of the single grapheme
         // cluster for the applicable letter.
         let input = &tos!("Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.");
-        let args = &[Value::Num(20f32)];
+        let args = &[Value::scalar(20i32)];
         let desired_result = tos!("Here is an a\u{310}, e\u{301}, ...");
         assert_eq!(unit!(truncate, input, args), desired_result);
 
         // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
         let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
-        let args = &[Value::Num(20f32)];
+        let args = &[Value::scalar(20i32)];
         let desired_result = tos!("Here is a RUST: 🇷🇺...");
         assert_eq!(unit!(truncate, input, args), desired_result);
     }
@@ -1863,35 +1913,43 @@ mod tests {
 
     #[test]
     fn unit_truncatewords_negative_length() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(-1_f32)]),
+        assert_eq!(unit!(truncatewords,
+                         tos!("one two three"),
+                         &[Value::scalar(-1_i32)]),
                    tos!("one two three"));
     }
 
     #[test]
     fn unit_truncatewords_zero_length() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(0_f32)]),
+        assert_eq!(unit!(truncatewords,
+                         tos!("one two three"),
+                         &[Value::scalar(0_i32)]),
                    tos!("..."));
     }
 
     #[test]
     fn unit_truncatewords_no_truncation() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(4_f32)]),
+        assert_eq!(unit!(truncatewords,
+                         tos!("one two three"),
+                         &[Value::scalar(4_i32)]),
                    tos!("one two three"));
     }
 
     #[test]
     fn unit_truncatewords_truncate() {
-        assert_eq!(unit!(truncatewords, tos!("one two three"), &[Value::Num(2_f32)]),
+        assert_eq!(unit!(truncatewords,
+                         tos!("one two three"),
+                         &[Value::scalar(2_i32)]),
                    tos!("one two..."));
         assert_eq!(unit!(truncatewords,
                          tos!("one two three"),
-                         &[Value::Num(2_f32), Value::Num(1_f32)]),
+                         &[Value::scalar(2_i32), Value::scalar(1_i32)]),
                    tos!("one two1"));
     }
 
     #[test]
     fn unit_truncatewords_empty_string() {
-        assert_eq!(unit!(truncatewords, tos!(""), &[Value::Num(1_f32)]),
+        assert_eq!(unit!(truncatewords, tos!(""), &[Value::scalar(1_i32)]),
                    tos!(""));
     }
 
@@ -1905,7 +1963,7 @@ mod tests {
 
     #[test]
     fn unit_uniq_non_array() {
-        let input = &Value::Num(0f32);
+        let input = &Value::scalar(0f32);
         let args = &[];
         let desired_result = FilterError::InvalidType("Array expected".to_string());
         assert_eq!(failed!(uniq, input, args), desired_result);
@@ -1914,7 +1972,7 @@ mod tests {
     #[test]
     fn unit_uniq_one_argument() {
         let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
-        let args = &[Value::Num(0f32)];
+        let args = &[Value::scalar(0f32)];
         let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
                                                                    .to_string());
         assert_eq!(failed!(uniq, input, args), desired_result);
@@ -1944,17 +2002,21 @@ mod tests {
     fn unit_default() {
         assert_eq!(unit!(default, tos!(""), &[tos!("bar")]), tos!("bar"));
         assert_eq!(unit!(default, tos!("foo"), &[tos!("bar")]), tos!("foo"));
-        assert_eq!(unit!(default, Value::Num(0_f32), &[tos!("bar")]),
-                   Value::Num(0_f32));
-        assert_eq!(unit!(default, Value::Array(vec![]), &[Value::Num(1_f32)]),
-                   Value::Num(1_f32));
-        assert_eq!(unit!(default, Value::Array(vec![tos!("")]), &[Value::Num(1_f32)]),
+        assert_eq!(unit!(default, Value::scalar(0_f32), &[tos!("bar")]),
+                   Value::scalar(0_f32));
+        assert_eq!(unit!(default, Value::Array(vec![]), &[Value::scalar(1_f32)]),
+                   Value::scalar(1_f32));
+        assert_eq!(unit!(default,
+                         Value::Array(vec![tos!("")]),
+                         &[Value::scalar(1_f32)]),
                    Value::Array(vec![tos!("")]));
-        assert_eq!(unit!(default, Value::Object(HashMap::new()), &[Value::Num(1_f32)]),
-                   Value::Num(1_f32));
-        assert_eq!(unit!(default, Value::Bool(false), &[Value::Num(1_f32)]),
-                   Value::Num(1_f32));
-        assert_eq!(unit!(default, Value::Bool(true), &[Value::Num(1_f32)]),
-                   Value::Bool(true));
+        assert_eq!(unit!(default,
+                         Value::Object(HashMap::new()),
+                         &[Value::scalar(1_f32)]),
+                   Value::scalar(1_f32));
+        assert_eq!(unit!(default, Value::scalar(false), &[Value::scalar(1_f32)]),
+                   Value::scalar(1_f32));
+        assert_eq!(unit!(default, Value::scalar(true), &[Value::scalar(1_f32)]),
+                   Value::scalar(true));
     }
 }

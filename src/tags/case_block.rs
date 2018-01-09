@@ -169,20 +169,20 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("x", Value::Num(2f32));
+        context.set_global_val("x", Value::scalar(2f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("two".to_owned()));
 
-        context.set_global_val("x", Value::Num(3f32));
+        context.set_global_val("x", Value::scalar(3f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("three and a half".to_owned()));
 
-        context.set_global_val("x", Value::Num(4f32));
+        context.set_global_val("x", Value::scalar(4f32));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("three and a half".to_owned()));
 
 
-        context.set_global_val("x", Value::str("nope"));
+        context.set_global_val("x", Value::scalar("nope"));
         assert_eq!(template.render(&mut context).unwrap(),
                    Some("otherwise".to_owned()));
     }
@@ -202,7 +202,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("x", Value::str("nope"));
+        context.set_global_val("x", Value::scalar("nope"));
         assert_eq!(template.render(&mut context).unwrap(), Some("".to_owned()));
     }
 

@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 use std::cmp::Ordering;
 use std::fmt;
+use std::borrow;
 
 use super::Index;
+use super::Scalar;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Value {
-    Num(f32),
-    Bool(bool),
-    Str(String),
+    Scalar(Scalar),
     Array(Array),
     Object(Object),
     Nil,
@@ -24,52 +24,51 @@ pub type Array = Vec<Value>;
 pub type Object = HashMap<String, Value>;
 
 impl Value {
-    /// Shorthand function to create Value::Str from a string slice.
-    pub fn str(val: &str) -> Value {
-        Value::Str(val.to_owned())
+    pub fn scalar<T: Into<Scalar>>(value: T) -> Self {
+        Value::Scalar(Scalar::new(value))
     }
 
-    /// Extracts the float value if it is a float.
-    pub fn as_float(&self) -> Option<f32> {
+    pub fn array<I: IntoIterator<Item = Self>>(iter: I) -> Self {
+        let v: Array = iter.into_iter().collect();
+        Value::Array(v)
+    }
+
+    pub fn nil() -> Self {
+        Value::Nil
+    }
+
+    pub fn to_str(&self) -> borrow::Cow<str> {
         match *self {
-            Value::Num(f) => Some(f),
+            Value::Scalar(ref x) => x.to_str(),
+            Value::Array(ref x) => {
+                let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
+                borrow::Cow::Owned(arr.join(", "))
+            }
+            Value::Object(ref x) => {
+                let arr: Vec<String> = x.iter()
+                    .map(|(k, v)| k.clone() + ": " + &v.to_string())
+                    .collect();
+                borrow::Cow::Owned(arr.join(", "))
+            }
+            Value::Nil => borrow::Cow::Borrowed(""),
+        }
+    }
+
+    /// Extracts the scalar value if it is a scalar.
+    pub fn as_scalar(&self) -> Option<&Scalar> {
+        match *self {
+            Value::Scalar(ref s) => Some(s),
             _ => None,
         }
     }
 
-    /// Tests whether this value is a float
-    pub fn is_float(&self) -> bool {
-        self.as_float().is_some()
-    }
-
-    /// Extracts the boolean value if it is a boolean.
-    pub fn as_bool(&self) -> Option<bool> {
-        match *self {
-            Value::Bool(b) => Some(b),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is a boolean
-    pub fn is_bool(&self) -> bool {
-        self.as_bool().is_some()
-    }
-
-    /// Extracts the str value if it is a str.
-    pub fn as_str(&self) -> Option<&str> {
-        match *self {
-            Value::Str(ref v) => Some(v),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is a str
-    pub fn is_str(&self) -> bool {
-        self.as_str().is_some()
+    /// Tests whether this value is a scalar
+    pub fn is_scalar(&self) -> bool {
+        self.as_scalar().is_some()
     }
 
     /// Extracts the array value if it is an array.
-    pub fn as_array(&self) -> Option<&Vec<Value>> {
+    pub fn as_array(&self) -> Option<&Array> {
         match *self {
             Value::Array(ref s) => Some(s),
             _ => None,
@@ -77,7 +76,7 @@ impl Value {
     }
 
     /// Extracts the array value if it is an array.
-    pub fn as_array_mut(&mut self) -> Option<&mut Vec<Value>> {
+    pub fn as_array_mut(&mut self) -> Option<&mut Array> {
         match *self {
             Value::Array(ref mut s) => Some(s),
             _ => None,
@@ -105,13 +104,44 @@ impl Value {
         }
     }
 
-    /// Extracts the object value if it is a object.
+    /// Tests whether this value is an object
     pub fn is_object(&self) -> bool {
         self.as_object().is_some()
     }
 
+    /// Tests whether this value is nil
+    pub fn is_nil(&self) -> bool {
+        match *self {
+            Value::Nil => true,
+            _ => false,
+        }
+    }
+
+    /// Evaluate using Liquid "truthiness"
+    pub fn is_truthy(&self) -> bool {
+        // encode Ruby truthiness: all values except false and nil are true
+        match *self {
+            Value::Scalar(ref x) => x.is_truthy(),
+            Value::Nil => false,
+            _ => true,
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        match *self {
+            Value::Scalar(ref x) => x.is_default(),
+            Value::Nil => true,
+            Value::Array(ref x) => x.is_empty(),
+            Value::Object(ref x) => x.is_empty(),
+        }
+    }
+
     pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
         let index: &Index = index.into();
+        self.get_index(index)
+    }
+
+    fn get_index(&self, index: &Index) -> Option<&Self> {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.as_index() {
@@ -138,20 +168,18 @@ impl Value {
 }
 
 impl PartialEq<Value> for Value {
-    fn eq(&self, other: &Value) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x == y,
-            (&Value::Bool(x), &Value::Bool(y)) => x == y,
-            (&Value::Str(ref x), &Value::Str(ref y)) => x == y,
+            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x == y,
             (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
             (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
             (&Value::Nil, &Value::Nil) => true,
 
             // encode Ruby truthiness: all values except false and nil are true
-            (&Value::Nil, &Value::Bool(b)) |
-            (&Value::Bool(b), &Value::Nil) => !b,
-            (_, &Value::Bool(b)) |
-            (&Value::Bool(b), _) => b,
+            (&Value::Nil, &Value::Scalar(ref b)) |
+            (&Value::Scalar(ref b), &Value::Nil) => !b.to_bool().unwrap_or(true),
+            (_, &Value::Scalar(ref b)) |
+            (&Value::Scalar(ref b), _) => b.to_bool().unwrap_or(false),
 
             _ => false,
         }
@@ -161,11 +189,9 @@ impl PartialEq<Value> for Value {
 impl Eq for Value {}
 
 impl PartialOrd<Value> for Value {
-    fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (&Value::Num(x), &Value::Num(y)) => x.partial_cmp(&y),
-            (&Value::Bool(x), &Value::Bool(y)) => x.partial_cmp(&y),
-            (&Value::Str(ref x), &Value::Str(ref y)) => x.partial_cmp(y),
+            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x.partial_cmp(&y),
             (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
             (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
             _ => None,
@@ -175,22 +201,7 @@ impl PartialOrd<Value> for Value {
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = match *self {
-            Value::Num(ref x) => x.to_string(),
-            Value::Bool(ref x) => x.to_string(),
-            Value::Str(ref x) => x.to_owned(),
-            Value::Nil => "".to_owned(),
-            Value::Array(ref x) => {
-                let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
-                arr.join(", ")
-            }
-            Value::Object(ref x) => {
-                let arr: Vec<String> = x.iter()
-                    .map(|(k, v)| k.clone() + ": " + &v.to_string())
-                    .collect();
-                arr.join(", ")
-            }
-        };
+        let data = self.to_str();
         write!(f, "{}", data)
     }
 }
@@ -198,119 +209,51 @@ impl fmt::Display for Value {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::collections::HashMap;
-
-    static TRUE: Value = Value::Bool(true);
-    static FALSE: Value = Value::Bool(false);
 
     #[test]
-    fn test_num_to_string() {
-        let val = Value::Num(42f32);
+    fn test_to_string_scalar() {
+        let val = Value::scalar(42f32);
         assert_eq!(&val.to_string(), "42");
-
-        let val = Value::Num(42.34);
-        assert_eq!(&val.to_string(), "42.34");
     }
 
     #[test]
-    fn test_as_str() {
-        let val = Value::Num(42f32);
-        assert_eq!(val.as_str(), None);
-
-        let val = Value::str("test");
-        assert_eq!(val.as_str(), Some("test"));
-    }
-
-    #[test]
-    fn test_str_to_string() {
-        let val = Value::Str("foobar".to_owned());
-        assert_eq!(&val.to_string(), "foobar");
-    }
-
-    #[test]
-    fn test_array_to_string() {
-        let val = Value::Array(vec![Value::Num(3f32),
-                                    Value::Str("test".to_owned()),
-                                    Value::Num(5.3)]);
+    fn test_to_string_array() {
+        let val = Value::Array(vec![Value::scalar(3f32),
+                                    Value::scalar("test"),
+                                    Value::scalar(5.3)]);
         assert_eq!(&val.to_string(), "3, test, 5.3");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
 
     #[test]
-    fn boolean_equality() {
-        assert_eq!(Value::Bool(true), Value::Bool(true));
-        assert_eq!(Value::Bool(false), Value::Bool(false));
-        assert!(Value::Bool(false) != Value::Bool(true));
-        assert!(Value::Bool(true) != Value::Bool(false));
+    fn test_to_string_nil() {
+        assert_eq!(&Value::nil().to_string(), "");
     }
 
     #[test]
-    fn booleans_have_ruby_truthiness() {
-        assert_eq!(TRUE, Value::Bool(true));
-        assert_eq!(FALSE, Value::Bool(false));
+    fn scalar_equality() {
+        assert_eq!(Value::scalar("alpha"), Value::scalar("alpha"));
+        assert_eq!(Value::scalar(""), Value::scalar(""));
+        assert!(Value::scalar("alpha") != Value::scalar("beta"));
+        assert!(Value::scalar("beta") != Value::scalar("alpha"));
     }
 
     #[test]
-    fn string_equality() {
-        assert_eq!(Value::str("alpha"), Value::str("alpha"));
-        assert_eq!(Value::str(""), Value::str(""));
-        assert!(Value::str("alpha") != Value::str("beta"));
-        assert!(Value::str("beta") != Value::str("alpha"));
-    }
-
-    #[test]
-    fn strings_have_ruby_truthiness() {
+    fn scalars_have_ruby_truthiness() {
         // all strings in ruby are true
-        assert_eq!(TRUE, Value::str("All strings are truthy"));
-        assert_eq!(TRUE, Value::str(""));
+        assert_eq!(Value::scalar(true), Value::scalar("All strings are truthy"));
+        assert_eq!(Value::scalar(true), Value::scalar(""));
+        assert!(Value::scalar("").is_truthy());
+
+        assert_eq!(Value::scalar(true), Value::scalar(true));
+        assert!(Value::scalar(true) != Value::scalar(false));
     }
-
-    #[test]
-    fn number_equality() {
-        assert_eq!(Value::Num(42f32), Value::Num(42f32));
-        assert_eq!(Value::Num(0f32), Value::Num(0f32));
-        assert!(Value::Num(1f32) != Value::Num(2f32));
-        assert!(Value::Num(2f32) != Value::Num(1f32));
-    }
-
-    #[test]
-    fn numbers_have_ruby_truthiness() {
-        assert_eq!(TRUE, Value::Num(42f32));
-        assert_eq!(TRUE, Value::Num(0f32));
-    }
-
-    #[test]
-    fn nil_equality() {
-        assert_eq!(Value::Nil, Value::Nil);
-    }
-
-    #[test]
-    fn object_equality() {
-        let mut values = HashMap::<String, Value>::new();
-        values.insert("alpha".to_owned(), Value::str("1"));
-        values.insert("beta".to_owned(), Value::Num(2f32));
-
-        let a = Value::Object(values.clone());
-
-        values.insert("gamma".to_owned(), Value::Array(vec![]));
-        let b = Value::Object(values);
-
-        assert_eq!(a, a);
-        assert!(a != b);
-        assert!(b != a);
-    }
-
-    #[test]
-    fn objects_have_ruby_truthiness() {
-        assert_eq!(TRUE, Value::Object(HashMap::new()));
-    }
-
 
     #[test]
     fn array_equality() {
-        let a = Value::Array(vec![Value::str("one"), Value::str("two")]);
-        let b = Value::Array(vec![Value::str("alpha"), Value::str("beta")]);
+        let a = Value::Array(vec![Value::scalar("one"), Value::scalar("two")]);
+        let b = Value::Array(vec![Value::scalar("alpha"), Value::scalar("beta")]);
 
         assert_eq!(a, a);
         assert!(a != b);
@@ -319,28 +262,50 @@ mod test {
 
     #[test]
     fn arrays_have_ruby_truthiness() {
-        assert_eq!(TRUE, Value::Array(Vec::new()));
+        assert_eq!(Value::scalar(true), Value::Array(Vec::new()));
+        assert!(Value::Array(Vec::new()).is_truthy());
     }
 
     #[test]
-    fn mixed_comparisons_are_false() {
-        // assers that all comparisons between different types of values
-        // are false
-        let mut values = HashMap::<String, Value>::new();
-        values.insert("alpha".to_owned(), Value::str("1"));
+    fn object_equality() {
+        let a: Object = [("alpha".to_owned(), Value::scalar("1")),
+                         ("beta".to_owned(), Value::scalar(2f32))]
+            .into_iter()
+            .cloned()
+            .collect();
+        let a = Value::Object(a);
 
-        let terms = vec![Value::Num(1f32),
-                         Value::str("1"),
-                         Value::Object(values),
-                         Value::Array(vec![Value::Num(1f32)])];
+        let b: Object = [("alpha".to_owned(), Value::scalar("1")),
+                         ("beta".to_owned(), Value::scalar(2f32)),
+                         ("gamma".to_owned(), Value::Array(vec![]))]
+            .into_iter()
+            .cloned()
+            .collect();
+        let b = Value::Object(b);
 
-        for (x, a) in terms.iter().enumerate() {
-            for (y, b) in terms.iter().enumerate() {
-                if x != y {
-                    assert!(a != b);
-                    assert!(b != a);
-                }
-            }
-        }
+        assert_eq!(a, a);
+        assert!(a != b);
+        assert!(b != a);
+    }
+
+    #[test]
+    fn objects_have_ruby_truthiness() {
+        assert_eq!(Value::scalar(true), Value::Object(Object::new()));
+        assert!(Value::Object(Object::new()).is_truthy());
+    }
+
+    #[test]
+    fn nil_equality() {
+        assert_eq!(Value::Nil, Value::Nil);
+    }
+
+    #[test]
+    fn nils_have_ruby_truthiness() {
+        assert_eq!(Value::scalar(false), Value::Nil);
+        assert!(!Value::Nil.is_truthy());
+
+        assert_eq!(Value::scalar(false), Value::Nil);
+        assert!(Value::scalar(true) != Value::Nil);
+        assert!(Value::scalar("") != Value::Nil);
     }
 }

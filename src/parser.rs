@@ -225,7 +225,7 @@ impl Parser {
     ///     .parse_file("path/to/template.txt").unwrap();
     ///
     /// let mut globals = liquid::Object::new();
-    /// globals.insert("data".to_owned(), liquid::Value::Num(4f32));
+    /// globals.insert("data".to_owned(), liquid::Value::scalar(4f32));
     /// let output = template.render(&globals).unwrap();
     /// assert_eq!(output, "Liquid! 4\n".to_string());
     /// ```

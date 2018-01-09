@@ -39,7 +39,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
             // first argument is the first item in the cycle
             values.push(first.to_arg()?);
         }
-        x => return Error::parser(": | Number | String | Identifier", x),
+        x => return Error::parser(": | string | number | boolean | identifier", x),
     }
 
     loop {
@@ -154,9 +154,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::Num(1f32));
-        context.set_global_val("beta", Value::Num(2f32));
-        context.set_global_val("gamma", Value::Num(3f32));
+        context.set_global_val("alpha", Value::scalar(1f32));
+        context.set_global_val("beta", Value::scalar(2f32));
+        context.set_global_val("gamma", Value::scalar(3f32));
 
         let output = template.render(&mut context);
 

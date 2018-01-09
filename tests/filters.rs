@@ -400,7 +400,7 @@ pub fn slice_negative() {
 #[test]
 // Slicing with overflow should fit to string size
 pub fn slice_overflow() {
-    let text = "{{ 'xx0123456' | slice: 2, 10.1 }}";
+    let text = "{{ 'xx0123456' | slice: 2, 11 }}";
     let globals: liquid::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
@@ -462,7 +462,7 @@ pub fn escape() {
                    ("&etc.", "&amp;etc.")];
     for t in &samples {
         let mut globals = liquid::Object::new();
-        globals.insert("var".to_owned(), liquid::Value::str(t.0));
+        globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)
@@ -483,7 +483,7 @@ pub fn escape_once() {
                    ("&lt;&gt;&amp;&#39;&quot;", "&lt;&gt;&amp;&#39;&quot;")];
     for t in &samples {
         let mut globals = liquid::Object::new();
-        globals.insert("var".to_owned(), liquid::Value::str(t.0));
+        globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)

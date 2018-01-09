@@ -76,12 +76,12 @@ mod test {
         {
             let mut context = Context::new();
             context.set_global_val("tags",
-                                   Value::Array(vec![Value::str("alpha"),
-                                                     Value::str("beta"),
-                                                     Value::str("gamma")]));
+                                   Value::Array(vec![Value::scalar("alpha"),
+                                                     Value::scalar("beta"),
+                                                     Value::scalar("gamma")]));
 
             let output = template.render(&mut context).unwrap();
-            assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(false)));
+            assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(false)));
             assert_eq!(output, Some("".to_string()));
         }
 
@@ -89,13 +89,13 @@ mod test {
         {
             let mut context = Context::new();
             context.set_global_val("tags",
-                                   Value::Array(vec![Value::str("alpha"),
-                                                     Value::str("beta"),
-                                                     Value::str("freestyle"),
-                                                     Value::str("gamma")]));
+                                   Value::Array(vec![Value::scalar("alpha"),
+                                                     Value::scalar("beta"),
+                                                     Value::scalar("freestyle"),
+                                                     Value::scalar("gamma")]));
 
             let output = template.render(&mut context).unwrap();
-            assert_eq!(context.get_val("freestyle"), Some(&Value::Bool(true)));
+            assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(true)));
             assert_eq!(output, Some("<p>Freestyle!</p>".to_string()));
         }
     }

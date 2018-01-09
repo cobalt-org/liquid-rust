@@ -14,7 +14,7 @@
 //!     .parse("Liquid! {{num | minus: 2}}").unwrap();
 //!
 //! let mut globals = liquid::Object::new();
-//! globals.insert("num".to_owned(), liquid::Value::Num(4f32));
+//! globals.insert("num".to_owned(), liquid::Value::scalar(4f32));
 //!
 //! let output = template.render(&globals).unwrap();
 //! assert_eq!(output, "Liquid! 2".to_string());
@@ -58,4 +58,4 @@ pub mod interpreter;
 pub use parser::{ParserBuilder, Parser};
 pub use template::Template;
 pub use error::Error;
-pub use value::{Value, Object, Array, Index};
+pub use value::{Value, Object, Array, Index, Scalar};

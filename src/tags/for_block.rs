@@ -43,10 +43,15 @@ fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
 }
 
 fn token_as_int(arg: &Argument, context: &Context) -> Result<isize> {
-    let value = match arg.evaluate(context)? {
-        Value::Num(ref n) => *n,
-        _ => return Error::renderer(&format!("{:?} is not a number.", arg)),
-    };
+    let value =
+        arg.evaluate(context)?
+            .as_scalar()
+            .ok_or_else(|| Error::Render(format!("{:?} is not a whole number.", arg)))?
+            .to_integer()
+            .ok_or_else(|| {
+                            Error::Render(format!("{:?} is not a whole number or valid variable.",
+                                                  arg))
+                        })?;
 
     Ok(value as isize)
 }
@@ -59,7 +64,7 @@ impl Renderable for For {
             Range::Counted(ref start_arg, ref stop_arg) => {
                 let start = token_as_int(start_arg, context)?;
                 let stop = token_as_int(stop_arg, context)?;
-                (start..stop).map(|x| Value::Num(x as f32)).collect()
+                (start..stop).map(|x| Value::scalar(x as i32)).collect()
             }
         };
 
@@ -91,16 +96,17 @@ impl Renderable for For {
                 let mut ret = String::default();
                 context.run_in_scope(|mut scope| {
                     let mut helper_vars: HashMap<String, Value> = HashMap::new();
-                    helper_vars.insert("length".to_owned(), Value::Num(range_len as f32));
+                    helper_vars.insert("length".to_owned(), Value::scalar(range_len as i32));
 
                     for (i, v) in slice.iter().enumerate() {
-                        helper_vars.insert("index0".to_owned(), Value::Num(i as f32));
-                        helper_vars.insert("index".to_owned(), Value::Num((i + 1) as f32));
+                        helper_vars.insert("index0".to_owned(), Value::scalar(i as i32));
+                        helper_vars.insert("index".to_owned(), Value::scalar((i + 1) as i32));
+                        helper_vars.insert("rindex0".to_owned(),
+                                           Value::scalar((range_len - i - 1) as i32));
                         helper_vars
-                            .insert("rindex0".to_owned(), Value::Num((range_len - i - 1) as f32));
-                        helper_vars.insert("rindex".to_owned(), Value::Num((range_len - i) as f32));
-                        helper_vars.insert("first".to_owned(), Value::Bool(i == 0));
-                        helper_vars.insert("last".to_owned(), Value::Bool(i == (range_len - 1)));
+                            .insert("rindex".to_owned(), Value::scalar((range_len - i) as i32));
+                        helper_vars.insert("first".to_owned(), Value::scalar(i == 0));
+                        helper_vars.insert("last".to_owned(), Value::scalar(i == (range_len - 1)));
 
                         scope.set_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_val(&self.var_name, v.clone());
@@ -129,16 +135,16 @@ impl Renderable for For {
 fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     expect(args, &Token::Colon)?;
     match args.next() {
-        Some(&Token::NumberLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => Error::parser("number", x),
+        Some(&Token::IntegerLiteral(ref n)) => Ok(Some(*n as usize)),
+        x => Error::parser("whole number", x),
     }
 }
 
 fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
-        Some(id @ &Token::NumberLiteral(_)) |
+        Some(id @ &Token::IntegerLiteral(_)) |
         Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
-        x => Error::parser("number | Identifier", x),
+        x => Error::parser("whole number | Identifier", x),
     }
 }
 
@@ -246,10 +252,10 @@ mod test {
 
         let mut data: Context = Default::default();
         data.set_global_val("array",
-                            Value::Array(vec![Value::Num(22f32),
-                                              Value::Num(23f32),
-                                              Value::Num(24f32),
-                                              Value::Str("wat".to_owned())]));
+                            Value::Array(vec![Value::scalar(22f32),
+                                              Value::scalar(23f32),
+                                              Value::scalar(24f32),
+                                              Value::scalar("wat".to_owned())]));
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test 22 test 23 test 24 test wat ".to_owned()));
     }
@@ -262,9 +268,9 @@ mod test {
                                 &[Token::Identifier("name".to_owned()),
                                   Token::Identifier("in".to_owned()),
                                   Token::OpenRound,
-                                  Token::NumberLiteral(42f32),
+                                  Token::IntegerLiteral(42i32),
                                   Token::DotDot,
-                                  Token::NumberLiteral(46f32),
+                                  Token::IntegerLiteral(46i32),
                                   Token::CloseRound],
                                 &compiler::tokenize("#{{forloop.index}} test {{name}} | ")
                                     .unwrap(),
@@ -288,8 +294,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::Num(42f32));
-        context.set_global_val("omega", Value::Num(46f32));
+        context.set_global_val("alpha", Value::scalar(42i32));
+        context.set_global_val("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output,
                    Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
@@ -336,13 +342,13 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("i", Value::Num(0f32));
-        context.set_global_val("j", Value::Num(0f32));
+        context.set_global_val("i", Value::scalar(0i32));
+        context.set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("empty outer".to_owned()));
 
-        context.set_global_val("i", Value::Num(1f32));
-        context.set_global_val("j", Value::Num(0f32));
+        context.set_global_val("i", Value::scalar(1i32));
+        context.set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("empty inner".to_owned()));
     }
@@ -474,9 +480,9 @@ mod test {
                                 &[Token::Identifier("v".to_owned()),
                                   Token::Identifier("in".to_owned()),
                                   Token::OpenRound,
-                                  Token::NumberLiteral(100f32),
+                                  Token::IntegerLiteral(100i32),
                                   Token::DotDot,
-                                  Token::NumberLiteral(103f32),
+                                  Token::IntegerLiteral(103i32),
                                   Token::CloseRound],
                                 &compiler::tokenize(concat!("length: {{forloop.length}}, ",
                                                             "index: {{forloop.index}}, ",
@@ -518,17 +524,14 @@ mod test {
 
         let mut data: Context = Default::default();
         data.add_filter("shout",
-                        ((|input, _args| if let &Value::Str(ref s) = input {
-                              Ok(Value::Str(s.to_uppercase()))
-                          } else {
-                              interpreter::FilterError::invalid_type("Expected a string")
-                          }) as interpreter::FnFilterValue)
+                        ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase()))) as
+                         interpreter::FnFilterValue)
                             .into());
 
         data.set_global_val("array",
-                            Value::Array(vec![Value::str("alpha"),
-                                              Value::str("beta"),
-                                              Value::str("gamma")]));
+                            Value::Array(vec![Value::scalar("alpha"),
+                                              Value::scalar("beta"),
+                                              Value::scalar("gamma")]));
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test ALPHA test BETA test GAMMA ".to_owned()));
     }

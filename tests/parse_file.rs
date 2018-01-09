@@ -66,8 +66,8 @@ numTwo: 6
 #[test]
 pub fn include_by_file() {
     let mut globals: Object = Default::default();
-    globals.insert("num".to_owned(), Value::Num(5f32));
-    globals.insert("numTwo".to_owned(), Value::Num(10f32));
+    globals.insert("num".to_owned(), Value::scalar(5f32));
+    globals.insert("numTwo".to_owned(), Value::scalar(10f32));
     compare_by_file("include", &globals);
 }
 
