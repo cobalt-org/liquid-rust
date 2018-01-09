@@ -1,5 +1,6 @@
 use error::{Error, Result};
 
+use value::Value;
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -25,6 +26,29 @@ struct Conditional {
     if_false: Option<Template>,
 }
 
+fn contains_check(a: &Value, b: &Value) -> Result<bool> {
+    let b = b.as_str()
+        .ok_or("Right-hand side of contains operator must be a string")?;
+
+    match *a {
+        Value::Str(ref val) => Ok(val.contains(b)),
+        Value::Object(ref obj) => Ok(obj.contains_key(b)),
+        Value::Array(ref arr) => {
+            for elem in arr {
+                let elem = elem.as_str()
+                    .ok_or("The contains operator can only check for strings")?;
+                if elem == b {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        }
+        _ => {
+            Error::renderer("Left-hand side of contains operator must be a string, array or object")
+        }
+    }
+}
+
 impl Conditional {
     fn compare(&self, context: &Context) -> Result<bool> {
         let a = self.condition.lh.evaluate(context)?;
@@ -37,7 +61,7 @@ impl Conditional {
             ComparisonOperator::GreaterThan => a > b,
             ComparisonOperator::LessThanEquals => a <= b,
             ComparisonOperator::GreaterThanEquals => a >= b,
-            ComparisonOperator::Contains => false, // TODO!!!
+            ComparisonOperator::Contains => contains_check(&a, &b)?,
         };
 
         Ok(result == self.mode)
@@ -133,6 +157,7 @@ pub fn if_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
     use super::*;
     use value::Value;
     use compiler;
@@ -335,5 +360,142 @@ mod test {
         context.set_global_val("a", Value::str("else"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("fourth".to_owned()));
+    }
+
+    #[test]
+    fn string_contains_with_literals() {
+        let text = "{% if \"Star Wars\" contains \"Star\" %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+
+        let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
+    }
+
+    #[test]
+    fn string_contains_with_variables() {
+        let text = "{% if movie contains \"Star\"  %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        context.set_global_val("movie", Value::Str("Star Wars".into()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+
+        let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        context.set_global_val("movie", Value::Str("Batman".into()));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
+    }
+
+    #[test]
+    fn contains_numeric_lhs() {
+        let text = "{% if 7 contains \"Star\" %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context);
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn contains_non_string_rhs() {
+        let text = "{% if \"Star Wars\" contains 7 %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context);
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn contains_with_object_and_key() {
+        let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let mut obj = HashMap::new();
+        obj.insert("Star Wars".to_owned(), Value::str("1977"));
+        context.set_global_val("movies", Value::Object(obj));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+    }
+
+    #[test]
+    fn contains_with_object_and_missing_key() {
+        let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let obj = HashMap::new();
+        context.set_global_val("movies", Value::Object(obj));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
+    }
+
+    #[test]
+    fn contains_with_array_and_match() {
+        let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let arr = vec![Value::str("Star Wars"),
+                       Value::str("Star Trek"),
+                       Value::str("Alien")];
+        context.set_global_val("movies", Value::Array(arr));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if true".to_owned()));
+    }
+
+    #[test]
+    fn contains_with_array_and_no_match() {
+        let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let arr = vec![Value::str("Alien")];
+        context.set_global_val("movies", Value::Array(arr));
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("if false".to_owned()));
     }
 }
