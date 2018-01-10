@@ -1,3 +1,13 @@
+<a name="0.13.7"></a>
+## 0.13.7 (2018-01-10)
+
+
+#### Features
+
+*   Implement `contains` operator ([a0d27205](https://github.com/cobalt-org/liquid-rust/commit/a0d2720570d13d489d7d929452c41334a9d019eb), closes [#155](https://github.com/cobalt-org/liquid-rust/issues/155))
+
+
+
 <a name="0.13.6"></a>
 ## 0.13.6 (2017-12-29)
 
