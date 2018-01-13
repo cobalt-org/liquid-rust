@@ -515,10 +515,15 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
 pub fn compact(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 1)?;
 
-    // No-op.  liquid-rust doesn't have Null but this is left in for compatibility with existing
-    // shopofy/liquid code.  Should it be a no-op, error, or not exist?
+    let array = input
+        .as_array()
+        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
 
-    Ok(input.clone())
+    // TODO optional property parameter
+
+    let result: Vec<_> = array.iter().filter(|v| !v.is_nil()).cloned().collect();
+
+    Ok(Value::array(result))
 }
 
 pub fn replace(input: &Value, args: &[Value]) -> FilterResult {
