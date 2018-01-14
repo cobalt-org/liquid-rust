@@ -234,8 +234,9 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert("for".to_owned(),
-                              (for_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("for", (for_block as compiler::FnParseBlock).into());
         options
     }
 

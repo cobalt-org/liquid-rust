@@ -41,8 +41,9 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert("raw".to_owned(),
-                              (raw_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("raw", (raw_block as compiler::FnParseBlock).into());
         options
     }
 

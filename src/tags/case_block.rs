@@ -147,8 +147,9 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert("case".to_owned(),
-                              (case_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("case", (case_block as compiler::FnParseBlock).into());
         options
     }
 

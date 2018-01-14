@@ -165,9 +165,10 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("if".to_owned(), (if_block as compiler::FnParseBlock).into());
-        options.blocks.insert("unless".to_owned(),
-                              (unless_block as compiler::FnParseBlock).into());
+            .insert("if", (if_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("unless", (unless_block as compiler::FnParseBlock).into());
         options
     }
 

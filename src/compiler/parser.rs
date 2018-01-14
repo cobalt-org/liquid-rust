@@ -53,8 +53,8 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             result.extend(indexes);
             Ok(Box::new(result))
         }
-        Some(&Token::Identifier(ref x)) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
+        Some(&Token::Identifier(ref x)) if options.tags.contains_key(x.as_str()) => {
+            options.tags[x.as_str()].parse(x, &tokens[1..], options)
         }
         None => Error::parser("expression", None),
         _ => {
@@ -169,12 +169,12 @@ fn parse_tag(iter: &mut Iter<Element>,
     let tag = &tokens[0];
     match *tag {
         // is a tag
-        Token::Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
+        Token::Identifier(ref x) if options.tags.contains_key(x.as_str()) => {
+            options.tags[x.as_str()].parse(x, &tokens[1..], options)
         }
 
         // is a block
-        Token::Identifier(ref x) if options.blocks.contains_key(x) => {
+        Token::Identifier(ref x) if options.blocks.contains_key(x.as_str()) => {
             // Collect all the inner elements of this block until we find a
             // matching "end<blockname>" tag. Note that there may be nested blocks
             // of the same type (and hence have the same closing delimiter) *inside*
@@ -203,7 +203,7 @@ fn parse_tag(iter: &mut Iter<Element>,
                 };
                 children.push(t.clone())
             }
-            options.blocks[x].parse(x, &tokens[1..], &children, options)
+            options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
@@ -270,7 +270,7 @@ pub fn split_block<'a>(tokens: &'a [Element],
     for (i, t) in tokens.iter().enumerate() {
         if let Element::Tag(ref args, _) = *t {
             match args[0] {
-                Token::Identifier(ref name) if options.blocks.contains_key(name) => {
+                Token::Identifier(ref name) if options.blocks.contains_key(name.as_str()) => {
                     stack.push("end".to_owned() + name);
                 }
 
@@ -391,9 +391,10 @@ mod test_split_block {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        let blocks: HashMap<String, BoxedBlockParser> = ["comment", "for", "if"]
+        let blocks: [&'static str; 3] = ["comment", "for", "if"];
+        let blocks: HashMap<&'static str, BoxedBlockParser> = blocks
             .into_iter()
-            .map(|name| (name.to_string(), (null_block as FnParseBlock).into()))
+            .map(|name| (*name, (null_block as FnParseBlock).into()))
             .collect();
         options.blocks = blocks;
         options

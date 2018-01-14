@@ -7,8 +7,8 @@ use super::NullInclude;
 
 #[derive(Clone)]
 pub struct LiquidOptions {
-    pub blocks: HashMap<String, BoxedBlockParser>,
-    pub tags: HashMap<String, BoxedTagParser>,
+    pub blocks: HashMap<&'static str, BoxedBlockParser>,
+    pub tags: HashMap<&'static str, BoxedTagParser>,
     pub include_source: Box<Include>,
 }
 

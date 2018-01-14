@@ -12,9 +12,9 @@ use super::Template;
 
 #[derive(Default, Clone)]
 pub struct ParserBuilder {
-    blocks: HashMap<String, compiler::BoxedBlockParser>,
-    tags: HashMap<String, compiler::BoxedTagParser>,
-    filters: HashMap<String, interpreter::BoxedValueFilter>,
+    blocks: HashMap<&'static str, compiler::BoxedBlockParser>,
+    tags: HashMap<&'static str, compiler::BoxedTagParser>,
+    filters: HashMap<&'static str, interpreter::BoxedValueFilter>,
     include_source: Option<Box<compiler::Include>>,
 }
 
@@ -129,20 +129,26 @@ impl ParserBuilder {
     }
 
     /// Inserts a new custom block into the parser
-    pub fn block<B: Into<compiler::BoxedBlockParser>>(mut self, name: &str, block: B) -> Self {
-        self.blocks.insert(name.to_owned(), block.into());
+    pub fn block<B: Into<compiler::BoxedBlockParser>>(mut self,
+                                                      name: &'static str,
+                                                      block: B)
+                                                      -> Self {
+        self.blocks.insert(name, block.into());
         self
     }
 
     /// Inserts a new custom tag into the parser
-    pub fn tag<T: Into<compiler::BoxedTagParser>>(mut self, name: &str, tag: T) -> Self {
-        self.tags.insert(name.to_owned(), tag.into());
+    pub fn tag<T: Into<compiler::BoxedTagParser>>(mut self, name: &'static str, tag: T) -> Self {
+        self.tags.insert(name, tag.into());
         self
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<interpreter::BoxedValueFilter>>(mut self, name: &str, filter: F) -> Self {
-        self.filters.insert(name.to_owned(), filter.into());
+    pub fn filter<F: Into<interpreter::BoxedValueFilter>>(mut self,
+                                                          name: &'static str,
+                                                          filter: F)
+                                                          -> Self {
+        self.filters.insert(name, filter.into());
         self
     }
 
@@ -175,7 +181,7 @@ impl ParserBuilder {
 #[derive(Default, Clone)]
 pub struct Parser {
     options: compiler::LiquidOptions,
-    filters: HashMap<String, interpreter::BoxedValueFilter>,
+    filters: HashMap<&'static str, interpreter::BoxedValueFilter>,
 }
 
 impl Parser {

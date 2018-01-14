@@ -48,12 +48,15 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.tags.insert("assign".to_owned(),
-                            (assign_tag as compiler::FnParseTag).into());
-        options.blocks.insert("if".to_owned(),
-                              (tags::if_block as compiler::FnParseBlock).into());
-        options.blocks.insert("for".to_owned(),
-                              (tags::for_block as compiler::FnParseBlock).into());
+        options
+            .tags
+            .insert("assign", (assign_tag as compiler::FnParseTag).into());
+        options
+            .blocks
+            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("for", (tags::for_block as compiler::FnParseBlock).into());
         options
     }
 

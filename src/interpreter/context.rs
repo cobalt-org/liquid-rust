@@ -29,7 +29,7 @@ pub struct Context {
     cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
-    filters: HashMap<String, BoxedValueFilter>,
+    filters: HashMap<&'static str, BoxedValueFilter>,
 }
 
 impl Context {
@@ -43,7 +43,7 @@ impl Context {
         self
     }
 
-    pub fn with_filters(mut self, filters: HashMap<String, BoxedValueFilter>) -> Self {
+    pub fn with_filters(mut self, filters: HashMap<&'static str, BoxedValueFilter>) -> Self {
         self.filters = filters;
         self
     }
@@ -66,8 +66,8 @@ impl Context {
         Ok(Some(val))
     }
 
-    pub fn add_filter(&mut self, name: &str, filter: BoxedValueFilter) {
-        self.filters.insert(name.to_owned(), filter);
+    pub fn add_filter(&mut self, name: &'static str, filter: BoxedValueFilter) {
+        self.filters.insert(name, filter);
     }
 
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {

@@ -58,12 +58,14 @@ mod test {
 
         let mut options = LiquidOptions::default();
         options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
-        options.tags.insert("include".to_owned(),
-                            (include_tag as compiler::FnParseTag).into());
-        options.blocks.insert("comment".to_owned(),
+        options
+            .tags
+            .insert("include", (include_tag as compiler::FnParseTag).into());
+        options.blocks.insert("comment",
                               (tags::comment_block as compiler::FnParseBlock).into());
-        options.blocks.insert("if".to_owned(),
-                              (tags::if_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 
