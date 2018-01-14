@@ -2,6 +2,10 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::borrow;
 
+use chrono;
+
+pub type Date = chrono::DateTime<chrono::FixedOffset>;
+
 /// A Liquid scalar value
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -15,6 +19,8 @@ enum ScalarEnum {
     Integer(i32),
     Float(f32),
     Bool(bool),
+    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
+    Date(Date),
     Str(String),
 }
 
@@ -28,6 +34,7 @@ impl Scalar {
             ScalarEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
             ScalarEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
             ScalarEnum::Bool(ref x) => borrow::Cow::Owned(x.to_string()),
+            ScalarEnum::Date(ref x) => borrow::Cow::Owned(x.format(DATE_FORMAT).to_string()),
             ScalarEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_str()),
         }
     }
@@ -37,6 +44,7 @@ impl Scalar {
             ScalarEnum::Integer(x) => x.to_string(),
             ScalarEnum::Float(x) => x.to_string(),
             ScalarEnum::Bool(x) => x.to_string(),
+            ScalarEnum::Date(x) => x.to_string(),
             ScalarEnum::Str(x) => x,
         }
     }
@@ -47,6 +55,7 @@ impl Scalar {
             ScalarEnum::Integer(ref x) => Some(*x),
             ScalarEnum::Float(_) => None,
             ScalarEnum::Bool(_) => None,
+            ScalarEnum::Date(_) => None,
             ScalarEnum::Str(ref x) => x.parse::<i32>().ok(),
         }
     }
@@ -57,6 +66,7 @@ impl Scalar {
             ScalarEnum::Integer(ref x) => Some(*x as f32),
             ScalarEnum::Float(ref x) => Some(*x),
             ScalarEnum::Bool(_) => None,
+            ScalarEnum::Date(_) => None,
             ScalarEnum::Str(ref x) => x.parse::<f32>().ok(),
         }
     }
@@ -67,7 +77,19 @@ impl Scalar {
             ScalarEnum::Integer(_) => None,
             ScalarEnum::Float(_) => None,
             ScalarEnum::Bool(ref x) => Some(*x),
+            ScalarEnum::Date(_) => None,
             ScalarEnum::Str(_) => None,
+        }
+    }
+
+    /// Interpret as an bool, if possible
+    pub fn to_date(&self) -> Option<Date> {
+        match self.0 {
+            ScalarEnum::Integer(_) => None,
+            ScalarEnum::Float(_) => None,
+            ScalarEnum::Bool(_) => None,
+            ScalarEnum::Date(ref x) => Some(x.clone()),
+            ScalarEnum::Str(ref x) => parse_date(x.as_str()),
         }
     }
 
@@ -78,6 +100,7 @@ impl Scalar {
             ScalarEnum::Integer(_) => true,
             ScalarEnum::Float(_) => true,
             ScalarEnum::Bool(ref x) => *x,
+            ScalarEnum::Date(_) => true,
             ScalarEnum::Str(_) => true,
         }
     }
@@ -89,6 +112,7 @@ impl Scalar {
             ScalarEnum::Integer(_) => false,
             ScalarEnum::Float(_) => false,
             ScalarEnum::Bool(ref x) => !*x,
+            ScalarEnum::Date(_) => false,
             ScalarEnum::Str(ref x) => x.is_empty(),
         }
     }
@@ -112,6 +136,12 @@ impl From<bool> for Scalar {
     }
 }
 
+impl From<Date> for Scalar {
+    fn from(s: Date) -> Self {
+        Scalar { 0: ScalarEnum::Date(s) }
+    }
+}
+
 impl From<String> for Scalar {
     fn from(s: String) -> Self {
         Scalar { 0: ScalarEnum::Str(s) }
@@ -132,6 +162,7 @@ impl PartialEq<Scalar> for Scalar {
             (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x == (y as f32),
             (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x == y,
             (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x == y,
+            (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x == y,
             (&ScalarEnum::Str(ref x), &ScalarEnum::Str(ref y)) => x == y,
             // encode Ruby truthiness: all values except false and nil are true
             (_, &ScalarEnum::Bool(b)) |
@@ -151,6 +182,7 @@ impl PartialOrd<Scalar> for Scalar {
             (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&(y as f32)),
             (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x.partial_cmp(&y),
             (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x.partial_cmp(&y),
+            (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x.partial_cmp(&y),
             (&ScalarEnum::Str(ref x), &ScalarEnum::Str(ref y)) => x.partial_cmp(y),
             _ => None,
         }
@@ -162,6 +194,37 @@ impl fmt::Display for Scalar {
         let data = self.to_str();
         write!(f, "{}", data)
     }
+}
+
+const DATE_FORMAT: &'static str = "%Y-%m-%d %H:%M:%S %z";
+
+#[cfg(feature = "serde")]
+mod friendly_date {
+    use super::*;
+    use serde::{self, Deserialize, Serializer, Deserializer};
+
+    pub fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        let s = date.format(DATE_FORMAT).to_string();
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+        where D: Deserializer<'de>
+    {
+        let s = String::deserialize(deserializer)?;
+        Date::parse_from_str(&s, DATE_FORMAT).map_err(serde::de::Error::custom)
+    }
+}
+
+fn parse_date(s: &str) -> Option<Date> {
+    let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
+    let date = formats
+        .iter()
+        .filter_map(|f| Date::parse_from_str(s, f).ok())
+        .next();
+    date
 }
 
 #[cfg(test)]

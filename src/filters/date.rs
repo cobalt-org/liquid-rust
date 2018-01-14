@@ -1,4 +1,3 @@
-use chrono::DateTime;
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;
 
@@ -16,12 +15,7 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
         return Ok(input.clone());
     }
 
-    let input_string = input.to_str();
-    let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
-    let date = formats
-        .iter()
-        .filter_map(|f| DateTime::parse_from_str(input_string.as_ref(), f).ok())
-        .next();
+    let date = input.as_scalar().and_then(Scalar::to_date);
     let date = match date {
         Some(d) => d,
         None => {
@@ -38,9 +32,10 @@ pub fn date(input: &Value, args: &[Value]) -> FilterResult {
 pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 2, 0)?;
 
-    let s = input.to_str();
-    let date = DateTime::parse_from_str(s.as_ref(), "%d %B %Y %H:%M:%S %z")
-        .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
+    let date = input
+        .as_scalar()
+        .and_then(Scalar::to_date)
+        .ok_or(FilterError::InvalidType("Invalid date format".into()))?;
 
     let format = args[0].to_str();
 
@@ -173,8 +168,7 @@ mod tests {
     fn unit_date_in_tz_input_not_a_string() {
         let input = &Value::scalar(0f32);
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
-        let desired_result = FilterError::InvalidType("Invalid date format: premature end of input"
-                                                          .to_owned());
+        let desired_result = FilterError::InvalidType("Invalid date format".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -183,9 +177,7 @@ mod tests {
     fn unit_date_in_tz_input_not_a_date_string() {
         let input = &tos!("blah blah blah");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
-        let desired_result = FilterError::InvalidType("Invalid date format: input contains \
-                                                       invalid characters"
-                                                          .to_owned());
+        let desired_result = FilterError::InvalidType("Invalid date format".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
