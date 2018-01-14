@@ -1,19 +1,19 @@
+mod date;
 mod html;
 mod math;
 mod url;
 
-pub use self::math::{abs, plus, minus, times, divided_by, modulo};
+pub use self::date::date;
+#[cfg(feature = "extra-filters")]
+pub use self::date::date_in_tz;
 pub use self::html::{escape, escape_once, strip_html, newline_to_br};
+pub use self::math::{abs, plus, minus, times, divided_by, modulo};
 pub use self::url::{url_encode, url_decode};
 
 use std::cmp;
 
-use chrono::DateTime;
 use itertools;
 use unicode_segmentation::UnicodeSegmentation;
-
-#[cfg(feature = "extra-filters")]
-use chrono::FixedOffset;
 
 use value::Index;
 use value::Scalar;
@@ -492,30 +492,6 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
     Ok(Value::scalar(string))
 }
 
-pub fn date(input: &Value, args: &[Value]) -> FilterResult {
-    check_args_len(args, 1, 0)?;
-
-    let format = args[0].to_str();
-    if format.is_empty() {
-        return Ok(input.clone());
-    }
-
-    let input_string = input.to_str();
-    let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
-    let date = formats
-        .iter()
-        .filter_map(|f| DateTime::parse_from_str(input_string.as_ref(), f).ok())
-        .next();
-    let date = match date {
-        Some(d) => d,
-        None => {
-            return Ok(input.clone());
-        }
-    };
-
-    Ok(Value::scalar(date.format(format.as_ref()).to_string()))
-}
-
 pub fn first(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 0)?;
 
@@ -620,30 +596,6 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
     } else {
         Ok(args[1].clone())
     }
-}
-
-// liquid-rust proprietary
-
-#[cfg(feature = "extra-filters")]
-pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
-    check_args_len(args, 2, 0)?;
-
-    let s = input.to_str();
-    let date = DateTime::parse_from_str(s.as_ref(), "%d %B %Y %H:%M:%S %z")
-        .map_err(|e| FilterError::InvalidType(format!("Invalid date format: {}", e)))?;
-
-    let format = args[0].to_str();
-
-    let n =
-        args[1]
-            .as_scalar()
-            .and_then(Scalar::to_integer)
-            .ok_or_else(|| FilterError::InvalidArgument(1, "Whole number expected".to_owned()))?;
-    let timezone = FixedOffset::east(n * 3600);
-
-    Ok(Value::scalar(date.with_timezone(&timezone)
-                         .format(format.as_ref())
-                         .to_string()))
 }
 
 #[cfg(test)]
@@ -759,151 +711,6 @@ mod tests {
         assert_eq!(unit!(ceil, Value::scalar(1.1f32), &[]), Value::scalar(2f32));
         assert_eq!(unit!(ceil, Value::scalar(1f32), &[]), Value::scalar(1f32));
         assert!(ceil(&Value::scalar(true), &[]).is_err());
-    }
-
-    #[test]
-    fn unit_date() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[tos!("%Y-%m-%d")]),
-                   tos!("2016-06-13"));
-    }
-
-    #[test]
-    fn unit_date_cobalt_format() {
-        assert_eq!(unit!(date, tos!("2016-06-13 02:30:00 +0300"), &[tos!("%Y-%m-%d")]),
-                   tos!("2016-06-13"));
-    }
-
-    #[test]
-    fn unit_date_bad_input_type() {
-        assert_eq!(unit!(date, Value::scalar(0f32), &[tos!("%Y-%m-%d")]),
-                   Value::scalar(0f32));
-    }
-
-    #[test]
-    fn unit_date_bad_input_format() {
-        assert_eq!(unit!(date, tos!("blah blah blah"), &[tos!("%Y-%m-%d")]),
-                   tos!("blah blah blah"));
-    }
-
-    #[test]
-    fn unit_date_format_empty() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::scalar("".to_owned())]),
-                   tos!("13 Jun 2016 02:30:00 +0300"));
-    }
-
-    #[test]
-    fn unit_date_bad_format_type() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::scalar(0f32)]),
-                   tos!("0"));
-    }
-
-    #[test]
-    fn unit_date_missing_format() {
-        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
-                   FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned()));
-    }
-
-    #[test]
-    fn unit_date_extra_param() {
-        assert_eq!(failed!(date,
-                           tos!("13 Jun 2016 02:30:00 +0300"),
-                           &[Value::scalar(0f32), Value::scalar(1f32)]),
-                   FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned()));
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_same_day() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(3i32)];
-        let desired_result = tos!("2016-06-13 15:00:00 +0300");
-        assert_eq!(unit!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_previous_day() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(-13i32)];
-        let desired_result = tos!("2016-06-12 23:00:00 -1300");
-        assert_eq!(unit!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_next_day() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(13i32)];
-        let desired_result = tos!("2016-06-14 01:00:00 +1300");
-        assert_eq!(unit!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_input_not_a_string() {
-        let input = &Value::scalar(0f32);
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
-        let desired_result = FilterError::InvalidType("Invalid date format: premature end of input"
-                                                          .to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_input_not_a_date_string() {
-        let input = &tos!("blah blah blah");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
-        let desired_result = FilterError::InvalidType("Invalid date format: input contains \
-                                                       invalid characters"
-                                                          .to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_offset_not_a_num() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), tos!("Hello")];
-        let desired_result = FilterError::InvalidArgument(1, "Whole number expected".to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_zero_arguments() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[];
-        let desired_result = FilterError::InvalidArgumentCount("expected at least 2, 0 given"
-                                                                   .to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_one_argument() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z")];
-        let desired_result = FilterError::InvalidArgumentCount("expected at least 2, 1 given"
-                                                                   .to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
-    }
-
-    #[test]
-    #[cfg(feature = "extra-filters")]
-    fn unit_date_in_tz_three_arguments() {
-        let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"),
-                     Value::scalar(0f32),
-                     Value::scalar(1f32)];
-        let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
-                                                                   .to_owned());
-        assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
     #[test]
