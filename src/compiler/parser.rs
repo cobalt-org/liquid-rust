@@ -20,17 +20,6 @@ use super::ParseTag;
 use super::Token;
 use value::Index;
 
-fn coerce(index: f32) -> Option<isize> {
-    // at the first condition only is_normal is not enough
-    // because zero is not counted normal
-    if (index != 0f32 && !index.is_normal()) || index.round() > (::std::isize::MAX as f32) ||
-       index.round() < (::std::isize::MIN as f32) {
-        None
-    } else {
-        Some(index.round() as isize)
-    }
-}
-
 /// Parses the provided elements into a number of Renderable items
 /// This is the internal version of parse that accepts Elements tokenized
 /// by `lexer::tokenize` and does not register built-in blocks. The main use
@@ -64,8 +53,8 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             result.extend(indexes);
             Ok(Box::new(result))
         }
-        Some(&Token::Identifier(ref x)) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
+        Some(&Token::Identifier(ref x)) if options.tags.contains_key(x.as_str()) => {
+            options.tags[x.as_str()].parse(x, &tokens[1..], options)
         }
         None => Error::parser("expression", None),
         _ => {
@@ -94,13 +83,9 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
             Token::OpenSquare if tokens.len() > 2 => {
                 let index = match tokens[1] {
                     Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
-                    Token::NumberLiteral(ref x) => {
-                        let x = coerce(*x)
-                            .ok_or_else(|| Error::Parser(format!("Invalid index {}", x)))?;
-                        Index::with_index(x)
-                    }
+                    Token::IntegerLiteral(ref x) => Index::with_index(*x as isize),
                     _ => {
-                        return Error::parser("number | string", Some(&tokens[0]));
+                        return Error::parser("integer | string", Some(&tokens[0]));
                     }
                 };
                 indexes.push(index);
@@ -184,12 +169,12 @@ fn parse_tag(iter: &mut Iter<Element>,
     let tag = &tokens[0];
     match *tag {
         // is a tag
-        Token::Identifier(ref x) if options.tags.contains_key(x) => {
-            options.tags[x].parse(x, &tokens[1..], options)
+        Token::Identifier(ref x) if options.tags.contains_key(x.as_str()) => {
+            options.tags[x.as_str()].parse(x, &tokens[1..], options)
         }
 
         // is a block
-        Token::Identifier(ref x) if options.blocks.contains_key(x) => {
+        Token::Identifier(ref x) if options.blocks.contains_key(x.as_str()) => {
             // Collect all the inner elements of this block until we find a
             // matching "end<blockname>" tag. Note that there may be nested blocks
             // of the same type (and hence have the same closing delimiter) *inside*
@@ -218,7 +203,7 @@ fn parse_tag(iter: &mut Iter<Element>,
                 };
                 children.push(t.clone())
             }
-            options.blocks[x].parse(x, &tokens[1..], &children, options)
+            options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
         ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
@@ -242,7 +227,7 @@ pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
 pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
     match tokens.next() {
         Some(t) => value_token(t.clone()),
-        None => Error::parser("string | number | identifier", None),
+        None => Error::parser("string | number | boolean | identifier", None),
     }
 }
 
@@ -251,7 +236,8 @@ pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
 pub fn value_token(t: Token) -> Result<Token> {
     match t {
         v @ Token::StringLiteral(_) |
-        v @ Token::NumberLiteral(_) |
+        v @ Token::IntegerLiteral(_) |
+        v @ Token::FloatLiteral(_) |
         v @ Token::BooleanLiteral(_) |
         v @ Token::Identifier(_) => Ok(v),
         x => Error::parser("string | number | boolean | identifier", Some(&x)),
@@ -284,7 +270,7 @@ pub fn split_block<'a>(tokens: &'a [Element],
     for (i, t) in tokens.iter().enumerate() {
         if let Element::Tag(ref args, _) = *t {
             match args[0] {
-                Token::Identifier(ref name) if options.blocks.contains_key(name) => {
+                Token::Identifier(ref name) if options.blocks.contains_key(name.as_str()) => {
                     stack.push("end".to_owned() + name);
                 }
 
@@ -325,9 +311,9 @@ mod test_parse_output {
         assert_eq!(result.unwrap(),
                    Output::new(Argument::Var(Variable::new("abc")),
                                vec![FilterPrototype::new("def",
-                                                         vec![Argument::Val(Value::str("1")),
-                                                              Argument::Val(Value::Num(2.0)),
-                                                              Argument::Val(Value::str("3"))]),
+                                                         vec![Argument::Val(Value::scalar("1")),
+                                                              Argument::Val(Value::scalar(2.0)),
+                                                              Argument::Val(Value::scalar("3"))]),
                                     FilterPrototype::new("blabla", vec![])]));
     }
 
@@ -405,9 +391,10 @@ mod test_split_block {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        let blocks: HashMap<String, BoxedBlockParser> = ["comment", "for", "if"]
+        let blocks: [&'static str; 3] = ["comment", "for", "if"];
+        let blocks: HashMap<&'static str, BoxedBlockParser> = blocks
             .into_iter()
-            .map(|name| (name.to_string(), (null_block as FnParseBlock).into()))
+            .map(|name| (*name, (null_block as FnParseBlock).into()))
             .collect();
         options.blocks = blocks;
         options

@@ -115,52 +115,56 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
     for el in split_atom(block) {
         push_more = None;
         result.push(match &*el.trim() {
-                        "" => continue,
+            "" => continue,
 
-                        "|" => Token::Pipe,
-                        "." => Token::Dot,
-                        ":" => Token::Colon,
-                        "," => Token::Comma,
-                        "[" => Token::OpenSquare,
-                        "]" => Token::CloseSquare,
-                        "(" => Token::OpenRound,
-                        ")" => Token::CloseRound,
-                        "?" => Token::Question,
-                        "-" => Token::Dash,
-                        "=" => Token::Assignment,
-                        "or" => Token::Or,
+            "|" => Token::Pipe,
+            "." => Token::Dot,
+            ":" => Token::Colon,
+            "," => Token::Comma,
+            "[" => Token::OpenSquare,
+            "]" => Token::CloseSquare,
+            "(" => Token::OpenRound,
+            ")" => Token::CloseRound,
+            "?" => Token::Question,
+            "-" => Token::Dash,
+            "=" => Token::Assignment,
+            "or" => Token::Or,
 
-                        "==" => Token::Comparison(ComparisonOperator::Equals),
-                        "!=" => Token::Comparison(ComparisonOperator::NotEquals),
-                        "<=" => Token::Comparison(ComparisonOperator::LessThanEquals),
-                        ">=" => Token::Comparison(ComparisonOperator::GreaterThanEquals),
-                        "<" => Token::Comparison(ComparisonOperator::LessThan),
-                        ">" => Token::Comparison(ComparisonOperator::GreaterThan),
-                        "contains" => Token::Comparison(ComparisonOperator::Contains),
-                        ".." => Token::DotDot,
+            "==" => Token::Comparison(ComparisonOperator::Equals),
+            "!=" => Token::Comparison(ComparisonOperator::NotEquals),
+            "<=" => Token::Comparison(ComparisonOperator::LessThanEquals),
+            ">=" => Token::Comparison(ComparisonOperator::GreaterThanEquals),
+            "<" => Token::Comparison(ComparisonOperator::LessThan),
+            ">" => Token::Comparison(ComparisonOperator::GreaterThan),
+            "contains" => Token::Comparison(ComparisonOperator::Contains),
+            ".." => Token::DotDot,
 
-                        x if SINGLE_STRING_LITERAL.is_match(x) ||
-                             DOUBLE_STRING_LITERAL.is_match(x) => {
-                            Token::StringLiteral(x[1..x.len() - 1].to_owned())
-                        }
-                        x if NUMBER_LITERAL.is_match(x) => {
-                            Token::NumberLiteral(x.parse::<f32>()
-                                              .expect(&format!("Could not parse {:?} as float", x)))
-                        }
-                        x if BOOLEAN_LITERAL.is_match(x) => {
-                            Token::BooleanLiteral(x.parse::<bool>()
-                                               .expect(&format!("Could not parse {:?} as bool", x)))
-                        }
-                        x if INDEX.is_match(x) => {
-                            let mut parts = x.splitn(2, '.');
-                            parts.next().unwrap();
-                            push_more =
-                                Some(vec![Token::Identifier(parts.next().unwrap().to_owned())]);
-                            Token::Dot
-                        }
-                        x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
-                        x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
-                    });
+            x if SINGLE_STRING_LITERAL.is_match(x) || DOUBLE_STRING_LITERAL.is_match(x) => {
+                Token::StringLiteral(x[1..x.len() - 1].to_owned())
+            }
+            x if NUMBER_LITERAL.is_match(x) => {
+                x.parse::<i32>().map(Token::IntegerLiteral).unwrap_or_else(
+                    |_e| {
+                        Token::FloatLiteral(x.parse::<f32>()
+                                                .expect(&format!("Could not parse {:?} as float",
+                                                                 x)))
+                    },
+                )
+            }
+            x if BOOLEAN_LITERAL.is_match(x) => {
+                Token::BooleanLiteral(x.parse::<bool>().expect(
+                    &format!("Could not parse {:?} as bool", x),
+                ))
+            }
+            x if INDEX.is_match(x) => {
+                let mut parts = x.splitn(2, '.');
+                parts.next().unwrap();
+                push_more = Some(vec![Token::Identifier(parts.next().unwrap().to_owned())]);
+                Token::Dot
+            }
+            x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
+            x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
+        });
         if let Some(v) = push_more {
             result.extend(v);
         }
@@ -341,16 +345,20 @@ mod test {
                         Token::Identifier("arg2".to_owned())]);
         assert_eq!(granularize("multiply 5 3").unwrap(),
                    vec![Token::Identifier("multiply".to_owned()),
-                        Token::NumberLiteral(5f32),
-                        Token::NumberLiteral(3f32)]);
+                        Token::IntegerLiteral(5i32),
+                        Token::IntegerLiteral(3i32)]);
+        assert_eq!(granularize("multiply 5.5 3.2434").unwrap(),
+                   vec![Token::Identifier("multiply".to_owned()),
+                        Token::FloatLiteral(5.5f32),
+                        Token::FloatLiteral(3.2434f32)]);
         assert_eq!(granularize("for i in (1..5)").unwrap(),
                    vec![Token::Identifier("for".to_owned()),
                         Token::Identifier("i".to_owned()),
                         Token::Identifier("in".to_owned()),
                         Token::OpenRound,
-                        Token::NumberLiteral(1f32),
+                        Token::IntegerLiteral(1i32),
                         Token::DotDot,
-                        Token::NumberLiteral(5f32),
+                        Token::IntegerLiteral(5i32),
                         Token::CloseRound]);
         assert_eq!(granularize("\"1, '2', 3, 4\"").unwrap(),
                    vec![Token::StringLiteral("1, '2', 3, 4".to_owned())]);

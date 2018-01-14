@@ -8,7 +8,7 @@ use interpreter::Renderable;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
-    pub(crate) filters: HashMap<String, interpreter::BoxedValueFilter>,
+    pub(crate) filters: HashMap<&'static str, interpreter::BoxedValueFilter>,
 }
 
 impl Template {

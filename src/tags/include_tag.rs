@@ -58,12 +58,14 @@ mod test {
 
         let mut options = LiquidOptions::default();
         options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
-        options.tags.insert("include".to_owned(),
-                            (include_tag as compiler::FnParseTag).into());
-        options.blocks.insert("comment".to_owned(),
+        options
+            .tags
+            .insert("include", (include_tag as compiler::FnParseTag).into());
+        options.blocks.insert("comment",
                               (tags::comment_block as compiler::FnParseBlock).into());
-        options.blocks.insert("if".to_owned(),
-                              (tags::if_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -76,8 +78,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("num", value::Value::Num(5f32));
-        context.set_global_val("numTwo", value::Value::Num(10f32));
+        context.set_global_val("num", value::Value::scalar(5f32));
+        context.set_global_val("numTwo", value::Value::scalar(10f32));
         context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));
@@ -92,8 +94,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("num", value::Value::Num(5f32));
-        context.set_global_val("numTwo", value::Value::Num(10f32));
+        context.set_global_val("num", value::Value::scalar(5f32));
+        context.set_global_val("numTwo", value::Value::scalar(10f32));
         context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));

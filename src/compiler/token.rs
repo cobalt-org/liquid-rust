@@ -31,7 +31,8 @@ pub enum Token {
     Assignment,
     Identifier(String),
     StringLiteral(String),
-    NumberLiteral(f32),
+    IntegerLiteral(i32),
+    FloatLiteral(f32),
     BooleanLiteral(bool),
     DotDot,
     Comparison(ComparisonOperator),
@@ -44,9 +45,10 @@ impl Token {
     /// be interpreted as a Value.
     pub fn to_value(&self) -> Result<Value> {
         match self {
-            &Token::StringLiteral(ref x) => Ok(Value::str(x)),
-            &Token::NumberLiteral(x) => Ok(Value::Num(x)),
-            &Token::BooleanLiteral(x) => Ok(Value::Bool(x)),
+            &Token::StringLiteral(ref x) => Ok(Value::scalar(x.as_str())),
+            &Token::IntegerLiteral(x) => Ok(Value::scalar(x)),
+            &Token::FloatLiteral(x) => Ok(Value::scalar(x)),
+            &Token::BooleanLiteral(x) => Ok(Value::scalar(x)),
             x => Error::parser("Value", Some(x)),
         }
     }
@@ -55,9 +57,10 @@ impl Token {
     /// necessary
     pub fn to_arg(&self) -> Result<Argument> {
         match *self {
-            Token::NumberLiteral(f) => Ok(Argument::Val(Value::Num(f))),
-            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::Str(s.clone()))),
-            Token::BooleanLiteral(b) => Ok(Argument::Val(Value::Bool(b))),
+            Token::IntegerLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
+            Token::FloatLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
+            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::scalar(s.as_str()))),
+            Token::BooleanLiteral(b) => Ok(Argument::Val(Value::scalar(b))),
             Token::Identifier(ref id) => {
                 let mut var = Variable::default();
                 var.extend(id.split('.').map(Index::with_key));
@@ -94,7 +97,8 @@ impl fmt::Display for Token {
             Token::Comparison(ComparisonOperator::Contains) => "contains".to_owned(),
             Token::Identifier(ref x) |
             Token::StringLiteral(ref x) => x.clone(),
-            Token::NumberLiteral(ref x) => x.to_string(),
+            Token::IntegerLiteral(ref x) => x.to_string(),
+            Token::FloatLiteral(ref x) => x.to_string(),
             Token::BooleanLiteral(ref x) => x.to_string(),
         };
         write!(f, "{}", out)
@@ -111,18 +115,26 @@ mod test {
         let ctx = Context::new();
         let t = Token::StringLiteral("hello".to_owned());
         assert_eq!(t.to_arg().unwrap().evaluate(&ctx).unwrap(),
-                   Value::str("hello"));
+                   Value::scalar("hello"));
     }
 
     #[test]
     fn evaluate_handles_number_literals() {
         let ctx = Context::new();
-        assert_eq!(Token::NumberLiteral(42f32)
+        assert_eq!(Token::FloatLiteral(42f32)
                        .to_arg()
                        .unwrap()
                        .evaluate(&ctx)
                        .unwrap(),
-                   Value::Num(42f32));
+                   Value::scalar(42f32));
+
+        let ctx = Context::new();
+        assert_eq!(Token::IntegerLiteral(42i32)
+                       .to_arg()
+                       .unwrap()
+                       .evaluate(&ctx)
+                       .unwrap(),
+                   Value::scalar(42i32));
     }
 
     #[test]
@@ -133,26 +145,26 @@ mod test {
                        .unwrap()
                        .evaluate(&ctx)
                        .unwrap(),
-                   Value::Bool(true));
+                   Value::scalar(true));
 
         assert_eq!(Token::BooleanLiteral(false)
                        .to_arg()
                        .unwrap()
                        .evaluate(&ctx)
                        .unwrap(),
-                   Value::Bool(false));
+                   Value::scalar(false));
     }
 
     #[test]
     fn evaluate_handles_identifiers() {
         let mut ctx = Context::new();
-        ctx.set_global_val("var0", Value::Num(42f32));
+        ctx.set_global_val("var0", Value::scalar(42f32));
         assert_eq!(Token::Identifier("var0".to_owned())
                        .to_arg()
                        .unwrap()
                        .evaluate(&ctx)
                        .unwrap(),
-                   Value::Num(42f32));
+                   Value::scalar(42f32));
         assert!(Token::Identifier("nope".to_owned())
                     .to_arg()
                     .unwrap()

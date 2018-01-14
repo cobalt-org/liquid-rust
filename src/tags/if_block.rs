@@ -27,16 +27,14 @@ struct Conditional {
 }
 
 fn contains_check(a: &Value, b: &Value) -> Result<bool> {
-    let b = b.as_str()
-        .ok_or("Right-hand side of contains operator must be a string")?;
+    let b = b.to_str();
 
     match *a {
-        Value::Str(ref val) => Ok(val.contains(b)),
-        Value::Object(ref obj) => Ok(obj.contains_key(b)),
+        Value::Scalar(ref val) => Ok(val.to_str().contains(b.as_ref())),
+        Value::Object(ref obj) => Ok(obj.contains_key(b.as_ref())),
         Value::Array(ref arr) => {
             for elem in arr {
-                let elem = elem.as_str()
-                    .ok_or("The contains operator can only check for strings")?;
+                let elem = elem.to_str();
                 if elem == b {
                     return Ok(true);
                 }
@@ -167,9 +165,10 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("if".to_owned(), (if_block as compiler::FnParseBlock).into());
-        options.blocks.insert("unless".to_owned(),
-                              (unless_block as compiler::FnParseBlock).into());
+            .insert("if", (if_block as compiler::FnParseBlock).into());
+        options
+            .blocks
+            .insert("unless", (unless_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -243,7 +242,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::Bool(false));
+        context.set_global_val("truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("nope".to_owned()));
 
@@ -253,7 +252,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::Bool(true));
+        context.set_global_val("truthy", Value::scalar(true));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("yep".to_owned()));
     }
@@ -270,7 +269,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::Num(1f32));
+        context.set_global_val("some_value", Value::scalar(1f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("".to_owned()));
 
@@ -280,7 +279,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::Num(42f32));
+        context.set_global_val("some_value", Value::scalar(42f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("unless body".to_owned()));
     }
@@ -303,8 +302,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::Bool(true));
-        context.set_global_val("also_truthy", Value::Bool(false));
+        context.set_global_val("truthy", Value::scalar(true));
+        context.set_global_val("also_truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("yep, not also truthy".to_owned()));
     }
@@ -327,7 +326,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::Num(1f32));
+        context.set_global_val("a", Value::scalar(1f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("first".to_owned()));
 
@@ -337,7 +336,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::Num(2f32));
+        context.set_global_val("a", Value::scalar(2f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("second".to_owned()));
 
@@ -347,7 +346,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::Num(3f32));
+        context.set_global_val("a", Value::scalar(3f32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("third".to_owned()));
 
@@ -357,7 +356,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::str("else"));
+        context.set_global_val("a", Value::scalar("else"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("fourth".to_owned()));
     }
@@ -394,7 +393,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("movie", Value::Str("Star Wars".into()));
+        context.set_global_val("movie", Value::scalar("Star Wars"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if true".to_owned()));
 
@@ -405,35 +404,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("movie", Value::Str("Batman".into()));
+        context.set_global_val("movie", Value::scalar("Batman"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if false".to_owned()));
-    }
-
-    #[test]
-    fn contains_numeric_lhs() {
-        let text = "{% if 7 contains \"Star\" %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
-        let mut context = Context::new();
-        let output = template.render(&mut context);
-        assert!(output.is_err());
-    }
-
-    #[test]
-    fn contains_non_string_rhs() {
-        let text = "{% if \"Star Wars\" contains 7 %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
-        let mut context = Context::new();
-        let output = template.render(&mut context);
-        assert!(output.is_err());
     }
 
     #[test]
@@ -446,7 +419,7 @@ mod test {
 
         let mut context = Context::new();
         let mut obj = HashMap::new();
-        obj.insert("Star Wars".to_owned(), Value::str("1977"));
+        obj.insert("Star Wars".to_owned(), Value::scalar("1977"));
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if true".to_owned()));
@@ -476,9 +449,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        let arr = vec![Value::str("Star Wars"),
-                       Value::str("Star Trek"),
-                       Value::str("Alien")];
+        let arr = vec![Value::scalar("Star Wars"),
+                       Value::scalar("Star Trek"),
+                       Value::scalar("Alien")];
         context.set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if true".to_owned()));
@@ -493,7 +466,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        let arr = vec![Value::str("Alien")];
+        let arr = vec![Value::scalar("Alien")];
         context.set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if false".to_owned()));
