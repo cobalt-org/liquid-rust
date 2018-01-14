@@ -191,7 +191,7 @@ impl Eq for Value {}
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x.partial_cmp(&y),
+            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x.partial_cmp(y),
             (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
             (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
             _ => None,

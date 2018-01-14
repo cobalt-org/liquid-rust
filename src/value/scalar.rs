@@ -53,10 +53,8 @@ impl Scalar {
     pub fn to_integer(&self) -> Option<i32> {
         match self.0 {
             ScalarEnum::Integer(ref x) => Some(*x),
-            ScalarEnum::Float(_) => None,
-            ScalarEnum::Bool(_) => None,
-            ScalarEnum::Date(_) => None,
             ScalarEnum::Str(ref x) => x.parse::<i32>().ok(),
+            _ => None,
         }
     }
 
@@ -65,31 +63,25 @@ impl Scalar {
         match self.0 {
             ScalarEnum::Integer(ref x) => Some(*x as f32),
             ScalarEnum::Float(ref x) => Some(*x),
-            ScalarEnum::Bool(_) => None,
-            ScalarEnum::Date(_) => None,
             ScalarEnum::Str(ref x) => x.parse::<f32>().ok(),
+            _ => None,
         }
     }
 
     /// Interpret as an bool, if possible
     pub fn to_bool(&self) -> Option<bool> {
         match self.0 {
-            ScalarEnum::Integer(_) => None,
-            ScalarEnum::Float(_) => None,
             ScalarEnum::Bool(ref x) => Some(*x),
-            ScalarEnum::Date(_) => None,
-            ScalarEnum::Str(_) => None,
+            _ => None,
         }
     }
 
     /// Interpret as an bool, if possible
     pub fn to_date(&self) -> Option<Date> {
         match self.0 {
-            ScalarEnum::Integer(_) => None,
-            ScalarEnum::Float(_) => None,
-            ScalarEnum::Bool(_) => None,
-            ScalarEnum::Date(ref x) => Some(x.clone()),
+            ScalarEnum::Date(ref x) => Some(*x),
             ScalarEnum::Str(ref x) => parse_date(x.as_str()),
+            _ => None,
         }
     }
 
@@ -97,11 +89,8 @@ impl Scalar {
     pub fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self.0 {
-            ScalarEnum::Integer(_) => true,
-            ScalarEnum::Float(_) => true,
             ScalarEnum::Bool(ref x) => *x,
-            ScalarEnum::Date(_) => true,
-            ScalarEnum::Str(_) => true,
+            _ => true,
         }
     }
 
@@ -109,11 +98,9 @@ impl Scalar {
     pub fn is_default(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self.0 {
-            ScalarEnum::Integer(_) => false,
-            ScalarEnum::Float(_) => false,
             ScalarEnum::Bool(ref x) => !*x,
-            ScalarEnum::Date(_) => false,
             ScalarEnum::Str(ref x) => x.is_empty(),
+            _ => false,
         }
     }
 }
@@ -196,7 +183,7 @@ impl fmt::Display for Scalar {
     }
 }
 
-const DATE_FORMAT: &'static str = "%Y-%m-%d %H:%M:%S %z";
+const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S %z";
 
 #[cfg(feature = "serde")]
 mod friendly_date {
@@ -220,11 +207,10 @@ mod friendly_date {
 
 fn parse_date(s: &str) -> Option<Date> {
     let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
-    let date = formats
+    formats
         .iter()
         .filter_map(|f| Date::parse_from_str(s, f).ok())
-        .next();
-    date
+        .next()
 }
 
 #[cfg(test)]

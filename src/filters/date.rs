@@ -35,7 +35,7 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
     let date = input
         .as_scalar()
         .and_then(Scalar::to_date)
-        .ok_or(FilterError::InvalidType("Invalid date format".into()))?;
+        .ok_or_else(|| FilterError::InvalidType("Invalid date format".into()))?;
 
     let format = args[0].to_str();
 

@@ -234,10 +234,7 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
     let pattern = args[0].to_str();
 
     // Split and construct resulting Array
-    Ok(Value::Array(input
-                        .split(pattern.as_ref())
-                        .map(|x| Value::scalar(x))
-                        .collect()))
+    Ok(Value::Array(input.split(pattern.as_ref()).map(Value::scalar).collect()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
@@ -504,7 +501,7 @@ pub fn first(input: &Value, args: &[Value]) -> FilterResult {
                 .unwrap_or_else(|| "".to_owned());
             Ok(Value::scalar(c))
         }
-        Value::Array(ref x) => Ok(x.first().cloned().unwrap_or(Value::scalar(""))),
+        Value::Array(ref x) => Ok(x.first().cloned().unwrap_or_else(|| Value::scalar(""))),
         _ => Err(FilterError::InvalidType("String or Array expected".to_owned())),
     }
 }
@@ -521,7 +518,7 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
                 .unwrap_or_else(|| "".to_owned());
             Ok(Value::scalar(c))
         }
-        Value::Array(ref x) => Ok(x.last().cloned().unwrap_or(Value::scalar(""))),
+        Value::Array(ref x) => Ok(x.last().cloned().unwrap_or_else(|| Value::scalar(""))),
         _ => Err(FilterError::InvalidType("String or Array expected".to_owned())),
     }
 }
