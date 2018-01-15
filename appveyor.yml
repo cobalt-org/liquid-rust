@@ -27,10 +27,10 @@ test_script:
   - rustc -Vv
   - cargo -V
   - cargo check --verbose
-  - cargo check --verbose --features "cli"
-  - cargo check --verbose --features "cli serde serde_yaml serde_json"
+  - cargo check --verbose --no-default-features
+  - cargo check --verbose --features "cli serde_json object_sorted"
   - cargo clean
-  - cargo test  --verbose --features "cli serde serde_yaml serde_json"
+  - cargo test  --verbose --features "cli serde_json"
 
 cache:
   - C:\Users\appveyor\.cargo\registry
