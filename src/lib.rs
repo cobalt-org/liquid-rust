@@ -44,8 +44,6 @@ extern crate lazy_static;
 extern crate serde;
 #[cfg(test)]
 extern crate serde_yaml;
-#[cfg(feature = "object_order_preserved")]
-extern crate linked_hash_map;
 
 mod error;
 mod filters;
