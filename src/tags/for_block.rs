@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::slice::Iter;
 
 use error::{Error, Result};
@@ -11,7 +10,7 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, expect, split_block};
-use value::Value;
+use value::{Value, Object};
 
 #[derive(Clone, Debug)]
 enum Range {
@@ -95,7 +94,7 @@ impl Renderable for For {
             range_len => {
                 let mut ret = String::default();
                 context.run_in_scope(|mut scope| {
-                    let mut helper_vars: HashMap<String, Value> = HashMap::new();
+                    let mut helper_vars = Object::new();
                     helper_vars.insert("length".to_owned(), Value::scalar(range_len as i32));
 
                     for (i, v) in slice.iter().enumerate() {

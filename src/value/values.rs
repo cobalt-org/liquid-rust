@@ -1,10 +1,27 @@
-use std::collections::HashMap;
 use std::cmp::Ordering;
 use std::fmt;
 use std::borrow;
 
+#[cfg(feature = "object_sorted")]
+use std::collections::BTreeMap;
+
+#[cfg(feature = "object_order_preserved")]
+use linked_hash_map::LinkedHashMap;
+
+#[cfg(not(any(feature = "object_order_preserved", feature = "object_sorted")))]
+use std::collections::HashMap;
+
 use super::Index;
 use super::Scalar;
+
+#[cfg(feature = "object_sorted")]
+type MapImpl<K, V> = BTreeMap<K, V>;
+
+#[cfg(feature = "object_order_preserved")]
+type MapImpl<K, V> = LinkedHashMap<K, V>;
+
+#[cfg(not(any(feature = "object_order_preserved", feature = "object_sorted")))]
+type MapImpl<K, V> = HashMap<K, V>;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug)]
@@ -21,7 +38,7 @@ pub enum Value {
 pub type Array = Vec<Value>;
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
-pub type Object = HashMap<String, Value>;
+pub type Object = MapImpl<String, Value>;
 
 impl Value {
     pub fn scalar<T: Into<Scalar>>(value: T) -> Self {

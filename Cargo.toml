@@ -29,6 +29,12 @@ default = ["extra-filters", "serde"]
 cli = ["clap", "error-chain", "serde_yaml"]
 extra-filters = []
 dev = []
+# Ensure keys in `Value`s `Object`s to be sorted.
+# Mutually exclusive with `object_order_preserved`
+object_sorted = []
+# Ensure the order that keys in `Value`s `Object`s are inserted is preserved
+# Mutually exclusive with `object_sorted`
+object_order_preserved = ["linked-hash-map"]
 
 [dependencies]
 regex = "0.2"
@@ -43,6 +49,8 @@ clap = { version = "2.26", optional = true }
 error-chain = { version = "0.11.0", optional = true }
 serde_yaml = { version = "0.7", optional = true }
 serde_json = { version = "1.0", optional = true }
+
+linked-hash-map = { version = "0.5", optional = true }
 
 [build-dependencies]
 skeptic = "0.13.2"

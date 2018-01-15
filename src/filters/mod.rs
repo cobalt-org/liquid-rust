@@ -598,7 +598,7 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use value::Object;
     use super::*;
 
     macro_rules! unit {
@@ -1371,7 +1371,7 @@ mod tests {
                          &[Value::scalar(1_f32)]),
                    Value::Array(vec![tos!("")]));
         assert_eq!(unit!(default,
-                         Value::Object(HashMap::new()),
+                         Value::Object(Object::new()),
                          &[Value::scalar(1_f32)]),
                    Value::scalar(1_f32));
         assert_eq!(unit!(default, Value::scalar(false), &[Value::scalar(1_f32)]),
