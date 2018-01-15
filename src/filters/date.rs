@@ -1,11 +1,13 @@
-#[cfg(feature = "extra-filters")]
-use chrono::FixedOffset;
-
 use value::Value;
 use value::Scalar;
-use interpreter::{FilterError, FilterResult};
+use interpreter::FilterResult;
 
 use super::check_args_len;
+
+#[cfg(feature = "extra-filters")]
+use chrono::FixedOffset;
+#[cfg(feature = "extra-filters")]
+use interpreter::FilterError;
 
 pub fn date(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 1, 0)?;

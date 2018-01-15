@@ -36,11 +36,11 @@ script:
   - rustc -Vv
   - cargo -V
   - cargo check --verbose
-  - cargo check --verbose --features "cli"
-  - cargo check --verbose --features "cli serde_yaml serde_json"
+  - cargo check --verbose --no-default-features
+  - cargo check --verbose --features "cli serde_json object_sorted"
   - cargo clean
-  - cargo test  --verbose --features "cli serde_yaml serde_json"
-  - cargo when --channel nightly bench --features "cli serde_yaml serde_json"
+  - cargo test  --verbose --features "cli serde_json"
+  - cargo when --channel nightly bench --features "cli serde_json"
   - cargo when --channel stable doc --no-deps --all-features
 
 after_success:

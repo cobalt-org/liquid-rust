@@ -155,9 +155,9 @@ pub fn if_block(_tag_name: &str,
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
     use super::*;
     use value::Value;
+    use value::Object;
     use compiler;
     use interpreter;
 
@@ -418,7 +418,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        let mut obj = HashMap::new();
+        let mut obj = Object::new();
         obj.insert("Star Wars".to_owned(), Value::scalar("1977"));
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
@@ -434,7 +434,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        let obj = HashMap::new();
+        let obj = Object::new();
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if false".to_owned()));
