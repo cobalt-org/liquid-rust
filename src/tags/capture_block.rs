@@ -1,4 +1,4 @@
-use error::{Error, Result};
+use error::Error;
 
 use interpreter::Context;
 use interpreter::Renderable;
@@ -6,7 +6,8 @@ use interpreter::Template;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::parse;
+use compiler::{parse, unexpected_token_error};
+use compiler::{CompilerError, ResultCompilerExt};
 use value::Value;
 
 #[derive(Debug)]
@@ -16,7 +17,7 @@ struct Capture {
 }
 
 impl Renderable for Capture {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
         let output = match self.template.render(context) {
             Ok(Some(s)) => s.clone(),
             Ok(None) => "".to_owned(),
@@ -32,19 +33,20 @@ pub fn capture_block(_tag_name: &str,
                      arguments: &[Token],
                      tokens: &[Element],
                      options: &LiquidOptions)
-                     -> Result<Box<Renderable>> {
+                     -> Result<Box<Renderable>, CompilerError> {
     let mut args = arguments.iter();
     let id = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),
-        x @ Some(_) | x @ None => return Error::parser("Identifier", x),
+        x @ Some(_) | x @ None => return Err(unexpected_token_error("identifier", x)),
     };
 
     // there should be no trailing tokens after this
     if let t @ Some(_) = args.next() {
-        return Error::parser("%}", t);
+        return Err(unexpected_token_error("`%}`", t));
     };
 
-    let t = Template::new(parse(tokens, options)?);
+    let t = Template::new(parse(tokens, options)
+                              .trace_with(|| format!("{{% capture {} %}}", &id).into())?);
 
     Ok(Box::new(Capture {
                     id: id,

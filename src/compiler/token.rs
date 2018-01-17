@@ -1,11 +1,12 @@
 use std::fmt;
 
-use error::{Error, Result};
+use super::error::Result;
+use super::parser::unexpected_token_error;
 use value::{Index, Value};
 use interpreter::Argument;
 use interpreter::Variable;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ComparisonOperator {
     Equals,
     NotEquals,
@@ -16,6 +17,20 @@ pub enum ComparisonOperator {
     Contains,
 }
 
+impl fmt::Display for ComparisonOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let out = match *self {
+            ComparisonOperator::Equals => "==",
+            ComparisonOperator::NotEquals => "!=",
+            ComparisonOperator::LessThanEquals => "<=",
+            ComparisonOperator::GreaterThanEquals => ">=",
+            ComparisonOperator::LessThan => "<",
+            ComparisonOperator::GreaterThan => ">",
+            ComparisonOperator::Contains => "contains",
+        };
+        write!(f, "{}", out)
+    }
+}
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Pipe,
@@ -49,7 +64,7 @@ impl Token {
             &Token::IntegerLiteral(x) => Ok(Value::scalar(x)),
             &Token::FloatLiteral(x) => Ok(Value::scalar(x)),
             &Token::BooleanLiteral(x) => Ok(Value::scalar(x)),
-            x => Error::parser("Value", Some(x)),
+            x => Err(unexpected_token_error("string | number | boolean", Some(x))),
         }
     }
 
@@ -66,7 +81,7 @@ impl Token {
                 var.extend(id.split('.').map(Index::with_key));
                 Ok(Argument::Var(var))
             }
-            ref x => Error::parser("Argument", Some(x)),
+            ref x => Err(unexpected_token_error("string | number | boolean | identifier", Some(x))),
         }
     }
 }
@@ -88,13 +103,7 @@ impl fmt::Display for Token {
             Token::Assignment => "=".to_owned(),
             Token::Or => "or".to_owned(),
 
-            Token::Comparison(ComparisonOperator::Equals) => "==".to_owned(),
-            Token::Comparison(ComparisonOperator::NotEquals) => "!=".to_owned(),
-            Token::Comparison(ComparisonOperator::LessThanEquals) => "<=".to_owned(),
-            Token::Comparison(ComparisonOperator::GreaterThanEquals) => ">=".to_owned(),
-            Token::Comparison(ComparisonOperator::LessThan) => "<".to_owned(),
-            Token::Comparison(ComparisonOperator::GreaterThan) => ">".to_owned(),
-            Token::Comparison(ComparisonOperator::Contains) => "contains".to_owned(),
+            Token::Comparison(ref x) => x.to_string(),
             Token::Identifier(ref x) |
             Token::StringLiteral(ref x) => x.clone(),
             Token::IntegerLiteral(ref x) => x.to_string(),

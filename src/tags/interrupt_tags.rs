@@ -1,15 +1,17 @@
-use error::{Error, Result};
+use error::Error;
 
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
 use compiler::LiquidOptions;
 use compiler::Token;
+use compiler::unexpected_token_error;
+use compiler::CompilerError;
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
 
 impl Renderable for Break {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
         context.set_interrupt(Interrupt::Break);
         Ok(None)
     }
@@ -18,11 +20,11 @@ impl Renderable for Break {
 pub fn break_tag(_tag_name: &str,
                  arguments: &[Token],
                  _options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+                 -> Result<Box<Renderable>, CompilerError> {
 
     // no arguments should be supplied, trying to supply them is an error
     if !arguments.is_empty() {
-        return Error::parser("%}", arguments.first());
+        return Err(unexpected_token_error("`%}`", arguments.first()));
     }
     Ok(Box::new(Break))
 }
@@ -31,7 +33,7 @@ pub fn break_tag(_tag_name: &str,
 struct Continue;
 
 impl Renderable for Continue {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
         context.set_interrupt(Interrupt::Continue);
         Ok(None)
     }
@@ -40,10 +42,10 @@ impl Renderable for Continue {
 pub fn continue_tag(_tag_name: &str,
                     arguments: &[Token],
                     _options: &LiquidOptions)
-                    -> Result<Box<Renderable>> {
+                    -> Result<Box<Renderable>, CompilerError> {
     // no arguments should be supplied, trying to supply them is an error
     if !arguments.is_empty() {
-        return Error::parser("%}", arguments.first());
+        return Err(unexpected_token_error("`%}`", arguments.first()));
     }
     Ok(Box::new(Continue))
 }

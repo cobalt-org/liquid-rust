@@ -1,12 +1,13 @@
-use error::{Result, Error};
+use error::Error;
 
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::parse;
+use compiler::{parse, unexpected_token_error};
 use compiler::tokenize;
+use compiler::{CompilerError, ResultCompilerExt};
 
 #[derive(Debug)]
 struct Include {
@@ -14,12 +15,12 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render(&self, mut context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, mut context: &mut Context) -> Result<Option<String>, Error> {
         self.partial.render(&mut context)
     }
 }
 
-fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
+fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template, CompilerError> {
     let content = options.include_source.include(name)?;
 
     let tokens = tokenize(&content)?;
@@ -29,17 +30,19 @@ fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
 pub fn include_tag(_tag_name: &str,
                    arguments: &[Token],
                    options: &LiquidOptions)
-                   -> Result<Box<Renderable>> {
+                   -> Result<Box<Renderable>, CompilerError> {
     let mut args = arguments.iter();
 
     let name = match args.next() {
         Some(&Token::StringLiteral(ref name)) => name,
         Some(&Token::Identifier(ref s)) => s,
-        arg => return Error::parser("String Literal", arg),
+        arg => return Err(unexpected_token_error("string", arg)),
     };
 
+    let partial = parse_partial(name, options)
+        .trace_with(|| format!("{{% include {} %}}", name).into())?;
 
-    Ok(Box::new(Include { partial: parse_partial(name, options)? }))
+    Ok(Box::new(Include { partial }))
 }
 
 #[cfg(test)]

@@ -1,10 +1,11 @@
-use error::Result;
+use error::Error;
 
 use interpreter::Context;
 use interpreter::Renderable;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
+use compiler::CompilerError;
 
 #[derive(Clone, Debug)]
 struct RawT {
@@ -12,7 +13,7 @@ struct RawT {
 }
 
 impl Renderable for RawT {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, _context: &mut Context) -> Result<Option<String>, Error> {
         Ok(Some(self.content.to_owned()))
     }
 }
@@ -21,7 +22,7 @@ pub fn raw_block(_tag_name: &str,
                  _arguments: &[Token],
                  tokens: &[Element],
                  _options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+                 -> Result<Box<Renderable>, CompilerError> {
     let content = tokens.iter().fold("".to_owned(), |a, b| {
         a +
         match *b {

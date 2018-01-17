@@ -1,11 +1,12 @@
-use error::{Error, Result};
+use error::Error;
 
 use interpreter::Context;
 use interpreter::Output;
 use interpreter::Renderable;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse_output, expect};
+use compiler::{parse_output, expect, unexpected_token_error};
+use compiler::CompilerError;
 
 #[derive(Clone, Debug)]
 struct Assign {
@@ -14,7 +15,7 @@ struct Assign {
 }
 
 impl Renderable for Assign {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
         let value = self.src.apply_filters(context)?;
         context.set_global_val(&self.dst, value);
         Ok(None)
@@ -24,11 +25,11 @@ impl Renderable for Assign {
 pub fn assign_tag(_tag_name: &str,
                   arguments: &[Token],
                   _options: &LiquidOptions)
-                  -> Result<Box<Renderable>> {
+                  -> Result<Box<Renderable>, CompilerError> {
     let mut args = arguments.iter();
     let dst = match args.next() {
         Some(&Token::Identifier(ref id)) => id.clone(),
-        x => return Error::parser("Identifier", x),
+        x => return Err(unexpected_token_error("identifier", x)),
     };
 
     expect(&mut args, &Token::Assignment)?;

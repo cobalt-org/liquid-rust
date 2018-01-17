@@ -4,6 +4,7 @@ use std::fmt;
 use std::io;
 
 use interpreter::FilterError;
+use compiler::CompilerError;
 use compiler::Token;
 
 // type alias because we always want to deal with CobaltErrors
@@ -15,6 +16,7 @@ pub enum Error {
     Parser(String),
     Render(String),
     Filter(FilterError),
+    Compiler(CompilerError),
     Other(String),
     Io(io::Error),
 }
@@ -51,6 +53,12 @@ impl From<FilterError> for Error {
     }
 }
 
+impl From<CompilerError> for Error {
+    fn from(err: CompilerError) -> Error {
+        Error::Compiler(err)
+    }
+}
+
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::Io(err)
@@ -64,6 +72,7 @@ impl fmt::Display for Error {
             Error::Parser(ref err) => write!(f, "Parsing error: {}", err),
             Error::Render(ref err) => write!(f, "Rendering error: {}", err),
             Error::Filter(ref err) => write!(f, "Filtering error: {}", err),
+            Error::Compiler(ref err) => write!(f, "{}", err),
             Error::Other(ref err) => write!(f, "Error: {}", err),
             Error::Io(ref err) => write!(f, "Io::Error: {}", err),
         }
@@ -78,6 +87,7 @@ impl error::Error for Error {
             Error::Render(ref err) |
             Error::Other(ref err) => err,
             Error::Filter(ref err) => err.description(),
+            Error::Compiler(ref err) => err.description(),
             Error::Io(ref err) => err.description(),
         }
     }

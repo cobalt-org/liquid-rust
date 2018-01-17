@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
 
-use error::{Error, Result};
+use super::{CompilerError, Result, ResultCompilerChainExt, ResultCompilerExt};
 
 pub trait Include: Send + Sync + IncludeClone {
     fn include(&self, path: &str) -> Result<String>;
@@ -38,7 +38,8 @@ impl NullInclude {
 
 impl Include for NullInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
-        Err(Error::from(&*format!("{:?} does not exist", relative_path)))
+        Err(CompilerError::with_msg("File does not exist")
+                .context(format!("path={}", relative_path)))
     }
 }
 
@@ -57,20 +58,28 @@ impl FilesystemInclude {
 
 impl Include for FilesystemInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
-        let root = self.root.canonicalize()?;
+        let root = self.root
+            .canonicalize()
+            .chain("Snippet does not exist")
+            .context_with(|| format!("non-existent source={:?}", self.root))?;
         let mut path = root.clone();
         path.extend(relative_path.split('/'));
-        if !path.exists() {
-            return Err(Error::from(&*format!("{:?} does not exist", path)));
-        }
-        let path = path.canonicalize()?;
+        let path = path.canonicalize()
+            .chain("Snippet does not exist")
+            .context_with(|| format!("non-existent path={:?}", path))?;
         if !path.starts_with(&root) {
-            return Err(Error::from(&*format!("{:?} is outside the include path", path)));
+            return Err(CompilerError::with_msg("Snippet is outside of source")
+                           .context(format!("source={:?}", root))
+                           .context(format!("full path={:?}", &path)));
         }
 
-        let mut file = File::open(path)?;
+        let mut file = File::open(&path)
+            .chain("Failed to open snippet")
+            .context_with(|| format!("full path={:?}", path))?;
         let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        file.read_to_string(&mut content)
+            .chain("Failed to read snippet")
+            .context_with(|| format!("full path={:?}", path))?;
         Ok(content)
     }
 }

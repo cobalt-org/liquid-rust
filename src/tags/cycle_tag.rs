@@ -1,13 +1,14 @@
 use itertools;
 
-use error::{Error, Result};
+use error::Error;
 
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
 use compiler::Token;
 use compiler::LiquidOptions;
-use compiler::{consume_value_token, value_token};
+use compiler::{consume_value_token, value_token, unexpected_token_error};
+use compiler::CompilerError;
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -16,14 +17,14 @@ struct Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
         let value = context.cycle_element(&self.name, &self.values)?;
         Ok(value.map(|v| v.to_string()))
     }
 }
 
 /// Internal implementation of cycle, to allow easier testing.
-fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
+fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle, CompilerError> {
     let mut args = arguments.iter();
     let mut name = String::new();
     let mut values = Vec::new();
@@ -39,7 +40,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
             // first argument is the first item in the cycle
             values.push(first.to_arg()?);
         }
-        x => return Error::parser(": | string | number | boolean | identifier", x),
+        x => return Err(unexpected_token_error("string | number | boolean | identifier", x)),
     }
 
     loop {
@@ -54,7 +55,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         match args.next() {
             Some(&Token::Comma) => {}
             None => break,
-            x => return Error::parser("Comma", x),
+            x => return Err(unexpected_token_error("`,`", x)),
         }
     }
 
@@ -71,7 +72,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
 pub fn cycle_tag(_tag_name: &str,
                  arguments: &[Token],
                  options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+                 -> Result<Box<Renderable>, CompilerError> {
     parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
 }
 
