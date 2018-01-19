@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::error::Result;
+use super::Result;
 use super::parser::unexpected_token_error;
 use value::{Index, Value};
 use interpreter::Argument;

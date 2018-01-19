@@ -1,6 +1,6 @@
 use itertools;
 
-use error::Error;
+use error::Result;
 
 use interpreter::Argument;
 use interpreter::Context;
@@ -8,7 +8,6 @@ use interpreter::Renderable;
 use compiler::Token;
 use compiler::LiquidOptions;
 use compiler::{consume_value_token, value_token, unexpected_token_error};
-use compiler::CompilerError;
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -17,14 +16,14 @@ struct Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let value = context.cycle_element(&self.name, &self.values)?;
         Ok(value.map(|v| v.to_string()))
     }
 }
 
 /// Internal implementation of cycle, to allow easier testing.
-fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle, CompilerError> {
+fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     let mut args = arguments.iter();
     let mut name = String::new();
     let mut values = Vec::new();
@@ -72,7 +71,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle, C
 pub fn cycle_tag(_tag_name: &str,
                  arguments: &[Token],
                  options: &LiquidOptions)
-                 -> Result<Box<Renderable>, CompilerError> {
+                 -> Result<Box<Renderable>> {
     parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
 }
 

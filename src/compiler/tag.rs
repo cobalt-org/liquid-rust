@@ -1,4 +1,4 @@
-use super::error::Result;
+use super::Result;
 
 use interpreter::Renderable;
 use super::LiquidOptions;

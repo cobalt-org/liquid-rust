@@ -1,4 +1,4 @@
-use error::{Error, Result};
+use error::{Error, Result, ResultLiquidChainExt};
 use value::Value;
 
 use super::Context;
@@ -47,13 +47,12 @@ impl Output {
 
         // apply all specified filters
         for filter in &self.filters {
-            let f =
-                context
-                    .get_filter(&filter.name)
-                    .ok_or_else(|| {
-                                    Error::Render(format!("Filter {} not implemented",
-                                                          &filter.name))
-                                })?;
+            let f = context
+                .get_filter(&filter.name)
+                .ok_or_else(|| {
+                                Error::with_msg("Unsupported filter")
+                                    .context(format!("filter={}", &filter.name))
+                            })?;
 
             let arguments: Result<Vec<Value>> = filter
                 .arguments
@@ -61,7 +60,7 @@ impl Output {
                 .map(|a| a.evaluate(context))
                 .collect();
             let arguments = arguments?;
-            entry = f.filter(&entry, &*arguments)?;
+            entry = f.filter(&entry, &*arguments).chain("Filter error")?;
         }
 
         Ok(entry)

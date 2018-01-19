@@ -7,7 +7,7 @@ use std::slice::Iter;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use super::error::{CompilerError, Result};
+use super::{Error, Result};
 
 use interpreter::Renderable;
 use interpreter::Text;
@@ -44,14 +44,14 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
 
 const NOTHING: Option<&str> = None;
 
-pub fn unexpected_token_error<S: ToString>(expected: &str, actual: Option<S>) -> CompilerError {
+pub fn unexpected_token_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
     unexpected_token_error_string(expected, actual)
 }
 
-pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> CompilerError {
+pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    CompilerError::with_msg(format!("Expected {}, found {}", expected, actual))
+    Error::with_msg(format!("Expected {}, found {}", expected, actual))
 }
 
 // creates an expression, which wraps everything that gets rendered
@@ -219,7 +219,7 @@ fn parse_tag(iter: &mut Iter<Element>,
             options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
-        ref x => Err(CompilerError::with_msg("Tag is not supported").context(format!("tag={}", x))),
+        ref x => Err(Error::with_msg("Tag is not supported").context(format!("tag={}", x))),
     }
 }
 

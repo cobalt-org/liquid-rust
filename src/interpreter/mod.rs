@@ -9,7 +9,7 @@ mod variable;
 
 pub use self::argument::Argument;
 pub use self::variable::Variable;
-pub use self::context::{Context, Interrupt};
+pub use self::context::{Context, Interrupt, unexpected_value_error};
 pub use self::filter::{FilterValue, FilterError, FilterResult, BoxedValueFilter, FnFilterValue};
 pub use self::output::{Output, FilterPrototype};
 pub use self::renderable::Renderable;

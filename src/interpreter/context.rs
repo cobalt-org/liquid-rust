@@ -7,6 +7,16 @@ use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
 
 
+pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+    let actual = actual.map(|x| x.to_string());
+    unexpected_value_error_string(expected, actual)
+}
+
+pub fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
+    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
+    Error::with_msg(format!("Expected {}, found {}", expected, actual))
+}
+
 #[derive(Clone, Debug)]
 pub enum Interrupt {
     Continue,
@@ -57,9 +67,9 @@ impl Context {
         };
 
         if index >= values.len() {
-            return Err(Error::Render(format!("cycle index {} out of bounds {}",
-                                             index,
-                                             values.len())));
+            return Err(Error::with_msg("cycle index out of bounds")
+                           .context(format!("index={}", index))
+                           .context(format!("count={}", values.len())));
         }
 
         let val = values[index].evaluate(self)?;
@@ -139,24 +149,25 @@ impl Context {
                                                                -> Result<&Value> {
         let key = indexes
             .next()
-            .ok_or_else(|| Error::Render("No index provided".to_owned()))?;
+            .ok_or_else(|| Error::with_msg("No index provided"))?;
         let key = key.as_key()
             .ok_or_else(|| {
-                            Error::Render(format!("Root index must be an object key, found {:?}",
-                                                  key))
+                            Error::with_msg("Root index must be an object key")
+                                .context(format!("index={}", key))
                         })?;
-        let value = self.get_val(key)
-            .ok_or_else(|| Error::Render(format!("Object key not found: {:?}", key)))?;
+        let value =
+            self.get_val(key)
+                .ok_or_else(|| Error::with_msg("Invalid index").context(format!("index={}", key)))?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
             let child = value.get(index);
-            let child = child
-                .ok_or_else(|| {
-                                Error::Render(format!("Invalid index `{}` for value `{:?}`",
-                                                      index,
-                                                      value))
-                            })?;
+            let child =
+                child
+                    .ok_or_else(|| {
+                                    Error::with_msg("Invalid index")
+                                        .context(format!("index={}", key))
+                                })?;
             Ok(child)
         })
     }

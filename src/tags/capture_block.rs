@@ -1,4 +1,4 @@
-use error::Error;
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Context;
 use interpreter::Renderable;
@@ -7,7 +7,6 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
-use compiler::{CompilerError, ResultCompilerExt};
 use value::Value;
 
 #[derive(Debug)]
@@ -17,7 +16,7 @@ struct Capture {
 }
 
 impl Renderable for Capture {
-    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let output = match self.template.render(context) {
             Ok(Some(s)) => s.clone(),
             Ok(None) => "".to_owned(),
@@ -33,7 +32,7 @@ pub fn capture_block(_tag_name: &str,
                      arguments: &[Token],
                      tokens: &[Element],
                      options: &LiquidOptions)
-                     -> Result<Box<Renderable>, CompilerError> {
+                     -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let id = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),

@@ -7,7 +7,7 @@ use std::fmt;
 
 use regex::Regex;
 
-use super::error::{CompilerError, Result};
+use super::{Error, Result};
 
 use super::Token;
 use super::ComparisonOperator;
@@ -172,7 +172,7 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                 Token::Dot
             }
             x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
-            x => return Err(CompilerError::with_msg("Invalid identifier")
+            x => return Err(Error::with_msg("Invalid identifier")
                                             .context(format!("identifier={}", x))),
         });
         if let Some(v) = push_more {

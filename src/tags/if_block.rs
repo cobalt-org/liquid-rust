@@ -1,18 +1,17 @@
 use std::fmt;
 
-use error::Error;
+use error::{Result, ResultLiquidExt};
 
-use value::Value;
-use interpreter::Argument;
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
 use compiler::ComparisonOperator;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, split_block, consume_value_token, unexpected_token_error};
-use compiler::{CompilerError, ResultCompilerExt};
+use interpreter::{Argument, unexpected_value_error};
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
+use value::Value;
 
 #[derive(Clone, Debug)]
 struct Condition {
@@ -35,7 +34,7 @@ struct Conditional {
     if_false: Option<Template>,
 }
 
-fn contains_check(a: &Value, b: &Value) -> Result<bool, Error> {
+fn contains_check(a: &Value, b: &Value) -> Result<bool> {
     let b = b.to_str();
 
     match *a {
@@ -50,14 +49,12 @@ fn contains_check(a: &Value, b: &Value) -> Result<bool, Error> {
             }
             Ok(false)
         }
-        _ => {
-            Error::renderer("Left-hand side of contains operator must be a string, array or object")
-        }
+        _ => Err(unexpected_value_error("string | array | object", Some(a.type_name()))),
     }
 }
 
 impl Conditional {
-    fn compare(&self, context: &Context) -> Result<bool, Error> {
+    fn compare(&self, context: &Context) -> Result<bool> {
         let a = self.condition.lh.evaluate(context)?;
         let b = self.condition.rh.evaluate(context)?;
 
@@ -76,7 +73,7 @@ impl Conditional {
 }
 
 impl Renderable for Conditional {
-    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         if self.compare(context)? {
             self.if_true.render(context)
         } else {
@@ -89,7 +86,7 @@ impl Renderable for Conditional {
 }
 
 /// Common parsing for "if" and "unless" condition
-fn parse_condition(arguments: &[Token]) -> Result<Condition, CompilerError> {
+fn parse_condition(arguments: &[Token]) -> Result<Condition> {
     let mut args = arguments.iter();
 
     let lh = consume_value_token(&mut args)?.to_arg()?;
@@ -117,7 +114,7 @@ pub fn unless_block(_tag_name: &str,
                     arguments: &[Token],
                     tokens: &[Element],
                     options: &LiquidOptions)
-                    -> Result<Box<Renderable>, CompilerError> {
+                    -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
     let if_true = Template::new(parse(&tokens[..], options)?);
     Ok(Box::new(Conditional {
@@ -132,7 +129,7 @@ pub fn if_block(tag_name: &str,
                 arguments: &[Token],
                 tokens: &[Element],
                 options: &LiquidOptions)
-                -> Result<Box<Renderable>, CompilerError> {
+                -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
 
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);

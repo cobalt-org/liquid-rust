@@ -1,4 +1,4 @@
-use error::Error;
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Context;
 use interpreter::Renderable;
@@ -7,7 +7,6 @@ use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
 use compiler::tokenize;
-use compiler::{CompilerError, ResultCompilerExt};
 
 #[derive(Debug)]
 struct Include {
@@ -15,12 +14,12 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render(&self, mut context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, mut context: &mut Context) -> Result<Option<String>> {
         self.partial.render(&mut context)
     }
 }
 
-fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template, CompilerError> {
+fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
     let content = options.include_source.include(name)?;
 
     let tokens = tokenize(&content)?;
@@ -30,7 +29,7 @@ fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template, Compil
 pub fn include_tag(_tag_name: &str,
                    arguments: &[Token],
                    options: &LiquidOptions)
-                   -> Result<Box<Renderable>, CompilerError> {
+                   -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
     let name = match args.next() {

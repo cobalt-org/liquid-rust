@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
 
-use super::{CompilerError, Result, ResultCompilerChainExt, ResultCompilerExt};
+use super::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 
 pub trait Include: Send + Sync + IncludeClone {
     fn include(&self, path: &str) -> Result<String>;
@@ -38,8 +38,7 @@ impl NullInclude {
 
 impl Include for NullInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
-        Err(CompilerError::with_msg("File does not exist")
-                .context(format!("path={}", relative_path)))
+        Err(Error::with_msg("File does not exist").context(format!("path={}", relative_path)))
     }
 }
 
@@ -68,7 +67,7 @@ impl Include for FilesystemInclude {
             .chain("Snippet does not exist")
             .context_with(|| format!("non-existent path={:?}", path))?;
         if !path.starts_with(&root) {
-            return Err(CompilerError::with_msg("Snippet is outside of source")
+            return Err(Error::with_msg("Snippet is outside of source")
                            .context(format!("source={:?}", root))
                            .context(format!("full path={:?}", &path)));
         }

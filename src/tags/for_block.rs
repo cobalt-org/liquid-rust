@@ -2,18 +2,17 @@ use std::slice::Iter;
 
 use itertools;
 
-use error::Error;
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{Context, Interrupt};
+use interpreter::{Context, Interrupt, unexpected_value_error};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, expect, split_block, unexpected_token_error};
-use compiler::{CompilerError, ResultCompilerExt};
-use value::{Value, Object};
+use value::{Value, Object, Scalar};
 
 #[derive(Clone, Debug)]
 enum Range {
@@ -32,34 +31,28 @@ struct For {
     reversed: bool,
 }
 
-fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>, Error> {
+fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
         Value::Array(x) => Ok(x),
-        x => {
-            Err(Error::Render(format!("Tried to iterate over {:?} ({}), which is not supported.",
-                                      x,
-                                      array_id)))
-        }
+        x => Err(unexpected_value_error("array", Some(x.type_name()))),
     }
 }
 
-fn int_argument(arg: &Argument, context: &Context) -> Result<isize, Error> {
+fn int_argument(arg: &Argument, context: &Context) -> Result<isize> {
+    let value = arg.evaluate(context)?;
+
     let value =
-        arg.evaluate(context)?
+        value
             .as_scalar()
-            .ok_or_else(|| Error::Render(format!("{:?} is not a whole number.", arg)))?
-            .to_integer()
-            .ok_or_else(|| {
-                            Error::Render(format!("{:?} is not a whole number or valid variable.",
-                                                  arg))
-                        })?;
+            .and_then(Scalar::to_integer)
+            .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?;
 
     Ok(value as isize)
 }
 
 impl Renderable for For {
-    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let mut range = match self.range {
             Range::Array(ref array_id) => get_array(context, array_id)?,
 
@@ -134,7 +127,7 @@ impl Renderable for For {
 
 
 /// Extracts an attribute with an integer value from the token stream
-fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>, CompilerError> {
+fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     expect(args, &Token::Colon)?;
     match args.next() {
         Some(&Token::IntegerLiteral(ref n)) => Ok(Some(*n as usize)),
@@ -142,7 +135,7 @@ fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>, CompilerError> {
     }
 }
 
-fn range_end_point(args: &mut Iter<Token>) -> Result<Token, CompilerError> {
+fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
         Some(id @ &Token::IntegerLiteral(_)) |
         Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
@@ -180,7 +173,7 @@ pub fn for_block(_tag_name: &str,
                  arguments: &[Token],
                  tokens: &[Element],
                  options: &LiquidOptions)
-                 -> Result<Box<Renderable>, CompilerError> {
+                 -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let var_name = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),

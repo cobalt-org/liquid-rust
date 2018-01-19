@@ -1,6 +1,6 @@
 use itertools;
 
-use error::Error;
+use error::{Result, Error, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Context;
@@ -10,7 +10,6 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, consume_value_token, split_block, unexpected_token_error, BlockSplit};
-use compiler::{CompilerError, ResultCompilerExt};
 use value::Value;
 
 #[derive(Debug)]
@@ -24,7 +23,7 @@ impl CaseOption {
         CaseOption { args, template }
     }
 
-    fn evaluate(&self, value: &Value, context: &Context) -> Result<bool, Error> {
+    fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(context)?;
             if v == *value {
@@ -43,7 +42,7 @@ struct Case {
 }
 
 impl Renderable for Case {
-    fn render(&self, context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let value = self.target.evaluate(context)?;
         for case in &self.cases {
             if case.evaluate(&value, context)? {
@@ -64,7 +63,7 @@ enum Conditional {
     Else,
 }
 
-fn parse_condition(element: &Element) -> Result<Conditional, CompilerError> {
+fn parse_condition(element: &Element) -> Result<Conditional> {
     if let Element::Tag(ref tokens, _) = *element {
         match tokens[0] {
             Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
@@ -100,7 +99,7 @@ const SECTION_DELIMS: &[&str] = &["when", "else"];
 fn parse_sections<'e>(case: &mut Case,
                       children: &'e [Element],
                       options: &LiquidOptions)
-                      -> Result<Option<BlockSplit<'e>>, CompilerError> {
+                      -> Result<Option<BlockSplit<'e>>> {
     let (leading, trailing) = split_block(&children[1..], SECTION_DELIMS, options);
 
     match parse_condition(&children[0])? {
@@ -120,7 +119,7 @@ fn parse_sections<'e>(case: &mut Case,
                                                  .trace_with(|| "{{% else %}}".to_owned().into())?);
                 case.else_block = Some(template)
             } else {
-                return Err(CompilerError::with_msg("Only one else block allowed"));
+                return Err(Error::with_msg("Only one else block allowed"));
             }
         }
     }
@@ -132,14 +131,14 @@ pub fn case_block(_tag_name: &str,
                   arguments: &[Token],
                   tokens: &[Element],
                   options: &LiquidOptions)
-                  -> Result<Box<Renderable>, CompilerError> {
+                  -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let value = consume_value_token(&mut args)?.to_arg()?;
 
     // fast forward to the first arm of the case block,
     let mut children = match split_block(&tokens[..], SECTION_DELIMS, options) {
         (_, Some(split)) => split.trailing,
-        _ => return Err(CompilerError::with_msg("Expected case | else")),
+        _ => return Err(Error::with_msg("Expected case | else")),
     };
 
     let mut result = Case {

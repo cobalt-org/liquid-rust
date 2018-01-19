@@ -1,17 +1,16 @@
-use error::Error;
+use error::Result;
 
 use interpreter::Context;
 use interpreter::Renderable;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::CompilerError;
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;
 
 impl Renderable for Comment {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>, Error> {
+    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
         Ok(None)
     }
 }
@@ -20,7 +19,7 @@ pub fn comment_block(_tag_name: &str,
                      _arguments: &[Token],
                      _tokens: &[Element],
                      _options: &LiquidOptions)
-                     -> Result<Box<Renderable>, CompilerError> {
+                     -> Result<Box<Renderable>> {
     Ok(Box::new(Comment))
 }
 
