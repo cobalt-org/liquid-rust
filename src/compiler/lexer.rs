@@ -157,13 +157,16 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
             x if NUMBER_LITERAL.is_match(x) => {
                 x.parse::<i32>().map(Token::IntegerLiteral).unwrap_or_else(
                     |_e| {
-                        Token::FloatLiteral(x.parse::<f32>()
-                                            .expect("matches to NUMBER_LITERAL are parseable as floats"))
+                        let x = x.parse::<f32>()
+                            .expect("matches to NUMBER_LITERAL are parseable as floats");
+                        Token::FloatLiteral(x)
                     },
                 )
             }
             x if BOOLEAN_LITERAL.is_match(x) => {
-                Token::BooleanLiteral(x.parse::<bool>().expect("matches to BOOLEAN_LITERAL are parseable as bools"))
+                Token::BooleanLiteral(x.parse::<bool>().expect(
+                    "matches to BOOLEAN_LITERAL are parseable as bools",
+                ))
             }
             x if INDEX.is_match(x) => {
                 let mut parts = x.splitn(2, '.');
@@ -172,8 +175,12 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                 Token::Dot
             }
             x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
-            x => return Err(Error::with_msg("Invalid identifier")
-                                            .context("identifier", &x)),
+            x => {
+                return Err(Error::with_msg("Invalid identifier").context(
+                    "identifier",
+                    &x,
+                ))
+            }
         });
         if let Some(v) = push_more {
             result.extend(v);
