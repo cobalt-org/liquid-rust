@@ -51,7 +51,7 @@ impl Output {
                 .get_filter(&filter.name)
                 .ok_or_else(|| {
                                 Error::with_msg("Unsupported filter")
-                                    .context(format!("filter={}", &filter.name))
+                                    .context("filter", &filter.name)
                             })?;
 
             let arguments: Result<Vec<Value>> = filter

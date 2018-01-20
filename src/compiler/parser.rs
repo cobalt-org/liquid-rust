@@ -219,7 +219,7 @@ fn parse_tag(iter: &mut Iter<Element>,
             options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
-        ref x => Err(Error::with_msg("Tag is not supported").context(format!("tag={}", x))),
+        ref x => Err(Error::with_msg("Tag is not supported").context("tag", x)),
     }
 }
 

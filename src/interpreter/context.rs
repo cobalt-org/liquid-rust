@@ -68,8 +68,8 @@ impl Context {
 
         if index >= values.len() {
             return Err(Error::with_msg("cycle index out of bounds")
-                           .context(format!("index={}", index))
-                           .context(format!("count={}", values.len())));
+                           .context("index", &index)
+                           .context("count", &values.len()));
         }
 
         let val = values[index].evaluate(self)?;
@@ -153,21 +153,17 @@ impl Context {
         let key = key.as_key()
             .ok_or_else(|| {
                             Error::with_msg("Root index must be an object key")
-                                .context(format!("index={}", key))
+                                .context("index", &key)
                         })?;
-        let value =
-            self.get_val(key)
-                .ok_or_else(|| Error::with_msg("Invalid index").context(format!("index={}", key)))?;
+        let value = self.get_val(key)
+            .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
             let child = value.get(index);
             let child =
                 child
-                    .ok_or_else(|| {
-                                    Error::with_msg("Invalid index")
-                                        .context(format!("index={}", key))
-                                })?;
+                    .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
             Ok(child)
         })
     }

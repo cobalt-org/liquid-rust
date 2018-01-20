@@ -31,7 +31,9 @@ impl<T, E> ResultLiquidChainExt<T, E> for result::Result<T, E>
 
 pub trait ResultLiquidExt<T> {
     fn trace_with<F>(self, trace: F) -> Result<T> where F: FnOnce() -> Trace;
-    fn context_with<F>(self, context: F) -> Result<T> where F: FnOnce() -> String;
+    fn context<S>(self, key: &'static str, value: &S) -> Result<T> where S: ToString;
+    fn context_with<F>(self, context: F) -> Result<T>
+        where F: FnOnce() -> (borrow::Cow<'static, str>, String);
 }
 
 impl<T> ResultLiquidExt<T> for Result<T> {
@@ -41,10 +43,17 @@ impl<T> ResultLiquidExt<T> for Result<T> {
         self.map_err(|err| err.trace(trace()))
     }
 
-    fn context_with<F>(self, context: F) -> Result<T>
-        where F: FnOnce() -> String
+    fn context<S>(self, key: &'static str, value: &S) -> Result<T>
+        where S: ToString
     {
-        self.map_err(|err| err.context(context()))
+        self.map_err(|err| err.context(key, value))
+    }
+
+    fn context_with<F>(self, context: F) -> Result<T>
+        where F: FnOnce() -> (borrow::Cow<'static, str>, String)
+    {
+        let (key, value) = context();
+        self.map_err(|err| err.context(key, &value))
     }
 }
 
@@ -79,26 +88,41 @@ impl Error {
     }
 
     /// Add a new call to the user-visible backtrace
-    pub fn trace<T: Into<Trace>>(mut self, trace: T) -> Self {
-        self.inner.user_backtrace.push(trace.into());
+    pub fn trace<T: Into<Trace>>(self, trace: T) -> Self {
+        self.trace_trace(trace.into())
+    }
+
+    fn trace_trace(mut self, trace: Trace) -> Self {
+        self.inner.user_backtrace.push(trace);
         self
     }
 
     /// Add context to the last traced call.
     ///
     /// Example context: Value that parameters from ehe `trace` evaluate to.
-    pub fn context(mut self, context: String) -> Self {
+    pub fn context<C, S>(self, key: C, value: &S) -> Self
+        where C: Into<borrow::Cow<'static, str>>,
+              S: ToString
+    {
+        self.context_cow_string(key.into(), value.to_string())
+    }
+
+    fn context_cow_string(mut self, key: borrow::Cow<'static, str>, value: String) -> Self {
         self.inner
             .user_backtrace
             .last_mut()
             .expect("always a trace available")
-            .append_context(context);
+            .append_context(key, value);
         self
     }
 
     /// Add an external cause to the error for debugging purposes.
-    pub fn cause<E: error::Error + 'static + Send>(mut self, cause: E) -> Self {
+    pub fn cause<E: error::Error + 'static + Send>(self, cause: E) -> Self {
         let cause = Box::new(cause);
+        self.cause_error(cause)
+    }
+
+    fn cause_error(mut self, cause: Box<error::Error + 'static + Send>) -> Self {
         let cause = Some(ErrorCause::Generic(GenericError(cause)));
         self.inner.cause = cause;
         self
@@ -113,15 +137,15 @@ impl fmt::Display for Error {
         if let Some(ref cause) = self.inner.cause {
             writeln!(f, "cause: {}", cause)?;
         }
-        for trace in self.inner.user_backtrace.iter() {
+        for trace in &self.inner.user_backtrace {
             if let Some(trace) = trace.get_trace() {
                 writeln!(f, "from: {}", trace)?;
             }
             if !trace.get_context().is_empty() {
                 writeln!(f, "  with:")?;
             }
-            for context in trace.get_context() {
-                writeln!(f, "    {}", context)?;
+            for &(ref key, ref value) in trace.get_context() {
+                writeln!(f, "    {}={}", key, value)?;
             }
         }
         Ok(())
@@ -145,7 +169,7 @@ impl error::Error for Error {
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Trace {
     trace: Option<String>,
-    context: Vec<String>,
+    context: Vec<(borrow::Cow<'static, str>, String)>,
 }
 
 impl Trace {
@@ -160,8 +184,8 @@ impl Trace {
     /// Add context to the traced call.
     ///
     /// Example context: Value that parameters from ehe `trace` evaluate to.
-    pub fn context(mut self, context: String) -> Self {
-        self.context.push(context);
+    pub fn context(mut self, key: borrow::Cow<'static, str>, value: String) -> Self {
+        self.context.push((key, value));
         self
     }
 
@@ -172,15 +196,15 @@ impl Trace {
         }
     }
 
-    pub(self) fn append_context(&mut self, context: String) {
-        self.context.push(context);
+    pub(self) fn append_context(&mut self, key: borrow::Cow<'static, str>, value: String) {
+        self.context.push((key, value));
     }
 
     pub fn get_trace(&self) -> Option<&str> {
         self.trace.as_ref().map(|s| s.as_ref())
     }
 
-    pub fn get_context(&self) -> &[String] {
+    pub fn get_context(&self) -> &[(borrow::Cow<'static, str>, String)] {
         self.context.as_ref()
     }
 }
