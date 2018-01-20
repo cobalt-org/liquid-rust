@@ -6,6 +6,7 @@ use interpreter::Renderable;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse_output, expect, unexpected_token_error};
+use compiler::ResultLiquidExt;
 
 #[derive(Clone, Debug)]
 struct Assign {
@@ -13,9 +14,17 @@ struct Assign {
     src: Output,
 }
 
+impl Assign {
+    fn trace(&self) -> String {
+        format!("{{% assign {} = {}%}}", self.dst, self.src)
+    }
+}
+
 impl Renderable for Assign {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = self.src.apply_filters(context)?;
+        let value = self.src
+            .apply_filters(context)
+            .trace_with(|| self.trace().into())?;
         context.set_global_val(&self.dst, value);
         Ok(None)
     }

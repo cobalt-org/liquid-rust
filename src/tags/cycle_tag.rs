@@ -1,6 +1,6 @@
 use itertools;
 
-use error::Result;
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Context;
@@ -15,9 +15,18 @@ struct Cycle {
     values: Vec<Argument>,
 }
 
+impl Cycle {
+    fn trace(&self) -> String {
+        format!("{{% cycle {} %}}",
+                itertools::join(self.values.iter(), ", "))
+    }
+}
+
 impl Renderable for Cycle {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = context.cycle_element(&self.name, &self.values)?;
+        let value = context
+            .cycle_element(&self.name, &self.values)
+            .trace_with(|| self.trace().into())?;
         Ok(value.map(|v| v.to_string()))
     }
 }

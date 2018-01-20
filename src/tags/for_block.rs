@@ -1,3 +1,4 @@
+use std::fmt;
 use std::slice::Iter;
 
 use itertools;
@@ -20,6 +21,31 @@ enum Range {
     Counted(Argument, Argument),
 }
 
+impl Range {
+    pub fn evaluate(&self, context: &Context) -> Result<Vec<Value>> {
+        let range = match *self {
+            Range::Array(ref array_id) => get_array(context, array_id)?,
+
+            Range::Counted(ref start_arg, ref stop_arg) => {
+                let start = int_argument(start_arg, context, "start")?;
+                let stop = int_argument(stop_arg, context, "end")?;
+                (start..stop).map(|x| Value::scalar(x as i32)).collect()
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Range::Array(ref arr) => write!(f, "{}", arr),
+            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+        }
+    }
+}
+
 #[derive(Debug)]
 struct For {
     var_name: String,
@@ -31,6 +57,16 @@ struct For {
     reversed: bool,
 }
 
+impl For {
+    fn trace(&self) -> String {
+        trace_for_tag(&self.var_name,
+                      &self.range,
+                      self.limit,
+                      self.offset,
+                      self.reversed)
+    }
+}
+
 fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
@@ -39,49 +75,50 @@ fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     }
 }
 
-fn int_argument(arg: &Argument, context: &Context) -> Result<isize> {
+fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isize> {
     let value = arg.evaluate(context)?;
 
-    let value =
-        value
-            .as_scalar()
-            .and_then(Scalar::to_integer)
-            .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?;
+    let value = value
+        .as_scalar()
+        .and_then(Scalar::to_integer)
+        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
+        .context_with(|| (arg_name.to_string().into(), value.to_string()))?;
 
     Ok(value as isize)
 }
 
+fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed: bool) -> &[Value] {
+    let end = match limit {
+        Some(n) => offset + n,
+        None => range.len(),
+    };
+
+    let slice = if end > range.len() {
+        &mut range[offset..]
+    } else {
+        &mut range[offset..end]
+    };
+
+    if reversed {
+        slice.reverse();
+    };
+
+    slice
+}
+
 impl Renderable for For {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let mut range = match self.range {
-            Range::Array(ref array_id) => get_array(context, array_id)?,
+        let mut range = self.range
+            .evaluate(context)
+            .trace_with(|| self.trace().into())?;
+        let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
 
-            Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = int_argument(start_arg, context)?;
-                let stop = int_argument(stop_arg, context)?;
-                (start..stop).map(|x| Value::scalar(x as i32)).collect()
-            }
-        };
-
-        let end = match self.limit {
-            Some(n) => self.offset + n,
-            None => range.len(),
-        };
-
-        let slice = if end > range.len() {
-            &mut range[self.offset..]
-        } else {
-            &mut range[self.offset..end]
-        };
-
-        if self.reversed {
-            slice.reverse();
-        };
-
-        match slice.len() {
+        match range.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
                     t.render(context)
+                        .trace_with(|| "{{% else %}}".to_owned().into())
+                        .trace_with(|| self.trace().into())
                 } else {
                     Ok(None)
                 }
@@ -93,7 +130,7 @@ impl Renderable for For {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".to_owned(), Value::scalar(range_len as i32));
 
-                    for (i, v) in slice.iter().enumerate() {
+                    for (i, v) in range.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::scalar(i as i32));
                         helper_vars.insert("index".to_owned(), Value::scalar((i + 1) as i32));
                         helper_vars.insert("rindex0".to_owned(),
@@ -105,7 +142,11 @@ impl Renderable for For {
 
                         scope.set_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_val(&self.var_name, v.clone());
-                        let inner = try!(self.item_template.render(&mut scope))
+                        let inner = self.item_template
+                            .render(&mut scope)
+                            .trace_with(|| self.trace().into())
+                            .context_with(|| (self.var_name.clone().into(), v.to_string()))
+                            .context("index", &(i + 1))?
                             .unwrap_or_else(String::new);
                         ret = ret + &inner;
 
@@ -159,10 +200,6 @@ fn trace_for_tag(var_name: &str,
     if reversed {
         parameters.push("reversed".to_owned());
     }
-    let range = match *range {
-        Range::Array(ref arr) => arr.to_string(),
-        Range::Counted(ref start, ref end) => format!("({}..{})", start, end),
-    };
     format!("{{% for {} in {} {} %}}",
             var_name,
             range,

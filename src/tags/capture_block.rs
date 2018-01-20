@@ -15,13 +15,18 @@ struct Capture {
     template: Template,
 }
 
+impl Capture {
+    fn trace(&self) -> String {
+        format!("{{% capture {} %}}", self.id)
+    }
+}
+
 impl Renderable for Capture {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let output = match self.template.render(context) {
-            Ok(Some(s)) => s.clone(),
-            Ok(None) => "".to_owned(),
-            Err(x) => return Err(x),
-        };
+        let output = self.template
+            .render(context)
+            .trace_with(|| self.trace().into())?
+            .unwrap_or_else(|| "".to_owned());
 
         context.set_global_val(&self.id, Value::scalar(output));
         Ok(None)

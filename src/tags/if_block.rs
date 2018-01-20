@@ -28,6 +28,7 @@ impl fmt::Display for Condition {
 
 #[derive(Debug)]
 struct Conditional {
+    tag_name: &'static str,
     condition: Condition,
     mode: bool,
     if_true: Template,
@@ -70,15 +71,27 @@ impl Conditional {
 
         Ok(result == self.mode)
     }
+
+    fn trace(&self) -> String {
+        format!("{{% if {} %}}", self.condition)
+    }
 }
 
 impl Renderable for Conditional {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        if self.compare(context)? {
-            self.if_true.render(context)
+        let condition = self.compare(context).trace_with(|| self.trace().into());
+        if condition? {
+            self.if_true
+                .render(context)
+                .trace_with(|| self.trace().into())
         } else {
             match self.if_false {
-                Some(ref template) => template.render(context),
+                Some(ref template) => {
+                    template
+                        .render(context)
+                        .trace_with(|| "{{% else %}}".to_owned().into())
+                        .trace_with(|| self.trace().into())
+                }
                 _ => Ok(None),
             }
         }
@@ -92,9 +105,9 @@ fn parse_condition(arguments: &[Token]) -> Result<Condition> {
     let lh = consume_value_token(&mut args)?.to_arg()?;
 
     let (comp, rh) = match args.next() {
-        Some(&Token::Comparison(ref x)) => {
+        Some(&Token::Comparison(x)) => {
             let rhs = consume_value_token(&mut args)?.to_arg()?;
-            (x.clone(), rhs)
+            (x, rhs)
         }
         None => {
             // no trailing operator or RHS value implies "== true"
@@ -118,6 +131,7 @@ pub fn unless_block(_tag_name: &str,
     let condition = parse_condition(arguments)?;
     let if_true = Template::new(parse(&tokens[..], options)?);
     Ok(Box::new(Conditional {
+                    tag_name: "unless",
                     condition,
                     mode: false,
                     if_true,
@@ -125,7 +139,7 @@ pub fn unless_block(_tag_name: &str,
                 }))
 }
 
-pub fn if_block(tag_name: &str,
+pub fn if_block(_tag_name: &str,
                 arguments: &[Token],
                 tokens: &[Element],
                 options: &LiquidOptions)
@@ -135,7 +149,7 @@ pub fn if_block(tag_name: &str,
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
 
     let if_true = parse(leading_tokens, options)
-        .trace_with(|| format!("{{% {} {} %}}", tag_name, condition).into())?;
+        .trace_with(|| format!("{{% if {} %}}", condition).into())?;
     let if_true = Template::new(if_true);
 
     let if_false = match trailing_tokens {
@@ -143,7 +157,7 @@ pub fn if_block(tag_name: &str,
 
         Some(ref split) if split.delimiter == "else" => {
             parse(&split.trailing[1..], options)
-                .map(|p| Some(p))
+                .map(Some)
                 .trace_with(|| "{{% else %}}".to_owned().into())
         }
 
@@ -156,10 +170,11 @@ pub fn if_block(tag_name: &str,
         Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter),
     };
     let if_false = if_false
-        .trace_with(|| format!("{{% {} {} %}}", tag_name, condition).into())?
-        .map(|p| Template::new(p));
+        .trace_with(|| format!("{{% if {} %}}", condition).into())?
+        .map(Template::new);
 
     Ok(Box::new(Conditional {
+                    tag_name: "if",
                     condition,
                     mode: true,
                     if_true,

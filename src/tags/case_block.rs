@@ -32,6 +32,10 @@ impl CaseOption {
         }
         Ok(false)
     }
+
+    fn trace(&self) -> String {
+        format!("{{% when {} %}}", itertools::join(self.args.iter(), " or "))
+    }
 }
 
 #[derive(Debug)]
@@ -41,17 +45,30 @@ struct Case {
     else_block: Option<Template>,
 }
 
+impl Case {
+    fn trace(&self) -> String {
+        format!("{{% case {} %}}", self.target)
+    }
+}
+
 impl Renderable for Case {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
         let value = self.target.evaluate(context)?;
         for case in &self.cases {
             if case.evaluate(&value, context)? {
-                return case.template.render(context);
+                return case.template
+                    .render(context)
+                    .trace_with(|| case.trace().into())
+                    .trace_with(|| self.trace().into())
+                    .context_with(|| (self.target.to_string().into(), value.to_string()));
             }
         }
 
         if let Some(ref t) = self.else_block {
-            return t.render(context);
+            return t.render(context)
+                .trace_with(|| "{{% else %}}".to_owned().into())
+                .trace_with(|| self.trace().into())
+                .context_with(|| (self.target.to_string().into(), value.to_string()));
         }
 
         Ok(None)

@@ -51,7 +51,7 @@ pub fn unexpected_token_error<S: ToString>(expected: &str, actual: Option<S>) ->
 
 pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found {}", expected, actual))
+    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
 // creates an expression, which wraps everything that gets rendered
@@ -230,7 +230,7 @@ pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
 {
     match tokens.next() {
         Some(x) if x == expected => Ok(x),
-        x => Err(unexpected_token_error(&expected.to_string(), x)),
+        x => Err(unexpected_token_error(&format!("`{}`", expected), x)),
     }
 }
 
@@ -336,7 +336,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected an identifier, found 1");
+                   "liquid: Expected identifier, found `1`\n");
     }
 
     #[test]
@@ -345,7 +345,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected a comma or a pipe, found blabla");
+                   "liquid: Expected `,` | `|`, found `blabla`\n");
     }
 
     #[test]
@@ -354,7 +354,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected :, found 1");
+                   "liquid: Expected `:`, found `1`\n");
     }
 }
 

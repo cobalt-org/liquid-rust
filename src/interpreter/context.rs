@@ -14,7 +14,7 @@ pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) ->
 
 pub fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found {}", expected, actual))
+    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
 #[derive(Clone, Debug)]

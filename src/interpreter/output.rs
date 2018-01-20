@@ -1,4 +1,8 @@
-use error::{Error, Result, ResultLiquidChainExt};
+use std::fmt;
+
+use itertools;
+
+use error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 use value::Value;
 
 use super::Context;
@@ -20,10 +24,28 @@ impl FilterPrototype {
     }
 }
 
+impl fmt::Display for FilterPrototype {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "{}: {}",
+               self.name,
+               itertools::join(&self.arguments, ", "))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Output {
     entry: Argument,
     filters: Vec<FilterPrototype>,
+}
+
+impl fmt::Display for Output {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "{} | {}",
+               self.entry,
+               itertools::join(&self.filters, " | "))
+    }
 }
 
 impl Renderable for Output {
@@ -60,7 +82,10 @@ impl Output {
                 .map(|a| a.evaluate(context))
                 .collect();
             let arguments = arguments?;
-            entry = f.filter(&entry, &*arguments).chain("Filter error")?;
+            entry = f.filter(&entry, &*arguments)
+                .chain("Filter error")
+                .context("input", &entry)
+                .context_with(|| ("args".into(), itertools::join(&arguments, ", ")))?;
         }
 
         Ok(entry)
