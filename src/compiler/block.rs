@@ -1,6 +1,5 @@
-use error::Result;
-
 use interpreter::Renderable;
+use super::Result;
 use super::Element;
 use super::LiquidOptions;
 use super::Token;

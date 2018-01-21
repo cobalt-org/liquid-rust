@@ -103,6 +103,16 @@ impl Scalar {
             _ => false,
         }
     }
+
+    pub fn type_name(&self) -> &'static str {
+        match self.0 {
+            ScalarEnum::Integer(_) => "whole number",
+            ScalarEnum::Float(_) => "fractional number",
+            ScalarEnum::Bool(_) => "boolean",
+            ScalarEnum::Date(_) => "date",
+            ScalarEnum::Str(_) => "string",
+        }
+    }
 }
 
 impl From<i32> for Scalar {

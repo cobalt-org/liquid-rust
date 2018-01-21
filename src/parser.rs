@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
 
-use error::Result;
+use error::{Result, ResultLiquidExt, ResultLiquidChainExt};
 use tags;
 use filters;
 use compiler;
@@ -241,9 +241,13 @@ impl Parser {
     }
 
     fn parse_file_path(self, file: &path::Path) -> Result<Template> {
-        let mut f = File::open(file)?;
+        let mut f = File::open(file)
+            .chain("Cannot open file")
+            .context_with(|| ("path".into(), file.to_string_lossy().into()))?;
         let mut buf = String::new();
-        f.read_to_string(&mut buf)?;
+        f.read_to_string(&mut buf)
+            .chain("Cannot read file")
+            .context_with(|| ("path".into(), file.to_string_lossy().into()))?;
 
         self.parse(&buf)
     }

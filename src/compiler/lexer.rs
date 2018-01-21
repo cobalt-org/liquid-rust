@@ -3,9 +3,11 @@
 //! This module contains elements than can be used for writing plugins
 //! but can be ignored for simple usage.
 
+use std::fmt;
+
 use regex::Regex;
 
-use error::{Error, Result};
+use super::{Error, Result};
 
 use super::Token;
 use super::ComparisonOperator;
@@ -17,6 +19,16 @@ pub enum Element {
     Raw(String),
 }
 
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let out = match *self {
+            Element::Expression(_, ref x) |
+            Element::Tag(_, ref x) |
+            Element::Raw(ref x) => x,
+        };
+        write!(f, "{}", out)
+    }
+}
 lazy_static! {
     static ref MARKUP: Regex = {
         let t = "(?:[[:space:]]*\\{\\{-|\\{\\{).*?(?:-\\}\\}[[:space:]]*|\\}\\})";
@@ -145,15 +157,15 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
             x if NUMBER_LITERAL.is_match(x) => {
                 x.parse::<i32>().map(Token::IntegerLiteral).unwrap_or_else(
                     |_e| {
-                        Token::FloatLiteral(x.parse::<f32>()
-                                                .expect(&format!("Could not parse {:?} as float",
-                                                                 x)))
+                        let x = x.parse::<f32>()
+                            .expect("matches to NUMBER_LITERAL are parseable as floats");
+                        Token::FloatLiteral(x)
                     },
                 )
             }
             x if BOOLEAN_LITERAL.is_match(x) => {
                 Token::BooleanLiteral(x.parse::<bool>().expect(
-                    &format!("Could not parse {:?} as bool", x),
+                    "matches to BOOLEAN_LITERAL are parseable as bools",
                 ))
             }
             x if INDEX.is_match(x) => {
@@ -163,7 +175,12 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                 Token::Dot
             }
             x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
-            x => return Err(Error::Lexer(format!("{} is not a valid identifier", x))),
+            x => {
+                return Err(Error::with_msg("Invalid identifier").context(
+                    "identifier",
+                    &x,
+                ))
+            }
         });
         if let Some(v) = push_more {
             result.extend(v);

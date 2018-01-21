@@ -1,15 +1,17 @@
-use error::{Error, Result};
+use std::fmt;
 
-use value::Value;
-use interpreter::Argument;
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
+use error::{Result, ResultLiquidExt};
+
 use compiler::ComparisonOperator;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse, split_block, consume_value_token};
+use compiler::{parse, split_block, consume_value_token, unexpected_token_error};
+use interpreter::{Argument, unexpected_value_error};
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
+use value::Value;
 
 #[derive(Clone, Debug)]
 struct Condition {
@@ -18,8 +20,15 @@ struct Condition {
     rh: Argument,
 }
 
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {} {}", self.lh, self.comparison, self.rh)
+    }
+}
+
 #[derive(Debug)]
 struct Conditional {
+    tag_name: &'static str,
     condition: Condition,
     mode: bool,
     if_true: Template,
@@ -41,9 +50,7 @@ fn contains_check(a: &Value, b: &Value) -> Result<bool> {
             }
             Ok(false)
         }
-        _ => {
-            Error::renderer("Left-hand side of contains operator must be a string, array or object")
-        }
+        _ => Err(unexpected_value_error("string | array | object", Some(a.type_name()))),
     }
 }
 
@@ -64,15 +71,27 @@ impl Conditional {
 
         Ok(result == self.mode)
     }
+
+    fn trace(&self) -> String {
+        format!("{{% if {} %}}", self.condition)
+    }
 }
 
 impl Renderable for Conditional {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        if self.compare(context)? {
-            self.if_true.render(context)
+        let condition = self.compare(context).trace_with(|| self.trace().into());
+        if condition? {
+            self.if_true
+                .render(context)
+                .trace_with(|| self.trace().into())
         } else {
             match self.if_false {
-                Some(ref template) => template.render(context),
+                Some(ref template) => {
+                    template
+                        .render(context)
+                        .trace_with(|| "{{% else %}}".to_owned().into())
+                        .trace_with(|| self.trace().into())
+                }
                 _ => Ok(None),
             }
         }
@@ -80,21 +99,21 @@ impl Renderable for Conditional {
 }
 
 /// Common parsing for "if" and "unless" condition
-fn condition(arguments: &[Token]) -> Result<Condition> {
+fn parse_condition(arguments: &[Token]) -> Result<Condition> {
     let mut args = arguments.iter();
 
     let lh = consume_value_token(&mut args)?.to_arg()?;
 
     let (comp, rh) = match args.next() {
-        Some(&Token::Comparison(ref x)) => {
+        Some(&Token::Comparison(x)) => {
             let rhs = consume_value_token(&mut args)?.to_arg()?;
-            (x.clone(), rhs)
+            (x, rhs)
         }
         None => {
             // no trailing operator or RHS value implies "== true"
             (ComparisonOperator::Equals, Token::BooleanLiteral(true).to_arg()?)
         }
-        x @ Some(_) => return Error::parser("comparison operator", x),
+        x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
     };
 
     Ok(Condition {
@@ -109,11 +128,13 @@ pub fn unless_block(_tag_name: &str,
                     tokens: &[Element],
                     options: &LiquidOptions)
                     -> Result<Box<Renderable>> {
-    let cond = condition(arguments)?;
+    let condition = parse_condition(arguments)?;
+    let if_true = Template::new(parse(&tokens[..], options)?);
     Ok(Box::new(Conditional {
-                    condition: cond,
+                    tag_name: "unless",
+                    condition,
                     mode: false,
-                    if_true: Template::new(try!(parse(&tokens[..], options))),
+                    if_true,
                     if_false: None,
                 }))
 }
@@ -123,33 +144,41 @@ pub fn if_block(_tag_name: &str,
                 tokens: &[Element],
                 options: &LiquidOptions)
                 -> Result<Box<Renderable>> {
-    let cond = condition(arguments)?;
+    let condition = parse_condition(arguments)?;
 
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
+
+    let if_true = parse(leading_tokens, options)
+        .trace_with(|| format!("{{% if {} %}}", condition).into())?;
+    let if_true = Template::new(if_true);
+
     let if_false = match trailing_tokens {
-        None => None,
+        None => Ok(None),
 
         Some(ref split) if split.delimiter == "else" => {
-            let parsed = parse(&split.trailing[1..], options)?;
-            Some(Template::new(parsed))
+            parse(&split.trailing[1..], options)
+                .map(Some)
+                .trace_with(|| "{{% else %}}".to_owned().into())
         }
 
         Some(ref split) if split.delimiter == "elsif" => {
             let child_tokens: Vec<Element> = split.trailing.iter().skip(1).cloned().collect();
-            let parsed = if_block("if", &split.args[1..], &child_tokens, options)?;
-            Some(Template::new(vec![parsed]))
+            if_block("elseif", &split.args[1..], &child_tokens, options)
+                .map(|block| Some(vec![block]))
         }
 
         Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter),
     };
-
-    let if_true = Template::new(parse(leading_tokens, options)?);
+    let if_false = if_false
+        .trace_with(|| format!("{{% if {} %}}", condition).into())?
+        .map(Template::new);
 
     Ok(Box::new(Conditional {
-                    condition: cond,
+                    tag_name: "if",
+                    condition,
                     mode: true,
-                    if_true: if_true,
-                    if_false: if_false,
+                    if_true,
+                    if_false,
                 }))
 }
 

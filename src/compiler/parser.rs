@@ -7,7 +7,7 @@ use std::slice::Iter;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use error::{Error, Result};
+use super::{Error, Result};
 
 use interpreter::Renderable;
 use interpreter::Text;
@@ -42,6 +42,18 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
     Ok(ret)
 }
 
+const NOTHING: Option<&str> = None;
+
+pub fn unexpected_token_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+    let actual = actual.map(|x| x.to_string());
+    unexpected_token_error_string(expected, actual)
+}
+
+pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> Error {
+    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
+    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
+}
+
 // creates an expression, which wraps everything that gets rendered
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens.get(0) {
@@ -56,7 +68,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
         Some(&Token::Identifier(ref x)) if options.tags.contains_key(x.as_str()) => {
             options.tags[x.as_str()].parse(x, &tokens[1..], options)
         }
-        None => Error::parser("expression", None),
+        None => Err(unexpected_token_error("expression", NOTHING)),
         _ => {
             let output = parse_output(tokens)?;
             Ok(Box::new(output))
@@ -75,7 +87,7 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
                 match tokens[1] {
                     Token::Identifier(ref x) => indexes.push(Index::with_key(x.as_ref())),
                     _ => {
-                        return Error::parser("identifier", Some(&tokens[0]));
+                        return Err(unexpected_token_error("identifier", Some(&tokens[0])));
                     }
                 };
                 2
@@ -85,13 +97,14 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
                     Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
                     Token::IntegerLiteral(ref x) => Index::with_index(*x as isize),
                     _ => {
-                        return Error::parser("integer | string", Some(&tokens[0]));
+                        return Err(unexpected_token_error("string | whole number",
+                                                          Some(&tokens[0])));
                     }
                 };
                 indexes.push(index);
 
                 if tokens[2] != Token::CloseSquare {
-                    return Error::parser("]", Some(&tokens[1]));
+                    return Err(unexpected_token_error("`]`", Some(&tokens[0])));
                 }
                 3
             }
@@ -118,7 +131,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
         let name = match iter.next() {
             Some(&Token::Identifier(ref name)) => name,
             x => {
-                return Error::parser("an identifier", x);
+                return Err(unexpected_token_error("identifier", x));
             }
         };
         let mut args = vec![];
@@ -147,7 +160,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
                 Some(&&Token::Pipe) |
                 None => break,
                 _ => {
-                    return Error::parser("a comma or a pipe", Some(iter.next().unwrap()));
+                    return Err(unexpected_token_error("`,` | `|`", Some(iter.next().unwrap())));
                 }
             }
         }
@@ -206,7 +219,7 @@ fn parse_tag(iter: &mut Iter<Element>,
             options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
-        ref x => Err(Error::Parser(format!("parse_tag: {:?} not implemented", x))),
+        ref x => Err(Error::with_msg("Tag is not supported").context("tag", x)),
     }
 }
 
@@ -217,7 +230,7 @@ pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
 {
     match tokens.next() {
         Some(x) if x == expected => Ok(x),
-        x => Error::parser(&expected.to_string(), x),
+        x => Err(unexpected_token_error(&format!("`{}`", expected), x)),
     }
 }
 
@@ -227,7 +240,7 @@ pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
 pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
     match tokens.next() {
         Some(t) => value_token(t.clone()),
-        None => Error::parser("string | number | boolean | identifier", None),
+        None => Err(unexpected_token_error("string | number | boolean | identifier", NOTHING)),
     }
 }
 
@@ -240,7 +253,7 @@ pub fn value_token(t: Token) -> Result<Token> {
         v @ Token::FloatLiteral(_) |
         v @ Token::BooleanLiteral(_) |
         v @ Token::Identifier(_) => Ok(v),
-        x => Error::parser("string | number | boolean | identifier", Some(&x)),
+        x => Err(unexpected_token_error("string | number | boolean | identifier", Some(&x))),
     }
 }
 
@@ -323,7 +336,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected an identifier, found 1");
+                   "liquid: Expected identifier, found `1`\n");
     }
 
     #[test]
@@ -332,7 +345,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected a comma or a pipe, found blabla");
+                   "liquid: Expected `,` | `|`, found `blabla`\n");
     }
 
     #[test]
@@ -341,7 +354,7 @@ mod test_parse_output {
 
         let result = parse_output(&tokens);
         assert_eq!(result.unwrap_err().to_string(),
-                   "Parsing error: Expected :, found 1");
+                   "liquid: Expected `:`, found `1`\n");
     }
 }
 

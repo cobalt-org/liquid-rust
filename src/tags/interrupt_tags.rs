@@ -1,9 +1,10 @@
-use error::{Error, Result};
+use error::Result;
 
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
 use compiler::LiquidOptions;
 use compiler::Token;
+use compiler::unexpected_token_error;
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
@@ -22,7 +23,7 @@ pub fn break_tag(_tag_name: &str,
 
     // no arguments should be supplied, trying to supply them is an error
     if !arguments.is_empty() {
-        return Error::parser("%}", arguments.first());
+        return Err(unexpected_token_error("`%}`", arguments.first()));
     }
     Ok(Box::new(Break))
 }
@@ -43,7 +44,7 @@ pub fn continue_tag(_tag_name: &str,
                     -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     if !arguments.is_empty() {
-        return Error::parser("%}", arguments.first());
+        return Err(unexpected_token_error("`%}`", arguments.first()));
     }
     Ok(Box::new(Continue))
 }

@@ -1,13 +1,13 @@
 use itertools;
 
-use error::{Error, Result};
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
 use compiler::Token;
 use compiler::LiquidOptions;
-use compiler::{consume_value_token, value_token};
+use compiler::{consume_value_token, value_token, unexpected_token_error};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -15,9 +15,18 @@ struct Cycle {
     values: Vec<Argument>,
 }
 
+impl Cycle {
+    fn trace(&self) -> String {
+        format!("{{% cycle {} %}}",
+                itertools::join(self.values.iter(), ", "))
+    }
+}
+
 impl Renderable for Cycle {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let value = context.cycle_element(&self.name, &self.values)?;
+        let value = context
+            .cycle_element(&self.name, &self.values)
+            .trace_with(|| self.trace().into())?;
         Ok(value.map(|v| v.to_string()))
     }
 }
@@ -39,7 +48,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
             // first argument is the first item in the cycle
             values.push(first.to_arg()?);
         }
-        x => return Error::parser(": | string | number | boolean | identifier", x),
+        x => return Err(unexpected_token_error("string | number | boolean | identifier", x)),
     }
 
     loop {
@@ -54,7 +63,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         match args.next() {
             Some(&Token::Comma) => {}
             None => break,
-            x => return Error::parser("Comma", x),
+            x => return Err(unexpected_token_error("`,`", x)),
         }
     }
 

@@ -1,21 +1,24 @@
-use error::{Result, Error};
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::parse;
+use compiler::{parse, unexpected_token_error};
 use compiler::tokenize;
 
 #[derive(Debug)]
 struct Include {
+    name: String,
     partial: Template,
 }
 
 impl Renderable for Include {
     fn render(&self, mut context: &mut Context) -> Result<Option<String>> {
-        self.partial.render(&mut context)
+        self.partial
+            .render(&mut context)
+            .trace_with(|| format!("{{% include {} %}}", self.name).into())
     }
 }
 
@@ -35,11 +38,16 @@ pub fn include_tag(_tag_name: &str,
     let name = match args.next() {
         Some(&Token::StringLiteral(ref name)) => name,
         Some(&Token::Identifier(ref s)) => s,
-        arg => return Error::parser("String Literal", arg),
+        arg => return Err(unexpected_token_error("string", arg)),
     };
 
+    let partial = parse_partial(name, options)
+        .trace_with(|| format!("{{% include {} %}}", name).into())?;
 
-    Ok(Box::new(Include { partial: parse_partial(name, options)? }))
+    Ok(Box::new(Include {
+                    name: name.to_owned(),
+                    partial,
+                }))
 }
 
 #[cfg(test)]
@@ -108,10 +116,10 @@ mod test {
         let template = compiler::parse(&tokens, &options()).map(interpreter::Template::new);
 
         assert!(template.is_err());
-        if let Err(Error::Other(val)) = template {
-            assert!(val.contains("file_does_not_exist.liquid\" does not exist"));
-        } else {
-            panic!("output should be err::other");
+        if let Err(val) = template {
+            let val = val.to_string();
+            println!("val={}", val);
+            assert!(val.contains("Snippet does not exist"));
         }
     }
 }

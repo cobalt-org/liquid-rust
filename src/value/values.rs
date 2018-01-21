@@ -147,6 +147,15 @@ impl Value {
         }
     }
 
+    pub fn type_name(&self) -> &'static str {
+        match *self {
+            Value::Scalar(ref x) => x.type_name(),
+            Value::Nil => "nil",
+            Value::Array(_) => "array",
+            Value::Object(_) => "object",
+        }
+    }
+
     pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
         let index: &Index = index.into();
         self.get_index(index)

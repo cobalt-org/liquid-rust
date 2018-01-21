@@ -1,21 +1,49 @@
+use std::fmt;
 use std::slice::Iter;
 
-use error::{Error, Result};
+use itertools;
+
+use error::{Result, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{Context, Interrupt};
+use interpreter::{Context, Interrupt, unexpected_value_error};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse, expect, split_block};
-use value::{Value, Object};
+use compiler::{parse, expect, split_block, unexpected_token_error};
+use value::{Value, Object, Scalar};
 
 #[derive(Clone, Debug)]
 enum Range {
     Array(Argument),
     Counted(Argument, Argument),
+}
+
+impl Range {
+    pub fn evaluate(&self, context: &Context) -> Result<Vec<Value>> {
+        let range = match *self {
+            Range::Array(ref array_id) => get_array(context, array_id)?,
+
+            Range::Counted(ref start_arg, ref stop_arg) => {
+                let start = int_argument(start_arg, context, "start")?;
+                let stop = int_argument(stop_arg, context, "end")?;
+                (start..stop).map(|x| Value::scalar(x as i32)).collect()
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Range::Array(ref arr) => write!(f, "{}", arr),
+            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -29,63 +57,68 @@ struct For {
     reversed: bool,
 }
 
+impl For {
+    fn trace(&self) -> String {
+        trace_for_tag(&self.var_name,
+                      &self.range,
+                      self.limit,
+                      self.offset,
+                      self.reversed)
+    }
+}
+
 fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
         Value::Array(x) => Ok(x),
-        x => {
-            Err(Error::Render(format!("Tried to iterate over {:?} ({}), which is not supported.",
-                                      x,
-                                      array_id)))
-        }
+        x => Err(unexpected_value_error("array", Some(x.type_name()))),
     }
 }
 
-fn token_as_int(arg: &Argument, context: &Context) -> Result<isize> {
-    let value =
-        arg.evaluate(context)?
-            .as_scalar()
-            .ok_or_else(|| Error::Render(format!("{:?} is not a whole number.", arg)))?
-            .to_integer()
-            .ok_or_else(|| {
-                            Error::Render(format!("{:?} is not a whole number or valid variable.",
-                                                  arg))
-                        })?;
+fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isize> {
+    let value = arg.evaluate(context)?;
+
+    let value = value
+        .as_scalar()
+        .and_then(Scalar::to_integer)
+        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
+        .context_with(|| (arg_name.to_string().into(), value.to_string()))?;
 
     Ok(value as isize)
 }
 
+fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed: bool) -> &[Value] {
+    let end = match limit {
+        Some(n) => offset + n,
+        None => range.len(),
+    };
+
+    let slice = if end > range.len() {
+        &mut range[offset..]
+    } else {
+        &mut range[offset..end]
+    };
+
+    if reversed {
+        slice.reverse();
+    };
+
+    slice
+}
+
 impl Renderable for For {
     fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let mut range = match self.range {
-            Range::Array(ref array_id) => get_array(context, array_id)?,
+        let mut range = self.range
+            .evaluate(context)
+            .trace_with(|| self.trace().into())?;
+        let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
 
-            Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = token_as_int(start_arg, context)?;
-                let stop = token_as_int(stop_arg, context)?;
-                (start..stop).map(|x| Value::scalar(x as i32)).collect()
-            }
-        };
-
-        let end = match self.limit {
-            Some(n) => self.offset + n,
-            None => range.len(),
-        };
-
-        let slice = if end > range.len() {
-            &mut range[self.offset..]
-        } else {
-            &mut range[self.offset..end]
-        };
-
-        if self.reversed {
-            slice.reverse();
-        };
-
-        match slice.len() {
+        match range.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
                     t.render(context)
+                        .trace_with(|| "{{% else %}}".to_owned().into())
+                        .trace_with(|| self.trace().into())
                 } else {
                     Ok(None)
                 }
@@ -97,7 +130,7 @@ impl Renderable for For {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".to_owned(), Value::scalar(range_len as i32));
 
-                    for (i, v) in slice.iter().enumerate() {
+                    for (i, v) in range.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::scalar(i as i32));
                         helper_vars.insert("index".to_owned(), Value::scalar((i + 1) as i32));
                         helper_vars.insert("rindex0".to_owned(),
@@ -109,7 +142,11 @@ impl Renderable for For {
 
                         scope.set_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_val(&self.var_name, v.clone());
-                        let inner = try!(self.item_template.render(&mut scope))
+                        let inner = self.item_template
+                            .render(&mut scope)
+                            .trace_with(|| self.trace().into())
+                            .context_with(|| (self.var_name.clone().into(), v.to_string()))
+                            .context("index", &(i + 1))?
                             .unwrap_or_else(String::new);
                         ret = ret + &inner;
 
@@ -135,7 +172,7 @@ fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     expect(args, &Token::Colon)?;
     match args.next() {
         Some(&Token::IntegerLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => Error::parser("whole number", x),
+        x => Err(unexpected_token_error("whole number", x)),
     }
 }
 
@@ -143,8 +180,30 @@ fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
         Some(id @ &Token::IntegerLiteral(_)) |
         Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
-        x => Error::parser("whole number | Identifier", x),
+        x => Err(unexpected_token_error("whole number | identifier", x)),
     }
+}
+
+fn trace_for_tag(var_name: &str,
+                 range: &Range,
+                 limit: Option<usize>,
+                 offset: usize,
+                 reversed: bool)
+                 -> String {
+    let mut parameters = vec![];
+    if let Some(limit) = limit {
+        parameters.push(format!("limit:{}", limit));
+    }
+    if 0 < offset {
+        parameters.push(format!("offset:{}", offset));
+    }
+    if reversed {
+        parameters.push("reversed".to_owned());
+    }
+    format!("{{% for {} in {} {} %}}",
+            var_name,
+            range,
+            itertools::join(parameters.iter(), ", "))
 }
 
 pub fn for_block(_tag_name: &str,
@@ -155,7 +214,7 @@ pub fn for_block(_tag_name: &str,
     let mut args = arguments.iter();
     let var_name = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),
-        x => return Error::parser("Identifier", x),
+        x => return Err(unexpected_token_error("identifier", x)),
     };
 
     expect(&mut args, &Token::Identifier("in".to_owned()))?;
@@ -178,10 +237,11 @@ pub fn for_block(_tag_name: &str,
 
                 Range::Counted(start, stop)
             }
-            x => return Error::parser("Identifier or (", Some(x)),
+            x => return Err(unexpected_token_error("identifier | `(`", Some(x))),
         }
     } else {
-        return Error::parser("Identifier or (", None);
+        let x: Option<String> = None;
+        return Err(unexpected_token_error("identifier | `(`", x));
     };
 
     // now we get to check for parameters...
@@ -196,19 +256,33 @@ pub fn for_block(_tag_name: &str,
                     "limit" => limit = int_attr(&mut args)?,
                     "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
                     "reversed" => reversed = true,
-                    _ => return Error::parser("limit | offset | reversed", Some(token)),
+                    _ => {
+                        return Err(unexpected_token_error("`limit` | `offset` | `reversed`",
+                                                          Some(token)))
+                    }
                 }
             }
-            _ => return Error::parser("Identifier", Some(token)),
+            _ => return Err(unexpected_token_error("identifier", Some(token))),
         }
     }
 
     let (leading, trailing) = split_block(tokens, &["else"], options);
-    let item_template = Template::new(parse(leading, options)?);
+    let item_template =
+        Template::new(parse(leading, options)
+                          .trace_with(|| {
+                                          trace_for_tag(&var_name, &range, limit, offset, reversed)
+                                              .into()
+                                      })?);
 
     let else_template = match trailing {
         Some(split) => {
-            let parsed = parse(&split.trailing[1..], options)?;
+            let parsed =
+                    parse(&split.trailing[1..], options)
+                        .trace_with(|| "{{% else %}}".to_owned().into())
+                        .trace_with(|| {
+                                        trace_for_tag(&var_name, &range, limit, offset, reversed)
+                                            .into()
+                                    })?;
             Some(Template::new(parsed))
         }
         None => None,
