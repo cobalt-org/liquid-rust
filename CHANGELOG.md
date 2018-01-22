@@ -1,3 +1,41 @@
+<a name="0.14.0"></a>
+## 0.14.0 (2018-01-22)
+
+
+#### Features
+
+API
+* **Value:**  Control key order ([7ff0fcd0](https://github.com/cobalt-org/liquid-rust/commit/7ff0fcd04d2570aea5338e03128de62e494bee62), closes [#159](https://github.com/cobalt-org/liquid-rust/issues/159))
+
+Users
+* **errors:**
+  *  Provide context on compile errors ([c17df1f3](https://github.com/cobalt-org/liquid-rust/commit/c17df1f30b2eec8c0ded04919c73c9d5a1d63377))
+  *  Report context during render ([73e26cf7](https://github.com/cobalt-org/liquid-rust/commit/73e26cf786a5883a5fe98d66678134392f107cda), closes [#105](https://github.com/cobalt-org/liquid-rust/issues/105))
+* **filters:**  Implement basic `compact` support ([c0eadd5c](https://github.com/cobalt-org/liquid-rust/commit/c0eadd5c384e6d5745036ed344116d137043c154))
+
+#### Breaking Changes
+
+API
+*   Reduce string cloning ([3d93928b](https://github.com/cobalt-org/liquid-rust/commit/3d93928b2a9ac378dbb3ca8bd097b1ed7112620f)
+
+Users
+* **value:**  Improve value coercion practices ([ebb4f40e](https://github.com/cobalt-org/liquid-rust/commit/ebb4f40e315c280825e74cad60b4cd91bbe06ea0), closes [#99](https://github.com/cobalt-org/liquid-rust/issues/99)
+
+#### Performance
+
+*   Reduce string cloning ([3d93928b](https://github.com/cobalt-org/liquid-rust/commit/3d93928b2a9ac378dbb3ca8bd097b1ed7112620f)
+
+#### Bug Fixes
+
+API
+*   Remove warning when no-default-features ([8c43de87](https://github.com/cobalt-org/liquid-rust/commit/8c43de871b437d14ac8da14d283bc906c6dea9f2))
+
+Users
+* **filters:**  date_in_tz can't parse cobalt date ([1dae5276](https://github.com/cobalt-org/liquid-rust/commit/1dae52767680c7a2b628f631078a97d1ef37ca37))
+* **value:**  Improve value coercion practices ([ebb4f40e](https://github.com/cobalt-org/liquid-rust/commit/ebb4f40e315c280825e74cad60b4cd91bbe06ea0), closes [#99](https://github.com/cobalt-org/liquid-rust/issues/99)
+
+
+
 <a name="0.13.7"></a>
 ## 0.13.7 (2018-01-10)
 
