@@ -58,4 +58,4 @@ pub mod interpreter;
 pub use parser::{ParserBuilder, Parser};
 pub use template::Template;
 pub use error::Error;
-pub use value::{Value, Object, Array, Index, Scalar};
+pub use value::{Value, Object, Array, Index, Scalar, Date};
