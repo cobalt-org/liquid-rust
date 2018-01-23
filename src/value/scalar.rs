@@ -145,6 +145,12 @@ impl From<String> for Scalar {
     }
 }
 
+impl<'a> From<&'a String> for Scalar {
+    fn from(s: &String) -> Self {
+        Scalar { 0: ScalarEnum::Str(s.to_owned()) }
+    }
+}
+
 impl<'a> From<&'a str> for Scalar {
     fn from(s: &str) -> Self {
         Scalar { 0: ScalarEnum::Str(s.to_owned()) }
