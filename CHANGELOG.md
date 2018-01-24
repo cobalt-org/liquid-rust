@@ -1,3 +1,15 @@
+<a name="0.14.1"></a>
+## 0.14.1 (2018-01-24)
+
+
+#### Features
+
+* **API:**
+  *  Support &String->Scalar ([b87c983c](https://github.com/cobalt-org/liquid-rust/commit/b87c983c1b5fc9061c1d86424b135119d82fe737))
+  *  Re-export datetime ([1ca16f5a](https://github.com/cobalt-org/liquid-rust/commit/1ca16f5a90769e427f45e743fdbfd47629e1d178))
+
+
+
 <a name="0.14.0"></a>
 ## 0.14.0 (2018-01-22)
 
