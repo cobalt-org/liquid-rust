@@ -16,6 +16,8 @@ impl Renderable for Text {
 
 impl Text {
     pub fn new(text: &str) -> Text {
-        Text { text: text.to_owned() }
+        Text {
+            text: text.to_owned(),
+        }
     }
 }

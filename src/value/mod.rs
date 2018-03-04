@@ -2,6 +2,6 @@ mod values;
 mod scalar;
 mod index;
 
-pub use self::values::{Value, Array, Object};
+pub use self::values::{Array, Object, Value};
 pub use self::index::Index;
-pub use self::scalar::{Scalar, Date};
+pub use self::scalar::{Date, Scalar};

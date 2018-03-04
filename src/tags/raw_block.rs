@@ -17,17 +17,17 @@ impl Renderable for RawT {
     }
 }
 
-pub fn raw_block(_tag_name: &str,
-                 _arguments: &[Token],
-                 tokens: &[Element],
-                 _options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+pub fn raw_block(
+    _tag_name: &str,
+    _arguments: &[Token],
+    tokens: &[Element],
+    _options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let content = tokens.iter().fold("".to_owned(), |a, b| {
-        a +
-        match *b {
-            Element::Expression(_, ref text) |
-            Element::Tag(_, ref text) |
-            Element::Raw(ref text) => text,
+        a + match *b {
+            Element::Expression(_, ref text)
+            | Element::Tag(_, ref text)
+            | Element::Raw(ref text) => text,
         }
     });
     Ok(Box::new(RawT { content: content }))
@@ -49,11 +49,12 @@ mod test {
 
     #[test]
     fn raw_text() {
-        let raw = raw_block("raw",
-                            &[],
-                            &vec![Element::Expression(vec![], "This is a test".to_owned())],
-                            &options())
-            .unwrap();
+        let raw = raw_block(
+            "raw",
+            &[],
+            &vec![Element::Expression(vec![], "This is a test".to_owned())],
+            &options(),
+        ).unwrap();
         let output = raw.render(&mut Default::default()).unwrap();
         assert_eq!(output, Some("This is a test".to_owned()));
     }

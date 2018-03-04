@@ -8,12 +8,12 @@ use error::{Result, ResultLiquidExt};
 use interpreter::Argument;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{Context, Interrupt, unexpected_value_error};
+use interpreter::{unexpected_value_error, Context, Interrupt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse, expect, split_block, unexpected_token_error};
-use value::{Value, Object, Scalar};
+use compiler::{expect, parse, split_block, unexpected_token_error};
+use value::{Object, Scalar, Value};
 
 #[derive(Clone, Debug)]
 enum Range {
@@ -59,11 +59,13 @@ struct For {
 
 impl For {
     fn trace(&self) -> String {
-        trace_for_tag(&self.var_name,
-                      &self.range,
-                      self.limit,
-                      self.offset,
-                      self.reversed)
+        trace_for_tag(
+            &self.var_name,
+            &self.range,
+            self.limit,
+            self.offset,
+            self.reversed,
+        )
     }
 }
 
@@ -133,8 +135,10 @@ impl Renderable for For {
                     for (i, v) in range.iter().enumerate() {
                         helper_vars.insert("index0".to_owned(), Value::scalar(i as i32));
                         helper_vars.insert("index".to_owned(), Value::scalar((i + 1) as i32));
-                        helper_vars.insert("rindex0".to_owned(),
-                                           Value::scalar((range_len - i - 1) as i32));
+                        helper_vars.insert(
+                            "rindex0".to_owned(),
+                            Value::scalar((range_len - i - 1) as i32),
+                        );
                         helper_vars
                             .insert("rindex".to_owned(), Value::scalar((range_len - i) as i32));
                         helper_vars.insert("first".to_owned(), Value::scalar(i == 0));
@@ -166,7 +170,6 @@ impl Renderable for For {
     }
 }
 
-
 /// Extracts an attribute with an integer value from the token stream
 fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
     expect(args, &Token::Colon)?;
@@ -178,18 +181,18 @@ fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
 
 fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
-        Some(id @ &Token::IntegerLiteral(_)) |
-        Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
+        Some(id @ &Token::IntegerLiteral(_)) | Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
         x => Err(unexpected_token_error("whole number | identifier", x)),
     }
 }
 
-fn trace_for_tag(var_name: &str,
-                 range: &Range,
-                 limit: Option<usize>,
-                 offset: usize,
-                 reversed: bool)
-                 -> String {
+fn trace_for_tag(
+    var_name: &str,
+    range: &Range,
+    limit: Option<usize>,
+    offset: usize,
+    reversed: bool,
+) -> String {
     let mut parameters = vec![];
     if let Some(limit) = limit {
         parameters.push(format!("limit:{}", limit));
@@ -200,17 +203,20 @@ fn trace_for_tag(var_name: &str,
     if reversed {
         parameters.push("reversed".to_owned());
     }
-    format!("{{% for {} in {} {} %}}",
-            var_name,
-            range,
-            itertools::join(parameters.iter(), ", "))
+    format!(
+        "{{% for {} in {} {} %}}",
+        var_name,
+        range,
+        itertools::join(parameters.iter(), ", ")
+    )
 }
 
-pub fn for_block(_tag_name: &str,
-                 arguments: &[Token],
-                 tokens: &[Element],
-                 options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+pub fn for_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let var_name = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),
@@ -251,52 +257,44 @@ pub fn for_block(_tag_name: &str,
 
     while let Some(token) = args.next() {
         match *token {
-            Token::Identifier(ref attr) => {
-                match attr.as_ref() {
-                    "limit" => limit = int_attr(&mut args)?,
-                    "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
-                    "reversed" => reversed = true,
-                    _ => {
-                        return Err(unexpected_token_error("`limit` | `offset` | `reversed`",
-                                                          Some(token)))
-                    }
+            Token::Identifier(ref attr) => match attr.as_ref() {
+                "limit" => limit = int_attr(&mut args)?,
+                "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
+                "reversed" => reversed = true,
+                _ => {
+                    return Err(unexpected_token_error(
+                        "`limit` | `offset` | `reversed`",
+                        Some(token),
+                    ))
                 }
-            }
+            },
             _ => return Err(unexpected_token_error("identifier", Some(token))),
         }
     }
 
     let (leading, trailing) = split_block(tokens, &["else"], options);
-    let item_template =
-        Template::new(parse(leading, options)
-                          .trace_with(|| {
-                                          trace_for_tag(&var_name, &range, limit, offset, reversed)
-                                              .into()
-                                      })?);
+    let item_template = Template::new(parse(leading, options)
+        .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?);
 
     let else_template = match trailing {
         Some(split) => {
-            let parsed =
-                    parse(&split.trailing[1..], options)
-                        .trace_with(|| "{{% else %}}".to_owned().into())
-                        .trace_with(|| {
-                                        trace_for_tag(&var_name, &range, limit, offset, reversed)
-                                            .into()
-                                    })?;
+            let parsed = parse(&split.trailing[1..], options)
+                .trace_with(|| "{{% else %}}".to_owned().into())
+                .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?;
             Some(Template::new(parsed))
         }
         None => None,
     };
 
     Ok(Box::new(For {
-                    var_name: var_name,
-                    range: range,
-                    item_template: item_template,
-                    else_template: else_template,
-                    limit: limit,
-                    offset: offset,
-                    reversed: reversed,
-                }))
+        var_name: var_name,
+        range: range,
+        item_template: item_template,
+        else_template: else_template,
+        limit: limit,
+        offset: offset,
+        reversed: reversed,
+    }))
 }
 
 #[cfg(test)]
@@ -316,52 +314,64 @@ mod test {
     #[test]
     fn loop_over_array() {
         let options: LiquidOptions = Default::default();
-        let for_tag = for_block("for",
-                                &[Token::Identifier("name".to_owned()),
-                                  Token::Identifier("in".to_owned()),
-                                  Token::Identifier("array".to_owned())],
-                                &compiler::tokenize("test {{name}} ").unwrap(),
-                                &options)
-            .unwrap();
+        let for_tag = for_block(
+            "for",
+            &[
+                Token::Identifier("name".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::Identifier("array".to_owned()),
+            ],
+            &compiler::tokenize("test {{name}} ").unwrap(),
+            &options,
+        ).unwrap();
 
         let mut data: Context = Default::default();
-        data.set_global_val("array",
-                            Value::Array(vec![Value::scalar(22f32),
-                                              Value::scalar(23f32),
-                                              Value::scalar(24f32),
-                                              Value::scalar("wat".to_owned())]));
+        data.set_global_val(
+            "array",
+            Value::Array(vec![
+                Value::scalar(22f32),
+                Value::scalar(23f32),
+                Value::scalar(24f32),
+                Value::scalar("wat".to_owned()),
+            ]),
+        );
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test 22 test 23 test 24 test wat ".to_owned()));
     }
 
-
     #[test]
     fn loop_over_range_literals() {
         let options: LiquidOptions = Default::default();
-        let for_tag = for_block("for",
-                                &[Token::Identifier("name".to_owned()),
-                                  Token::Identifier("in".to_owned()),
-                                  Token::OpenRound,
-                                  Token::IntegerLiteral(42i32),
-                                  Token::DotDot,
-                                  Token::IntegerLiteral(46i32),
-                                  Token::CloseRound],
-                                &compiler::tokenize("#{{forloop.index}} test {{name}} | ")
-                                    .unwrap(),
-                                &options)
-            .unwrap();
+        let for_tag = for_block(
+            "for",
+            &[
+                Token::Identifier("name".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::OpenRound,
+                Token::IntegerLiteral(42i32),
+                Token::DotDot,
+                Token::IntegerLiteral(46i32),
+                Token::CloseRound,
+            ],
+            &compiler::tokenize("#{{forloop.index}} test {{name}} | ").unwrap(),
+            &options,
+        ).unwrap();
 
         let mut data: Context = Default::default();
         let output = for_tag.render(&mut data).unwrap();
-        assert_eq!(output,
-                   Some("#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | ".to_owned()));
+        assert_eq!(
+            output,
+            Some("#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | ".to_owned())
+        );
     }
 
     #[test]
     fn loop_over_range_vars() {
-        let text = concat!("{% for x in (alpha .. omega) %}",
-                           "#{{forloop.index}} test {{x}}, ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for x in (alpha .. omega) %}",
+            "#{{forloop.index}} test {{x}}, ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -371,8 +381,10 @@ mod test {
         context.set_global_val("alpha", Value::scalar(42i32));
         context.set_global_val("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output,
-                   Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string()));
+        assert_eq!(
+            output,
+            Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string())
+        );
     }
 
     #[test]
@@ -380,13 +392,15 @@ mod test {
         // test that nest nested for loops work, and that the
         // variable scopes between the inner and outer variable
         // scopes do not overlap.
-        let text = concat!("{% for outer in (1..5) %}",
-                           ">>{{forloop.index0}}:{{outer}}>>",
-                           "{% for inner in (6..10) %}",
-                           "{{outer}}:{{forloop.index0}}:{{inner}},",
-                           "{% endfor %}",
-                           ">>{{outer}}>>\n",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for outer in (1..5) %}",
+            ">>{{forloop.index0}}:{{outer}}>>",
+            "{% for inner in (6..10) %}",
+            "{{outer}}:{{forloop.index0}}:{{inner}},",
+            "{% endfor %}",
+            ">>{{outer}}>>\n",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -394,22 +408,29 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output,
-                   Some(concat!(">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
-                                ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
-                                ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
-                                ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n")
-                            .to_owned()));
+        assert_eq!(
+            output,
+            Some(
+                concat!(
+                    ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
+                    ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
+                    ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
+                    ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n"
+                ).to_owned()
+            )
+        );
     }
 
     #[test]
     fn nested_forloops_with_else() {
         // test that nested for loops parse their `else` blocks correctly
-        let text = concat!("{% for x in (0..i) %}",
-                           "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
-                           "{% else %}",
-                           "empty outer",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for x in (0..i) %}",
+            "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
+            "{% else %}",
+            "empty outer",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -426,7 +447,6 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("empty inner".to_owned()));
     }
-
 
     #[test]
     fn degenerate_range_is_safe() {
@@ -445,9 +465,11 @@ mod test {
 
     #[test]
     fn limited_loop() {
-        let text = concat!("{% for i in (1..100) limit:2 %}",
-                           "{{ i }} ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..100) limit:2 %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -460,9 +482,11 @@ mod test {
 
     #[test]
     fn offset_loop() {
-        let text = concat!("{% for i in (1..10) offset:4 %}",
-                           "{{ i }} ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..10) offset:4 %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -475,9 +499,11 @@ mod test {
 
     #[test]
     fn offset_and_limited_loop() {
-        let text = concat!("{% for i in (1..10) offset:4 limit:2 %}",
-                           "{{ i }} ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..10) offset:4 limit:2 %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -490,9 +516,11 @@ mod test {
 
     #[test]
     fn reversed_loop() {
-        let text = concat!("{% for i in (1..10) reversed %}",
-                           "{{ i }} ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..10) reversed %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -505,9 +533,11 @@ mod test {
 
     #[test]
     fn sliced_and_reversed_loop() {
-        let text = concat!("{% for i in (1..10) reversed offset:1 limit:5%}",
-                           "{{ i }} ",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..10) reversed offset:1 limit:5%}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -520,11 +550,13 @@ mod test {
 
     #[test]
     fn empty_loop_invokes_else_template() {
-        let text = concat!("{% for i in (1..10) limit:0 %}",
-                           "{{ i }} ",
-                           "{% else %}",
-                           "There are no items!",
-                           "{% endfor %}");
+        let text = concat!(
+            "{% for i in (1..10) limit:0 %}",
+            "{{ i }} ",
+            "{% else %}",
+            "There are no items!",
+            "{% endfor %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -550,25 +582,29 @@ mod test {
 
     #[test]
     fn loop_variables() {
-        let for_tag = for_block("for",
-                                &[Token::Identifier("v".to_owned()),
-                                  Token::Identifier("in".to_owned()),
-                                  Token::OpenRound,
-                                  Token::IntegerLiteral(100i32),
-                                  Token::DotDot,
-                                  Token::IntegerLiteral(103i32),
-                                  Token::CloseRound],
-                                &compiler::tokenize(concat!("length: {{forloop.length}}, ",
-                                                            "index: {{forloop.index}}, ",
-                                                            "index0: {{forloop.index0}}, ",
-                                                            "rindex: {{forloop.rindex}}, ",
-                                                            "rindex0: {{forloop.rindex0}}, ",
-                                                            "value: {{v}}, ",
-                                                            "first: {{forloop.first}}, ",
-                                                            "last: {{forloop.last}}\n"))
-                                    .unwrap(),
-                                &options())
-            .unwrap();
+        let for_tag = for_block(
+            "for",
+            &[
+                Token::Identifier("v".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::OpenRound,
+                Token::IntegerLiteral(100i32),
+                Token::DotDot,
+                Token::IntegerLiteral(103i32),
+                Token::CloseRound,
+            ],
+            &compiler::tokenize(concat!(
+                "length: {{forloop.length}}, ",
+                "index: {{forloop.index}}, ",
+                "index0: {{forloop.index0}}, ",
+                "rindex: {{forloop.rindex}}, ",
+                "rindex0: {{forloop.rindex0}}, ",
+                "value: {{v}}, ",
+                "first: {{forloop.first}}, ",
+                "last: {{forloop.last}}\n"
+            )).unwrap(),
+            &options(),
+        ).unwrap();
 
         let mut data: Context = Default::default();
         let output = for_tag.render(&mut data).unwrap();
@@ -584,28 +620,35 @@ mod test {
         );
     }
 
-
     #[test]
     fn use_filters() {
-
-        let for_tag = for_block("for",
-                                &[Token::Identifier("name".to_owned()),
-                                  Token::Identifier("in".to_owned()),
-                                  Token::Identifier("array".to_owned())],
-                                &compiler::tokenize("test {{name | shout}} ").unwrap(),
-                                &options())
-            .unwrap();
+        let for_tag = for_block(
+            "for",
+            &[
+                Token::Identifier("name".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::Identifier("array".to_owned()),
+            ],
+            &compiler::tokenize("test {{name | shout}} ").unwrap(),
+            &options(),
+        ).unwrap();
 
         let mut data: Context = Default::default();
-        data.add_filter("shout",
-                        ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase()))) as
-                         interpreter::FnFilterValue)
-                            .into());
+        data.add_filter(
+            "shout",
+            ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
+                as interpreter::FnFilterValue)
+                .into(),
+        );
 
-        data.set_global_val("array",
-                            Value::Array(vec![Value::scalar("alpha"),
-                                              Value::scalar("beta"),
-                                              Value::scalar("gamma")]));
+        data.set_global_val(
+            "array",
+            Value::Array(vec![
+                Value::scalar("alpha"),
+                Value::scalar("beta"),
+                Value::scalar("gamma"),
+            ]),
+        );
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(output, Some("test ALPHA test BETA test GAMMA ".to_owned()));
     }

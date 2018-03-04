@@ -28,7 +28,6 @@ doc = false
 default = ["extra-filters", "serde"]
 cli = ["clap", "error-chain", "serde_yaml"]
 extra-filters = []
-dev = []
 # Ensure keys in `Value`s `Object`s to be sorted.
 object_sorted = []
 

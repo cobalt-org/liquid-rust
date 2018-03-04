@@ -7,7 +7,7 @@ use interpreter::Context;
 use interpreter::Renderable;
 use compiler::Token;
 use compiler::LiquidOptions;
-use compiler::{consume_value_token, value_token, unexpected_token_error};
+use compiler::{consume_value_token, unexpected_token_error, value_token};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -17,8 +17,10 @@ struct Cycle {
 
 impl Cycle {
     fn trace(&self) -> String {
-        format!("{{% cycle {} %}}",
-                itertools::join(self.values.iter(), ", "))
+        format!(
+            "{{% cycle {} %}}",
+            itertools::join(self.values.iter(), ", ")
+        )
     }
 }
 
@@ -43,12 +45,16 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
             // the first argument is the name of the cycle block
             name = first.to_string();
         }
-        Some(&Token::Comma) |
-        None => {
+        Some(&Token::Comma) | None => {
             // first argument is the first item in the cycle
             values.push(first.to_arg()?);
         }
-        x => return Err(unexpected_token_error("string | number | boolean | identifier", x)),
+        x => {
+            return Err(unexpected_token_error(
+                "string | number | boolean | identifier",
+                x,
+            ))
+        }
     }
 
     loop {
@@ -72,15 +78,16 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
     }
 
     Ok(Cycle {
-           name: name,
-           values: values,
-       })
+        name: name,
+        values: values,
+    })
 }
 
-pub fn cycle_tag(_tag_name: &str,
-                 arguments: &[Token],
-                 options: &LiquidOptions)
-                 -> Result<Box<Renderable>> {
+pub fn cycle_tag(
+    _tag_name: &str,
+    arguments: &[Token],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
 }
 
@@ -101,15 +108,17 @@ mod test {
 
     #[test]
     fn unnamed_cycle_gets_a_name() {
-        let tokens = vec![Token::Identifier("this".to_owned()),
-                          Token::Comma,
-                          Token::StringLiteral("cycle".to_owned()),
-                          Token::Comma,
-                          Token::Identifier("has".to_owned()),
-                          Token::Comma,
-                          Token::Identifier("no".to_owned()),
-                          Token::Comma,
-                          Token::Identifier("name".to_owned())];
+        let tokens = vec![
+            Token::Identifier("this".to_owned()),
+            Token::Comma,
+            Token::StringLiteral("cycle".to_owned()),
+            Token::Comma,
+            Token::Identifier("has".to_owned()),
+            Token::Comma,
+            Token::Identifier("no".to_owned()),
+            Token::Comma,
+            Token::Identifier("name".to_owned()),
+        ];
         let options = LiquidOptions::default();
         let cycle = parse_cycle(&tokens[..], &options).unwrap();
         assert!(!cycle.name.is_empty());
@@ -117,11 +126,12 @@ mod test {
 
     #[test]
     fn named_values_are_independent() {
-        let text = concat!("{% cycle 'a': 'one', 'two', 'three' %}\n",
-                           "{% cycle 'a': 'one', 'two', 'three' %}\n",
-                           "{% cycle 'b': 'one', 'two', 'three' %}\n",
-                           "{% cycle 'b': 'one', 'two', 'three' %}\n")
-            .to_owned();
+        let text = concat!(
+            "{% cycle 'a': 'one', 'two', 'three' %}\n",
+            "{% cycle 'a': 'one', 'two', 'three' %}\n",
+            "{% cycle 'b': 'one', 'two', 'three' %}\n",
+            "{% cycle 'b': 'one', 'two', 'three' %}\n"
+        ).to_owned();
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -135,11 +145,12 @@ mod test {
 
     #[test]
     fn values_are_cycled() {
-        let text = concat!("{% cycle 'one', 'two', 'three' %}\n",
-                           "{% cycle 'one', 'two', 'three' %}\n",
-                           "{% cycle 'one', 'two', 'three' %}\n",
-                           "{% cycle 'one', 'two', 'three' %}\n")
-            .to_owned();
+        let text = concat!(
+            "{% cycle 'one', 'two', 'three' %}\n",
+            "{% cycle 'one', 'two', 'three' %}\n",
+            "{% cycle 'one', 'two', 'three' %}\n",
+            "{% cycle 'one', 'two', 'three' %}\n"
+        ).to_owned();
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -153,11 +164,12 @@ mod test {
 
     #[test]
     fn values_can_be_variables() {
-        let text = concat!("{% cycle alpha, beta, gamma %}\n",
-                           "{% cycle alpha, beta, gamma %}\n",
-                           "{% cycle alpha, beta, gamma %}\n",
-                           "{% cycle alpha, beta, gamma %}\n")
-            .to_owned();
+        let text = concat!(
+            "{% cycle alpha, beta, gamma %}\n",
+            "{% cycle alpha, beta, gamma %}\n",
+            "{% cycle alpha, beta, gamma %}\n",
+            "{% cycle alpha, beta, gamma %}\n"
+        ).to_owned();
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)

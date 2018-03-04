@@ -1,10 +1,8 @@
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
-
 // Deny warnings, except in dev mode
 #![deny(warnings)]
 // #![deny(missing_docs)]
-#![cfg_attr(feature="dev", warn(warnings))]
-
+#![cfg_attr(feature = "dev", warn(warnings))]
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 #![allow(zero_ptr)]
@@ -15,10 +13,10 @@ extern crate clap;
 extern crate error_chain;
 extern crate liquid;
 
-#[cfg(feature = "serde_yaml")]
-extern crate serde_yaml;
 #[cfg(feature = "serde_json")]
 extern crate serde_json;
+#[cfg(feature = "serde_yaml")]
+extern crate serde_yaml;
 
 use std::ffi;
 use std::fs;
@@ -113,9 +111,9 @@ fn run() -> Result<()> {
     let data = matches
         .value_of("context")
         .map(|s| {
-                 let p = path::PathBuf::from(s);
-                 build_context(p.as_path())
-             })
+            let p = path::PathBuf::from(s);
+            build_context(p.as_path())
+        })
         .map_or(Ok(None), |r| r.map(Some))?
         .unwrap_or_else(liquid::Object::new);
     let output = template.render(&data)?;

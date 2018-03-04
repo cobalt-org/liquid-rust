@@ -1,25 +1,29 @@
 sudo: false
 language: rust
 rust:
-  - stable
-  - beta
-  - nightly
+- 1.22.0  # Two releases back
+- stable
+- beta
+- nightly
 matrix:
   include:
-  - rust: nightly-2017-10-09
-    env: CLIPPY_VERS="0.0.165"
+  - rust: 1.24.0  # `stable`: Locking down for consistent behavior
+    env: RUSTFMT
     install:
-      - if [[ `cargo +nightly-2017-10-09 clippy -- --version` != $CLIPPY_VERS* ]] ; then travis_wait cargo +nightly-2017-10-09 install clippy --vers "$CLIPPY_VERS" --force; fi
-      - export PATH=$HOME/.cargo/bin:$PATH
-    script:
-      - cargo +nightly-2017-10-09 clippy --features "cli serde_yaml serde_json" -- -D warnings
-  - rust: stable
-    env: RUSTFMT=0.8.6
-    install:
-      - if [[ `rustfmt --version` != $RUSTFMT* ]] ; then travis_wait cargo install rustfmt --force --vers $RUSTFMT; fi
-      - export PATH=$HOME/.cargo/bin:$PATH
+      - rustup component add rustfmt-preview
     script:
       - cargo fmt -- --write-mode=diff
+  - rust: 1.24.0  # `stable`: Locking down for consistent behavior
+    env: RUSTFLAGS="-D warnings"
+    install:
+    script:
+    - cargo check --tests
+  - rust: nightly-2018-01-12
+    env: CLIPPY_VERSION="0.0.179"
+    install:
+      - travis_wait cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
+    script:
+      - cargo clippy --features "cli serde_yaml serde_json" -- -D clippy
 
 env:
   global:
@@ -28,42 +32,41 @@ env:
   - secure: FGosPYxgSM1Csyy2q/OiSW2KA7IDlIlLTODxwgszP/MIwOIMobAs5f+IqrEngEi3zKa0IPahQ3DZMZFAaNw9e1gI90ZQKpYgDQHNPeCtO0q4OV94RAjAFqhqVPxXwmNug88tm3NMokzzOafosWD8AzL7dYAx63KBpgCNZteW6CM=
 
 install:
-  - which cargo-coveralls || travis_wait cargo install cargo-travis --force --vers $COVERALLS
-  - if [[ `cargo-when --version` != *$WHEN ]] ; then travis_wait cargo install cargo-when --force --vers $WHEN; fi
-  - export PATH=$HOME/.cargo/bin:$PATH
+- rustc -Vv
+- cargo -V
+- which cargo-coveralls || travis_wait cargo install cargo-travis --force --vers $COVERALLS
+- if [[ `cargo-when --version` != *$WHEN ]] ; then travis_wait cargo install cargo-when --force --vers $WHEN; fi
+- export PATH=$HOME/.cargo/bin:$PATH
 
 script:
-  - rustc -Vv
-  - cargo -V
-  - cargo check --verbose
-  - cargo check --verbose --no-default-features
-  - cargo check --verbose --features "cli serde_json object_sorted"
-  - cargo clean
-  - cargo test  --verbose --features "cli serde_json"
-  - cargo when --channel nightly bench --features "cli serde_json"
-  - cargo when --channel stable doc --no-deps --all-features
+- cargo check --verbose
+- cargo check --verbose --no-default-features
+- cargo check --verbose --features "cli serde_json object_sorted"
+- cargo clean
+- cargo test  --verbose --features "cli serde_json"
+- cargo when --channel nightly bench --features "cli serde_json"
+- cargo when --channel stable doc --no-deps --all-features
 
 after_success:
-  - cargo when --channel stable coveralls
+- cargo when --channel stable coveralls
 
 addons:
   apt:
     packages:
-      # necessary for `cargo coveralls`
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev
-      - cmake
+    # necessary for `cargo coveralls`
+    - libcurl4-openssl-dev
+    - libelf-dev
+    - libdw-dev
+    - binutils-dev
+    - cmake
 
 cache:
   apt: true
   cargo: true
 before_cache:
-    # Travis can't cache files that are not readable by "others"
-    - chmod -R a+r $HOME/.cargo
+# Travis can't cache files that are not readable by "others"
+- chmod -R a+r $HOME/.cargo
 
 notifications:
   email:
     on_success: never
-

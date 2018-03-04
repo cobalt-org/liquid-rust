@@ -6,8 +6,8 @@ use compiler::ComparisonOperator;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse, split_block, consume_value_token, unexpected_token_error};
-use interpreter::{Argument, unexpected_value_error};
+use compiler::{consume_value_token, parse, split_block, unexpected_token_error};
+use interpreter::{unexpected_value_error, Argument};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -50,7 +50,10 @@ fn contains_check(a: &Value, b: &Value) -> Result<bool> {
             }
             Ok(false)
         }
-        _ => Err(unexpected_value_error("string | array | object", Some(a.type_name()))),
+        _ => Err(unexpected_value_error(
+            "string | array | object",
+            Some(a.type_name()),
+        )),
     }
 }
 
@@ -86,12 +89,10 @@ impl Renderable for Conditional {
                 .trace_with(|| self.trace().into())
         } else {
             match self.if_false {
-                Some(ref template) => {
-                    template
-                        .render(context)
-                        .trace_with(|| "{{% else %}}".to_owned().into())
-                        .trace_with(|| self.trace().into())
-                }
+                Some(ref template) => template
+                    .render(context)
+                    .trace_with(|| "{{% else %}}".to_owned().into())
+                    .trace_with(|| self.trace().into()),
                 _ => Ok(None),
             }
         }
@@ -111,55 +112,58 @@ fn parse_condition(arguments: &[Token]) -> Result<Condition> {
         }
         None => {
             // no trailing operator or RHS value implies "== true"
-            (ComparisonOperator::Equals, Token::BooleanLiteral(true).to_arg()?)
+            (
+                ComparisonOperator::Equals,
+                Token::BooleanLiteral(true).to_arg()?,
+            )
         }
         x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
     };
 
     Ok(Condition {
-           lh: lh,
-           comparison: comp,
-           rh: rh,
-       })
+        lh: lh,
+        comparison: comp,
+        rh: rh,
+    })
 }
 
-pub fn unless_block(_tag_name: &str,
-                    arguments: &[Token],
-                    tokens: &[Element],
-                    options: &LiquidOptions)
-                    -> Result<Box<Renderable>> {
+pub fn unless_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
     let if_true = Template::new(parse(&tokens[..], options)?);
     Ok(Box::new(Conditional {
-                    tag_name: "unless",
-                    condition,
-                    mode: false,
-                    if_true,
-                    if_false: None,
-                }))
+        tag_name: "unless",
+        condition,
+        mode: false,
+        if_true,
+        if_false: None,
+    }))
 }
 
-pub fn if_block(_tag_name: &str,
-                arguments: &[Token],
-                tokens: &[Element],
-                options: &LiquidOptions)
-                -> Result<Box<Renderable>> {
+pub fn if_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
 
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
 
-    let if_true = parse(leading_tokens, options)
-        .trace_with(|| format!("{{% if {} %}}", condition).into())?;
+    let if_true =
+        parse(leading_tokens, options).trace_with(|| format!("{{% if {} %}}", condition).into())?;
     let if_true = Template::new(if_true);
 
     let if_false = match trailing_tokens {
         None => Ok(None),
 
-        Some(ref split) if split.delimiter == "else" => {
-            parse(&split.trailing[1..], options)
-                .map(Some)
-                .trace_with(|| "{{% else %}}".to_owned().into())
-        }
+        Some(ref split) if split.delimiter == "else" => parse(&split.trailing[1..], options)
+            .map(Some)
+            .trace_with(|| "{{% else %}}".to_owned().into()),
 
         Some(ref split) if split.delimiter == "elsif" => {
             let child_tokens: Vec<Element> = split.trailing.iter().skip(1).cloned().collect();
@@ -174,12 +178,12 @@ pub fn if_block(_tag_name: &str,
         .map(Template::new);
 
     Ok(Box::new(Conditional {
-                    tag_name: "if",
-                    condition,
-                    mode: true,
-                    if_true,
-                    if_false,
-                }))
+        tag_name: "if",
+        condition,
+        mode: true,
+        if_true,
+        if_false,
+    }))
 }
 
 #[cfg(test)]
@@ -249,11 +253,13 @@ mod test {
 
     #[test]
     fn implicit_comparison() {
-        let text = concat!("{% if truthy %}",
-                           "yep",
-                           "{% else %}",
-                           "nope",
-                           "{% endif %}");
+        let text = concat!(
+            "{% if truthy %}",
+            "yep",
+            "{% else %}",
+            "nope",
+            "{% endif %}"
+        );
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -288,9 +294,11 @@ mod test {
 
     #[test]
     fn unless() {
-        let text = concat!("{% unless some_value == 1 %}",
-                           "unless body",
-                           "{% endunless %}");
+        let text = concat!(
+            "{% unless some_value == 1 %}",
+            "unless body",
+            "{% endunless %}"
+        );
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -315,16 +323,18 @@ mod test {
 
     #[test]
     fn nested_if_else() {
-        let text = concat!("{% if truthy %}",
-                           "yep, ",
-                           "{% if also_truthy %}",
-                           "also truthy",
-                           "{% else %}",
-                           "not also truthy",
-                           "{% endif %}",
-                           "{% else %}",
-                           "nope",
-                           "{% endif %}");
+        let text = concat!(
+            "{% if truthy %}",
+            "yep, ",
+            "{% if also_truthy %}",
+            "also truthy",
+            "{% else %}",
+            "not also truthy",
+            "{% endif %}",
+            "{% else %}",
+            "nope",
+            "{% endif %}"
+        );
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
             .map(interpreter::Template::new)
@@ -339,15 +349,17 @@ mod test {
 
     #[test]
     fn multiple_elif_blocks() {
-        let text = concat!("{% if a == 1 %}",
-                           "first",
-                           "{% elsif a == 2 %}",
-                           "second",
-                           "{% elsif a == 3 %}",
-                           "third",
-                           "{% else %}",
-                           "fourth",
-                           "{% endif %}");
+        let text = concat!(
+            "{% if a == 1 %}",
+            "first",
+            "{% elsif a == 2 %}",
+            "second",
+            "{% elsif a == 3 %}",
+            "third",
+            "{% else %}",
+            "fourth",
+            "{% endif %}"
+        );
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -478,9 +490,11 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        let arr = vec![Value::scalar("Star Wars"),
-                       Value::scalar("Star Trek"),
-                       Value::scalar("Alien")];
+        let arr = vec![
+            Value::scalar("Star Wars"),
+            Value::scalar("Star Trek"),
+            Value::scalar("Alien"),
+        ];
         context.set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if true".to_owned()));

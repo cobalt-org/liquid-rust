@@ -33,9 +33,9 @@ impl fmt::Display for FilterError {
 impl Error for FilterError {
     fn description(&self) -> &str {
         match *self {
-            FilterError::InvalidType(ref e) |
-            FilterError::InvalidArgumentCount(ref e) |
-            FilterError::InvalidArgument(_, ref e) => e,
+            FilterError::InvalidType(ref e)
+            | FilterError::InvalidArgumentCount(ref e)
+            | FilterError::InvalidArgument(_, ref e) => e,
         }
     }
 }
@@ -57,7 +57,8 @@ pub trait FilterValueClone {
 }
 
 impl<T> FilterValueClone for T
-    where T: 'static + FilterValue + Clone
+where
+    T: 'static + FilterValue + Clone,
 {
     fn clone_box(&self) -> Box<FilterValue> {
         Box::new(self.clone())

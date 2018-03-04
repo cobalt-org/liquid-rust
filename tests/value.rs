@@ -111,9 +111,11 @@ pub fn deserialize_str() {
 
 #[test]
 pub fn serialize_array() {
-    let actual = vec![liquid::Value::scalar(1f32),
-                      liquid::Value::scalar(true),
-                      liquid::Value::scalar("true")];
+    let actual = vec![
+        liquid::Value::scalar(1f32),
+        liquid::Value::scalar(true),
+        liquid::Value::scalar("true"),
+    ];
     let actual = liquid::Value::Array(actual);
     let actual = serde_yaml::to_string(&actual).unwrap();
     assert_diff!(&actual, "---\n- 1\n- true\n- \"true\"", "", 0);
@@ -122,9 +124,11 @@ pub fn serialize_array() {
 #[test]
 pub fn deserialize_array() {
     let actual: liquid::Value = serde_yaml::from_str("---\n- 1\n- true\n- \"true\"").unwrap();
-    let expected = vec![liquid::Value::scalar(1f32),
-                        liquid::Value::scalar(true),
-                        liquid::Value::scalar("true")];
+    let expected = vec![
+        liquid::Value::scalar(1f32),
+        liquid::Value::scalar(true),
+        liquid::Value::scalar("true"),
+    ];
     let expected = liquid::Value::Array(expected);
     assert_eq!(actual, expected);
 }
@@ -136,12 +140,13 @@ pub fn serialize_object() {
 
 #[test]
 pub fn deserialize_object() {
-    let actual: liquid::Value = serde_yaml::from_str("---\nNum: 1\nBool: true\nStr: \"true\"")
-        .unwrap();
-    let expected: liquid::Object = [("Num".to_owned(), liquid::Value::scalar(1f32)),
-                                    ("Bool".to_owned(), liquid::Value::scalar(true)),
-                                    ("Str".to_owned(), liquid::Value::scalar("true"))]
-        .iter()
+    let actual: liquid::Value =
+        serde_yaml::from_str("---\nNum: 1\nBool: true\nStr: \"true\"").unwrap();
+    let expected: liquid::Object = [
+        ("Num".to_owned(), liquid::Value::scalar(1f32)),
+        ("Bool".to_owned(), liquid::Value::scalar(true)),
+        ("Str".to_owned(), liquid::Value::scalar("true")),
+    ].iter()
         .cloned()
         .collect();
     let expected = liquid::Value::Object(expected);

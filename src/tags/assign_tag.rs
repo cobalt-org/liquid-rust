@@ -5,7 +5,7 @@ use interpreter::Output;
 use interpreter::Renderable;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse_output, expect, unexpected_token_error};
+use compiler::{expect, parse_output, unexpected_token_error};
 use compiler::ResultLiquidExt;
 
 #[derive(Clone, Debug)]
@@ -30,10 +30,11 @@ impl Renderable for Assign {
     }
 }
 
-pub fn assign_tag(_tag_name: &str,
-                  arguments: &[Token],
-                  _options: &LiquidOptions)
-                  -> Result<Box<Renderable>> {
+pub fn assign_tag(
+    _tag_name: &str,
+    arguments: &[Token],
+    _options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let dst = match args.next() {
         Some(&Token::Identifier(ref id)) => id.clone(),
@@ -71,13 +72,15 @@ mod test {
 
     #[test]
     fn assignment_in_loop_persists_on_loop_exit() {
-        let text = concat!("{% assign freestyle = false %}",
-                           "{% for t in tags %}{% if t == 'freestyle' %}",
-                           "{% assign freestyle = true %}",
-                           "{% endif %}{% endfor %}",
-                           "{% if freestyle %}",
-                           "<p>Freestyle!</p>",
-                           "{% endif %}");
+        let text = concat!(
+            "{% assign freestyle = false %}",
+            "{% for t in tags %}{% if t == 'freestyle' %}",
+            "{% assign freestyle = true %}",
+            "{% endif %}{% endfor %}",
+            "{% if freestyle %}",
+            "<p>Freestyle!</p>",
+            "{% endif %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options)
@@ -87,10 +90,14 @@ mod test {
         // test one: no matching value in `tags`
         {
             let mut context = Context::new();
-            context.set_global_val("tags",
-                                   Value::Array(vec![Value::scalar("alpha"),
-                                                     Value::scalar("beta"),
-                                                     Value::scalar("gamma")]));
+            context.set_global_val(
+                "tags",
+                Value::Array(vec![
+                    Value::scalar("alpha"),
+                    Value::scalar("beta"),
+                    Value::scalar("gamma"),
+                ]),
+            );
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(false)));
@@ -100,11 +107,15 @@ mod test {
         // test two: matching value in `tags`
         {
             let mut context = Context::new();
-            context.set_global_val("tags",
-                                   Value::Array(vec![Value::scalar("alpha"),
-                                                     Value::scalar("beta"),
-                                                     Value::scalar("freestyle"),
-                                                     Value::scalar("gamma")]));
+            context.set_global_val(
+                "tags",
+                Value::Array(vec![
+                    Value::scalar("alpha"),
+                    Value::scalar("beta"),
+                    Value::scalar("freestyle"),
+                    Value::scalar("gamma"),
+                ]),
+            );
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(true)));

@@ -19,8 +19,7 @@ enum ScalarEnum {
     Integer(i32),
     Float(f32),
     Bool(bool),
-    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
-    Date(Date),
+    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))] Date(Date),
     Str(String),
 }
 
@@ -117,43 +116,57 @@ impl Scalar {
 
 impl From<i32> for Scalar {
     fn from(s: i32) -> Self {
-        Scalar { 0: ScalarEnum::Integer(s) }
+        Scalar {
+            0: ScalarEnum::Integer(s),
+        }
     }
 }
 
 impl From<f32> for Scalar {
     fn from(s: f32) -> Self {
-        Scalar { 0: ScalarEnum::Float(s) }
+        Scalar {
+            0: ScalarEnum::Float(s),
+        }
     }
 }
 
 impl From<bool> for Scalar {
     fn from(s: bool) -> Self {
-        Scalar { 0: ScalarEnum::Bool(s) }
+        Scalar {
+            0: ScalarEnum::Bool(s),
+        }
     }
 }
 
 impl From<Date> for Scalar {
     fn from(s: Date) -> Self {
-        Scalar { 0: ScalarEnum::Date(s) }
+        Scalar {
+            0: ScalarEnum::Date(s),
+        }
     }
 }
 
 impl From<String> for Scalar {
     fn from(s: String) -> Self {
-        Scalar { 0: ScalarEnum::Str(s) }
+        Scalar {
+            0: ScalarEnum::Str(s),
+        }
     }
 }
 
 impl<'a> From<&'a String> for Scalar {
     fn from(s: &String) -> Self {
-        Scalar { 0: ScalarEnum::Str(s.to_owned()) }
+        Scalar {
+            0: ScalarEnum::Str(s.to_owned()),
+        }
     }
 }
 
 impl<'a> From<&'a str> for Scalar {
     fn from(s: &str) -> Self {
-        Scalar { 0: ScalarEnum::Str(s.to_owned()) }
+        Scalar {
+            0: ScalarEnum::Str(s.to_owned()),
+        }
     }
 }
 
@@ -168,8 +181,7 @@ impl PartialEq<Scalar> for Scalar {
             (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x == y,
             (&ScalarEnum::Str(ref x), &ScalarEnum::Str(ref y)) => x == y,
             // encode Ruby truthiness: all values except false and nil are true
-            (_, &ScalarEnum::Bool(b)) |
-            (&ScalarEnum::Bool(b), _) => b,
+            (_, &ScalarEnum::Bool(b)) | (&ScalarEnum::Bool(b), _) => b,
             _ => false,
         }
     }
@@ -204,17 +216,19 @@ const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S %z";
 #[cfg(feature = "serde")]
 mod friendly_date {
     use super::*;
-    use serde::{self, Deserialize, Serializer, Deserializer};
+    use serde::{self, Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         let s = date.format(DATE_FORMAT).to_string();
         serializer.serialize_str(&s)
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
         Date::parse_from_str(&s, DATE_FORMAT).map_err(serde::de::Error::custom)

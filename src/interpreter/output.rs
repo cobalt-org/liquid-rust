@@ -26,10 +26,12 @@ impl FilterPrototype {
 
 impl fmt::Display for FilterPrototype {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{}: {}",
-               self.name,
-               itertools::join(&self.arguments, ", "))
+        write!(
+            f,
+            "{}: {}",
+            self.name,
+            itertools::join(&self.arguments, ", ")
+        )
     }
 }
 
@@ -41,10 +43,12 @@ pub struct Output {
 
 impl fmt::Display for Output {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{} | {}",
-               self.entry,
-               itertools::join(&self.filters, " | "))
+        write!(
+            f,
+            "{} | {}",
+            self.entry,
+            itertools::join(&self.filters, " | ")
+        )
     }
 }
 
@@ -69,12 +73,9 @@ impl Output {
 
         // apply all specified filters
         for filter in &self.filters {
-            let f = context
-                .get_filter(&filter.name)
-                .ok_or_else(|| {
-                                Error::with_msg("Unsupported filter")
-                                    .context("filter", &filter.name)
-                            })?;
+            let f = context.get_filter(&filter.name).ok_or_else(|| {
+                Error::with_msg("Unsupported filter").context("filter", &filter.name)
+            })?;
 
             let arguments: Result<Vec<Value>> = filter
                 .arguments

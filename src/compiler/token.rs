@@ -81,7 +81,10 @@ impl Token {
                 var.extend(id.split('.').map(Index::with_key));
                 Ok(Argument::Var(var))
             }
-            ref x => Err(unexpected_token_error("string | number | boolean | identifier", Some(x))),
+            ref x => Err(unexpected_token_error(
+                "string | number | boolean | identifier",
+                Some(x),
+            )),
         }
     }
 }
@@ -104,8 +107,7 @@ impl fmt::Display for Token {
             Token::Or => "or".to_owned(),
 
             Token::Comparison(ref x) => x.to_string(),
-            Token::Identifier(ref x) |
-            Token::StringLiteral(ref x) => x.clone(),
+            Token::Identifier(ref x) | Token::StringLiteral(ref x) => x.clone(),
             Token::IntegerLiteral(ref x) => x.to_string(),
             Token::FloatLiteral(ref x) => x.to_string(),
             Token::BooleanLiteral(ref x) => x.to_string(),
@@ -123,62 +125,76 @@ mod test {
     fn evaluate_handles_string_literals() {
         let ctx = Context::new();
         let t = Token::StringLiteral("hello".to_owned());
-        assert_eq!(t.to_arg().unwrap().evaluate(&ctx).unwrap(),
-                   Value::scalar("hello"));
+        assert_eq!(
+            t.to_arg().unwrap().evaluate(&ctx).unwrap(),
+            Value::scalar("hello")
+        );
     }
 
     #[test]
     fn evaluate_handles_number_literals() {
         let ctx = Context::new();
-        assert_eq!(Token::FloatLiteral(42f32)
-                       .to_arg()
-                       .unwrap()
-                       .evaluate(&ctx)
-                       .unwrap(),
-                   Value::scalar(42f32));
+        assert_eq!(
+            Token::FloatLiteral(42f32)
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .unwrap(),
+            Value::scalar(42f32)
+        );
 
         let ctx = Context::new();
-        assert_eq!(Token::IntegerLiteral(42i32)
-                       .to_arg()
-                       .unwrap()
-                       .evaluate(&ctx)
-                       .unwrap(),
-                   Value::scalar(42i32));
+        assert_eq!(
+            Token::IntegerLiteral(42i32)
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .unwrap(),
+            Value::scalar(42i32)
+        );
     }
 
     #[test]
     fn evaluate_handles_boolean_literals() {
         let ctx = Context::new();
-        assert_eq!(Token::BooleanLiteral(true)
-                       .to_arg()
-                       .unwrap()
-                       .evaluate(&ctx)
-                       .unwrap(),
-                   Value::scalar(true));
+        assert_eq!(
+            Token::BooleanLiteral(true)
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .unwrap(),
+            Value::scalar(true)
+        );
 
-        assert_eq!(Token::BooleanLiteral(false)
-                       .to_arg()
-                       .unwrap()
-                       .evaluate(&ctx)
-                       .unwrap(),
-                   Value::scalar(false));
+        assert_eq!(
+            Token::BooleanLiteral(false)
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .unwrap(),
+            Value::scalar(false)
+        );
     }
 
     #[test]
     fn evaluate_handles_identifiers() {
         let mut ctx = Context::new();
         ctx.set_global_val("var0", Value::scalar(42f32));
-        assert_eq!(Token::Identifier("var0".to_owned())
-                       .to_arg()
-                       .unwrap()
-                       .evaluate(&ctx)
-                       .unwrap(),
-                   Value::scalar(42f32));
-        assert!(Token::Identifier("nope".to_owned())
-                    .to_arg()
-                    .unwrap()
-                    .evaluate(&ctx)
-                    .is_err());
+        assert_eq!(
+            Token::Identifier("var0".to_owned())
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .unwrap(),
+            Value::scalar(42f32)
+        );
+        assert!(
+            Token::Identifier("nope".to_owned())
+                .to_arg()
+                .unwrap()
+                .evaluate(&ctx)
+                .is_err()
+        );
     }
 
     #[test]

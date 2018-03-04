@@ -11,46 +11,58 @@ pub trait ResultLiquidChainExt<T, E> {
     /// Create an `Error` with `E` as the cause.
     fn chain(self, msg: &'static str) -> Result<T>;
     /// Create an `Error` with `E` as the cause.
-    fn chain_with<F>(self, msg: F) -> Result<T> where F: FnOnce() -> String;
+    fn chain_with<F>(self, msg: F) -> Result<T>
+    where
+        F: FnOnce() -> String;
 }
 
 /// `Result` convenience extension methods for working with `Error`.
 impl<T, E> ResultLiquidChainExt<T, E> for result::Result<T, E>
-    where E: error::Error + 'static + Send
+where
+    E: error::Error + 'static + Send,
 {
     fn chain(self, msg: &'static str) -> Result<T> {
         self.map_err(|err| Error::with_msg(msg).cause(err))
     }
 
     fn chain_with<F>(self, msg: F) -> Result<T>
-        where F: FnOnce() -> String
+    where
+        F: FnOnce() -> String,
     {
         self.map_err(|err| Error::with_msg(msg()).cause(err))
     }
 }
 
 pub trait ResultLiquidExt<T> {
-    fn trace_with<F>(self, trace: F) -> Result<T> where F: FnOnce() -> Trace;
-    fn context<S>(self, key: &'static str, value: &S) -> Result<T> where S: ToString;
+    fn trace_with<F>(self, trace: F) -> Result<T>
+    where
+        F: FnOnce() -> Trace;
+    fn context<S>(self, key: &'static str, value: &S) -> Result<T>
+    where
+        S: ToString;
     fn context_with<F>(self, context: F) -> Result<T>
-        where F: FnOnce() -> (borrow::Cow<'static, str>, String);
+    where
+        F: FnOnce() -> (borrow::Cow<'static, str>, String);
 }
 
 impl<T> ResultLiquidExt<T> for Result<T> {
     fn trace_with<F>(self, trace: F) -> Result<T>
-        where F: FnOnce() -> Trace
+    where
+        F: FnOnce() -> Trace,
     {
         self.map_err(|err| err.trace(trace()))
     }
 
     fn context<S>(self, key: &'static str, value: &S) -> Result<T>
-        where S: ToString
+    where
+        S: ToString,
     {
         self.map_err(|err| err.context(key, value))
     }
 
     fn context_with<F>(self, context: F) -> Result<T>
-        where F: FnOnce() -> (borrow::Cow<'static, str>, String)
+    where
+        F: FnOnce() -> (borrow::Cow<'static, str>, String),
     {
         let (key, value) = context();
         self.map_err(|err| err.context(key, &value))
@@ -84,7 +96,9 @@ impl Error {
             user_backtrace: vec![Trace::empty()],
             cause: None,
         };
-        Self { inner: Box::new(error) }
+        Self {
+            inner: Box::new(error),
+        }
     }
 
     /// Add a new call to the user-visible backtrace
@@ -101,8 +115,9 @@ impl Error {
     ///
     /// Example context: Value that parameters from ehe `trace` evaluate to.
     pub fn context<C, S>(self, key: C, value: &S) -> Self
-        where C: Into<borrow::Cow<'static, str>>,
-              S: ToString
+    where
+        C: Into<borrow::Cow<'static, str>>,
+        S: ToString,
     {
         self.context_cow_string(key.into(), value.to_string())
     }
@@ -224,8 +239,7 @@ enum ErrorCause {
 impl Clone for ErrorCause {
     fn clone(&self) -> Self {
         match *self {
-            ErrorCause::Generic(_) |
-            ErrorCause::Missing => ErrorCause::Missing,
+            ErrorCause::Generic(_) | ErrorCause::Missing => ErrorCause::Missing,
         }
     }
 }

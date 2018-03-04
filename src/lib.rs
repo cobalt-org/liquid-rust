@@ -21,20 +21,15 @@
 //! ```
 #![crate_name = "liquid"]
 #![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
-
-// Deny warnings, except in dev mode
-#![deny(warnings)]
-// #![deny(missing_docs)]
-#![cfg_attr(feature="dev", warn(warnings))]
-
+#![warn(warnings)]
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 #![allow(zero_ptr)]
 
-extern crate regex;
 extern crate chrono;
-extern crate unicode_segmentation;
 extern crate itertools;
+extern crate regex;
+extern crate unicode_segmentation;
 extern crate url;
 
 #[macro_use]
@@ -55,7 +50,7 @@ mod value;
 pub mod compiler;
 pub mod interpreter;
 
-pub use parser::{ParserBuilder, Parser};
+pub use parser::{Parser, ParserBuilder};
 pub use template::Template;
 pub use error::Error;
-pub use value::{Value, Object, Array, Index, Scalar, Date};
+pub use value::{Array, Date, Index, Object, Scalar, Value};

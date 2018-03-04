@@ -13,7 +13,8 @@ pub trait IncludeClone {
 }
 
 impl<T> IncludeClone for T
-    where T: 'static + Include + Clone
+where
+    T: 'static + Include + Clone,
 {
     fn clone_box(&self) -> Box<Include> {
         Box::new(self.clone())
@@ -61,20 +62,19 @@ impl Include for FilesystemInclude {
             .canonicalize()
             .chain("Snippet does not exist")
             .context_with(|| {
-                              let key = "non-existent source".into();
-                              let value = self.root.to_string_lossy().into();
-                              (key, value)
-                          })?;
+                let key = "non-existent source".into();
+                let value = self.root.to_string_lossy().into();
+                (key, value)
+            })?;
         let mut path = root.clone();
         path.extend(relative_path.split('/'));
-        let path =
-            path.canonicalize()
-                .chain("Snippet does not exist")
-                .context_with(|| ("non-existent path".into(), path.to_string_lossy().into()))?;
+        let path = path.canonicalize()
+            .chain("Snippet does not exist")
+            .context_with(|| ("non-existent path".into(), path.to_string_lossy().into()))?;
         if !path.starts_with(&root) {
             return Err(Error::with_msg("Snippet is outside of source")
-                           .context("source", &root.to_string_lossy())
-                           .context("full path", &path.to_string_lossy()));
+                .context("source", &root.to_string_lossy())
+                .context("full path", &path.to_string_lossy()));
         }
 
         let mut file = File::open(&path)

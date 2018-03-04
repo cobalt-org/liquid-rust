@@ -196,10 +196,10 @@ impl PartialEq<Value> for Value {
             (&Value::Nil, &Value::Nil) => true,
 
             // encode Ruby truthiness: all values except false and nil are true
-            (&Value::Nil, &Value::Scalar(ref b)) |
-            (&Value::Scalar(ref b), &Value::Nil) => !b.to_bool().unwrap_or(true),
-            (_, &Value::Scalar(ref b)) |
-            (&Value::Scalar(ref b), _) => b.to_bool().unwrap_or(false),
+            (&Value::Nil, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), &Value::Nil) => {
+                !b.to_bool().unwrap_or(true)
+            }
+            (_, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), _) => b.to_bool().unwrap_or(false),
 
             _ => false,
         }
@@ -238,9 +238,11 @@ mod test {
 
     #[test]
     fn test_to_string_array() {
-        let val = Value::Array(vec![Value::scalar(3f32),
-                                    Value::scalar("test"),
-                                    Value::scalar(5.3)]);
+        let val = Value::Array(vec![
+            Value::scalar(3f32),
+            Value::scalar("test"),
+            Value::scalar(5.3),
+        ]);
         assert_eq!(&val.to_string(), "3, test, 5.3");
     }
 
@@ -288,17 +290,19 @@ mod test {
 
     #[test]
     fn object_equality() {
-        let a: Object = [("alpha".to_owned(), Value::scalar("1")),
-                         ("beta".to_owned(), Value::scalar(2f32))]
-            .into_iter()
+        let a: Object = [
+            ("alpha".to_owned(), Value::scalar("1")),
+            ("beta".to_owned(), Value::scalar(2f32)),
+        ].into_iter()
             .cloned()
             .collect();
         let a = Value::Object(a);
 
-        let b: Object = [("alpha".to_owned(), Value::scalar("1")),
-                         ("beta".to_owned(), Value::scalar(2f32)),
-                         ("gamma".to_owned(), Value::Array(vec![]))]
-            .into_iter()
+        let b: Object = [
+            ("alpha".to_owned(), Value::scalar("1")),
+            ("beta".to_owned(), Value::scalar(2f32)),
+            ("gamma".to_owned(), Value::Array(vec![])),
+        ].into_iter()
             .cloned()
             .collect();
         let b = Value::Object(b);
