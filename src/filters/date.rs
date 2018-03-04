@@ -41,16 +41,17 @@ pub fn date_in_tz(input: &Value, args: &[Value]) -> FilterResult {
 
     let format = args[0].to_str();
 
-    let n =
-        args[1]
-            .as_scalar()
-            .and_then(Scalar::to_integer)
-            .ok_or_else(|| FilterError::InvalidArgument(1, "Whole number expected".to_owned()))?;
+    let n = args[1]
+        .as_scalar()
+        .and_then(Scalar::to_integer)
+        .ok_or_else(|| FilterError::InvalidArgument(1, "Whole number expected".to_owned()))?;
     let timezone = FixedOffset::east(n * 3600);
 
-    Ok(Value::scalar(date.with_timezone(&timezone)
-                         .format(format.as_ref())
-                         .to_string()))
+    Ok(Value::scalar(
+        date.with_timezone(&timezone)
+            .format(format.as_ref())
+            .to_string(),
+    ))
 }
 
 #[cfg(test)]
@@ -84,58 +85,82 @@ mod tests {
 
     #[test]
     fn unit_date() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[tos!("%Y-%m-%d")]),
-                   tos!("2016-06-13"));
+        assert_eq!(
+            unit!(
+                date,
+                tos!("13 Jun 2016 02:30:00 +0300"),
+                &[tos!("%Y-%m-%d")]
+            ),
+            tos!("2016-06-13")
+        );
     }
 
     #[test]
     fn unit_date_cobalt_format() {
-        assert_eq!(unit!(date, tos!("2016-06-13 02:30:00 +0300"), &[tos!("%Y-%m-%d")]),
-                   tos!("2016-06-13"));
+        assert_eq!(
+            unit!(date, tos!("2016-06-13 02:30:00 +0300"), &[tos!("%Y-%m-%d")]),
+            tos!("2016-06-13")
+        );
     }
 
     #[test]
     fn unit_date_bad_input_type() {
-        assert_eq!(unit!(date, Value::scalar(0f32), &[tos!("%Y-%m-%d")]),
-                   Value::scalar(0f32));
+        assert_eq!(
+            unit!(date, Value::scalar(0f32), &[tos!("%Y-%m-%d")]),
+            Value::scalar(0f32)
+        );
     }
 
     #[test]
     fn unit_date_bad_input_format() {
-        assert_eq!(unit!(date, tos!("blah blah blah"), &[tos!("%Y-%m-%d")]),
-                   tos!("blah blah blah"));
+        assert_eq!(
+            unit!(date, tos!("blah blah blah"), &[tos!("%Y-%m-%d")]),
+            tos!("blah blah blah")
+        );
     }
 
     #[test]
     fn unit_date_format_empty() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::scalar("".to_owned())]),
-                   tos!("13 Jun 2016 02:30:00 +0300"));
+        assert_eq!(
+            unit!(
+                date,
+                tos!("13 Jun 2016 02:30:00 +0300"),
+                &[Value::scalar("".to_owned())]
+            ),
+            tos!("13 Jun 2016 02:30:00 +0300")
+        );
     }
 
     #[test]
     fn unit_date_bad_format_type() {
-        assert_eq!(unit!(date,
-                         tos!("13 Jun 2016 02:30:00 +0300"),
-                         &[Value::scalar(0f32)]),
-                   tos!("0"));
+        assert_eq!(
+            unit!(
+                date,
+                tos!("13 Jun 2016 02:30:00 +0300"),
+                &[Value::scalar(0f32)]
+            ),
+            tos!("0")
+        );
     }
 
     #[test]
     fn unit_date_missing_format() {
-        assert_eq!(failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
-                   FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned()));
+        assert_eq!(
+            failed!(date, tos!("13 Jun 2016 02:30:00 +0300")),
+            FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned())
+        );
     }
 
     #[test]
     fn unit_date_extra_param() {
-        assert_eq!(failed!(date,
-                           tos!("13 Jun 2016 02:30:00 +0300"),
-                           &[Value::scalar(0f32), Value::scalar(1f32)]),
-                   FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned()));
+        assert_eq!(
+            failed!(
+                date,
+                tos!("13 Jun 2016 02:30:00 +0300"),
+                &[Value::scalar(0f32), Value::scalar(1f32)]
+            ),
+            FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned())
+        );
     }
 
     #[test]
@@ -197,8 +222,8 @@ mod tests {
     fn unit_date_in_tz_zero_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[];
-        let desired_result = FilterError::InvalidArgumentCount("expected at least 2, 0 given"
-                                                                   .to_owned());
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected at least 2, 0 given".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -207,8 +232,8 @@ mod tests {
     fn unit_date_in_tz_one_argument() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z")];
-        let desired_result = FilterError::InvalidArgumentCount("expected at least 2, 1 given"
-                                                                   .to_owned());
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected at least 2, 1 given".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 
@@ -216,11 +241,13 @@ mod tests {
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_three_arguments() {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
-        let args = &[tos!("%Y-%m-%d %H:%M:%S %z"),
-                     Value::scalar(0f32),
-                     Value::scalar(1f32)];
-        let desired_result = FilterError::InvalidArgumentCount("expected at most 2, 3 given"
-                                                                   .to_owned());
+        let args = &[
+            tos!("%Y-%m-%d %H:%M:%S %z"),
+            Value::scalar(0f32),
+            Value::scalar(1f32),
+        ];
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected at most 2, 3 given".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
     }
 }

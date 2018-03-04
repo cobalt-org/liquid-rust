@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
-use error::{Result, Error};
-use value::{Value, Object, Index};
+use error::{Error, Result};
+use value::{Index, Object, Value};
 
 use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
-
 
 pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
@@ -68,8 +67,8 @@ impl Context {
 
         if index >= values.len() {
             return Err(Error::with_msg("cycle index out of bounds")
-                           .context("index", &index)
-                           .context("count", &values.len()));
+                .context("index", &index)
+                .context("count", &values.len()));
         }
 
         let val = values[index].evaluate(self)?;
@@ -82,9 +81,9 @@ impl Context {
 
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {
         self.filters.get(name).map(|f| {
-                                       let f: &FilterValue = f;
-                                       f
-                                   })
+            let f: &FilterValue = f;
+            f
+        })
     }
 
     pub fn interrupted(&self) -> bool {
@@ -126,7 +125,8 @@ impl Context {
     /// tears the stack frame down before returning the function's result
     /// to the caller.
     pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
-        where FnT: FnOnce(&mut Context) -> RvalT
+    where
+        FnT: FnOnce(&mut Context) -> RvalT,
     {
         self.push_scope();
         let result = f(self);
@@ -144,17 +144,16 @@ impl Context {
         self.globals.get(name)
     }
 
-    pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(&self,
-                                                               mut indexes: I)
-                                                               -> Result<&Value> {
+    pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(
+        &self,
+        mut indexes: I,
+    ) -> Result<&Value> {
         let key = indexes
             .next()
             .ok_or_else(|| Error::with_msg("No index provided"))?;
-        let key = key.as_key()
-            .ok_or_else(|| {
-                            Error::with_msg("Root index must be an object key")
-                                .context("index", &key)
-                        })?;
+        let key = key.as_key().ok_or_else(|| {
+            Error::with_msg("Root index must be an object key").context("index", &key)
+        })?;
         let value = self.get_val(key)
             .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
 
@@ -162,8 +161,7 @@ impl Context {
             let value = value?;
             let child = value.get(index);
             let child =
-                child
-                    .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
+                child.ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
             Ok(child)
         })
     }
@@ -216,8 +214,10 @@ mod test {
         post.insert("number".to_owned(), Value::scalar(42f32));
         ctx.set_global_val("post", Value::Object(post));
         let indexes = vec![Index::with_key("post"), Index::with_key("number")];
-        assert_eq!(ctx.get_val_by_index(indexes.iter()).unwrap(),
-                   &Value::scalar(42f32));
+        assert_eq!(
+            ctx.get_val_by_index(indexes.iter()).unwrap(),
+            &Value::scalar(42f32)
+        );
     }
 
     #[test]

@@ -33,11 +33,12 @@ impl Renderable for Capture {
     }
 }
 
-pub fn capture_block(_tag_name: &str,
-                     arguments: &[Token],
-                     tokens: &[Element],
-                     options: &LiquidOptions)
-                     -> Result<Box<Renderable>> {
+pub fn capture_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let id = match args.next() {
         Some(&Token::Identifier(ref x)) => x.clone(),
@@ -50,12 +51,12 @@ pub fn capture_block(_tag_name: &str,
     };
 
     let t = Template::new(parse(tokens, options)
-                              .trace_with(|| format!("{{% capture {} %}}", &id).into())?);
+        .trace_with(|| format!("{{% capture {} %}}", &id).into())?);
 
     Ok(Box::new(Capture {
-                    id: id,
-                    template: t,
-                }))
+        id: id,
+        template: t,
+    }))
 }
 
 #[cfg(test)]
@@ -74,9 +75,11 @@ mod test {
 
     #[test]
     fn test_capture() {
-        let text = concat!("{% capture attribute_name %}",
-                           "{{ item }}-{{ i }}-color",
-                           "{% endcapture %}");
+        let text = concat!(
+            "{% capture attribute_name %}",
+            "{{ item }}-{{ i }}-color",
+            "{% endcapture %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options)
@@ -88,16 +91,20 @@ mod test {
         ctx.set_global_val("i", Value::scalar(42f32));
 
         let output = template.render(&mut ctx).unwrap();
-        assert_eq!(ctx.get_val("attribute_name"),
-                   Some(&Value::scalar("potato-42-color")));
+        assert_eq!(
+            ctx.get_val("attribute_name"),
+            Some(&Value::scalar("potato-42-color"))
+        );
         assert_eq!(output, Some("".to_owned()));
     }
 
     #[test]
     fn trailing_tokens_are_an_error() {
-        let text = concat!("{% capture foo bar baz %}",
-                           "We should never see this",
-                           "{% endcapture %}");
+        let text = concat!(
+            "{% capture foo bar baz %}",
+            "We should never see this",
+            "{% endcapture %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);

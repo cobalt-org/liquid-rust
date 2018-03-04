@@ -40,8 +40,8 @@ pub fn url_encode(input: &Value, args: &[Value]) -> FilterResult {
 
     let s = input.to_str();
 
-    let result: String = percent_encoding::utf8_percent_encode(s.as_ref(), URL_ENCODE_SET.clone())
-        .collect();
+    let result: String =
+        percent_encoding::utf8_percent_encode(s.as_ref(), URL_ENCODE_SET.clone()).collect();
     Ok(Value::scalar(result))
 }
 
@@ -80,8 +80,10 @@ mod tests {
     #[test]
     fn unit_url_encode() {
         assert_eq!(unit!(url_encode, tos!("foo bar")), tos!("foo%20bar"));
-        assert_eq!(unit!(url_encode, tos!("foo+1@example.com")),
-                   tos!("foo%2B1%40example.com"));
+        assert_eq!(
+            unit!(url_encode, tos!("foo+1@example.com")),
+            tos!("foo%2B1%40example.com")
+        );
     }
 
     #[test]
@@ -89,7 +91,9 @@ mod tests {
         // TODO Test case from shopify/liquid that we aren't handling:
         // - assert_eq!(unit!(url_decode, tos!("foo+bar")), tos!("foo bar"));
         assert_eq!(unit!(url_decode, tos!("foo%20bar")), tos!("foo bar"));
-        assert_eq!(unit!(url_decode, tos!("foo%2B1%40example.com")),
-                   tos!("foo+1@example.com"));
+        assert_eq!(
+            unit!(url_decode, tos!("foo%2B1%40example.com")),
+            tos!("foo+1@example.com")
+        );
     }
 }

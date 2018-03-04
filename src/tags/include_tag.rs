@@ -29,10 +29,11 @@ fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
     parse(&tokens, options).map(Template::new)
 }
 
-pub fn include_tag(_tag_name: &str,
-                   arguments: &[Token],
-                   options: &LiquidOptions)
-                   -> Result<Box<Renderable>> {
+pub fn include_tag(
+    _tag_name: &str,
+    arguments: &[Token],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
 
     let name = match args.next() {
@@ -41,13 +42,13 @@ pub fn include_tag(_tag_name: &str,
         arg => return Err(unexpected_token_error("string", arg)),
     };
 
-    let partial = parse_partial(name, options)
-        .trace_with(|| format!("{{% include {} %}}", name).into())?;
+    let partial =
+        parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name).into())?;
 
     Ok(Box::new(Include {
-                    name: name.to_owned(),
-                    partial,
-                }))
+        name: name.to_owned(),
+        partial,
+    }))
 }
 
 #[cfg(test)]
@@ -69,8 +70,10 @@ mod test {
         options
             .tags
             .insert("include", (include_tag as compiler::FnParseTag).into());
-        options.blocks.insert("comment",
-                              (tags::comment_block as compiler::FnParseBlock).into());
+        options.blocks.insert(
+            "comment",
+            (tags::comment_block as compiler::FnParseBlock).into(),
+        );
         options
             .blocks
             .insert("if", (tags::if_block as compiler::FnParseBlock).into());

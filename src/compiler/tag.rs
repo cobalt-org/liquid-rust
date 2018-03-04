@@ -11,11 +11,12 @@ use super::Token;
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
 pub trait ParseTag: Send + Sync + ParseTagClone {
-    fn parse(&self,
-             tag_name: &str,
-             arguments: &[Token],
-             options: &LiquidOptions)
-             -> Result<Box<Renderable>>;
+    fn parse(
+        &self,
+        tag_name: &str,
+        arguments: &[Token],
+        options: &LiquidOptions,
+    ) -> Result<Box<Renderable>>;
 }
 
 pub trait ParseTagClone {
@@ -23,7 +24,8 @@ pub trait ParseTagClone {
 }
 
 impl<T> ParseTagClone for T
-    where T: 'static + ParseTag + Clone
+where
+    T: 'static + ParseTag + Clone,
 {
     fn clone_box(&self) -> Box<ParseTag> {
         Box::new(self.clone())
@@ -50,11 +52,12 @@ impl FnTagParser {
 }
 
 impl ParseTag for FnTagParser {
-    fn parse(&self,
-             tag_name: &str,
-             arguments: &[Token],
-             options: &LiquidOptions)
-             -> Result<Box<Renderable>> {
+    fn parse(
+        &self,
+        tag_name: &str,
+        arguments: &[Token],
+        options: &LiquidOptions,
+    ) -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, options)
     }
 }
@@ -71,11 +74,12 @@ pub struct BoxedTagParser {
 }
 
 impl ParseTag for BoxedTagParser {
-    fn parse(&self,
-             tag_name: &str,
-             arguments: &[Token],
-             options: &LiquidOptions)
-             -> Result<Box<Renderable>> {
+    fn parse(
+        &self,
+        tag_name: &str,
+        arguments: &[Token],
+        options: &LiquidOptions,
+    ) -> Result<Box<Renderable>> {
         match self.parser {
             TagParserEnum::Fun(ref f) => f.parse(tag_name, arguments, options),
             TagParserEnum::Heap(ref f) => f.parse(tag_name, arguments, options),

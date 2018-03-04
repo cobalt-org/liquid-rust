@@ -43,7 +43,11 @@ fn _escape(input: &Value, args: &[Value], once_p: bool) -> FilterResult {
                         if once_p {
                             skip = nr_escaped(&s[last..]);
                         }
-                        if skip == 0 { "&amp;" } else { "&" }
+                        if skip == 0 {
+                            "&amp;"
+                        } else {
+                            "&"
+                        }
                     }
                     _ => unreachable!(),
                 };
@@ -125,43 +129,71 @@ mod tests {
 
     #[test]
     fn unit_escape() {
-        assert_eq!(unit!(escape, tos!("Have you read 'James & the Giant Peach'?")),
-                   tos!("Have you read &#39;James &amp; the Giant Peach&#39;?"));
-        assert_eq!(unit!(escape, tos!("Tetsuro Takara")),
-                   tos!("Tetsuro Takara"));
+        assert_eq!(
+            unit!(escape, tos!("Have you read 'James & the Giant Peach'?")),
+            tos!("Have you read &#39;James &amp; the Giant Peach&#39;?")
+        );
+        assert_eq!(
+            unit!(escape, tos!("Tetsuro Takara")),
+            tos!("Tetsuro Takara")
+        );
     }
 
     #[test]
     fn unit_escape_once() {
-        assert_eq!(unit!(escape_once, tos!("1 < 2 & 3")),
-                   tos!("1 &lt; 2 &amp; 3"));
-        assert_eq!(unit!(escape_once, tos!("1 &lt; 2 &amp; 3")),
-                   tos!("1 &lt; 2 &amp; 3"));
-        assert_eq!(unit!(escape_once, tos!("&lt;&gt;&amp;&#39;&quot;&xyz;")),
-                   tos!("&lt;&gt;&amp;&#39;&quot;&amp;xyz;"));
+        assert_eq!(
+            unit!(escape_once, tos!("1 < 2 & 3")),
+            tos!("1 &lt; 2 &amp; 3")
+        );
+        assert_eq!(
+            unit!(escape_once, tos!("1 &lt; 2 &amp; 3")),
+            tos!("1 &lt; 2 &amp; 3")
+        );
+        assert_eq!(
+            unit!(escape_once, tos!("&lt;&gt;&amp;&#39;&quot;&xyz;")),
+            tos!("&lt;&gt;&amp;&#39;&quot;&amp;xyz;")
+        );
     }
 
     #[test]
     fn unit_strip_html() {
-        assert_eq!(unit!(strip_html,
-                         tos!("<script type=\"text/javascript\">alert('Hi!');</script>"),
-                         &[]),
-                   tos!(""));
-        assert_eq!(unit!(strip_html,
-                         tos!("<SCRIPT type=\"text/javascript\">alert('Hi!');</SCRIPT>"),
-                         &[]),
-                   tos!(""));
+        assert_eq!(
+            unit!(
+                strip_html,
+                tos!("<script type=\"text/javascript\">alert('Hi!');</script>"),
+                &[]
+            ),
+            tos!("")
+        );
+        assert_eq!(
+            unit!(
+                strip_html,
+                tos!("<SCRIPT type=\"text/javascript\">alert('Hi!');</SCRIPT>"),
+                &[]
+            ),
+            tos!("")
+        );
         assert_eq!(unit!(strip_html, tos!("<p>test</p>"), &[]), tos!("test"));
-        assert_eq!(unit!(strip_html, tos!("<p id='xxx'>test</p>"), &[]),
-                   tos!("test"));
-        assert_eq!(unit!(strip_html,
-                         tos!("<style type=\"text/css\">cool style</style>"),
-                         &[]),
-                   tos!(""));
-        assert_eq!(unit!(strip_html, tos!("<p\nclass='loooong'>test</p>"), &[]),
-                   tos!("test"));
-        assert_eq!(unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
-                   tos!("test"));
+        assert_eq!(
+            unit!(strip_html, tos!("<p id='xxx'>test</p>"), &[]),
+            tos!("test")
+        );
+        assert_eq!(
+            unit!(
+                strip_html,
+                tos!("<style type=\"text/css\">cool style</style>"),
+                &[]
+            ),
+            tos!("")
+        );
+        assert_eq!(
+            unit!(strip_html, tos!("<p\nclass='loooong'>test</p>"), &[]),
+            tos!("test")
+        );
+        assert_eq!(
+            unit!(strip_html, tos!("<!--\n\tcomment\n-->test"), &[]),
+            tos!("test")
+        );
         assert_eq!(unit!(strip_html, tos!(""), &[]), tos!(""));
     }
 
@@ -186,8 +218,8 @@ mod tests {
     fn unit_newline_to_br_one_argument() {
         let input = &tos!("a\nb");
         let args = &[Value::scalar(0f32)];
-        let desired_result = FilterError::InvalidArgumentCount("expected at most 0, 1 given"
-                                                                   .to_owned());
+        let desired_result =
+            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
         assert_eq!(failed!(newline_to_br, input, args), desired_result);
     }
 }

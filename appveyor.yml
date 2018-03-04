@@ -1,43 +1,44 @@
 environment:
   global:
     RUST_VERSION: stable
-    APPVEYOR_CACHE_SKIP_RESTORE: true
+    #APPVEYOR_CACHE_SKIP_RESTORE: true
 
   matrix:
-    # Stable channel
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: stable
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: stable
-    # Beta channel
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: beta
-    # Nightly channel
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: nightly
+  # Stable channel
+  - TARGET: i686-pc-windows-msvc
+    CHANNEL: stable
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: stable
+  # Beta channel
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: beta
+  # Nightly channel
+  - TARGET: x86_64-pc-windows-msvc
+    CHANNEL: nightly
 
 install:
-  - ps: >-
-      $Env:PATH += ';C:\msys64\usr\bin'
-  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
-  - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
-  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+- ps: >-
+    $Env:PATH += ';C:\msys64\usr\bin'
+- curl -sSf -o rustup-init.exe https://win.rustup.rs/
+- rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
+- set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+- rustc -Vv
+- cargo -V
 
 test_script:
-  - rustc -Vv
-  - cargo -V
-  - cargo check --verbose
-  - cargo check --verbose --no-default-features
-  - cargo check --verbose --features "cli serde_json object_sorted"
-  - cargo clean
-  - cargo test  --verbose --features "cli serde_json"
+- cargo check --verbose
+- cargo check --verbose --no-default-features
+- cargo check --verbose --features "cli serde_json object_sorted"
+- cargo clean
+- cargo test  --verbose --features "cli serde_json"
 
 cache:
-  - C:\Users\appveyor\.cargo\registry
+- C:\Users\appveyor\.cargo\registry
+- target
 
 notifications:
-  - provider: Email
-    on_build_success: false
+- provider: Email
+  on_build_success: false
 
 # Building is done in the test phase, so we disable Appveyor's build phase.
 build: false

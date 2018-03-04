@@ -1,6 +1,6 @@
 use itertools;
 
-use error::{Result, Error, ResultLiquidExt};
+use error::{Error, Result, ResultLiquidExt};
 
 use interpreter::Argument;
 use interpreter::Context;
@@ -9,7 +9,7 @@ use interpreter::Template;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::{parse, consume_value_token, split_block, unexpected_token_error, BlockSplit};
+use compiler::{consume_value_token, parse, split_block, unexpected_token_error, BlockSplit};
 use value::Value;
 
 #[derive(Debug)]
@@ -113,27 +113,24 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
 
 const SECTION_DELIMS: &[&str] = &["when", "else"];
 
-fn parse_sections<'e>(case: &mut Case,
-                      children: &'e [Element],
-                      options: &LiquidOptions)
-                      -> Result<Option<BlockSplit<'e>>> {
+fn parse_sections<'e>(
+    case: &mut Case,
+    children: &'e [Element],
+    options: &LiquidOptions,
+) -> Result<Option<BlockSplit<'e>>> {
     let (leading, trailing) = split_block(&children[1..], SECTION_DELIMS, options);
 
     match parse_condition(&children[0])? {
         Conditional::Cond(conds) => {
-            let template = Template::new(parse(leading, options)
-                                             .trace_with(|| {
-                                                             format!("{{% when {} %}}",
-                                                                     itertools::join(conds.iter(),
-                                                                                     " or "))
-                                                                 .into()
-                                                         })?);
+            let template = Template::new(parse(leading, options).trace_with(|| {
+                format!("{{% when {} %}}", itertools::join(conds.iter(), " or ")).into()
+            })?);
             case.cases.push(CaseOption::new(conds, template));
         }
         Conditional::Else => {
             if case.else_block.is_none() {
                 let template = Template::new(parse(leading, options)
-                                                 .trace_with(|| "{{% else %}}".to_owned().into())?);
+                    .trace_with(|| "{{% else %}}".to_owned().into())?);
                 case.else_block = Some(template)
             } else {
                 return Err(Error::with_msg("Only one else block allowed"));
@@ -144,11 +141,12 @@ fn parse_sections<'e>(case: &mut Case,
     Ok(trailing)
 }
 
-pub fn case_block(_tag_name: &str,
-                  arguments: &[Token],
-                  tokens: &[Element],
-                  options: &LiquidOptions)
-                  -> Result<Box<Renderable>> {
+pub fn case_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let mut args = arguments.iter();
     let value = consume_value_token(&mut args)?.to_arg()?;
 
@@ -192,14 +190,16 @@ mod test {
 
     #[test]
     fn test_case_block() {
-        let text = concat!("{% case x %}",
-                           "{% when 2 %}",
-                           "two",
-                           "{% when 3 or 4 %}",
-                           "three and a half",
-                           "{% else %}",
-                           "otherwise",
-                           "{% endcase %}");
+        let text = concat!(
+            "{% case x %}",
+            "{% when 2 %}",
+            "two",
+            "{% when 3 or 4 %}",
+            "three and a half",
+            "{% else %}",
+            "otherwise",
+            "{% endcase %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options)
@@ -208,31 +208,40 @@ mod test {
 
         let mut context = Context::new();
         context.set_global_val("x", Value::scalar(2f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("two".to_owned()));
+        assert_eq!(
+            template.render(&mut context).unwrap(),
+            Some("two".to_owned())
+        );
 
         context.set_global_val("x", Value::scalar(3f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("three and a half".to_owned()));
+        assert_eq!(
+            template.render(&mut context).unwrap(),
+            Some("three and a half".to_owned())
+        );
 
         context.set_global_val("x", Value::scalar(4f32));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("three and a half".to_owned()));
-
+        assert_eq!(
+            template.render(&mut context).unwrap(),
+            Some("three and a half".to_owned())
+        );
 
         context.set_global_val("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut context).unwrap(),
-                   Some("otherwise".to_owned()));
+        assert_eq!(
+            template.render(&mut context).unwrap(),
+            Some("otherwise".to_owned())
+        );
     }
 
     #[test]
     fn test_no_matches_returns_empty_string() {
-        let text = concat!("{% case x %}",
-                           "{% when 2 %}",
-                           "two",
-                           "{% when 3 or 4 %}",
-                           "three and a half",
-                           "{% endcase %}");
+        let text = concat!(
+            "{% case x %}",
+            "{% when 2 %}",
+            "two",
+            "{% when 3 or 4 %}",
+            "three and a half",
+            "{% endcase %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options)
@@ -246,14 +255,16 @@ mod test {
 
     #[test]
     fn multiple_else_blocks_is_an_error() {
-        let text = concat!("{% case x %}",
-                           "{% when 2 %}",
-                           "two",
-                           "{% else %}",
-                           "else #1",
-                           "{% else %}",
-                           "else # 2",
-                           "{% endcase %}");
+        let text = concat!(
+            "{% case x %}",
+            "{% when 2 %}",
+            "two",
+            "{% else %}",
+            "else #1",
+            "{% else %}",
+            "else # 2",
+            "{% endcase %}"
+        );
         let tokens = compiler::tokenize(text).unwrap();
         let options = options();
         let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);

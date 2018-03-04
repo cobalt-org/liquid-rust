@@ -12,7 +12,7 @@ use super::{Error, Result};
 use interpreter::Renderable;
 use interpreter::Text;
 use interpreter::Variable;
-use interpreter::{Output, FilterPrototype};
+use interpreter::{FilterPrototype, Output};
 use super::Element;
 use super::LiquidOptions;
 use super::ParseBlock;
@@ -57,9 +57,9 @@ pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> 
 // creates an expression, which wraps everything that gets rendered
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens.get(0) {
-        Some(&Token::Identifier(ref x)) if tokens.len() > 1 &&
-                                           (tokens[1] == Token::Dot ||
-                                            tokens[1] == Token::OpenSquare) => {
+        Some(&Token::Identifier(ref x))
+            if tokens.len() > 1 && (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) =>
+        {
             let indexes = parse_indexes(&tokens[1..])?;
             let mut result = Variable::new(x.clone());
             result.extend(indexes);
@@ -97,8 +97,10 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
                     Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
                     Token::IntegerLiteral(ref x) => Index::with_index(*x as isize),
                     _ => {
-                        return Err(unexpected_token_error("string | whole number",
-                                                          Some(&tokens[0])));
+                        return Err(unexpected_token_error(
+                            "string | whole number",
+                            Some(&tokens[0]),
+                        ));
                     }
                 };
                 indexes.push(index);
@@ -137,8 +139,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
         let mut args = vec![];
 
         match iter.peek() {
-            Some(&&Token::Pipe) |
-            None => {
+            Some(&&Token::Pipe) | None => {
                 filters.push(FilterPrototype::new(name, args));
                 continue;
             }
@@ -157,10 +158,12 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
                     let _ = iter.next().unwrap();
                     continue;
                 }
-                Some(&&Token::Pipe) |
-                None => break,
+                Some(&&Token::Pipe) | None => break,
                 _ => {
-                    return Err(unexpected_token_error("`,` | `|`", Some(iter.next().unwrap())));
+                    return Err(unexpected_token_error(
+                        "`,` | `|`",
+                        Some(iter.next().unwrap()),
+                    ));
                 }
             }
         }
@@ -175,10 +178,11 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
 // elements and is delimited by a closing tag named {{end +
 // the_name_of_the_tag}}. Tags do not get rendered, but blocks may contain
 // renderable expressions
-fn parse_tag(iter: &mut Iter<Element>,
-             tokens: &[Token],
-             options: &LiquidOptions)
-             -> Result<Box<Renderable>> {
+fn parse_tag(
+    iter: &mut Iter<Element>,
+    tokens: &[Token],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
     let tag = &tokens[0];
     match *tag {
         // is a tag
@@ -226,7 +230,8 @@ fn parse_tag(iter: &mut Iter<Element>,
 /// Confirm that the next token in a token stream is what you want it
 /// to be. The token iterator is moved to the next token in the stream.
 pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
-    where T: Iterator<Item = &'a Token>
+where
+    T: Iterator<Item = &'a Token>,
 {
     match tokens.next() {
         Some(x) if x == expected => Ok(x),
@@ -240,7 +245,10 @@ pub fn expect<'a, T>(tokens: &mut T, expected: &Token) -> Result<&'a Token>
 pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
     match tokens.next() {
         Some(t) => value_token(t.clone()),
-        None => Err(unexpected_token_error("string | number | boolean | identifier", NOTHING)),
+        None => Err(unexpected_token_error(
+            "string | number | boolean | identifier",
+            NOTHING,
+        )),
     }
 }
 
@@ -248,12 +256,15 @@ pub fn consume_value_token(tokens: &mut Iter<Token>) -> Result<Token> {
 /// is presented.
 pub fn value_token(t: Token) -> Result<Token> {
     match t {
-        v @ Token::StringLiteral(_) |
-        v @ Token::IntegerLiteral(_) |
-        v @ Token::FloatLiteral(_) |
-        v @ Token::BooleanLiteral(_) |
-        v @ Token::Identifier(_) => Ok(v),
-        x => Err(unexpected_token_error("string | number | boolean | identifier", Some(&x))),
+        v @ Token::StringLiteral(_)
+        | v @ Token::IntegerLiteral(_)
+        | v @ Token::FloatLiteral(_)
+        | v @ Token::BooleanLiteral(_)
+        | v @ Token::Identifier(_) => Ok(v),
+        x => Err(unexpected_token_error(
+            "string | number | boolean | identifier",
+            Some(&x),
+        )),
     }
 }
 
@@ -271,10 +282,11 @@ pub struct BlockSplit<'a> {
 /// Returns a slice contaiing all elements before the delimiter, and
 /// an optional `BlockSplit` struct describing the delimiter and
 /// trailing elements.
-pub fn split_block<'a>(tokens: &'a [Element],
-                       delimiters: &[&str],
-                       options: &LiquidOptions)
-                       -> (&'a [Element], Option<BlockSplit<'a>>) {
+pub fn split_block<'a>(
+    tokens: &'a [Element],
+    delimiters: &[&str],
+    options: &LiquidOptions,
+) -> (&'a [Element], Option<BlockSplit<'a>>) {
     // construct a fast-lookup cache of the delimiters, as we're going to be
     // consulting the delimiter list a *lot*.
     let delims: HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x| *x));
@@ -291,8 +303,9 @@ pub fn split_block<'a>(tokens: &'a [Element],
                     stack.pop();
                 }
 
-                Token::Identifier(ref name) if stack.is_empty() &&
-                                               delims.contains(name.as_str()) => {
+                Token::Identifier(ref name)
+                    if stack.is_empty() && delims.contains(name.as_str()) =>
+                {
                     let leading = &tokens[0..i];
                     let split = BlockSplit {
                         delimiter: name.clone(),
@@ -321,13 +334,23 @@ mod test_parse_output {
         let tokens = granularize("abc | def:'1',2,'3' | blabla").unwrap();
 
         let result = parse_output(&tokens);
-        assert_eq!(result.unwrap(),
-                   Output::new(Argument::Var(Variable::new("abc")),
-                               vec![FilterPrototype::new("def",
-                                                         vec![Argument::Val(Value::scalar("1")),
-                                                              Argument::Val(Value::scalar(2.0)),
-                                                              Argument::Val(Value::scalar("3"))]),
-                                    FilterPrototype::new("blabla", vec![])]));
+        assert_eq!(
+            result.unwrap(),
+            Output::new(
+                Argument::Var(Variable::new("abc")),
+                vec![
+                    FilterPrototype::new(
+                        "def",
+                        vec![
+                            Argument::Val(Value::scalar("1")),
+                            Argument::Val(Value::scalar(2.0)),
+                            Argument::Val(Value::scalar("3")),
+                        ],
+                    ),
+                    FilterPrototype::new("blabla", vec![]),
+                ]
+            )
+        );
     }
 
     #[test]
@@ -335,8 +358,10 @@ mod test_parse_output {
         let tokens = granularize("abc | '1','2','3' | blabla").unwrap();
 
         let result = parse_output(&tokens);
-        assert_eq!(result.unwrap_err().to_string(),
-                   "liquid: Expected identifier, found `1`\n");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "liquid: Expected identifier, found `1`\n"
+        );
     }
 
     #[test]
@@ -344,8 +369,10 @@ mod test_parse_output {
         let tokens = granularize("abc | def:'1',2,'3' blabla").unwrap();
 
         let result = parse_output(&tokens);
-        assert_eq!(result.unwrap_err().to_string(),
-                   "liquid: Expected `,` | `|`, found `blabla`\n");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "liquid: Expected `,` | `|`, found `blabla`\n"
+        );
     }
 
     #[test]
@@ -353,8 +380,10 @@ mod test_parse_output {
         let tokens = granularize("abc | def '1',2,'3' | blabla").unwrap();
 
         let result = parse_output(&tokens);
-        assert_eq!(result.unwrap_err().to_string(),
-                   "liquid: Expected `:`, found `1`\n");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "liquid: Expected `:`, found `1`\n"
+        );
     }
 }
 
@@ -394,11 +423,12 @@ mod test_split_block {
         }
     }
 
-    pub fn null_block(_tag_name: &str,
-                      _arguments: &[Token],
-                      _tokens: &[Element],
-                      _options: &LiquidOptions)
-                      -> Result<Box<Renderable>> {
+    pub fn null_block(
+        _tag_name: &str,
+        _arguments: &[Token],
+        _tokens: &[Element],
+        _options: &LiquidOptions,
+    ) -> Result<Box<Renderable>> {
         Ok(Box::new(NullBlock))
     }
 
@@ -426,9 +456,10 @@ mod test_split_block {
     fn handles_nonmatching_stream() {
         // A stream of tokens with lots of `else`s in it, but only one at the
         // top level, which is where it should split.
-        let tokens = tokenize("{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
-                                   else tag")
-            .unwrap();
+        let tokens = tokenize(
+            "{% comment %}A{%endcomment%} bunch of {{text}} with {{no}} \
+             else tag",
+        ).unwrap();
 
         // note that we need an options block that has been initilaised with
         // the supported block list; otherwise the split_tag function won't know
@@ -442,18 +473,19 @@ mod test_split_block {
     fn honours_nesting() {
         // A stream of tokens with lots of `else`s in it, but only one at the
         // top level, which is where it should split.
-        let tokens = tokenize(concat!("{% for x in (1..10) %}",
-                                      "{% if x == 2 %}",
-                                      "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
-                                      "{% else %}",
-                                      "c",
-                                      "{% endif %}",
-                                      "{% else %}",
-                                      "something",
-                                      "{% endfor %}",
-                                      "{% else %}",
-                                      "trailing tags"))
-            .unwrap();
+        let tokens = tokenize(concat!(
+            "{% for x in (1..10) %}",
+            "{% if x == 2 %}",
+            "{% for y (2..10) %}{{y}}{% else %} zz {% endfor %}",
+            "{% else %}",
+            "c",
+            "{% endif %}",
+            "{% else %}",
+            "something",
+            "{% endfor %}",
+            "{% else %}",
+            "trailing tags"
+        )).unwrap();
 
         // note that we need an options block that has been initilaised with
         // the supported block list; otherwise the split_tag function won't know
@@ -464,10 +496,16 @@ mod test_split_block {
             Some(split) => {
                 assert_eq!(split.delimiter, "else");
                 assert_eq!(split.args, &[Token::Identifier("else".to_owned())]);
-                assert_eq!(split.trailing,
-                           &[Element::Tag(vec![Token::Identifier("else".to_owned())],
-                                          "{% else %}".to_owned()),
-                             Element::Raw("trailing tags".to_owned())]);
+                assert_eq!(
+                    split.trailing,
+                    &[
+                        Element::Tag(
+                            vec![Token::Identifier("else".to_owned())],
+                            "{% else %}".to_owned()
+                        ),
+                        Element::Raw("trailing tags".to_owned())
+                    ]
+                );
             }
             None => panic!("split failed"),
         }

@@ -30,14 +30,16 @@ pub fn pass_between_threads() {
 num: {}
 numTwo: {}
 "#,
-                num1,
-                num2
+                num1, num2
             )).unwrap();
             let output = template.render(&globals).unwrap();
 
             let mut comp = String::new();
             File::open(&output_file)
-                .expect(&format!("Expected output file does not exist: {}", output_file))
+                .expect(&format!(
+                    "Expected output file does not exist: {}",
+                    output_file
+                ))
                 .read_to_string(&mut comp)
                 .expect(&format!("Failed to read file: {}", output_file));
 

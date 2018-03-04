@@ -9,9 +9,9 @@ mod variable;
 
 pub use self::argument::Argument;
 pub use self::variable::Variable;
-pub use self::context::{Context, Interrupt, unexpected_value_error};
-pub use self::filter::{FilterValue, FilterError, FilterResult, BoxedValueFilter, FnFilterValue};
-pub use self::output::{Output, FilterPrototype};
+pub use self::context::{unexpected_value_error, Context, Interrupt};
+pub use self::filter::{BoxedValueFilter, FilterError, FilterResult, FilterValue, FnFilterValue};
+pub use self::output::{FilterPrototype, Output};
 pub use self::renderable::Renderable;
 pub use self::template::Template;
 pub use self::text::Text;

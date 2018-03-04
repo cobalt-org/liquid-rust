@@ -1,7 +1,7 @@
 #![feature(test)]
 
-extern crate test;
 extern crate serde_yaml;
+extern crate test;
 
 extern crate liquid;
 
@@ -49,8 +49,8 @@ fn bench_render_variable(b: &mut test::Bencher) {
         .parse(VARIABLE_ONLY)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::Object = serde_yaml::from_str(VARIABLE_ONLY_OBJECT)
-        .expect("Benchmark object parsing failed");
+    let data: liquid::Object =
+        serde_yaml::from_str(VARIABLE_ONLY_OBJECT).expect("Benchmark object parsing failed");
 
     b.iter(|| template.render(&data));
 }
@@ -97,8 +97,8 @@ fn bench_render_template(b: &mut test::Bencher) {
         .parse(ITERATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::Object = serde_yaml::from_str(ITERATE_OBJECT)
-        .expect("Benchmark object parsing failed");
+    let data: liquid::Object =
+        serde_yaml::from_str(ITERATE_OBJECT).expect("Benchmark object parsing failed");
 
     b.iter(|| template.render(&data));
 }

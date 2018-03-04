@@ -454,12 +454,14 @@ pub fn modulo() {
 #[test]
 pub fn escape() {
     let text = "{{ var | escape }}";
-    let samples = [("abc", "abc"),
-                   ("", ""),
-                   ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
-                   ("1 < 2", "1 &lt; 2"),
-                   ("1 &lt; 2", "1 &amp;lt; 2"),
-                   ("&etc.", "&amp;etc.")];
+    let samples = [
+        ("abc", "abc"),
+        ("", ""),
+        ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
+        ("1 < 2", "1 &lt; 2"),
+        ("1 &lt; 2", "1 &amp;lt; 2"),
+        ("&etc.", "&amp;etc."),
+    ];
     for t in &samples {
         let mut globals = liquid::Object::new();
         globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
@@ -475,12 +477,14 @@ pub fn escape() {
 #[test]
 pub fn escape_once() {
     let text = "{{ var | escape_once }}";
-    let samples = [("text", "text"),
-                   ("1 < 2 & 3", "1 &lt; 2 &amp; 3"),
-                   ("1 &lt; 2 &amp; 3", "1 &lt; 2 &amp; 3"),
-                   ("&xyz;", "&amp;xyz;"),
-                   ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
-                   ("&lt;&gt;&amp;&#39;&quot;", "&lt;&gt;&amp;&#39;&quot;")];
+    let samples = [
+        ("text", "text"),
+        ("1 < 2 & 3", "1 &lt; 2 &amp; 3"),
+        ("1 &lt; 2 &amp; 3", "1 &lt; 2 &amp; 3"),
+        ("&xyz;", "&amp;xyz;"),
+        ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
+        ("&lt;&gt;&amp;&#39;&quot;", "&lt;&gt;&amp;&#39;&quot;"),
+    ];
     for t in &samples {
         let mut globals = liquid::Object::new();
         globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
