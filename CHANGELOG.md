@@ -1,3 +1,13 @@
+<a name="0.14.2"></a>
+## 0.14.2 (2018-03-16)
+
+
+#### Features
+
+* **if:**  Bare if is an existence check ([7ab091ca](https://github.com/cobalt-org/liquid-rust/commit/7ab091cadce48d4cb066b3c494fd26f34f0d9625))
+
+
+
 <a name="0.14.1"></a>
 ## 0.14.1 (2018-01-24)
 
