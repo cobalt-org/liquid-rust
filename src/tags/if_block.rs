@@ -14,15 +14,76 @@ use interpreter::Template;
 use value::Value;
 
 #[derive(Clone, Debug)]
-struct Condition {
+struct BinaryCondition {
     lh: Argument,
     comparison: ComparisonOperator,
     rh: Argument,
 }
 
-impl fmt::Display for Condition {
+impl BinaryCondition {
+    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+        let a = self.lh.evaluate(context)?;
+        let b = self.rh.evaluate(context)?;
+
+        let result = match self.comparison {
+            ComparisonOperator::Equals => a == b,
+            ComparisonOperator::NotEquals => a != b,
+            ComparisonOperator::LessThan => a < b,
+            ComparisonOperator::GreaterThan => a > b,
+            ComparisonOperator::LessThanEquals => a <= b,
+            ComparisonOperator::GreaterThanEquals => a >= b,
+            ComparisonOperator::Contains => contains_check(&a, &b)?,
+        };
+
+        Ok(result)
+    }
+}
+
+impl fmt::Display for BinaryCondition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {} {}", self.lh, self.comparison, self.rh)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct ExistenceCondition {
+    lh: Argument,
+}
+
+impl ExistenceCondition {
+    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+        let a = self.lh.evaluate(context).unwrap_or_default();
+        Ok(a.is_truthy())
+    }
+}
+
+impl fmt::Display for ExistenceCondition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.lh)
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Condition {
+    Binary(BinaryCondition),
+    Existence(ExistenceCondition),
+}
+
+impl Condition {
+    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+        match *self {
+            Condition::Binary(ref c) => c.evaluate(context),
+            Condition::Existence(ref c) => c.evaluate(context),
+        }
+    }
+}
+
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Condition::Binary(ref c) => write!(f, "{}", c),
+            Condition::Existence(ref c) => write!(f, "{}", c),
+        }
     }
 }
 
@@ -59,18 +120,7 @@ fn contains_check(a: &Value, b: &Value) -> Result<bool> {
 
 impl Conditional {
     fn compare(&self, context: &Context) -> Result<bool> {
-        let a = self.condition.lh.evaluate(context)?;
-        let b = self.condition.rh.evaluate(context)?;
-
-        let result = match self.condition.comparison {
-            ComparisonOperator::Equals => a == b,
-            ComparisonOperator::NotEquals => a != b,
-            ComparisonOperator::LessThan => a < b,
-            ComparisonOperator::GreaterThan => a > b,
-            ComparisonOperator::LessThanEquals => a <= b,
-            ComparisonOperator::GreaterThanEquals => a >= b,
-            ComparisonOperator::Contains => contains_check(&a, &b)?,
-        };
+        let result = self.condition.evaluate(context)?;
 
         Ok(result == self.mode)
     }
@@ -105,26 +155,20 @@ fn parse_condition(arguments: &[Token]) -> Result<Condition> {
 
     let lh = consume_value_token(&mut args)?.to_arg()?;
 
-    let (comp, rh) = match args.next() {
+    let cond = match args.next() {
         Some(&Token::Comparison(x)) => {
-            let rhs = consume_value_token(&mut args)?.to_arg()?;
-            (x, rhs)
+            let rh = consume_value_token(&mut args)?.to_arg()?;
+            Condition::Binary(BinaryCondition {
+                lh: lh,
+                comparison: x,
+                rh: rh,
+            })
         }
-        None => {
-            // no trailing operator or RHS value implies "== true"
-            (
-                ComparisonOperator::Equals,
-                Token::BooleanLiteral(true).to_arg()?,
-            )
-        }
+        None => Condition::Existence(ExistenceCondition { lh }),
         x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
     };
 
-    Ok(Condition {
-        lh: lh,
-        comparison: comp,
-        rh: rh,
-    })
+    Ok(cond)
 }
 
 pub fn unless_block(
@@ -266,26 +310,24 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
+        // Non-existence
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, Some("nope".to_owned()));
+
+        // Explicit nil
         let mut context = Context::new();
         context.set_global_val("truthy", Value::Nil);
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("nope".to_owned()));
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
+        // false
         let mut context = Context::new();
         context.set_global_val("truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("nope".to_owned()));
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
+        // true
         let mut context = Context::new();
         context.set_global_val("truthy", Value::scalar(true));
         let output = template.render(&mut context).unwrap();
