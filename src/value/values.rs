@@ -187,6 +187,12 @@ impl Value {
     }
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        Self::nil()
+    }
+}
+
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
