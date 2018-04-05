@@ -7,19 +7,19 @@ rust:
 - nightly
 matrix:
   include:
-  - rust: 1.24.0  # `stable`: Locking down for consistent behavior
-    env: RUSTFMT
+  - env: RUSTFMT
+    rust: 1.24.0  # `stable`: Locking down for consistent behavior
     install:
       - rustup component add rustfmt-preview
     script:
       - cargo fmt -- --write-mode=diff
-  - rust: 1.24.0  # `stable`: Locking down for consistent behavior
-    env: RUSTFLAGS="-D warnings"
+  - env: RUSTFLAGS="-D warnings"
+    rust: 1.24.0  # `stable`: Locking down for consistent behavior
     install:
     script:
     - cargo check --tests
-  - rust: nightly-2018-01-12
-    env: CLIPPY_VERSION="0.0.179"
+  - env: CLIPPY_VERSION="0.0.179"
+    rust: nightly-2018-01-12
     install:
       - travis_wait cargo install clippy --version $CLIPPY_VERSION || echo "clippy already installed"
     script:
@@ -49,6 +49,12 @@ script:
 
 after_success:
 - cargo when --channel stable coveralls
+
+branches:
+  only:
+  # Release tags
+  - /^v\d+\.\d+\.\d+.*$/
+  - master
 
 addons:
   apt:

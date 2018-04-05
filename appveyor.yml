@@ -32,6 +32,12 @@ test_script:
 - cargo clean
 - cargo test  --verbose --features "cli serde_json"
 
+branches:
+  only:
+  # Release tags
+  - /^v\d+\.\d+\.\d+.*$/
+  - master
+
 cache:
 - C:\Users\appveyor\.cargo\registry
 - target
