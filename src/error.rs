@@ -19,7 +19,7 @@ pub trait ResultLiquidChainExt<T, E> {
 /// `Result` convenience extension methods for working with `Error`.
 impl<T, E> ResultLiquidChainExt<T, E> for result::Result<T, E>
 where
-    E: error::Error + 'static + Send,
+    E: error::Error + Send + Sync + 'static,
 {
     fn chain(self, msg: &'static str) -> Result<T> {
         self.map_err(|err| Error::with_msg(msg).cause(err))
@@ -132,12 +132,12 @@ impl Error {
     }
 
     /// Add an external cause to the error for debugging purposes.
-    pub fn cause<E: error::Error + 'static + Send>(self, cause: E) -> Self {
+    pub fn cause<E: error::Error + Send + Sync + 'static>(self, cause: E) -> Self {
         let cause = Box::new(cause);
         self.cause_error(cause)
     }
 
-    fn cause_error(mut self, cause: Box<error::Error + 'static + Send>) -> Self {
+    fn cause_error(mut self, cause: Box<error::Error + Send + Sync + 'static>) -> Self {
         let cause = Some(ErrorCause::Generic(GenericError(cause)));
         self.inner.cause = cause;
         self
@@ -253,7 +253,7 @@ impl fmt::Display for ErrorCause {
     }
 }
 
-struct GenericError(Box<error::Error + Send>);
+struct GenericError(Box<error::Error + Send + Sync + 'static>);
 
 impl fmt::Debug for GenericError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
