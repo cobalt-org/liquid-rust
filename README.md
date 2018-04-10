@@ -13,13 +13,17 @@ To include liquid in your project add the following to your Cargo.toml:
 liquid = "0.14"
 ```
 
-Now you can use the crate in your code
+Now you can use the crate in your code:
+
 ```rust
 extern crate liquid;
 ```
 
 Example:
+
 ```rust
+extern crate liquid;
+
 let template = liquid::ParserBuilder::with_liquid()
     .build()
     .parse("Liquid! {{num | minus: 2}}").unwrap();
@@ -73,14 +77,3 @@ See
 [comment_block.rs](https://github.com/cobalt-org/liquid-rust/blob/master/src/tags/comment_block.rs)
 for what a block implementation looks like.  You can then register it by
 calling `liquid::ParserBuilder::block`.
-
-----------
-
-<!---
-
-Skeptic template:
-```rust,skeptic-template
-extern crate skeptic; extern crate liquid; fn main() {{ {} }}
-```
-
--->

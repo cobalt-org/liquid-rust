@@ -10,8 +10,6 @@ categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 
-build = "build.rs"
-
 [badges]
 travis-ci = { repository = "cobalt-org/liquid-rust" }
 appveyor  = { repository = "cobalt-org/liquid-rust" }
@@ -46,10 +44,8 @@ serde_yaml = { version = "0.7", optional = true }
 serde_json = { version = "1.0", optional = true }
 
 [build-dependencies]
-skeptic = "0.13.2"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 difference = "2.0"
-skeptic = "0.13.2"
 serde_yaml = "0.7"
