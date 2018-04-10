@@ -1,3 +1,14 @@
+<a name="0.14.3"></a>
+## 0.14.3 (2018-04-10)
+
+
+#### Bug Fixes
+
+*   Reduce deps for users ([41e9b01a](https://github.com/cobalt-org/liquid-rust/commit/41e9b01a6b2925562b2ef073a8a420c64f08e570))
+* **error:**  Make API consumable by failure ([54be3400](https://github.com/cobalt-org/liquid-rust/commit/54be3400dcebe4944196a36be9c99a5187a6f550))
+
+
+
 <a name="0.14.2"></a>
 ## 0.14.2 (2018-03-16)
 
