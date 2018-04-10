@@ -42,7 +42,7 @@ script:
 - cargo check --verbose
 - cargo check --verbose --no-default-features
 - cargo check --verbose --features "cli serde_json object_sorted"
-- cargo clean
+- rm -rf target/debug/deps/*liquid*  # Avoid skeptic problems
 - cargo test  --verbose --features "cli serde_json"
 - cargo when --channel nightly bench --features "cli serde_json"
 - cargo when --channel stable doc --no-deps --all-features

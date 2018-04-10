@@ -29,7 +29,7 @@ test_script:
 - cargo check --verbose
 - cargo check --verbose --no-default-features
 - cargo check --verbose --features "cli serde_json object_sorted"
-- cargo clean
+- del target\debug\deps\*liquid*  # Avoid skeptic problems
 - cargo test  --verbose --features "cli serde_json"
 
 branches:
