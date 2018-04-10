@@ -1,39 +1,29 @@
-use std::env;
-use std::env::consts::EXE_EXTENSION;
-use std::path::Path;
-use std::process::Command;
+extern crate glob;
+extern crate which;
 
 #[test]
 fn readme_test() {
-    let rustdoc = Path::new("rustdoc").with_extension(EXE_EXTENSION);
-    let readme = Path::new(file!())
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("README.md");
-    let exe = env::current_exe().unwrap();
-    let depdir = exe.parent().unwrap();
-    let outdir = depdir.parent().unwrap();
-    let extern_arg = format!(
-        "read_process_memory={}",
-        outdir.join("libread_process_memory.rlib").to_string_lossy()
-    );
-    let mut cmd = Command::new(rustdoc);
-    cmd.args(&["--verbose", "--test", "-L"])
-        .arg(&outdir)
-        .arg("-L")
-        .arg(&depdir)
-        .arg("--extern")
-        .arg(&extern_arg)
+    let rustdoc = which::which("rustdoc").unwrap();
+
+    let readme = std::path::Path::new(file!()).canonicalize().unwrap();
+    let readme = readme.parent().unwrap().parent().unwrap().join("README.md");
+    let readme = readme.to_str().unwrap();
+
+    let deps = std::path::Path::new(&std::env::current_exe().unwrap())
+        .canonicalize()
+        .unwrap();
+    let deps = deps.parent().unwrap();
+
+    let mut cmd = std::process::Command::new(rustdoc);
+    cmd.arg("--verbose")
+        .args(&["--library-path", deps.to_str().unwrap()])
+        .arg("--test")
         .arg(&readme);
-    println!("Running `{:?}`", cmd);
+
     let result = cmd.spawn()
-        .expect("Failed to spawn process")
+        .expect("Failed to spawn rustdoc process")
         .wait()
-        .expect("Failed to run process");
-    assert!(
-        result.success(),
-        "Failed to run rustdoc tests on README.md!"
-    );
+        .expect("Failed to run rustdoc process");
+
+    assert!(result.success(), "Failed to run rustdoc tests on README.md");
 }
