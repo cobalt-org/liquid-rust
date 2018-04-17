@@ -12,7 +12,7 @@ license = "MIT"
 
 [badges]
 travis-ci = { repository = "cobalt-org/liquid-rust" }
-appveyor  = { repository = "cobalt-org/liquid-rust" }
+appveyor  = { repository = "johannhof/liquid-rust" }
 
 [[bin]]
 name = "liquid-dbg"
