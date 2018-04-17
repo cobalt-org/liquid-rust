@@ -12,7 +12,7 @@ license = "MIT"
 
 [badges]
 travis-ci = { repository = "cobalt-org/liquid-rust" }
-appveyor  = { repository = "cobalt-org/liquid-rust" }
+appveyor  = { repository = "johannhof/liquid-rust" }
 
 [[bin]]
 name = "liquid-dbg"
@@ -45,6 +45,5 @@ serde_json = { version = "1.0", optional = true }
 
 [dev-dependencies]
 difference = "2.0"
+docmatic = "0.1"
 serde_yaml = "0.7"
-glob = "0.2"
-which = "2.0"
