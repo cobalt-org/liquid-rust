@@ -10,23 +10,23 @@ use std::f32;
 pub fn serialize_num() {
     let actual = liquid::Value::scalar(1f32);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\n1", "", 0);
+    assert_diff!(&actual, "---\n1.0", "", 0);
 
     let actual = liquid::Value::scalar(-100f32);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\n-100", "", 0);
+    assert_diff!(&actual, "---\n-100.0", "", 0);
 
     let actual = liquid::Value::scalar(3.14e_10f32);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\n31399999488", "", 0);
+    assert_diff!(&actual, "---\n31399999488.0", "", 0);
 
     let actual = liquid::Value::scalar(f32::NAN);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\nNaN", "", 0);
+    assert_diff!(&actual, "---\n.nan", "", 0);
 
     let actual = liquid::Value::scalar(f32::INFINITY);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\ninf", "", 0);
+    assert_diff!(&actual, "---\n.inf", "", 0);
 }
 
 #[test]
@@ -118,7 +118,7 @@ pub fn serialize_array() {
     ];
     let actual = liquid::Value::Array(actual);
     let actual = serde_yaml::to_string(&actual).unwrap();
-    assert_diff!(&actual, "---\n- 1\n- true\n- \"true\"", "", 0);
+    assert_diff!(&actual, "---\n- 1.0\n- true\n- \"true\"", "", 0);
 }
 
 #[test]
