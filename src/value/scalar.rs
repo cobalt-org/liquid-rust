@@ -1,6 +1,6 @@
+use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
-use std::borrow;
 
 use chrono;
 
@@ -19,7 +19,8 @@ enum ScalarEnum {
     Integer(i32),
     Float(f32),
     Bool(bool),
-    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))] Date(Date),
+    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
+    Date(Date),
     Str(String),
 }
 

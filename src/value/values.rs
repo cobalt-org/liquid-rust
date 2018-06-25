@@ -1,6 +1,6 @@
+use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
-use std::borrow;
 
 #[cfg(feature = "object_sorted")]
 use std::collections::BTreeMap;

@@ -92,7 +92,7 @@ impl Error {
 
     fn with_msg_cow(msg: borrow::Cow<'static, str>) -> Self {
         let error = InnerError {
-            msg: msg,
+            msg,
             user_backtrace: vec![Trace::empty()],
             cause: None,
         };

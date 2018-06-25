@@ -1,10 +1,10 @@
 use std::fmt;
 
-use super::Result;
 use super::parser::unexpected_token_error;
-use value::{Index, Value};
+use super::Result;
 use interpreter::Argument;
 use interpreter::Variable;
+use value::{Index, Value};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ComparisonOperator {

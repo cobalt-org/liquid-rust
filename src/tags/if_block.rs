@@ -7,10 +7,10 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, parse, split_block, unexpected_token_error};
-use interpreter::{unexpected_value_error, Argument};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
+use interpreter::{unexpected_value_error, Argument};
 use value::Value;
 
 #[derive(Clone, Debug)]
@@ -159,9 +159,9 @@ fn parse_condition(arguments: &[Token]) -> Result<Condition> {
         Some(&Token::Comparison(x)) => {
             let rh = consume_value_token(&mut args)?.to_arg()?;
             Condition::Binary(BinaryCondition {
-                lh: lh,
+                lh,
                 comparison: x,
-                rh: rh,
+                rh,
             })
         }
         None => Condition::Existence(ExistenceCondition { lh }),
@@ -233,10 +233,10 @@ pub fn if_block(
 #[cfg(test)]
 mod test {
     use super::*;
-    use value::Value;
-    use value::Object;
     use compiler;
     use interpreter;
+    use value::Object;
+    use value::Value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();

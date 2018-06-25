@@ -3,9 +3,9 @@ extern crate difference;
 extern crate liquid;
 extern crate serde_yaml;
 
+use liquid::*;
 use std::fs::File;
 use std::io::Read;
-use liquid::*;
 
 // README: The compare_by_file and following tests are almost line for line carbon-copies of the
 // tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to

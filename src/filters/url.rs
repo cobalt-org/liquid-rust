@@ -1,8 +1,8 @@
-use url::percent_encoding::EncodeSet;
 use url::percent_encoding;
+use url::percent_encoding::EncodeSet;
 
-use value::Value;
 use interpreter::{FilterError, FilterResult};
+use value::Value;
 
 use super::check_args_len;
 
@@ -63,16 +63,16 @@ mod tests {
     use super::*;
 
     macro_rules! unit {
-        ( $a:ident, $b:expr ) => {{
+        ($a:ident, $b:expr) => {{
             unit!($a, $b, &[])
         }};
-        ( $a:ident, $b:expr , $c:expr) => {{
+        ($a:ident, $b:expr, $c:expr) => {{
             $a(&$b, $c).unwrap()
         }};
     }
 
     macro_rules! tos {
-        ( $a:expr ) => {{
+        ($a:expr) => {{
             Value::scalar($a.to_owned())
         }};
     }

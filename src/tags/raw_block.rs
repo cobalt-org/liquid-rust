@@ -1,10 +1,10 @@
 use error::Result;
 
-use interpreter::Context;
-use interpreter::Renderable;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
+use interpreter::Context;
+use interpreter::Renderable;
 
 #[derive(Clone, Debug)]
 struct RawT {
@@ -30,7 +30,7 @@ pub fn raw_block(
             | Element::Raw(ref text) => text,
         }
     });
-    Ok(Box::new(RawT { content: content }))
+    Ok(Box::new(RawT { content }))
 }
 
 #[cfg(test)]

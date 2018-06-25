@@ -5,14 +5,14 @@ use itertools;
 
 use error::{Result, ResultLiquidExt};
 
-use interpreter::Argument;
-use interpreter::Renderable;
-use interpreter::Template;
-use interpreter::{unexpected_value_error, Context, Interrupt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{expect, parse, split_block, unexpected_token_error};
+use interpreter::Argument;
+use interpreter::Renderable;
+use interpreter::Template;
+use interpreter::{unexpected_value_error, Context, Interrupt};
 use value::{Object, Scalar, Value};
 
 #[derive(Clone, Debug)]
@@ -29,7 +29,8 @@ impl Range {
             Range::Counted(ref start_arg, ref stop_arg) => {
                 let start = int_argument(start_arg, context, "start")?;
                 let stop = int_argument(stop_arg, context, "end")?;
-                (start..stop).map(|x| Value::scalar(x as i32)).collect()
+                let range = start..stop;
+                range.map(|x| Value::scalar(x as i32)).collect()
             }
         };
 
@@ -287,13 +288,13 @@ pub fn for_block(
     };
 
     Ok(Box::new(For {
-        var_name: var_name,
-        range: range,
-        item_template: item_template,
-        else_template: else_template,
-        limit: limit,
-        offset: offset,
-        reversed: reversed,
+        var_name,
+        range,
+        item_template,
+        else_template,
+        limit,
+        offset,
+        reversed,
     }))
 }
 

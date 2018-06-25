@@ -2,12 +2,12 @@ use itertools;
 
 use error::{Result, ResultLiquidExt};
 
+use compiler::LiquidOptions;
+use compiler::Token;
+use compiler::{consume_value_token, unexpected_token_error, value_token};
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
-use compiler::Token;
-use compiler::LiquidOptions;
-use compiler::{consume_value_token, unexpected_token_error, value_token};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -77,10 +77,7 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         name = itertools::join(values.iter(), "-");
     }
 
-    Ok(Cycle {
-        name: name,
-        values: values,
-    })
+    Ok(Cycle { name, values })
 }
 
 pub fn cycle_tag(
@@ -94,9 +91,9 @@ pub fn cycle_tag(
 #[cfg(test)]
 mod test {
     use super::*;
-    use value::Value;
     use compiler;
     use interpreter;
+    use value::Value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();

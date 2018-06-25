@@ -3,8 +3,8 @@ use std::fmt;
 use error::Result;
 use value::Value;
 
-use super::Context;
 use super::variable::Variable;
+use super::Context;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Argument {

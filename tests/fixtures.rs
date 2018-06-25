@@ -3,9 +3,9 @@ extern crate difference;
 extern crate liquid;
 extern crate serde_yaml;
 
+use liquid::*;
 use std::fs::File;
 use std::io::Read;
-use liquid::*;
 
 fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);

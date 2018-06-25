@@ -30,6 +30,6 @@ impl Renderable for Template {
 
 impl Template {
     pub fn new(elements: Vec<Box<Renderable>>) -> Template {
-        Template { elements: elements }
+        Template { elements }
     }
 }

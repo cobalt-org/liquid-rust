@@ -9,8 +9,8 @@ use regex::Regex;
 
 use super::{Error, Result};
 
-use super::Token;
 use super::ComparisonOperator;
+use super::Token;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Element {
@@ -89,8 +89,8 @@ pub fn tokenize(text: &str) -> Result<Vec<Element>> {
 }
 
 lazy_static! {
-    static ref SPLIT: Regex = Regex::new(
-        r#"'.*?'|".*?"|\s+|[\|:,\[\]\(\)\?]|\.\.|={1,2}|!=|<=|>=|[<>]"#).unwrap();
+    static ref SPLIT: Regex =
+        Regex::new(r#"'.*?'|".*?"|\s+|[\|:,\[\]\(\)\?]|\.\.|={1,2}|!=|<=|>=|[<>]"#).unwrap();
 }
 
 fn split_atom(block: &str) -> Vec<&str> {
@@ -233,7 +233,7 @@ mod test {
         assert_eq!(
             split_atom("truc | filter:arg1,arg2"),
             vec![
-                "truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2"
+                "truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2",
             ]
         );
     }
@@ -242,48 +242,40 @@ mod test {
     fn test_tokenize() {
         assert_eq!(
             tokenize("{{hello 'world'}}").unwrap(),
-            vec![
-                Element::Expression(
-                    vec![
-                        Token::Identifier("hello".to_owned()),
-                        Token::StringLiteral("world".to_owned()),
-                    ],
-                    "{{hello 'world'}}".to_owned(),
-                ),
-            ]
+            vec![Element::Expression(
+                vec![
+                    Token::Identifier("hello".to_owned()),
+                    Token::StringLiteral("world".to_owned()),
+                ],
+                "{{hello 'world'}}".to_owned(),
+            )]
         );
         assert_eq!(
             tokenize("{{hello.world}}").unwrap(),
-            vec![
-                Element::Expression(
-                    vec![Token::Identifier("hello.world".to_owned())],
-                    "{{hello.world}}".to_owned(),
-                ),
-            ]
+            vec![Element::Expression(
+                vec![Token::Identifier("hello.world".to_owned())],
+                "{{hello.world}}".to_owned(),
+            )]
         );
         assert_eq!(
             tokenize("{{ hello 'world' }}").unwrap(),
-            vec![
-                Element::Expression(
-                    vec![
-                        Token::Identifier("hello".to_owned()),
-                        Token::StringLiteral("world".to_owned()),
-                    ],
-                    "{{ hello 'world' }}".to_owned(),
-                ),
-            ]
+            vec![Element::Expression(
+                vec![
+                    Token::Identifier("hello".to_owned()),
+                    Token::StringLiteral("world".to_owned()),
+                ],
+                "{{ hello 'world' }}".to_owned(),
+            )]
         );
         assert_eq!(
             tokenize("{{   hello   'world'    }}").unwrap(),
-            vec![
-                Element::Expression(
-                    vec![
-                        Token::Identifier("hello".to_owned()),
-                        Token::StringLiteral("world".to_owned()),
-                    ],
-                    "{{   hello   'world'    }}".to_owned(),
-                ),
-            ]
+            vec![Element::Expression(
+                vec![
+                    Token::Identifier("hello".to_owned()),
+                    Token::StringLiteral("world".to_owned()),
+                ],
+                "{{   hello   'world'    }}".to_owned(),
+            )]
         );
         assert_eq!(
             tokenize("wat\n{{hello 'world'}} test").unwrap(),

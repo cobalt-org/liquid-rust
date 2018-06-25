@@ -1,12 +1,12 @@
 use error::{Result, ResultLiquidExt};
 
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use value::Value;
 
 #[derive(Debug)]
@@ -50,20 +50,18 @@ pub fn capture_block(
         return Err(unexpected_token_error("`%}`", t));
     };
 
-    let t = Template::new(parse(tokens, options)
-        .trace_with(|| format!("{{% capture {} %}}", &id).into())?);
+    let t = Template::new(
+        parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id).into())?
+    );
 
-    Ok(Box::new(Capture {
-        id: id,
-        template: t,
-    }))
+    Ok(Box::new(Capture { id, template: t }))
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use interpreter;
     use compiler;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
