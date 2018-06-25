@@ -1,10 +1,10 @@
 use error::Result;
 
-use interpreter::Context;
-use interpreter::Renderable;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
+use interpreter::Context;
+use interpreter::Renderable;
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use error::Result;
 use super::Object;
+use error::Result;
 
 use interpreter;
 use interpreter::Renderable;

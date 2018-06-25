@@ -1,10 +1,10 @@
 use error::Result;
 
-use interpreter::Renderable;
-use interpreter::{Context, Interrupt};
+use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
 use compiler::Token;
-use compiler::unexpected_token_error;
+use interpreter::Renderable;
+use interpreter::{Context, Interrupt};
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
@@ -54,8 +54,8 @@ pub fn continue_tag(
 mod test {
     use super::*;
     use compiler;
-    use tags;
     use interpreter;
+    use tags;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();

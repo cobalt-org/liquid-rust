@@ -5,9 +5,9 @@ use itertools;
 use error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 use value::Value;
 
+use super::Argument;
 use super::Context;
 use super::Renderable;
-use super::Argument;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FilterPrototype {
@@ -19,7 +19,7 @@ impl FilterPrototype {
     pub fn new(name: &str, arguments: Vec<Argument>) -> FilterPrototype {
         FilterPrototype {
             name: name.to_owned(),
-            arguments: arguments,
+            arguments,
         }
     }
 }
@@ -61,10 +61,7 @@ impl Renderable for Output {
 
 impl Output {
     pub fn new(entry: Argument, filters: Vec<FilterPrototype>) -> Output {
-        Output {
-            entry: entry,
-            filters: filters,
-        }
+        Output { entry, filters }
     }
 
     pub fn apply_filters(&self, context: &Context) -> Result<Value> {

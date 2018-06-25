@@ -1,8 +1,8 @@
 use super::Result;
 
-use interpreter::Renderable;
 use super::LiquidOptions;
 use super::Token;
+use interpreter::Renderable;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///

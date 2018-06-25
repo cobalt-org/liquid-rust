@@ -50,7 +50,7 @@ mod value;
 pub mod compiler;
 pub mod interpreter;
 
+pub use error::Error;
 pub use parser::{Parser, ParserBuilder};
 pub use template::Template;
-pub use error::Error;
 pub use value::{Array, Date, Index, Object, Scalar, Value};

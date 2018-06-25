@@ -3,12 +3,12 @@ use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
 
-use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
-use tags;
-use filters;
-use compiler;
-use interpreter;
 use super::Template;
+use compiler;
+use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use filters;
+use interpreter;
+use tags;
 
 #[derive(Default, Clone)]
 pub struct ParserBuilder {

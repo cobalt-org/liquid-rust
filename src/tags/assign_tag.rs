@@ -1,12 +1,12 @@
 use error::Result;
 
+use compiler::LiquidOptions;
+use compiler::ResultLiquidExt;
+use compiler::Token;
+use compiler::{expect, parse_output, unexpected_token_error};
 use interpreter::Context;
 use interpreter::Output;
 use interpreter::Renderable;
-use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{expect, parse_output, unexpected_token_error};
-use compiler::ResultLiquidExt;
 
 #[derive(Clone, Debug)]
 struct Assign {
@@ -45,7 +45,7 @@ pub fn assign_tag(
 
     let src = parse_output(&arguments[2..])?;
 
-    Ok(Box::new(Assign { dst: dst, src: src }))
+    Ok(Box::new(Assign { dst, src }))
 }
 
 #[cfg(test)]
@@ -53,8 +53,8 @@ mod test {
     use super::*;
     use compiler;
     use interpreter;
-    use value::Value;
     use tags;
+    use value::Value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();

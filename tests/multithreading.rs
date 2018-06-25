@@ -5,8 +5,8 @@ extern crate serde_yaml;
 
 use std::fs::File;
 use std::io::Read;
-use std::thread;
 use std::sync::Arc;
+use std::thread;
 
 #[test]
 pub fn pass_between_threads() {

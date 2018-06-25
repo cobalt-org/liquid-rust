@@ -2,14 +2,14 @@ use itertools;
 
 use error::{Error, Result, ResultLiquidExt};
 
-use interpreter::Argument;
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, parse, split_block, unexpected_token_error, BlockSplit};
+use interpreter::Argument;
+use interpreter::Context;
+use interpreter::Renderable;
+use interpreter::Template;
 use value::Value;
 
 #[derive(Debug)]
@@ -129,8 +129,9 @@ fn parse_sections<'e>(
         }
         Conditional::Else => {
             if case.else_block.is_none() {
-                let template = Template::new(parse(leading, options)
-                    .trace_with(|| "{{% else %}}".to_owned().into())?);
+                let template = Template::new(
+                    parse(leading, options).trace_with(|| "{{% else %}}".to_owned().into())?
+                );
                 case.else_block = Some(template)
             } else {
                 return Err(Error::with_msg("Only one else block allowed"));
@@ -177,8 +178,8 @@ pub fn case_block(
 #[cfg(test)]
 mod test {
     use super::*;
-    use interpreter;
     use compiler;
+    use interpreter;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();

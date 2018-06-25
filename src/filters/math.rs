@@ -1,5 +1,5 @@
-use value::Value;
 use interpreter::{FilterError, FilterResult};
+use value::Value;
 
 use super::check_args_len;
 
@@ -142,25 +142,25 @@ mod tests {
     use super::*;
 
     macro_rules! unit {
-        ( $a:ident, $b:expr ) => {{
+        ($a:ident, $b:expr) => {{
             unit!($a, $b, &[])
         }};
-        ( $a:ident, $b:expr , $c:expr) => {{
+        ($a:ident, $b:expr, $c:expr) => {{
             $a(&$b, $c).unwrap()
         }};
     }
 
     macro_rules! failed {
-        ( $a:ident, $b:expr ) => {{
+        ($a:ident, $b:expr) => {{
             failed!($a, $b, &[])
         }};
-        ( $a:ident, $b:expr, $c:expr ) => {{
+        ($a:ident, $b:expr, $c:expr) => {{
             $a(&$b, $c).unwrap_err()
         }};
     }
 
     macro_rules! tos {
-        ( $a:expr ) => {{
+        ($a:expr) => {{
             Value::scalar($a.to_owned())
         }};
     }

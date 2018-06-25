@@ -15,10 +15,10 @@ use std::cmp;
 use itertools;
 use unicode_segmentation::UnicodeSegmentation;
 
+use interpreter::{FilterError, FilterResult};
 use value::Index;
 use value::Scalar;
 use value::Value;
-use interpreter::{FilterError, FilterResult};
 
 // Helper functions for the filters.
 fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {
@@ -619,29 +619,29 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
 #[cfg(test)]
 mod tests {
 
-    use value::Object;
     use super::*;
+    use value::Object;
 
     macro_rules! unit {
-        ( $a:ident, $b:expr ) => {{
+        ($a:ident, $b:expr) => {{
             unit!($a, $b, &[])
         }};
-        ( $a:ident, $b:expr , $c:expr) => {{
+        ($a:ident, $b:expr, $c:expr) => {{
             $a(&$b, $c).unwrap()
         }};
     }
 
     macro_rules! failed {
-        ( $a:ident, $b:expr ) => {{
+        ($a:ident, $b:expr) => {{
             failed!($a, $b, &[])
         }};
-        ( $a:ident, $b:expr, $c:expr ) => {{
+        ($a:ident, $b:expr, $c:expr) => {{
             $a(&$b, $c).unwrap_err()
         }};
     }
 
     macro_rules! tos {
-        ( $a:expr ) => {{
+        ($a:expr) => {{
             Value::scalar($a.to_owned())
         }};
     }

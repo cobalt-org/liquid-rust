@@ -3,21 +3,21 @@
 //! This module contains functions than can be used for writing plugins
 //! but should be ignored for simple usage.
 
-use std::slice::Iter;
 use std::collections::HashSet;
 use std::iter::FromIterator;
+use std::slice::Iter;
 
 use super::{Error, Result};
 
-use interpreter::Renderable;
-use interpreter::Text;
-use interpreter::Variable;
-use interpreter::{FilterPrototype, Output};
 use super::Element;
 use super::LiquidOptions;
 use super::ParseBlock;
 use super::ParseTag;
 use super::Token;
+use interpreter::Renderable;
+use interpreter::Text;
+use interpreter::Variable;
+use interpreter::{FilterPrototype, Output};
 use value::Index;
 
 /// Parses the provided elements into a number of Renderable items
@@ -309,7 +309,7 @@ pub fn split_block<'a>(
                     let leading = &tokens[0..i];
                     let split = BlockSplit {
                         delimiter: name.clone(),
-                        args: args,
+                        args,
                         trailing: &tokens[i..],
                     };
                     return (leading, Some(split));
@@ -324,10 +324,10 @@ pub fn split_block<'a>(
 
 #[cfg(test)]
 mod test_parse_output {
-    use super::*;
-    use value::Value;
     use super::super::lexer::granularize;
+    use super::*;
     use interpreter::Argument;
+    use value::Value;
 
     #[test]
     fn parses_filters() {
@@ -404,15 +404,15 @@ mod test_expect {
 
 #[cfg(test)]
 mod test_split_block {
-    use std::collections::HashMap;
-    use super::*;
-    use super::super::tokenize;
     use super::super::split_block;
+    use super::super::tokenize;
     use super::super::BoxedBlockParser;
     use super::super::FnParseBlock;
-    use interpreter::Renderable;
-    use interpreter::Context;
+    use super::*;
     use interpreter;
+    use interpreter::Context;
+    use interpreter::Renderable;
+    use std::collections::HashMap;
 
     #[derive(Debug)]
     struct NullBlock;

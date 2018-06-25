@@ -1,8 +1,8 @@
-use interpreter::Renderable;
-use super::Result;
 use super::Element;
 use super::LiquidOptions;
+use super::Result;
 use super::Token;
+use interpreter::Renderable;
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
