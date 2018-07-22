@@ -439,7 +439,7 @@ pub fn split_sort_join() {
 #[test]
 pub fn modulo() {
     let text = "{{ num | modulo: 2 }}";
-    let samples = [(4_f32, "0"), (3_f32, "1"), (5.1, "1.0999999")];
+    let samples = [(4_f64, "0"), (3_f64, "1"), (5.1, "1.0999999999999996")];
     for t in &samples {
         let globals: liquid::Object = serde_yaml::from_str(&format!("num: {}", t.0)).unwrap();
         let template = liquid::ParserBuilder::with_liquid()

@@ -330,9 +330,9 @@ mod test {
         data.set_global_val(
             "array",
             Value::Array(vec![
-                Value::scalar(22f32),
-                Value::scalar(23f32),
-                Value::scalar(24f32),
+                Value::scalar(22f64),
+                Value::scalar(23f64),
+                Value::scalar(24f64),
                 Value::scalar("wat".to_owned()),
             ]),
         );

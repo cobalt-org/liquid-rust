@@ -167,9 +167,9 @@ mod tests {
 
     #[test]
     fn unit_abs() {
-        let input = Value::scalar(-1f32);
+        let input = Value::scalar(-1f64);
         let args = &[];
-        let desired_result = Value::scalar(1f32);
+        let desired_result = Value::scalar(1f64);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
@@ -177,7 +177,7 @@ mod tests {
     fn unit_abs_positive_in_string() {
         let input = &tos!("42");
         let args = &[];
-        let desired_result = Value::scalar(42f32);
+        let desired_result = Value::scalar(42f64);
         assert_eq!(unit!(abs, input, args), desired_result);
     }
 
@@ -191,8 +191,8 @@ mod tests {
 
     #[test]
     fn unit_abs_one_argument() {
-        let input = &Value::scalar(-1f32);
-        let args = &[Value::scalar(0f32)];
+        let input = &Value::scalar(-1f64);
+        let args = &[Value::scalar(0f64)];
         let desired_result =
             FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
         assert_eq!(failed!(abs, input, args), desired_result);
@@ -201,15 +201,15 @@ mod tests {
     #[test]
     fn unit_abs_shopify_liquid() {
         // Three tests from https://shopify.github.io/liquid/filters/abs/
-        assert_eq!(unit!(abs, Value::scalar(-17f32), &[]), Value::scalar(17f32));
-        assert_eq!(unit!(abs, Value::scalar(4f32), &[]), Value::scalar(4f32));
-        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::scalar(19.86f32));
+        assert_eq!(unit!(abs, Value::scalar(-17f64), &[]), Value::scalar(17f64));
+        assert_eq!(unit!(abs, Value::scalar(4f64), &[]), Value::scalar(4f64));
+        assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::scalar(19.86f64));
     }
     #[test]
     fn unit_plus() {
         assert_eq!(
-            unit!(plus, Value::scalar(2f32), &[Value::scalar(1f32)]),
-            Value::scalar(3f32)
+            unit!(plus, Value::scalar(2f64), &[Value::scalar(1f64)]),
+            Value::scalar(3f64)
         );
         assert_eq!(
             unit!(plus, Value::scalar(21.5), &[Value::scalar(2.25)]),
@@ -220,8 +220,8 @@ mod tests {
     #[test]
     fn unit_minus() {
         assert_eq!(
-            unit!(minus, Value::scalar(2f32), &[Value::scalar(1f32)]),
-            Value::scalar(1f32)
+            unit!(minus, Value::scalar(2f64), &[Value::scalar(1f64)]),
+            Value::scalar(1f64)
         );
         assert_eq!(
             unit!(minus, Value::scalar(21.5), &[Value::scalar(1.25)]),
@@ -232,8 +232,8 @@ mod tests {
     #[test]
     fn unit_times() {
         assert_eq!(
-            unit!(times, Value::scalar(2f32), &[Value::scalar(3f32)]),
-            Value::scalar(6f32)
+            unit!(times, Value::scalar(2f64), &[Value::scalar(3f64)]),
+            Value::scalar(6f64)
         );
         assert_eq!(
             unit!(times, Value::scalar(8.5), &[Value::scalar(0.5)]),
@@ -247,32 +247,32 @@ mod tests {
     #[test]
     fn unit_modulo() {
         assert_eq!(
-            unit!(modulo, Value::scalar(3_f32), &[Value::scalar(2_f32)]),
-            Value::scalar(1_f32)
+            unit!(modulo, Value::scalar(3_f64), &[Value::scalar(2_f64)]),
+            Value::scalar(1_f64)
         );
         assert_eq!(
-            unit!(modulo, Value::scalar(3_f32), &[Value::scalar(3.0)]),
-            Value::scalar(0_f32)
+            unit!(modulo, Value::scalar(3_f64), &[Value::scalar(3.0)]),
+            Value::scalar(0_f64)
         );
         assert_eq!(
-            unit!(modulo, Value::scalar(24_f32), &[Value::scalar(7_f32)]),
-            Value::scalar(3_f32)
+            unit!(modulo, Value::scalar(24_f64), &[Value::scalar(7_f64)]),
+            Value::scalar(3_f64)
         );
         assert_eq!(
-            unit!(modulo, Value::scalar(183.357), &[Value::scalar(12_f32)]),
-            Value::scalar(3.3569946)
+            unit!(modulo, Value::scalar(183.357), &[Value::scalar(12_f64)]),
+            Value::scalar(3.3569999999999993)
         );
     }
 
     #[test]
     fn unit_divided_by() {
         assert_eq!(
-            unit!(divided_by, Value::scalar(4f32), &[Value::scalar(2f32)]),
-            Value::scalar(2f32)
+            unit!(divided_by, Value::scalar(4f64), &[Value::scalar(2f64)]),
+            Value::scalar(2f64)
         );
         assert_eq!(
-            unit!(divided_by, Value::scalar(5f32), &[Value::scalar(2f32)]),
-            Value::scalar(2.5f32)
+            unit!(divided_by, Value::scalar(5f64), &[Value::scalar(2f64)]),
+            Value::scalar(2.5f64)
         );
         assert!(divided_by(&Value::scalar(true), &[Value::scalar(8.5)]).is_err());
         assert!(divided_by(&Value::scalar(2.5), &[Value::scalar(true)]).is_err());

@@ -86,7 +86,7 @@ mod test {
 
         let mut ctx = Context::new();
         ctx.set_global_val("item", Value::scalar("potato"));
-        ctx.set_global_val("i", Value::scalar(42f32));
+        ctx.set_global_val("i", Value::scalar(42f64));
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(

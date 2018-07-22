@@ -89,8 +89,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("num", value::Value::scalar(5f32));
-        context.set_global_val("numTwo", value::Value::scalar(10f32));
+        context.set_global_val("num", value::Value::scalar(5f64));
+        context.set_global_val("numTwo", value::Value::scalar(10f64));
         context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));
@@ -105,8 +105,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("num", value::Value::scalar(5f32));
-        context.set_global_val("numTwo", value::Value::scalar(10f32));
+        context.set_global_val("num", value::Value::scalar(5f64));
+        context.set_global_val("numTwo", value::Value::scalar(10f64));
         context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));

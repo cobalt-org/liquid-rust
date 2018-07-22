@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn unit_newline_to_br_one_argument() {
         let input = &tos!("a\nb");
-        let args = &[Value::scalar(0f32)];
+        let args = &[Value::scalar(0f64)];
         let desired_result =
             FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
         assert_eq!(failed!(newline_to_br, input, args), desired_result);

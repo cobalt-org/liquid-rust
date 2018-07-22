@@ -47,7 +47,7 @@ pub enum Token {
     Identifier(String),
     StringLiteral(String),
     IntegerLiteral(i32),
-    FloatLiteral(f32),
+    FloatLiteral(f64),
     BooleanLiteral(bool),
     DotDot,
     Comparison(ComparisonOperator),
@@ -135,12 +135,12 @@ mod test {
     fn evaluate_handles_number_literals() {
         let ctx = Context::new();
         assert_eq!(
-            Token::FloatLiteral(42f32)
+            Token::FloatLiteral(42f64)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
                 .unwrap(),
-            Value::scalar(42f32)
+            Value::scalar(42f64)
         );
 
         let ctx = Context::new();
@@ -179,14 +179,14 @@ mod test {
     #[test]
     fn evaluate_handles_identifiers() {
         let mut ctx = Context::new();
-        ctx.set_global_val("var0", Value::scalar(42f32));
+        ctx.set_global_val("var0", Value::scalar(42f64));
         assert_eq!(
             Token::Identifier("var0".to_owned())
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
                 .unwrap(),
-            Value::scalar(42f32)
+            Value::scalar(42f64)
         );
         assert!(
             Token::Identifier("nope".to_owned())

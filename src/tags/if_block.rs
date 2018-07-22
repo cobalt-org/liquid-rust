@@ -348,7 +348,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::scalar(1f32));
+        context.set_global_val("some_value", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("".to_owned()));
 
@@ -358,7 +358,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::scalar(42f32));
+        context.set_global_val("some_value", Value::scalar(42f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("unless body".to_owned()));
     }
@@ -409,7 +409,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(1f32));
+        context.set_global_val("a", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("first".to_owned()));
 
@@ -419,7 +419,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(2f32));
+        context.set_global_val("a", Value::scalar(2f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("second".to_owned()));
 
@@ -429,7 +429,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(3f32));
+        context.set_global_val("a", Value::scalar(3f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("third".to_owned()));
 

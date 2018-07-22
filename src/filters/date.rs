@@ -106,8 +106,8 @@ mod tests {
     #[test]
     fn unit_date_bad_input_type() {
         assert_eq!(
-            unit!(date, Value::scalar(0f32), &[tos!("%Y-%m-%d")]),
-            Value::scalar(0f32)
+            unit!(date, Value::scalar(0f64), &[tos!("%Y-%m-%d")]),
+            Value::scalar(0f64)
         );
     }
 
@@ -137,7 +137,7 @@ mod tests {
             unit!(
                 date,
                 tos!("13 Jun 2016 02:30:00 +0300"),
-                &[Value::scalar(0f32)]
+                &[Value::scalar(0f64)]
             ),
             tos!("0")
         );
@@ -157,7 +157,7 @@ mod tests {
             failed!(
                 date,
                 tos!("13 Jun 2016 02:30:00 +0300"),
-                &[Value::scalar(0f32), Value::scalar(1f32)]
+                &[Value::scalar(0f64), Value::scalar(1f64)]
             ),
             FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned())
         );
@@ -193,7 +193,7 @@ mod tests {
     #[test]
     #[cfg(feature = "extra-filters")]
     fn unit_date_in_tz_input_not_a_string() {
-        let input = &Value::scalar(0f32);
+        let input = &Value::scalar(0f64);
         let args = &[tos!("%Y-%m-%d %H:%M:%S %z"), Value::scalar(0i32)];
         let desired_result = FilterError::InvalidType("Invalid date format".to_owned());
         assert_eq!(failed!(date_in_tz, input, args), desired_result);
@@ -243,8 +243,8 @@ mod tests {
         let input = &tos!("13 Jun 2016 12:00:00 +0000");
         let args = &[
             tos!("%Y-%m-%d %H:%M:%S %z"),
-            Value::scalar(0f32),
-            Value::scalar(1f32),
+            Value::scalar(0f64),
+            Value::scalar(1f64),
         ];
         let desired_result =
             FilterError::InvalidArgumentCount("expected at most 2, 3 given".to_owned());
