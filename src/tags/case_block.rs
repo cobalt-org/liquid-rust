@@ -208,19 +208,19 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("x", Value::scalar(2f32));
+        context.set_global_val("x", Value::scalar(2f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
             Some("two".to_owned())
         );
 
-        context.set_global_val("x", Value::scalar(3f32));
+        context.set_global_val("x", Value::scalar(3f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
             Some("three and a half".to_owned())
         );
 
-        context.set_global_val("x", Value::scalar(4f32));
+        context.set_global_val("x", Value::scalar(4f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
             Some("three and a half".to_owned())

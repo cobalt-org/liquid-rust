@@ -194,15 +194,15 @@ mod test {
     #[test]
     fn get_val() {
         let mut ctx = Context::new();
-        ctx.set_global_val("number", Value::scalar(42f32));
-        assert_eq!(ctx.get_val("number").unwrap(), &Value::scalar(42f32));
+        ctx.set_global_val("number", Value::scalar(42f64));
+        assert_eq!(ctx.get_val("number").unwrap(), &Value::scalar(42f64));
     }
 
     #[test]
     fn get_val_failure() {
         let mut ctx = Context::new();
         let mut post = Object::new();
-        post.insert("number".to_owned(), Value::scalar(42f32));
+        post.insert("number".to_owned(), Value::scalar(42f64));
         ctx.set_global_val("post", Value::Object(post));
         assert!(ctx.get_val("post.number").is_none());
     }
@@ -211,35 +211,35 @@ mod test {
     fn get_val_by_index() {
         let mut ctx = Context::new();
         let mut post = Object::new();
-        post.insert("number".to_owned(), Value::scalar(42f32));
+        post.insert("number".to_owned(), Value::scalar(42f64));
         ctx.set_global_val("post", Value::Object(post));
         let indexes = vec![Index::with_key("post"), Index::with_key("number")];
         assert_eq!(
             ctx.get_val_by_index(indexes.iter()).unwrap(),
-            &Value::scalar(42f32)
+            &Value::scalar(42f64)
         );
     }
 
     #[test]
     fn scoped_variables() {
         let mut ctx = Context::new();
-        ctx.set_global_val("test", Value::scalar(42f32));
-        assert_eq!(ctx.get_val("test").unwrap(), &Value::scalar(42f32));
+        ctx.set_global_val("test", Value::scalar(42f64));
+        assert_eq!(ctx.get_val("test").unwrap(), &Value::scalar(42f64));
 
         ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
-            assert_eq!(new_scope.get_val("test").unwrap(), &Value::scalar(42f32));
+            assert_eq!(new_scope.get_val("test").unwrap(), &Value::scalar(42f64));
 
             // set a new local value, and assert that it overrides the previous value
-            new_scope.set_val("test", Value::scalar(3.14f32));
-            assert_eq!(new_scope.get_val("test").unwrap(), &Value::scalar(3.14f32));
+            new_scope.set_val("test", Value::scalar(3.14f64));
+            assert_eq!(new_scope.get_val("test").unwrap(), &Value::scalar(3.14f64));
 
             // sat a new val that we will pick up outside the scope
             new_scope.set_global_val("global", Value::scalar("some value"));
         });
 
         // assert that the value has reverted to the old one
-        assert_eq!(ctx.get_val("test").unwrap(), &Value::scalar(42f32));
+        assert_eq!(ctx.get_val("test").unwrap(), &Value::scalar(42f64));
         assert_eq!(ctx.get_val("global").unwrap(), &Value::scalar("some value"));
     }
 }

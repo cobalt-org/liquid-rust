@@ -17,7 +17,7 @@ pub struct Scalar(ScalarEnum);
 #[cfg_attr(feature = "serde", serde(untagged))]
 enum ScalarEnum {
     Integer(i32),
-    Float(f32),
+    Float(f64),
     Bool(bool),
     #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
     Date(Date),
@@ -59,11 +59,11 @@ impl Scalar {
     }
 
     /// Interpret as an float, if possible
-    pub fn to_float(&self) -> Option<f32> {
+    pub fn to_float(&self) -> Option<f64> {
         match self.0 {
-            ScalarEnum::Integer(ref x) => Some(*x as f32),
+            ScalarEnum::Integer(ref x) => Some(f64::from(*x)),
             ScalarEnum::Float(ref x) => Some(*x),
-            ScalarEnum::Str(ref x) => x.parse::<f32>().ok(),
+            ScalarEnum::Str(ref x) => x.parse::<f64>().ok(),
             _ => None,
         }
     }
@@ -123,8 +123,8 @@ impl From<i32> for Scalar {
     }
 }
 
-impl From<f32> for Scalar {
-    fn from(s: f32) -> Self {
+impl From<f64> for Scalar {
+    fn from(s: f64) -> Self {
         Scalar {
             0: ScalarEnum::Float(s),
         }
@@ -175,8 +175,8 @@ impl PartialEq<Scalar> for Scalar {
     fn eq(&self, other: &Self) -> bool {
         match (&self.0, &other.0) {
             (&ScalarEnum::Integer(x), &ScalarEnum::Integer(y)) => x == y,
-            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (x as f32) == y,
-            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x == (y as f32),
+            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (f64::from(x)) == y,
+            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x == (f64::from(y)),
             (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x == y,
             (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x == y,
             (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x == y,
@@ -194,8 +194,8 @@ impl PartialOrd<Scalar> for Scalar {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (&self.0, &other.0) {
             (&ScalarEnum::Integer(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&y),
-            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (x as f32).partial_cmp(&y),
-            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&(y as f32)),
+            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (f64::from(x)).partial_cmp(&y),
+            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&(f64::from(y))),
             (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x.partial_cmp(&y),
             (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x.partial_cmp(&y),
             (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x.partial_cmp(&y),
@@ -264,7 +264,7 @@ mod test {
 
     #[test]
     fn test_to_str_float() {
-        let val: Scalar = 42f32.into();
+        let val: Scalar = 42f64.into();
         assert_eq!(val.to_str(), "42");
 
         let val: Scalar = 42.34.into();
@@ -290,7 +290,7 @@ mod test {
 
     #[test]
     fn test_to_integer_float() {
-        let val: Scalar = 42f32.into();
+        let val: Scalar = 42f64.into();
         assert_eq!(val.to_integer(), None);
 
         let val: Scalar = 42.34.into();
@@ -317,13 +317,13 @@ mod test {
     #[test]
     fn test_to_float_integer() {
         let val: Scalar = 42i32.into();
-        assert_eq!(val.to_float(), Some(42f32));
+        assert_eq!(val.to_float(), Some(42f64));
     }
 
     #[test]
     fn test_to_float_float() {
-        let val: Scalar = 42f32.into();
-        assert_eq!(val.to_float(), Some(42f32));
+        let val: Scalar = 42f64.into();
+        assert_eq!(val.to_float(), Some(42f64));
 
         let val: Scalar = 42.34.into();
         assert_eq!(val.to_float(), Some(42.34));
@@ -338,7 +338,7 @@ mod test {
         assert_eq!(val.to_float(), Some(42.34));
 
         let val: Scalar = "42".into();
-        assert_eq!(val.to_float(), Some(42f32));
+        assert_eq!(val.to_float(), Some(42f64));
     }
 
     #[test]
@@ -354,7 +354,7 @@ mod test {
 
     #[test]
     fn test_to_bool_float() {
-        let val: Scalar = 42f32.into();
+        let val: Scalar = 42f64.into();
         assert_eq!(val.to_bool(), None);
 
         let val: Scalar = 42.34.into();
@@ -398,8 +398,8 @@ mod test {
 
     #[test]
     fn float_equality() {
-        let val: Scalar = 42f32.into();
-        let zero: Scalar = 0f32.into();
+        let val: Scalar = 42f64.into();
+        let zero: Scalar = 0f64.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -408,8 +408,8 @@ mod test {
 
     #[test]
     fn floats_have_ruby_truthiness() {
-        let val: Scalar = 42f32.into();
-        let zero: Scalar = 0f32.into();
+        let val: Scalar = 42f64.into();
+        let zero: Scalar = 0f64.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.is_truthy());

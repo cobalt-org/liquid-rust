@@ -20,7 +20,7 @@ pub fn pass_between_threads() {
 
     // Start threads
     let mut handles = Vec::new();
-    let v = vec![(5f32, 6f32), (20f32, 10f32)];
+    let v = vec![(5f64, 6f64), (20f64, 10f64)];
     for (counter, (num1, num2)) in v.into_iter().enumerate() {
         let template = Arc::clone(&template);
         let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter + 1);

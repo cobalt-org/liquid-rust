@@ -238,14 +238,14 @@ mod test {
 
     #[test]
     fn test_to_string_scalar() {
-        let val = Value::scalar(42f32);
+        let val = Value::scalar(42f64);
         assert_eq!(&val.to_string(), "42");
     }
 
     #[test]
     fn test_to_string_array() {
         let val = Value::Array(vec![
-            Value::scalar(3f32),
+            Value::scalar(3f64),
             Value::scalar("test"),
             Value::scalar(5.3),
         ]);
@@ -298,7 +298,7 @@ mod test {
     fn object_equality() {
         let a: Object = [
             ("alpha".to_owned(), Value::scalar("1")),
-            ("beta".to_owned(), Value::scalar(2f32)),
+            ("beta".to_owned(), Value::scalar(2f64)),
         ].into_iter()
             .cloned()
             .collect();
@@ -306,7 +306,7 @@ mod test {
 
         let b: Object = [
             ("alpha".to_owned(), Value::scalar("1")),
-            ("beta".to_owned(), Value::scalar(2f32)),
+            ("beta".to_owned(), Value::scalar(2f64)),
             ("gamma".to_owned(), Value::Array(vec![])),
         ].into_iter()
             .cloned()

@@ -156,7 +156,7 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
             x if NUMBER_LITERAL.is_match(x) => x.parse::<i32>()
                 .map(Token::IntegerLiteral)
                 .unwrap_or_else(|_e| {
-                    let x = x.parse::<f32>()
+                    let x = x.parse::<f64>()
                         .expect("matches to NUMBER_LITERAL are parseable as floats");
                     Token::FloatLiteral(x)
                 }),
@@ -517,8 +517,8 @@ mod test {
             granularize("multiply 5.5 3.2434").unwrap(),
             vec![
                 Token::Identifier("multiply".to_owned()),
-                Token::FloatLiteral(5.5f32),
-                Token::FloatLiteral(3.2434f32),
+                Token::FloatLiteral(5.5f64),
+                Token::FloatLiteral(3.2434f64),
             ]
         );
         assert_eq!(

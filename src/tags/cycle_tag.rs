@@ -173,9 +173,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::scalar(1f32));
-        context.set_global_val("beta", Value::scalar(2f32));
-        context.set_global_val("gamma", Value::scalar(3f32));
+        context.set_global_val("alpha", Value::scalar(1f64));
+        context.set_global_val("beta", Value::scalar(2f64));
+        context.set_global_val("gamma", Value::scalar(3f64));
 
         let output = template.render(&mut context);
 
