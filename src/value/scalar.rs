@@ -237,11 +237,21 @@ mod friendly_date {
 }
 
 fn parse_date(s: &str) -> Option<Date> {
-    let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
-    formats
-        .iter()
-        .filter_map(|f| Date::parse_from_str(s, f).ok())
-        .next()
+    match s {
+        "now" | "today" => {
+            let now = chrono::offset::Utc::now();
+            let now = now.naive_utc();
+            let now = chrono::DateTime::from_utc(now, chrono::offset::FixedOffset::east(0));
+            Some(now)
+        }
+        _ => {
+            let formats = ["%d %B %Y %H:%M:%S %z", "%Y-%m-%d %H:%M:%S %z"];
+            formats
+                .iter()
+                .filter_map(|f| Date::parse_from_str(s, f).ok())
+                .next()
+        }
+    }
 }
 
 #[cfg(test)]
@@ -456,5 +466,25 @@ mod test {
         assert_eq!(TRUE, empty);
         assert_eq!(empty, TRUE);
         assert!(empty.is_truthy());
+    }
+
+    #[test]
+    fn parse_date_empty_is_bad() {
+        assert!(parse_date("").is_none());
+    }
+
+    #[test]
+    fn parse_date_bad() {
+        assert!(parse_date("aaaaa").is_none());
+    }
+
+    #[test]
+    fn parse_date_now() {
+        assert!(parse_date("now").is_some());
+    }
+
+    #[test]
+    fn parse_date_today() {
+        assert!(parse_date("today").is_some());
     }
 }
