@@ -41,14 +41,14 @@ extern crate serde;
 extern crate serde_yaml;
 
 mod error;
-mod filters;
 mod parser;
-mod tags;
 mod template;
 mod value;
 
 pub mod compiler;
+pub mod filters;
 pub mod interpreter;
+pub mod tags;
 
 pub use error::Error;
 pub use parser::{Parser, ParserBuilder};
