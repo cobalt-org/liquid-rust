@@ -1,3 +1,19 @@
+<a name="0.15.0"></a>
+## 0.15.0 (2018-07-30)
+
+
+#### Breaking Changes
+
+*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+
+#### Features
+
+*   Expose filters/tags ([027a67cc](https://github.com/cobalt-org/liquid-rust/commit/027a67cccb9b40ffac0e25d5d9cd4501bdbe4d63))
+*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+* **date:**  Support today/now ([6a1e0a0f](https://github.com/cobalt-org/liquid-rust/commit/6a1e0a0f3ddc7892e8c84597929dbebc4dd80d29), closes [#181](https://github.com/cobalt-org/liquid-rust/issues/181))
+
+
+
 <a name="0.14.3"></a>
 ## 0.14.3 (2018-04-10)
 
