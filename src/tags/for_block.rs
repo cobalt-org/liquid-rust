@@ -300,9 +300,13 @@ pub fn for_block(
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use std::collections::HashMap;
+    use std::sync;
+
     use compiler;
     use interpreter;
+
+    use super::*;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -634,13 +638,13 @@ mod test {
             &options(),
         ).unwrap();
 
-        let mut data: Context = Default::default();
-        data.add_filter(
-            "shout",
+        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
+        filters.insert("shout",
             ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
                 as interpreter::FnFilterValue)
                 .into(),
-        );
+                    );
+        let mut data = Context::new().with_filters(&sync::Arc::new(filters));
 
         data.set_global_val(
             "array",

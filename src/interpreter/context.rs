@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync;
 
 use error::{Error, Result};
 use value::{Index, Object, Value};
@@ -39,7 +40,7 @@ pub struct Context {
     cycles: HashMap<String, usize>,
 
     // Public for backwards compatability
-    filters: HashMap<&'static str, BoxedValueFilter>,
+    filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
 
 impl Context {
@@ -53,8 +54,8 @@ impl Context {
         self
     }
 
-    pub fn with_filters(mut self, filters: HashMap<&'static str, BoxedValueFilter>) -> Self {
-        self.filters = filters;
+    pub fn with_filters(mut self, filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>) -> Self {
+        self.filters = sync::Arc::clone(filters);
         self
     }
 
@@ -74,10 +75,6 @@ impl Context {
 
         let val = values[index].evaluate(self)?;
         Ok(Some(val))
-    }
-
-    pub fn add_filter(&mut self, name: &'static str, filter: BoxedValueFilter) {
-        self.filters.insert(name, filter);
     }
 
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {

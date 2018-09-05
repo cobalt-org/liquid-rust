@@ -53,14 +53,18 @@ pub fn include_tag(
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use std::iter::FromIterator;
+    use std::path;
+    use std::collections::HashMap;
+    use std::sync;
+
+    use tags;
+    use value;
     use compiler;
     use filters;
     use interpreter;
-    use std::iter::FromIterator;
-    use std::path;
-    use tags;
-    use value;
+
+    use super::*;
 
     fn options() -> LiquidOptions {
         let include_path = path::PathBuf::from_iter("tests/fixtures/input".split('/'));
@@ -88,10 +92,11 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
+        filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
+        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
         context.set_global_val("num", value::Value::scalar(5f64));
         context.set_global_val("numTwo", value::Value::scalar(10f64));
-        context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));
     }
@@ -104,10 +109,11 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
+        filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
+        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
         context.set_global_val("num", value::Value::scalar(5f64));
         context.set_global_val("numTwo", value::Value::scalar(10f64));
-        context.add_filter("size", (filters::size as interpreter::FnFilterValue).into());
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("5 wat wot\n".to_owned()));
     }
