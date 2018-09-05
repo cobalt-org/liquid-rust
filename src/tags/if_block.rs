@@ -1,4 +1,5 @@
 use std::fmt;
+use std::io::Write;
 
 use error::{Result, ResultLiquidExt};
 
@@ -131,21 +132,20 @@ impl Conditional {
 }
 
 impl Renderable for Conditional {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let condition = self.compare(context).trace_with(|| self.trace().into());
-        if condition? {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+        let condition = self.compare(context).trace_with(|| self.trace().into())?;
+        if condition {
             self.if_true
-                .render(context)
-                .trace_with(|| self.trace().into())
-        } else {
-            match self.if_false {
-                Some(ref template) => template
-                    .render(context)
+                .render_to(writer, context)
+                .trace_with(|| self.trace().into())?;
+        } else if let Some(ref template) = self.if_false {
+                template
+                    .render_to(writer, context)
                     .trace_with(|| "{{% else %}}".to_owned().into())
-                    .trace_with(|| self.trace().into()),
-                _ => Ok(None),
-            }
+                    .trace_with(|| self.trace().into())?;
         }
+
+        Ok(())
     }
 }
 
@@ -259,7 +259,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
         let tokens = compiler::tokenize(&text).unwrap();
@@ -269,7 +269,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 
     #[test]
@@ -282,7 +282,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
         let tokens = compiler::tokenize(&text).unwrap();
@@ -292,7 +292,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 
     #[test]
@@ -313,25 +313,25 @@ mod test {
         // Non-existence
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("nope".to_owned()));
+        assert_eq!(output, "nope");
 
         // Explicit nil
         let mut context = Context::new();
         context.set_global_val("truthy", Value::Nil);
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("nope".to_owned()));
+        assert_eq!(output, "nope");
 
         // false
         let mut context = Context::new();
         context.set_global_val("truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("nope".to_owned()));
+        assert_eq!(output, "nope");
 
         // true
         let mut context = Context::new();
         context.set_global_val("truthy", Value::scalar(true));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("yep".to_owned()));
+        assert_eq!(output, "yep");
     }
 
     #[test]
@@ -350,7 +350,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("some_value", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("".to_owned()));
+        assert_eq!(output, "");
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -360,7 +360,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("some_value", Value::scalar(42f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("unless body".to_owned()));
+        assert_eq!(output, "unless body");
     }
 
     #[test]
@@ -386,7 +386,7 @@ mod test {
         context.set_global_val("truthy", Value::scalar(true));
         context.set_global_val("also_truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("yep, not also truthy".to_owned()));
+        assert_eq!(output, "yep, not also truthy");
     }
 
     #[test]
@@ -411,7 +411,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("a", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("first".to_owned()));
+        assert_eq!(output, "first");
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -421,7 +421,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("a", Value::scalar(2f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("second".to_owned()));
+        assert_eq!(output, "second");
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -431,7 +431,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("a", Value::scalar(3f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("third".to_owned()));
+        assert_eq!(output, "third");
 
         let tokens = compiler::tokenize(&text).unwrap();
         let template = compiler::parse(&tokens, &options())
@@ -441,7 +441,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("a", Value::scalar("else"));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("fourth".to_owned()));
+        assert_eq!(output, "fourth");
     }
 
     #[test]
@@ -454,7 +454,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
 
         let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
         let tokens = compiler::tokenize(&text).unwrap();
@@ -464,7 +464,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 
     #[test]
@@ -478,7 +478,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("movie", Value::scalar("Star Wars"));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
 
         let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
         let tokens = compiler::tokenize(&text).unwrap();
@@ -489,7 +489,7 @@ mod test {
         let mut context = Context::new();
         context.set_global_val("movie", Value::scalar("Batman"));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 
     #[test]
@@ -505,7 +505,7 @@ mod test {
         obj.insert("Star Wars".into(), Value::scalar("1977"));
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
     }
 
     #[test]
@@ -520,7 +520,7 @@ mod test {
         let obj = Object::new();
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 
     #[test]
@@ -539,7 +539,7 @@ mod test {
         ];
         context.set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if true".to_owned()));
+        assert_eq!(output, "if true");
     }
 
     #[test]
@@ -554,6 +554,6 @@ mod test {
         let arr = vec![Value::scalar("Alien")];
         context.set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("if false".to_owned()));
+        assert_eq!(output, "if false");
     }
 }

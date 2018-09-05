@@ -1,7 +1,8 @@
+use std::io::Write;
+
 use itertools;
 
 use error::{Error, Result, ResultLiquidExt};
-
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -52,12 +53,12 @@ impl Case {
 }
 
 impl Renderable for Case {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = self.target.evaluate(context)?;
         for case in &self.cases {
             if case.evaluate(&value, context)? {
                 return case.template
-                    .render(context)
+                    .render_to(writer, context)
                     .trace_with(|| case.trace().into())
                     .trace_with(|| self.trace().into())
                     .context_with(|| (self.target.to_string().into(), value.to_string()));
@@ -65,13 +66,13 @@ impl Renderable for Case {
         }
 
         if let Some(ref t) = self.else_block {
-            return t.render(context)
+            return t.render_to(writer, context)
                 .trace_with(|| "{{% else %}}".to_owned().into())
                 .trace_with(|| self.trace().into())
                 .context_with(|| (self.target.to_string().into(), value.to_string()));
         }
 
-        Ok(None)
+        Ok(())
     }
 }
 
@@ -211,25 +212,25 @@ mod test {
         context.set_global_val("x", Value::scalar(2f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
-            Some("two".to_owned())
+            "two"
         );
 
         context.set_global_val("x", Value::scalar(3f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
-            Some("three and a half".to_owned())
+            "three and a half"
         );
 
         context.set_global_val("x", Value::scalar(4f64));
         assert_eq!(
             template.render(&mut context).unwrap(),
-            Some("three and a half".to_owned())
+            "three and a half"
         );
 
         context.set_global_val("x", Value::scalar("nope"));
         assert_eq!(
             template.render(&mut context).unwrap(),
-            Some("otherwise".to_owned())
+            "otherwise"
         );
     }
 
@@ -251,7 +252,7 @@ mod test {
 
         let mut context = Context::new();
         context.set_global_val("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut context).unwrap(), Some("".to_owned()));
+        assert_eq!(template.render(&mut context).unwrap(), "");
     }
 
     #[test]

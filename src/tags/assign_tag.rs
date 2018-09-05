@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::Result;
 use compiler::LiquidOptions;
 use compiler::ResultLiquidExt;
 use compiler::Token;
@@ -21,12 +22,12 @@ impl Assign {
 }
 
 impl Renderable for Assign {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = self.src
             .apply_filters(context)
             .trace_with(|| self.trace().into())?;
         context.set_global_val(self.dst.to_owned(), value);
-        Ok(None)
+        Ok(())
     }
 }
 
@@ -101,7 +102,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(false)));
-            assert_eq!(output, Some("".to_string()));
+            assert_eq!(output, "");
         }
 
         // test two: matching value in `tags`
@@ -119,7 +120,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(context.get_val("freestyle"), Some(&Value::scalar(true)));
-            assert_eq!(output, Some("<p>Freestyle!</p>".to_string()));
+            assert_eq!(output, "<p>Freestyle!</p>");
         }
     }
 }

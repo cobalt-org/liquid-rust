@@ -1,4 +1,5 @@
 use std::fmt;
+use std::io::Write;
 use std::slice::Iter;
 
 use itertools;
@@ -110,7 +111,7 @@ fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed:
 }
 
 impl Renderable for For {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let mut range = self.range
             .evaluate(context)
             .trace_with(|| self.trace().into())?;
@@ -119,16 +120,13 @@ impl Renderable for For {
         match range.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
-                    t.render(context)
+                    t.render_to(writer, context)
                         .trace_with(|| "{{% else %}}".to_owned().into())
-                        .trace_with(|| self.trace().into())
-                } else {
-                    Ok(None)
+                        .trace_with(|| self.trace().into())?;
                 }
             }
 
             range_len => {
-                let mut ret = String::default();
                 context.run_in_scope(|mut scope| {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".into(), Value::scalar(range_len as i32));
@@ -147,13 +145,11 @@ impl Renderable for For {
 
                         scope.set_val("forloop", Value::Object(helper_vars.clone()));
                         scope.set_val(self.var_name.to_owned(), v.clone());
-                        let inner = self.item_template
-                            .render(&mut scope)
+                        self.item_template
+                            .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
                             .context_with(|| (self.var_name.clone().into(), v.to_string()))
-                            .context("index", &(i + 1))?
-                            .unwrap_or_else(String::new);
-                        ret = ret + &inner;
+                            .context("index", &(i + 1))?;
 
                         // given that we're at the end of the loop body
                         // already, dealing with a `continue` signal is just
@@ -163,11 +159,11 @@ impl Renderable for For {
                             break;
                         }
                     }
-
-                    Ok(Some(ret))
-                })
+                    Ok(())
+                })?;
             }
         }
+        Ok(())
     }
 }
 
@@ -341,7 +337,7 @@ mod test {
             ]),
         );
         let output = for_tag.render(&mut data).unwrap();
-        assert_eq!(output, Some("test 22 test 23 test 24 test wat ".to_owned()));
+        assert_eq!(output, "test 22 test 23 test 24 test wat ");
     }
 
     #[test]
@@ -366,7 +362,7 @@ mod test {
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(
             output,
-            Some("#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | ".to_owned())
+            "#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | "
         );
     }
 
@@ -388,7 +384,7 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(
             output,
-            Some("#1 test 42, #2 test 43, #3 test 44, #4 test 45, ".to_string())
+            "#1 test 42, #2 test 43, #3 test 44, #4 test 45, "
         );
     }
 
@@ -415,13 +411,11 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(
             output,
-            Some(
-                concat!(
-                    ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
-                    ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
-                    ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
-                    ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n"
-                ).to_owned()
+            concat!(
+                ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
+                ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
+                ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
+                ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n"
             )
         );
     }
@@ -445,12 +439,12 @@ mod test {
         context.set_global_val("i", Value::scalar(0i32));
         context.set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("empty outer".to_owned()));
+        assert_eq!(output, "empty outer");
 
         context.set_global_val("i", Value::scalar(1i32));
         context.set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("empty inner".to_owned()));
+        assert_eq!(output, "empty inner");
     }
 
     #[test]
@@ -465,7 +459,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("".to_string()));
+        assert_eq!(output, "");
     }
 
     #[test]
@@ -482,7 +476,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("1 2 ".to_string()));
+        assert_eq!(output, "1 2 ");
     }
 
     #[test]
@@ -499,7 +493,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 6 7 8 9 ".to_string()));
+        assert_eq!(output, "5 6 7 8 9 ");
     }
 
     #[test]
@@ -516,7 +510,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 6 ".to_string()));
+        assert_eq!(output, "5 6 ");
     }
 
     #[test]
@@ -533,7 +527,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("9 8 7 6 5 4 3 2 1 ".to_string()));
+        assert_eq!(output, "9 8 7 6 5 4 3 2 1 ");
     }
 
     #[test]
@@ -550,7 +544,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("6 5 4 3 2 ".to_string()));
+        assert_eq!(output, "6 5 4 3 2 ");
     }
 
     #[test]
@@ -569,7 +563,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("There are no items!".to_string()));
+        assert_eq!(output, "There are no items!");
     }
 
     #[test]
@@ -582,7 +576,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("1 2 3 4 ".to_string()));
+        assert_eq!(output, "1 2 3 4 ");
     }
 
     #[test]
@@ -615,13 +609,11 @@ mod test {
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(
             output,
-            Some(
-                concat!(
+            concat!(
 "length: 3, index: 1, index0: 0, rindex: 3, rindex0: 2, value: 100, first: true, last: false\n",
 "length: 3, index: 2, index0: 1, rindex: 2, rindex0: 1, value: 101, first: false, last: false\n",
 "length: 3, index: 3, index0: 2, rindex: 1, rindex0: 0, value: 102, first: false, last: true\n",
-).to_owned(),
-            )
+)
         );
     }
 
@@ -655,6 +647,6 @@ mod test {
             ]),
         );
         let output = for_tag.render(&mut data).unwrap();
-        assert_eq!(output, Some("test ALPHA test BETA test GAMMA ".to_owned()));
+        assert_eq!(output, "test ALPHA test BETA test GAMMA ");
     }
 }

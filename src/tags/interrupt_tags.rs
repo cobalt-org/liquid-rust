@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::Result;
 use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -10,9 +11,9 @@ use interpreter::{Context, Interrupt};
 struct Break;
 
 impl Renderable for Break {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
         context.set_interrupt(Interrupt::Break);
-        Ok(None)
+        Ok(())
     }
 }
 
@@ -32,9 +33,9 @@ pub fn break_tag(
 struct Continue;
 
 impl Renderable for Continue {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
         context.set_interrupt(Interrupt::Continue);
-        Ok(None)
+        Ok(())
     }
 }
 
@@ -92,7 +93,7 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             output,
-            Some(concat!("enter-0;exit-0\n", "enter-1;exit-1\n", "enter-2;break-2\n").to_owned())
+            concat!("enter-0;exit-0\n", "enter-1;exit-1\n", "enter-2;break-2\n")
         );
     }
 
@@ -118,12 +119,10 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             output,
-            Some(
-                concat!(
-                    "enter-0; 6, 7, break, exit-0\n",
-                    "enter-1; 6, 7, break, exit-1\n",
-                    "enter-2; 6, 7, break, exit-2\n"
-                ).to_owned()
+            concat!(
+                "enter-0; 6, 7, break, exit-0\n",
+                "enter-1; 6, 7, break, exit-1\n",
+                "enter-2; 6, 7, break, exit-2\n"
             )
         );
     }
@@ -146,14 +145,12 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             output,
-            Some(
-                concat!(
-                    "enter-0;exit-0\n",
-                    "enter-1;exit-1\n",
-                    "enter-2;continue-2\n",
-                    "enter-3;exit-3\n",
-                    "enter-4;exit-4\n"
-                ).to_owned()
+            concat!(
+                "enter-0;exit-0\n",
+                "enter-1;exit-1\n",
+                "enter-2;continue-2\n",
+                "enter-3;exit-3\n",
+                "enter-4;exit-4\n"
             )
         );
     }
@@ -180,12 +177,10 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             output,
-            Some(
-                concat!(
-                    "enter-0; 6, 7, continue, 9, exit-0\n",
-                    "enter-1; 6, 7, continue, 9, exit-1\n",
-                    "enter-2; 6, 7, continue, 9, exit-2\n"
-                ).to_owned()
+            concat!(
+                "enter-0; 6, 7, continue, 9, exit-0\n",
+                "enter-1; 6, 7, continue, 9, exit-1\n",
+                "enter-2; 6, 7, continue, 9, exit-2\n"
             )
         );
     }
