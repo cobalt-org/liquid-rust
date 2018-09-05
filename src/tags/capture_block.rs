@@ -28,7 +28,7 @@ impl Renderable for Capture {
             .trace_with(|| self.trace().into())?
             .unwrap_or_else(|| "".to_owned());
 
-        context.set_global_val(&self.id, Value::scalar(output));
+        context.set_global_val(self.id.to_owned(), Value::scalar(output));
         Ok(None)
     }
 }

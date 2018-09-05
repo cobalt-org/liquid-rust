@@ -464,7 +464,7 @@ pub fn escape() {
     ];
     for t in &samples {
         let mut globals = liquid::Object::new();
-        globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
+        globals.insert("var".into(), liquid::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)
@@ -487,7 +487,7 @@ pub fn escape_once() {
     ];
     for t in &samples {
         let mut globals = liquid::Object::new();
-        globals.insert("var".to_owned(), liquid::Value::scalar(t.0));
+        globals.insert("var".into(), liquid::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)

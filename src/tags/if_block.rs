@@ -502,7 +502,7 @@ mod test {
 
         let mut context = Context::new();
         let mut obj = Object::new();
-        obj.insert("Star Wars".to_owned(), Value::scalar("1977"));
+        obj.insert("Star Wars".into(), Value::scalar("1977"));
         context.set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, Some("if true".to_owned()));

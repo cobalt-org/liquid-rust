@@ -131,22 +131,22 @@ impl Renderable for For {
                 let mut ret = String::default();
                 context.run_in_scope(|mut scope| {
                     let mut helper_vars = Object::new();
-                    helper_vars.insert("length".to_owned(), Value::scalar(range_len as i32));
+                    helper_vars.insert("length".into(), Value::scalar(range_len as i32));
 
                     for (i, v) in range.iter().enumerate() {
-                        helper_vars.insert("index0".to_owned(), Value::scalar(i as i32));
-                        helper_vars.insert("index".to_owned(), Value::scalar((i + 1) as i32));
+                        helper_vars.insert("index0".into(), Value::scalar(i as i32));
+                        helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
                         helper_vars.insert(
-                            "rindex0".to_owned(),
+                            "rindex0".into(),
                             Value::scalar((range_len - i - 1) as i32),
                         );
                         helper_vars
-                            .insert("rindex".to_owned(), Value::scalar((range_len - i) as i32));
-                        helper_vars.insert("first".to_owned(), Value::scalar(i == 0));
-                        helper_vars.insert("last".to_owned(), Value::scalar(i == (range_len - 1)));
+                            .insert("rindex".into(), Value::scalar((range_len - i) as i32));
+                        helper_vars.insert("first".into(), Value::scalar(i == 0));
+                        helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
 
                         scope.set_val("forloop", Value::Object(helper_vars.clone()));
-                        scope.set_val(&self.var_name, v.clone());
+                        scope.set_val(self.var_name.to_owned(), v.clone());
                         let inner = self.item_template
                             .render(&mut scope)
                             .trace_with(|| self.trace().into())
