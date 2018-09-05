@@ -25,7 +25,7 @@ impl Renderable for Assign {
         let value = self.src
             .apply_filters(context)
             .trace_with(|| self.trace().into())?;
-        context.set_global_val(&self.dst, value);
+        context.set_global_val(self.dst.to_owned(), value);
         Ok(None)
     }
 }

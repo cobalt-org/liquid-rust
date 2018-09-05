@@ -143,9 +143,9 @@ pub fn deserialize_object() {
     let actual: liquid::Value =
         serde_yaml::from_str("---\nNum: 1\nBool: true\nStr: \"true\"").unwrap();
     let expected: liquid::Object = [
-        ("Num".to_owned(), liquid::Value::scalar(1f64)),
-        ("Bool".to_owned(), liquid::Value::scalar(true)),
-        ("Str".to_owned(), liquid::Value::scalar("true")),
+        ("Num".into(), liquid::Value::scalar(1f64)),
+        ("Bool".into(), liquid::Value::scalar(true)),
+        ("Str".into(), liquid::Value::scalar("true")),
     ].iter()
         .cloned()
         .collect();

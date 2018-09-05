@@ -32,7 +32,7 @@ pub enum Value {
 pub type Array = Vec<Value>;
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
-pub type Object = MapImpl<String, Value>;
+pub type Object = MapImpl<borrow::Cow<'static, str>, Value>;
 
 impl Value {
     pub fn scalar<T: Into<Scalar>>(value: T) -> Self {
@@ -57,7 +57,7 @@ impl Value {
             }
             Value::Object(ref x) => {
                 let arr: Vec<String> = x.iter()
-                    .map(|(k, v)| k.clone() + ": " + &v.to_string())
+                    .map(|(k, v)| format!("{}: {}", k, v))
                     .collect();
                 borrow::Cow::Owned(arr.join(", "))
             }
@@ -297,17 +297,17 @@ mod test {
     #[test]
     fn object_equality() {
         let a: Object = [
-            ("alpha".to_owned(), Value::scalar("1")),
-            ("beta".to_owned(), Value::scalar(2f64)),
+            ("alpha".into(), Value::scalar("1")),
+            ("beta".into(), Value::scalar(2f64)),
         ].into_iter()
             .cloned()
             .collect();
         let a = Value::Object(a);
 
         let b: Object = [
-            ("alpha".to_owned(), Value::scalar("1")),
-            ("beta".to_owned(), Value::scalar(2f64)),
-            ("gamma".to_owned(), Value::Array(vec![])),
+            ("alpha".into(), Value::scalar("1")),
+            ("beta".into(), Value::scalar(2f64)),
+            ("gamma".into(), Value::Array(vec![])),
         ].into_iter()
             .cloned()
             .collect();

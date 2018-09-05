@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use error::{Error, Result};
 use value::{Index, Object, Value};
+use std::borrow;
 
 use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
@@ -167,8 +168,11 @@ impl Context {
     }
 
     /// Sets a value in the global context.
-    pub fn set_global_val(&mut self, name: &str, val: Value) -> Option<Value> {
-        self.globals.insert(name.to_owned(), val)
+    pub fn set_global_val<S>(&mut self, name: S, val: Value) -> Option<Value>
+    where
+        S: Into<borrow::Cow<'static, str>>,
+    {
+        self.globals.insert(name.into(), val)
     }
 
     /// Sets a value to the rendering context.
@@ -179,9 +183,12 @@ impl Context {
     /// Panics if there is no frame on the local values stack. Context
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
-    pub fn set_val(&mut self, name: &str, val: Value) -> Option<Value> {
+    pub fn set_val<S>(&mut self, name: S, val: Value) -> Option<Value>
+    where
+        S: Into<borrow::Cow<'static, str>>,
+    {
         match self.stack.last_mut() {
-            Some(frame) => frame.insert(name.to_owned(), val),
+            Some(frame) => frame.insert(name.into(), val),
             None => panic!("Cannot insert into an empty stack"),
         }
     }
@@ -202,7 +209,7 @@ mod test {
     fn get_val_failure() {
         let mut ctx = Context::new();
         let mut post = Object::new();
-        post.insert("number".to_owned(), Value::scalar(42f64));
+        post.insert("number".into(), Value::scalar(42f64));
         ctx.set_global_val("post", Value::Object(post));
         assert!(ctx.get_val("post.number").is_none());
     }
@@ -211,7 +218,7 @@ mod test {
     fn get_val_by_index() {
         let mut ctx = Context::new();
         let mut post = Object::new();
-        post.insert("number".to_owned(), Value::scalar(42f64));
+        post.insert("number".into(), Value::scalar(42f64));
         ctx.set_global_val("post", Value::Object(post));
         let indexes = vec![Index::with_key("post"), Index::with_key("number")];
         assert_eq!(
