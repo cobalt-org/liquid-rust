@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
+use std::sync;
 
 use super::Template;
 use compiler;
@@ -203,6 +204,7 @@ impl ParserBuilder {
             tags,
             include_source,
         };
+        let filters = sync::Arc::new(filters);
         Parser { options, filters }
     }
 }
@@ -210,7 +212,7 @@ impl ParserBuilder {
 #[derive(Default, Clone)]
 pub struct Parser {
     options: compiler::LiquidOptions,
-    filters: HashMap<&'static str, interpreter::BoxedValueFilter>,
+    filters: sync::Arc<HashMap<&'static str, interpreter::BoxedValueFilter>>,
 }
 
 impl Parser {
@@ -236,7 +238,7 @@ impl Parser {
     pub fn parse(&self, text: &str) -> Result<Template> {
         let tokens = compiler::tokenize(text)?;
         let template = compiler::parse(&tokens, &self.options).map(interpreter::Template::new)?;
-        let filters = self.filters.clone();
+        let filters = sync::Arc::clone(&self.filters);
         Ok(Template { template, filters })
     }
 
