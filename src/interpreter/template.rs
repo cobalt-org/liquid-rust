@@ -18,7 +18,7 @@ impl Renderable for Template {
             // need to abandon the rest of our child elements and just
             // return what we've got. This is usually in response to a
             // `break` or `continue` tag being rendered.
-            if context.interrupted() {
+            if context.interrupt().interrupted() {
                 break;
             }
         }

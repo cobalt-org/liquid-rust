@@ -18,10 +18,38 @@ pub fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> 
     Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Interrupt {
     Continue,
     Break,
+}
+
+/// The current interrupt state. The interrupt state is used by
+/// the `break` and `continue` tags to halt template rendering
+/// at a given point and unwind the `render` call stack until
+/// it reaches an enclosing `for_loop`. At that point the interrupt
+/// is cleared, and the `for_loop` carries on processing as directed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct InterruptState {
+    interrupt: Option<Interrupt>,
+}
+
+impl InterruptState {
+    pub fn interrupted(&self) -> bool {
+        self.interrupt.is_some()
+    }
+
+    /// Sets the interrupt state. Any previous state is obliterated.
+    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
+        self.interrupt = Some(interrupt);
+    }
+
+    /// Fetches and clears the interrupt state.
+    pub fn pop_interrupt(&mut self) -> Option<Interrupt> {
+        let rval = self.interrupt.clone();
+        self.interrupt = None;
+        rval
+    }
 }
 
 #[derive(Default)]
@@ -29,12 +57,7 @@ pub struct Context {
     stack: Vec<Object>,
     globals: Object,
 
-    /// The current interrupt state. The interrupt state is used by
-    /// the `break` and `continue` tags to halt template rendering
-    /// at a given point and unwind the `render` call stack until
-    /// it reaches an enclosing `for_loop`. At that point the interrupt
-    /// is cleared, and the `for_loop` carries on processing as directed.
-    interrupt: Option<Interrupt>,
+    interrupt: InterruptState,
 
     /// The indices of all the cycles encountered during rendering.
     cycles: HashMap<String, usize>,
@@ -83,20 +106,12 @@ impl Context {
         })
     }
 
-    pub fn interrupted(&self) -> bool {
-        self.interrupt.is_some()
+    pub fn interrupt(&self) -> &InterruptState {
+        &self.interrupt
     }
 
-    /// Sets the interrupt state. Any previous state is obliterated.
-    pub fn set_interrupt(&mut self, interrupt: Interrupt) {
-        self.interrupt = Some(interrupt);
-    }
-
-    /// Fetches and clears the interrupt state.
-    pub fn pop_interrupt(&mut self) -> Option<Interrupt> {
-        let rval = self.interrupt.clone();
-        self.interrupt = None;
-        rval
+    pub fn interrupt_mut(&mut self) -> &mut InterruptState {
+        &mut self.interrupt
     }
 
     /// Creates a new variable scope chained to a parent scope.

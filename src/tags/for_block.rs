@@ -155,7 +155,7 @@ impl Renderable for For {
                         // already, dealing with a `continue` signal is just
                         // clearing the interrupt and carrying on as normal. A
                         // `break` requires some special handling, though.
-                        if let Some(Interrupt::Break) = scope.pop_interrupt() {
+                        if let Some(Interrupt::Break) = scope.interrupt_mut().pop_interrupt() {
                             break;
                         }
                     }
