@@ -1,8 +1,9 @@
 use std::fmt;
+use std::io::Write;
 
 use itertools;
 
-use error::Result;
+use error::{Result, ResultLiquidChainExt};
 use value::Index;
 
 use super::Context;
@@ -38,9 +39,10 @@ impl fmt::Display for Variable {
 }
 
 impl Renderable for Variable {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = context.get_val_by_index(self.indexes.iter())?;
-        Ok(Some(value.to_string()))
+        write!(writer, "{}", value).chain("Failed to render")?;
+        Ok(())
     }
 }
 

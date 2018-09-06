@@ -1,5 +1,6 @@
-use error::{Result, ResultLiquidExt};
+use std::io::Write;
 
+use error::{Result, ResultLiquidExt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -22,14 +23,15 @@ impl Capture {
 }
 
 impl Renderable for Capture {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let output = self.template
-            .render(context)
-            .trace_with(|| self.trace().into())?
-            .unwrap_or_else(|| "".to_owned());
+    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
+        let mut captured = Vec::new();
+        self.template
+            .render_to(&mut captured, context)
+            .trace_with(|| self.trace().into())?;
 
+        let output = String::from_utf8(captured).expect("render only writes UTF-8");
         context.set_global_val(self.id.to_owned(), Value::scalar(output));
-        Ok(None)
+        Ok(())
     }
 }
 
@@ -93,7 +95,7 @@ mod test {
             ctx.get_val("attribute_name"),
             Some(&Value::scalar("potato-42-color"))
         );
-        assert_eq!(output, Some("".to_owned()));
+        assert_eq!(output, "");
     }
 
     #[test]

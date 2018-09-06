@@ -1,7 +1,8 @@
+use std::io::Write;
+
 use itertools;
 
-use error::{Result, ResultLiquidExt};
-
+use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, unexpected_token_error, value_token};
@@ -25,11 +26,14 @@ impl Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = context
             .cycle_element(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
-        Ok(value.map(|v| v.to_string()))
+        if let Some(ref value) = value {
+            write!(writer, "{}", value).chain("Failed to render")?;
+        }
+        Ok(())
     }
 }
 
@@ -137,7 +141,7 @@ mod test {
         let mut context = Context::new();
         let output = template.render(&mut context);
 
-        assert_eq!(output.unwrap(), Some("one\ntwo\none\ntwo\n".to_owned()));
+        assert_eq!(output.unwrap(), "one\ntwo\none\ntwo\n");
     }
 
     #[test]
@@ -156,7 +160,7 @@ mod test {
         let mut context = Context::new();
         let output = template.render(&mut context);
 
-        assert_eq!(output.unwrap(), Some("one\ntwo\nthree\none\n".to_owned()));
+        assert_eq!(output.unwrap(), "one\ntwo\nthree\none\n");
     }
 
     #[test]
@@ -179,7 +183,7 @@ mod test {
 
         let output = template.render(&mut context);
 
-        assert_eq!(output.unwrap(), Some("1\n2\n3\n1\n".to_owned()));
+        assert_eq!(output.unwrap(), "1\n2\n3\n1\n");
     }
 
     #[test]

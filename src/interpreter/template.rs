@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::Result;
 use super::Context;
 use super::Renderable;
 
@@ -9,12 +10,9 @@ pub struct Template {
 }
 
 impl Renderable for Template {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
-        let mut buf = String::new();
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         for el in &self.elements {
-            if let Some(ref x) = el.render(context)? {
-                buf = buf + x;
-            }
+            el.render_to(writer, context)?;
 
             // Did the last element we processed set an interrupt? If so, we
             // need to abandon the rest of our child elements and just
@@ -24,7 +22,7 @@ impl Renderable for Template {
                 break;
             }
         }
-        Ok(Some(buf))
+        Ok(())
     }
 }
 

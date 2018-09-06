@@ -404,6 +404,9 @@ mod test_expect {
 
 #[cfg(test)]
 mod test_split_block {
+    use std::collections::HashMap;
+    use std::io::Write;
+
     use super::super::split_block;
     use super::super::tokenize;
     use super::super::BoxedBlockParser;
@@ -412,14 +415,13 @@ mod test_split_block {
     use interpreter;
     use interpreter::Context;
     use interpreter::Renderable;
-    use std::collections::HashMap;
 
     #[derive(Debug)]
     struct NullBlock;
 
     impl Renderable for NullBlock {
-        fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-            Ok(None)
+        fn render_to(&self, _writer: &mut Write, _context: &mut Context) -> Result<()> {
+            Ok(())
         }
     }
 

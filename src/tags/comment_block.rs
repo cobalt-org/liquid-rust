@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::Result;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -10,8 +11,8 @@ use interpreter::Renderable;
 struct Comment;
 
 impl Renderable for Comment {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        Ok(None)
+    fn render_to(&self, _writer: &mut Write, _context: &mut Context) -> Result<()> {
+        Ok(())
     }
 }
 
@@ -48,7 +49,7 @@ mod test {
         );
         assert_eq!(
             comment.unwrap().render(&mut Default::default()).unwrap(),
-            None
+            ""
         );
     }
 }

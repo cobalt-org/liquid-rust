@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Write;
 use std::sync;
 
 use super::Object;
@@ -15,12 +16,17 @@ pub struct Template {
 impl Template {
     /// Renders an instance of the Template, using the given globals.
     pub fn render(&self, globals: &Object) -> Result<String> {
+        let mut data = Vec::new();
+        self.render_to(&mut data, globals)?;
+        Ok(String::from_utf8(data).expect("render only writes UTF-8"))
+    }
+
+    /// Renders an instance of the Template, using the given globals.
+    pub fn render_to(&self, writer: &mut Write, globals: &Object) -> Result<()> {
         let mut data = interpreter::Context::new()
             .with_filters(&self.filters)
             .with_values(globals.clone());
-        let output = self.template
-            .render(&mut data)?
-            .expect("template never returns `None`");
-        Ok(output)
+        self.template
+            .render_to(writer, &mut data)
     }
 }

@@ -1,5 +1,6 @@
-use error::{Result, ResultLiquidExt};
+use std::io::Write;
 
+use error::{Result, ResultLiquidExt};
 use compiler::tokenize;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -15,10 +16,12 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render(&self, mut context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, mut context: &mut Context) -> Result<()> {
         self.partial
-            .render(&mut context)
-            .trace_with(|| format!("{{% include {} %}}", self.name).into())
+            .render_to(writer, &mut context)
+            .trace_with(|| format!("{{% include {} %}}", self.name).into())?;
+
+        Ok(())
     }
 }
 
@@ -98,7 +101,7 @@ mod test {
         context.set_global_val("num", value::Value::scalar(5f64));
         context.set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 wat wot\n".to_owned()));
+        assert_eq!(output, "5 wat wot\n");
     }
 
     #[test]
@@ -115,7 +118,7 @@ mod test {
         context.set_global_val("num", value::Value::scalar(5f64));
         context.set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("5 wat wot\n".to_owned()));
+        assert_eq!(output, "5 wat wot\n");
     }
 
     #[test]

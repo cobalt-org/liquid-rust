@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::{Result, ResultLiquidChainExt};
 use super::Context;
 use super::Renderable;
 
@@ -9,8 +10,9 @@ pub struct Text {
 }
 
 impl Renderable for Text {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        Ok(Some(self.text.to_owned()))
+    fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
+        write!(writer, "{}", &self.text).chain("Failed to render")?;
+        Ok(())
     }
 }
 

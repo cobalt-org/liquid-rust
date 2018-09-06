@@ -1,5 +1,6 @@
-use error::Result;
+use std::io::Write;
 
+use error::{Result, ResultLiquidChainExt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -12,8 +13,9 @@ struct RawT {
 }
 
 impl Renderable for RawT {
-    fn render(&self, _context: &mut Context) -> Result<Option<String>> {
-        Ok(Some(self.content.to_owned()))
+    fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
+        write!(writer, "{}", self.content).chain("Failed to render")?;
+        Ok(())
     }
 }
 
@@ -56,7 +58,7 @@ mod test {
             &options(),
         ).unwrap();
         let output = raw.render(&mut Default::default()).unwrap();
-        assert_eq!(output, Some("This is a test".to_owned()));
+        assert_eq!(output, "This is a test");
     }
 
     #[test]
@@ -70,7 +72,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("{%if%}".to_owned()));
+        assert_eq!(output,"{%if%}");
     }
 
     #[test]
@@ -84,6 +86,6 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, Some("hello{%if%}world".to_owned()));
+        assert_eq!(output, "hello{%if%}world");
     }
 }

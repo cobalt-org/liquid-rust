@@ -1,4 +1,5 @@
 use std::fmt;
+use std::io::Write;
 
 use itertools;
 
@@ -53,9 +54,10 @@ impl fmt::Display for Output {
 }
 
 impl Renderable for Output {
-    fn render(&self, context: &mut Context) -> Result<Option<String>> {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let entry = self.apply_filters(context)?;
-        Ok(Some(entry.to_string()))
+        write!(writer, "{}", entry).chain("Failed to render")?;
+        Ok(())
     }
 }
 
