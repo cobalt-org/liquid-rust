@@ -21,7 +21,7 @@ enum ScalarEnum {
     Bool(bool),
     #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
     Date(Date),
-    Str(String),
+    Str(borrow::Cow<'static, str>),
 }
 
 impl Scalar {
@@ -35,7 +35,7 @@ impl Scalar {
             ScalarEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
             ScalarEnum::Bool(ref x) => borrow::Cow::Owned(x.to_string()),
             ScalarEnum::Date(ref x) => borrow::Cow::Owned(x.format(DATE_FORMAT).to_string()),
-            ScalarEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_str()),
+            ScalarEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
         }
     }
 
@@ -45,7 +45,7 @@ impl Scalar {
             ScalarEnum::Float(x) => x.to_string(),
             ScalarEnum::Bool(x) => x.to_string(),
             ScalarEnum::Date(x) => x.to_string(),
-            ScalarEnum::Str(x) => x,
+            ScalarEnum::Str(x) => x.into_owned(),
         }
     }
 
@@ -80,7 +80,7 @@ impl Scalar {
     pub fn to_date(&self) -> Option<Date> {
         match self.0 {
             ScalarEnum::Date(ref x) => Some(*x),
-            ScalarEnum::Str(ref x) => parse_date(x.as_str()),
+            ScalarEnum::Str(ref x) => parse_date(x.as_ref()),
             _ => None,
         }
     }
@@ -150,7 +150,7 @@ impl From<Date> for Scalar {
 impl From<String> for Scalar {
     fn from(s: String) -> Self {
         Scalar {
-            0: ScalarEnum::Str(s),
+            0: ScalarEnum::Str(s.into()),
         }
     }
 }
@@ -158,15 +158,15 @@ impl From<String> for Scalar {
 impl<'a> From<&'a String> for Scalar {
     fn from(s: &String) -> Self {
         Scalar {
-            0: ScalarEnum::Str(s.to_owned()),
+            0: ScalarEnum::Str(s.to_owned().into()),
         }
     }
 }
 
-impl<'a> From<&'a str> for Scalar {
-    fn from(s: &str) -> Self {
+impl From<&'static str> for Scalar {
+    fn from(s: &'static str) -> Self {
         Scalar {
-            0: ScalarEnum::Str(s.to_owned()),
+            0: ScalarEnum::Str(s.into()),
         }
     }
 }

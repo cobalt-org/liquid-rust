@@ -243,7 +243,7 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
 
     // Split and construct resulting Array
     Ok(Value::Array(
-        input.split(pattern.as_ref()).map(Value::scalar).collect(),
+        input.split(pattern.as_ref()).map(|s| Value::scalar(s.to_owned())).collect(),
     ))
 }
 
@@ -258,7 +258,7 @@ pub fn strip(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 0)?;
 
     let input = input.to_str();
-    Ok(Value::scalar(input.trim()))
+    Ok(Value::scalar(input.trim().to_owned()))
 }
 
 /// Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string.
@@ -271,7 +271,7 @@ pub fn lstrip(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 0)?;
 
     let input = input.to_str();
-    Ok(Value::scalar(input.trim_left()))
+    Ok(Value::scalar(input.trim_left().to_owned()))
 }
 
 /// Removes all whitespace (tabs, spaces, and newlines) from the right side of a string.
@@ -284,7 +284,7 @@ pub fn rstrip(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 0)?;
 
     let input = input.to_str();
-    Ok(Value::scalar(input.trim_right()))
+    Ok(Value::scalar(input.trim_right().to_owned()))
 }
 
 /// Removes any newline characters (line breaks) from a string.
