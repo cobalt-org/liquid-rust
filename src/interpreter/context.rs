@@ -39,7 +39,6 @@ pub struct Context {
     /// The indices of all the cycles encountered during rendering.
     cycles: HashMap<String, usize>,
 
-    // Public for backwards compatability
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
 
