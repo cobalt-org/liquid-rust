@@ -60,7 +60,7 @@ impl Token {
     /// be interpreted as a Value.
     pub fn to_value(&self) -> Result<Value> {
         match self {
-            &Token::StringLiteral(ref x) => Ok(Value::scalar(x.as_str())),
+            &Token::StringLiteral(ref x) => Ok(Value::scalar(x.to_owned())),
             &Token::IntegerLiteral(x) => Ok(Value::scalar(x)),
             &Token::FloatLiteral(x) => Ok(Value::scalar(x)),
             &Token::BooleanLiteral(x) => Ok(Value::scalar(x)),
@@ -74,7 +74,7 @@ impl Token {
         match *self {
             Token::IntegerLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
             Token::FloatLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
-            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::scalar(s.as_str()))),
+            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::scalar(s.to_owned()))),
             Token::BooleanLiteral(b) => Ok(Argument::Val(Value::scalar(b))),
             Token::Identifier(ref id) => {
                 let mut var = Variable::default();
