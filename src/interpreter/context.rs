@@ -52,15 +52,48 @@ impl InterruptState {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct CycleStateInner {
+    // The indices of all the cycles encountered during rendering.
+    cycles: HashMap<String, usize>,
+}
+
+impl CycleStateInner {
+    fn cycle_index(&mut self, name: &str, max: usize) -> usize {
+        let i = self.cycles.entry(name.to_owned()).or_insert(0);
+        let j = *i;
+        *i = (*i + 1) % max;
+        j
+    }
+}
+
+/// See `cycle` tag.
+pub struct CycleState<'a> {
+    context: &'a mut Context,
+}
+
+impl<'a> CycleState<'a> {
+    pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Value> {
+        let index = self.context.cycles.cycle_index(name, values.len());
+        if index >= values.len() {
+            return Err(Error::with_msg(
+                "cycle index out of bounds, most likely from mismatched cycles",
+            ).context("index", &index)
+                .context("count", &values.len()));
+        }
+
+        let val = values[index].evaluate(self.context)?;
+        Ok(val)
+    }
+}
+
 #[derive(Default)]
 pub struct Context {
     stack: Vec<Object>,
     globals: Object,
 
     interrupt: InterruptState,
-
-    /// The indices of all the cycles encountered during rendering.
-    cycles: HashMap<String, usize>,
+    cycles: CycleStateInner,
 
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
@@ -81,24 +114,6 @@ impl Context {
         self
     }
 
-    pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Option<Value>> {
-        let index = {
-            let i = self.cycles.entry(name.to_owned()).or_insert(0);
-            let j = *i;
-            *i = (*i + 1) % values.len();
-            j
-        };
-
-        if index >= values.len() {
-            return Err(Error::with_msg("cycle index out of bounds")
-                .context("index", &index)
-                .context("count", &values.len()));
-        }
-
-        let val = values[index].evaluate(self)?;
-        Ok(Some(val))
-    }
-
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {
         self.filters.get(name).map(|f| {
             let f: &FilterValue = f;
@@ -112,6 +127,12 @@ impl Context {
 
     pub fn interrupt_mut(&mut self) -> &mut InterruptState {
         &mut self.interrupt
+    }
+
+    pub fn cycles<'a>(&'a mut self) -> CycleState<'a> {
+        CycleState {
+            context: self,
+        }
     }
 
     /// Creates a new variable scope chained to a parent scope.

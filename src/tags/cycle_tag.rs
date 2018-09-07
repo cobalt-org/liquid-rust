@@ -28,11 +28,9 @@ impl Cycle {
 impl Renderable for Cycle {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = context
-            .cycle_element(&self.name, &self.values)
+            .cycles().cycle_element(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
-        if let Some(ref value) = value {
-            write!(writer, "{}", value).chain("Failed to render")?;
-        }
+        write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }
 }
