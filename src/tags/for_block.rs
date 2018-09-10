@@ -143,8 +143,8 @@ impl Renderable for For {
                         helper_vars.insert("first".into(), Value::scalar(i == 0));
                         helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
 
-                        scope.set_val("forloop", Value::Object(helper_vars.clone()));
-                        scope.set_val(self.var_name.to_owned(), v.clone());
+                        scope.stack_mut().set_val("forloop", Value::Object(helper_vars.clone()));
+                        scope.stack_mut().set_val(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
@@ -326,8 +326,8 @@ mod test {
             &options,
         ).unwrap();
 
-        let mut data: Context = Default::default();
-        data.set_global_val(
+        let mut context: Context = Default::default();
+        context.stack_mut().set_global_val(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -336,7 +336,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = for_tag.render(&mut data).unwrap();
+        let output = for_tag.render(&mut context).unwrap();
         assert_eq!(output, "test 22 test 23 test 24 test wat ");
     }
 
@@ -379,8 +379,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::scalar(42i32));
-        context.set_global_val("omega", Value::scalar(46i32));
+        context.stack_mut().set_global_val("alpha", Value::scalar(42i32));
+        context.stack_mut().set_global_val("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(
             output,
@@ -436,13 +436,13 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("i", Value::scalar(0i32));
-        context.set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global_val("i", Value::scalar(0i32));
+        context.stack_mut().set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty outer");
 
-        context.set_global_val("i", Value::scalar(1i32));
-        context.set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global_val("i", Value::scalar(1i32));
+        context.stack_mut().set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty inner");
     }
@@ -636,9 +636,9 @@ mod test {
                 as interpreter::FnFilterValue)
                 .into(),
                     );
-        let mut data = Context::new().with_filters(&sync::Arc::new(filters));
+        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
 
-        data.set_global_val(
+        context.stack_mut().set_global_val(
             "array",
             Value::Array(vec![
                 Value::scalar("alpha"),
@@ -646,7 +646,7 @@ mod test {
                 Value::scalar("gamma"),
             ]),
         );
-        let output = for_tag.render(&mut data).unwrap();
+        let output = for_tag.render(&mut context).unwrap();
         assert_eq!(output, "test ALPHA test BETA test GAMMA ");
     }
 }

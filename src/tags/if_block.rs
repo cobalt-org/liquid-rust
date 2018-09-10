@@ -317,19 +317,19 @@ mod test {
 
         // Explicit nil
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::Nil);
+        context.stack_mut().set_global_val("truthy", Value::Nil);
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "nope");
 
         // false
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::scalar(false));
+        context.stack_mut().set_global_val("truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "nope");
 
         // true
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::scalar(true));
+        context.stack_mut().set_global_val("truthy", Value::scalar(true));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "yep");
     }
@@ -348,7 +348,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::scalar(1f64));
+        context.stack_mut().set_global_val("some_value", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "");
 
@@ -358,7 +358,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("some_value", Value::scalar(42f64));
+        context.stack_mut().set_global_val("some_value", Value::scalar(42f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "unless body");
     }
@@ -383,8 +383,8 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("truthy", Value::scalar(true));
-        context.set_global_val("also_truthy", Value::scalar(false));
+        context.stack_mut().set_global_val("truthy", Value::scalar(true));
+        context.stack_mut().set_global_val("also_truthy", Value::scalar(false));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "yep, not also truthy");
     }
@@ -409,7 +409,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(1f64));
+        context.stack_mut().set_global_val("a", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "first");
 
@@ -419,7 +419,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(2f64));
+        context.stack_mut().set_global_val("a", Value::scalar(2f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "second");
 
@@ -429,7 +429,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar(3f64));
+        context.stack_mut().set_global_val("a", Value::scalar(3f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "third");
 
@@ -439,7 +439,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("a", Value::scalar("else"));
+        context.stack_mut().set_global_val("a", Value::scalar("else"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "fourth");
     }
@@ -476,7 +476,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("movie", Value::scalar("Star Wars"));
+        context.stack_mut().set_global_val("movie", Value::scalar("Star Wars"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if true");
 
@@ -487,7 +487,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("movie", Value::scalar("Batman"));
+        context.stack_mut().set_global_val("movie", Value::scalar("Batman"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
     }
@@ -503,7 +503,7 @@ mod test {
         let mut context = Context::new();
         let mut obj = Object::new();
         obj.insert("Star Wars".into(), Value::scalar("1977"));
-        context.set_global_val("movies", Value::Object(obj));
+        context.stack_mut().set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if true");
     }
@@ -518,7 +518,7 @@ mod test {
 
         let mut context = Context::new();
         let obj = Object::new();
-        context.set_global_val("movies", Value::Object(obj));
+        context.stack_mut().set_global_val("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
     }
@@ -537,7 +537,7 @@ mod test {
             Value::scalar("Star Trek"),
             Value::scalar("Alien"),
         ];
-        context.set_global_val("movies", Value::Array(arr));
+        context.stack_mut().set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if true");
     }
@@ -552,7 +552,7 @@ mod test {
 
         let mut context = Context::new();
         let arr = vec![Value::scalar("Alien")];
-        context.set_global_val("movies", Value::Array(arr));
+        context.stack_mut().set_global_val("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
     }

@@ -30,7 +30,7 @@ impl Renderable for Capture {
             .trace_with(|| self.trace().into())?;
 
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
-        context.set_global_val(self.id.to_owned(), Value::scalar(output));
+        context.stack_mut().set_global_val(self.id.to_owned(), Value::scalar(output));
         Ok(())
     }
 }
@@ -87,12 +87,12 @@ mod test {
             .unwrap();
 
         let mut ctx = Context::new();
-        ctx.set_global_val("item", Value::scalar("potato"));
-        ctx.set_global_val("i", Value::scalar(42f64));
+        ctx.stack_mut().set_global_val("item", Value::scalar("potato"));
+        ctx.stack_mut().set_global_val("i", Value::scalar(42f64));
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
-            ctx.get_val("attribute_name"),
+            ctx.stack().get_val("attribute_name"),
             Some(&Value::scalar("potato-42-color"))
         );
         assert_eq!(output, "");

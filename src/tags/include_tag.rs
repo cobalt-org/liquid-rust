@@ -98,8 +98,8 @@ mod test {
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
         filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
         let mut context = Context::new().with_filters(&sync::Arc::new(filters));
-        context.set_global_val("num", value::Value::scalar(5f64));
-        context.set_global_val("numTwo", value::Value::scalar(10f64));
+        context.stack_mut().set_global_val("num", value::Value::scalar(5f64));
+        context.stack_mut().set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }
@@ -115,8 +115,8 @@ mod test {
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
         filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
         let mut context = Context::new().with_filters(&sync::Arc::new(filters));
-        context.set_global_val("num", value::Value::scalar(5f64));
-        context.set_global_val("numTwo", value::Value::scalar(10f64));
+        context.stack_mut().set_global_val("num", value::Value::scalar(5f64));
+        context.stack_mut().set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }
