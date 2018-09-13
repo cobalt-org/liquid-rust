@@ -1,9 +1,9 @@
 use std::io::Write;
 
-use error::{Result, ResultLiquidChainExt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
+use error::{Result, ResultLiquidChainExt};
 use interpreter::Context;
 use interpreter::Renderable;
 
@@ -72,7 +72,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output,"{%if%}");
+        assert_eq!(output, "{%if%}");
     }
 
     #[test]

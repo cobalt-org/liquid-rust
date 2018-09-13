@@ -1,9 +1,9 @@
 use std::io::Write;
 
-use error::Result;
 use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
 use compiler::Token;
+use error::Result;
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
 
@@ -12,7 +12,7 @@ struct Break;
 
 impl Renderable for Break {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
-        context.set_interrupt(Interrupt::Break);
+        context.interrupt_mut().set_interrupt(Interrupt::Break);
         Ok(())
     }
 }
@@ -34,7 +34,7 @@ struct Continue;
 
 impl Renderable for Continue {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
-        context.set_interrupt(Interrupt::Continue);
+        context.interrupt_mut().set_interrupt(Interrupt::Continue);
         Ok(())
     }
 }

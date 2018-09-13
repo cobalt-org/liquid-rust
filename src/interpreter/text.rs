@@ -1,8 +1,8 @@
 use std::io::Write;
 
-use error::{Result, ResultLiquidChainExt};
 use super::Context;
 use super::Renderable;
+use error::{Result, ResultLiquidChainExt};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Text {

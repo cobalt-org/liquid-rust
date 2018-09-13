@@ -1,9 +1,9 @@
 use std::io::Write;
 
-use error::Result;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
+use error::Result;
 use interpreter::Context;
 use interpreter::Renderable;
 

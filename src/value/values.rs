@@ -56,9 +56,7 @@ impl Value {
                 borrow::Cow::Owned(arr.join(", "))
             }
             Value::Object(ref x) => {
-                let arr: Vec<String> = x.iter()
-                    .map(|(k, v)| format!("{}: {}", k, v))
-                    .collect();
+                let arr: Vec<String> = x.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 borrow::Cow::Owned(arr.join(", "))
             }
             Value::Nil => borrow::Cow::Borrowed(""),

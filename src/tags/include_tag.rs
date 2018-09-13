@@ -1,10 +1,10 @@
 use std::io::Write;
 
-use error::{Result, ResultLiquidExt};
 use compiler::tokenize;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
+use error::{Result, ResultLiquidExt};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -56,16 +56,17 @@ pub fn include_tag(
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::path;
-    use std::collections::HashMap;
     use std::sync;
 
-    use tags;
-    use value;
     use compiler;
     use filters;
     use interpreter;
+    use interpreter::ContextBuilder;
+    use tags;
+    use value;
 
     use super::*;
 
@@ -96,10 +97,16 @@ mod test {
             .unwrap();
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
-        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
-        context.set_global_val("num", value::Value::scalar(5f64));
-        context.set_global_val("numTwo", value::Value::scalar(10f64));
+        filters.insert("size", (filters::size as interpreter::FnFilterValue).into());
+        let mut context = ContextBuilder::new()
+            .set_filters(&sync::Arc::new(filters))
+            .build();
+        context
+            .stack_mut()
+            .set_global_val("num", value::Value::scalar(5f64));
+        context
+            .stack_mut()
+            .set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }
@@ -113,10 +120,16 @@ mod test {
             .unwrap();
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
-        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
-        context.set_global_val("num", value::Value::scalar(5f64));
-        context.set_global_val("numTwo", value::Value::scalar(10f64));
+        filters.insert("size", (filters::size as interpreter::FnFilterValue).into());
+        let mut context = ContextBuilder::new()
+            .set_filters(&sync::Arc::new(filters))
+            .build();
+        context
+            .stack_mut()
+            .set_global_val("num", value::Value::scalar(5f64));
+        context
+            .stack_mut()
+            .set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }

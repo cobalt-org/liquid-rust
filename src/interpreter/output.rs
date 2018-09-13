@@ -82,7 +82,8 @@ impl Output {
                 .map(|a| a.evaluate(context))
                 .collect();
             let arguments = arguments?;
-            entry = f.filter(&entry, &*arguments)
+            entry = f
+                .filter(&entry, &*arguments)
                 .chain("Filter error")
                 .context("input", &entry)
                 .context_with(|| ("args".into(), itertools::join(&arguments, ", ")))?;

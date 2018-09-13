@@ -2,10 +2,10 @@ use std::io::Write;
 
 use itertools;
 
-use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, unexpected_token_error, value_token};
+use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -28,11 +28,10 @@ impl Cycle {
 impl Renderable for Cycle {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = context
+            .cycles()
             .cycle_element(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
-        if let Some(ref value) = value {
-            write!(writer, "{}", value).chain("Failed to render")?;
-        }
+        write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }
 }
@@ -177,9 +176,15 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::scalar(1f64));
-        context.set_global_val("beta", Value::scalar(2f64));
-        context.set_global_val("gamma", Value::scalar(3f64));
+        context
+            .stack_mut()
+            .set_global_val("alpha", Value::scalar(1f64));
+        context
+            .stack_mut()
+            .set_global_val("beta", Value::scalar(2f64));
+        context
+            .stack_mut()
+            .set_global_val("gamma", Value::scalar(3f64));
 
         let output = template.render(&mut context);
 

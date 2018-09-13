@@ -40,7 +40,7 @@ impl fmt::Display for Variable {
 
 impl Renderable for Variable {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = context.get_val_by_index(self.indexes.iter())?;
+        let value = context.stack().get_val_by_index(self.indexes.iter())?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }

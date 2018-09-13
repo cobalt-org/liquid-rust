@@ -112,7 +112,8 @@ fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed:
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut range = self.range
+        let mut range = self
+            .range
             .evaluate(context)
             .trace_with(|| self.trace().into())?;
         let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
@@ -134,17 +135,18 @@ impl Renderable for For {
                     for (i, v) in range.iter().enumerate() {
                         helper_vars.insert("index0".into(), Value::scalar(i as i32));
                         helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
-                        helper_vars.insert(
-                            "rindex0".into(),
-                            Value::scalar((range_len - i - 1) as i32),
-                        );
                         helper_vars
-                            .insert("rindex".into(), Value::scalar((range_len - i) as i32));
+                            .insert("rindex0".into(), Value::scalar((range_len - i - 1) as i32));
+                        helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i32));
                         helper_vars.insert("first".into(), Value::scalar(i == 0));
                         helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
 
-                        scope.set_val("forloop", Value::Object(helper_vars.clone()));
-                        scope.set_val(self.var_name.to_owned(), v.clone());
+                        scope
+                            .stack_mut()
+                            .set_val("forloop", Value::Object(helper_vars.clone()));
+                        scope
+                            .stack_mut()
+                            .set_val(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
@@ -155,7 +157,7 @@ impl Renderable for For {
                         // already, dealing with a `continue` signal is just
                         // clearing the interrupt and carrying on as normal. A
                         // `break` requires some special handling, though.
-                        if let Some(Interrupt::Break) = scope.pop_interrupt() {
+                        if let Some(Interrupt::Break) = scope.interrupt_mut().pop_interrupt() {
                             break;
                         }
                     }
@@ -270,8 +272,10 @@ pub fn for_block(
     }
 
     let (leading, trailing) = split_block(tokens, &["else"], options);
-    let item_template = Template::new(parse(leading, options)
-        .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?);
+    let item_template = Template::new(
+        parse(leading, options)
+            .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?,
+    );
 
     let else_template = match trailing {
         Some(split) => {
@@ -301,6 +305,7 @@ mod test {
 
     use compiler;
     use interpreter;
+    use interpreter::ContextBuilder;
 
     use super::*;
 
@@ -326,8 +331,8 @@ mod test {
             &options,
         ).unwrap();
 
-        let mut data: Context = Default::default();
-        data.set_global_val(
+        let mut context: Context = Default::default();
+        context.stack_mut().set_global_val(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -336,7 +341,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = for_tag.render(&mut data).unwrap();
+        let output = for_tag.render(&mut context).unwrap();
         assert_eq!(output, "test 22 test 23 test 24 test wat ");
     }
 
@@ -379,13 +384,14 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("alpha", Value::scalar(42i32));
-        context.set_global_val("omega", Value::scalar(46i32));
+        context
+            .stack_mut()
+            .set_global_val("alpha", Value::scalar(42i32));
+        context
+            .stack_mut()
+            .set_global_val("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(
-            output,
-            "#1 test 42, #2 test 43, #3 test 44, #4 test 45, "
-        );
+        assert_eq!(output, "#1 test 42, #2 test 43, #3 test 44, #4 test 45, ");
     }
 
     #[test]
@@ -436,13 +442,13 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("i", Value::scalar(0i32));
-        context.set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global_val("i", Value::scalar(0i32));
+        context.stack_mut().set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty outer");
 
-        context.set_global_val("i", Value::scalar(1i32));
-        context.set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global_val("i", Value::scalar(1i32));
+        context.stack_mut().set_global_val("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty inner");
     }
@@ -631,14 +637,17 @@ mod test {
         ).unwrap();
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("shout",
+        filters.insert(
+            "shout",
             ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
                 as interpreter::FnFilterValue)
                 .into(),
-                    );
-        let mut data = Context::new().with_filters(&sync::Arc::new(filters));
+        );
+        let mut context = ContextBuilder::new()
+            .set_filters(&sync::Arc::new(filters))
+            .build();
 
-        data.set_global_val(
+        context.stack_mut().set_global_val(
             "array",
             Value::Array(vec![
                 Value::scalar("alpha"),
@@ -646,7 +655,7 @@ mod test {
                 Value::scalar("gamma"),
             ]),
         );
-        let output = for_tag.render(&mut data).unwrap();
+        let output = for_tag.render(&mut context).unwrap();
         assert_eq!(output, "test ALPHA test BETA test GAMMA ");
     }
 }

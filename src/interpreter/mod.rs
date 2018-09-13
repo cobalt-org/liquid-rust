@@ -8,7 +8,9 @@ mod text;
 mod variable;
 
 pub use self::argument::Argument;
-pub use self::context::{unexpected_value_error, Context, Interrupt};
+pub use self::context::{
+    unexpected_value_error, Context, ContextBuilder, Interrupt, InterruptState,
+};
 pub use self::filter::{BoxedValueFilter, FilterError, FilterResult, FilterValue, FnFilterValue};
 pub use self::output::{FilterPrototype, Output};
 pub use self::renderable::Renderable;

@@ -2,11 +2,11 @@ use std::io::Write;
 
 use itertools;
 
-use error::{Error, Result, ResultLiquidExt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, parse, split_block, unexpected_token_error, BlockSplit};
+use error::{Error, Result, ResultLiquidExt};
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -57,7 +57,8 @@ impl Renderable for Case {
         let value = self.target.evaluate(context)?;
         for case in &self.cases {
             if case.evaluate(&value, context)? {
-                return case.template
+                return case
+                    .template
                     .render_to(writer, context)
                     .trace_with(|| case.trace().into())
                     .trace_with(|| self.trace().into())
@@ -66,7 +67,8 @@ impl Renderable for Case {
         }
 
         if let Some(ref t) = self.else_block {
-            return t.render_to(writer, context)
+            return t
+                .render_to(writer, context)
                 .trace_with(|| "{{% else %}}".to_owned().into())
                 .trace_with(|| self.trace().into())
                 .context_with(|| (self.target.to_string().into(), value.to_string()));
@@ -131,7 +133,7 @@ fn parse_sections<'e>(
         Conditional::Else => {
             if case.else_block.is_none() {
                 let template = Template::new(
-                    parse(leading, options).trace_with(|| "{{% else %}}".to_owned().into())?
+                    parse(leading, options).trace_with(|| "{{% else %}}".to_owned().into())?,
                 );
                 case.else_block = Some(template)
             } else {
@@ -209,29 +211,19 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("x", Value::scalar(2f64));
-        assert_eq!(
-            template.render(&mut context).unwrap(),
-            "two"
-        );
+        context.stack_mut().set_global_val("x", Value::scalar(2f64));
+        assert_eq!(template.render(&mut context).unwrap(), "two");
 
-        context.set_global_val("x", Value::scalar(3f64));
-        assert_eq!(
-            template.render(&mut context).unwrap(),
-            "three and a half"
-        );
+        context.stack_mut().set_global_val("x", Value::scalar(3f64));
+        assert_eq!(template.render(&mut context).unwrap(), "three and a half");
 
-        context.set_global_val("x", Value::scalar(4f64));
-        assert_eq!(
-            template.render(&mut context).unwrap(),
-            "three and a half"
-        );
+        context.stack_mut().set_global_val("x", Value::scalar(4f64));
+        assert_eq!(template.render(&mut context).unwrap(), "three and a half");
 
-        context.set_global_val("x", Value::scalar("nope"));
-        assert_eq!(
-            template.render(&mut context).unwrap(),
-            "otherwise"
-        );
+        context
+            .stack_mut()
+            .set_global_val("x", Value::scalar("nope"));
+        assert_eq!(template.render(&mut context).unwrap(), "otherwise");
     }
 
     #[test]
@@ -251,7 +243,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.set_global_val("x", Value::scalar("nope"));
+        context
+            .stack_mut()
+            .set_global_val("x", Value::scalar("nope"));
         assert_eq!(template.render(&mut context).unwrap(), "");
     }
 
