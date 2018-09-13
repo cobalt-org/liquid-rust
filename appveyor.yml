@@ -40,7 +40,6 @@ branches:
 
 cache:
 - C:\Users\appveyor\.cargo\registry
-- target
 
 notifications:
 - provider: Email

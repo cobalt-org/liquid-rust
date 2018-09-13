@@ -66,10 +66,14 @@ addons:
     - binutils-dev
     - cmake
 
+# Need to cache the whole `.cargo` directory to keep .crates.toml for
+# cargo-update to work
 cache:
-  apt: true
-  cargo: true
+  directories:
+    - /home/travis/.cargo
+# But don't cache the cargo registry
 before_cache:
+- rm -rf $HOME/.cargo/registry
 # Travis can't cache files that are not readable by "others"
 - chmod -R a+r $HOME/.cargo
 
