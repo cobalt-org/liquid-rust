@@ -23,9 +23,10 @@ impl Template {
 
     /// Renders an instance of the Template, using the given globals.
     pub fn render_to(&self, writer: &mut Write, globals: &Object) -> Result<()> {
-        let mut data = interpreter::Context::new()
-            .with_filters(&self.filters)
-            .with_values(globals.clone());
+        let mut data = interpreter::ContextBuilder::new()
+            .set_filters(&self.filters)
+            .set_globals(globals.clone())
+            .build();
         self.template
             .render_to(writer, &mut data)
     }

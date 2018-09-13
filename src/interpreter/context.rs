@@ -94,7 +94,7 @@ pub struct Stack {
 }
 
 impl Stack {
-    pub fn new() -> Self {
+    pub fn empty() -> Self {
         Self {
             globals: Object::new(),
             // Mutable frame for globals.
@@ -102,8 +102,10 @@ impl Stack {
         }
     }
 
-    pub fn with_globals(&mut self, values: Object) {
-        self.globals = values;
+    pub fn with_globals(globals: Object) -> Self {
+        let mut stack = Self::empty();
+        stack.globals = globals;
+        stack
     }
 
     /// Creates a new variable scope chained to a parent scope.
@@ -197,7 +199,39 @@ impl Stack {
 
 impl Default for Stack {
     fn default() -> Self {
-        Self::new()
+        Self::empty()
+    }
+}
+
+#[derive(Default)]
+pub struct ContextBuilder {
+    globals: Object,
+    filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
+}
+
+impl ContextBuilder {
+    /// Creates a new, empty rendering context.
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn set_globals(mut self, values: Object) -> Self {
+        self.globals = values;
+        self
+    }
+
+    pub fn set_filters(mut self, filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>) -> Self {
+        self.filters = sync::Arc::clone(filters);
+        self
+    }
+
+    pub fn build(self) -> Context {
+        Context {
+            stack: Stack::with_globals(self.globals),
+            interrupt: InterruptState::default(),
+            cycles: CycleStateInner::default(),
+            filters: self.filters,
+        }
     }
 }
 
@@ -212,19 +246,8 @@ pub struct Context {
 }
 
 impl Context {
-    /// Creates a new, empty rendering context.
     pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn with_values(mut self, values: Object) -> Self {
-        self.stack.with_globals(values);
-        self
-    }
-
-    pub fn with_filters(mut self, filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>) -> Self {
-        self.filters = sync::Arc::clone(filters);
-        self
+        Context::default()
     }
 
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {

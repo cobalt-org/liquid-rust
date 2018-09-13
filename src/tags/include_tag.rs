@@ -65,6 +65,7 @@ mod test {
     use value;
     use compiler;
     use filters;
+    use interpreter::ContextBuilder;
     use interpreter;
 
     use super::*;
@@ -97,7 +98,7 @@ mod test {
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
         filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
-        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
+        let mut context = ContextBuilder::new().set_filters(&sync::Arc::new(filters)).build();
         context.stack_mut().set_global_val("num", value::Value::scalar(5f64));
         context.stack_mut().set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
@@ -114,7 +115,7 @@ mod test {
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
         filters.insert("size",(filters::size as interpreter::FnFilterValue).into());
-        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
+        let mut context = ContextBuilder::new().set_filters(&sync::Arc::new(filters)).build();
         context.stack_mut().set_global_val("num", value::Value::scalar(5f64));
         context.stack_mut().set_global_val("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();

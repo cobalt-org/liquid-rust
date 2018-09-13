@@ -299,6 +299,7 @@ mod test {
     use std::collections::HashMap;
     use std::sync;
 
+    use interpreter::ContextBuilder;
     use compiler;
     use interpreter;
 
@@ -636,7 +637,7 @@ mod test {
                 as interpreter::FnFilterValue)
                 .into(),
                     );
-        let mut context = Context::new().with_filters(&sync::Arc::new(filters));
+        let mut context = ContextBuilder::new().set_filters(&sync::Arc::new(filters)).build();
 
         context.stack_mut().set_global_val(
             "array",
