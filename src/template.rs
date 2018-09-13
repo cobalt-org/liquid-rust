@@ -27,7 +27,6 @@ impl Template {
             .set_filters(&self.filters)
             .set_globals(globals.clone())
             .build();
-        self.template
-            .render_to(writer, &mut data)
+        self.template.render_to(writer, &mut data)
     }
 }

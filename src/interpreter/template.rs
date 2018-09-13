@@ -1,8 +1,8 @@
 use std::io::Write;
 
-use error::Result;
 use super::Context;
 use super::Renderable;
+use error::Result;
 
 #[derive(Debug)]
 pub struct Template {

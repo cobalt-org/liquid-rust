@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::sync;
 
 use error::{Error, Result};
-use value::{Index, Object, Value};
 use std::borrow;
+use value::{Index, Object, Value};
 
 use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
@@ -29,7 +29,7 @@ pub enum Interrupt {
 /// at a given point and unwind the `render` call stack until
 /// it reaches an enclosing `for_loop`. At that point the interrupt
 /// is cleared, and the `for_loop` carries on processing as directed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct InterruptState {
     interrupt: Option<Interrupt>,
 }
@@ -46,7 +46,7 @@ impl InterruptState {
 
     /// Fetches and clears the interrupt state.
     pub fn pop_interrupt(&mut self) -> Option<Interrupt> {
-        let rval = self.interrupt.clone();
+        let rval = self.interrupt;
         self.interrupt = None;
         rval
     }
@@ -147,7 +147,8 @@ impl Stack {
         let key = key.as_key().ok_or_else(|| {
             Error::with_msg("Root index must be an object key").context("index", &key)
         })?;
-        let value = self.get_val(key)
+        let value = self
+            .get_val(key)
             .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
 
         indexes.fold(Ok(value), |value, index| {
@@ -220,7 +221,10 @@ impl ContextBuilder {
         self
     }
 
-    pub fn set_filters(mut self, filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>) -> Self {
+    pub fn set_filters(
+        mut self,
+        filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
+    ) -> Self {
         self.filters = sync::Arc::clone(filters);
         self
     }
@@ -265,10 +269,8 @@ impl Context {
         &mut self.interrupt
     }
 
-    pub fn cycles<'a>(&'a mut self) -> CycleState<'a> {
-        CycleState {
-            context: self,
-        }
+    pub fn cycles(&mut self) -> CycleState {
+        CycleState { context: self }
     }
 
     pub fn stack(&self) -> &Stack {
@@ -300,8 +302,12 @@ mod test {
     #[test]
     fn get_val() {
         let mut ctx = Context::new();
-        ctx.stack_mut().set_global_val("number", Value::scalar(42f64));
-        assert_eq!(ctx.stack().get_val("number").unwrap(), &Value::scalar(42f64));
+        ctx.stack_mut()
+            .set_global_val("number", Value::scalar(42f64));
+        assert_eq!(
+            ctx.stack().get_val("number").unwrap(),
+            &Value::scalar(42f64)
+        );
     }
 
     #[test]
@@ -334,18 +340,31 @@ mod test {
 
         ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
-            assert_eq!(new_scope.stack().get_val("test").unwrap(), &Value::scalar(42f64));
+            assert_eq!(
+                new_scope.stack().get_val("test").unwrap(),
+                &Value::scalar(42f64)
+            );
 
             // set a new local value, and assert that it overrides the previous value
-            new_scope.stack_mut().set_val("test", Value::scalar(3.14f64));
-            assert_eq!(new_scope.stack().get_val("test").unwrap(), &Value::scalar(3.14f64));
+            new_scope
+                .stack_mut()
+                .set_val("test", Value::scalar(3.14f64));
+            assert_eq!(
+                new_scope.stack().get_val("test").unwrap(),
+                &Value::scalar(3.14f64)
+            );
 
             // sat a new val that we will pick up outside the scope
-            new_scope.stack_mut().set_global_val("global", Value::scalar("some value"));
+            new_scope
+                .stack_mut()
+                .set_global_val("global", Value::scalar("some value"));
         });
 
         // assert that the value has reverted to the old one
         assert_eq!(ctx.stack().get_val("test").unwrap(), &Value::scalar(42f64));
-        assert_eq!(ctx.stack().get_val("global").unwrap(), &Value::scalar("some value"));
+        assert_eq!(
+            ctx.stack().get_val("global").unwrap(),
+            &Value::scalar("some value")
+        );
     }
 }

@@ -58,7 +58,8 @@ impl FilesystemInclude {
 
 impl Include for FilesystemInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
-        let root = self.root
+        let root = self
+            .root
             .canonicalize()
             .chain("Snippet does not exist")
             .context_with(|| {
@@ -68,7 +69,8 @@ impl Include for FilesystemInclude {
             })?;
         let mut path = root.clone();
         path.extend(relative_path.split('/'));
-        let path = path.canonicalize()
+        let path = path
+            .canonicalize()
             .chain("Snippet does not exist")
             .context_with(|| ("non-existent path".into(), path.to_string_lossy().into()))?;
         if !path.starts_with(&root) {

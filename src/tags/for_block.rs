@@ -112,7 +112,8 @@ fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed:
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut range = self.range
+        let mut range = self
+            .range
             .evaluate(context)
             .trace_with(|| self.trace().into())?;
         let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
@@ -134,17 +135,18 @@ impl Renderable for For {
                     for (i, v) in range.iter().enumerate() {
                         helper_vars.insert("index0".into(), Value::scalar(i as i32));
                         helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
-                        helper_vars.insert(
-                            "rindex0".into(),
-                            Value::scalar((range_len - i - 1) as i32),
-                        );
                         helper_vars
-                            .insert("rindex".into(), Value::scalar((range_len - i) as i32));
+                            .insert("rindex0".into(), Value::scalar((range_len - i - 1) as i32));
+                        helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i32));
                         helper_vars.insert("first".into(), Value::scalar(i == 0));
                         helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
 
-                        scope.stack_mut().set_val("forloop", Value::Object(helper_vars.clone()));
-                        scope.stack_mut().set_val(self.var_name.to_owned(), v.clone());
+                        scope
+                            .stack_mut()
+                            .set_val("forloop", Value::Object(helper_vars.clone()));
+                        scope
+                            .stack_mut()
+                            .set_val(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
@@ -270,8 +272,10 @@ pub fn for_block(
     }
 
     let (leading, trailing) = split_block(tokens, &["else"], options);
-    let item_template = Template::new(parse(leading, options)
-        .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?);
+    let item_template = Template::new(
+        parse(leading, options)
+            .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?,
+    );
 
     let else_template = match trailing {
         Some(split) => {
@@ -299,9 +303,9 @@ mod test {
     use std::collections::HashMap;
     use std::sync;
 
-    use interpreter::ContextBuilder;
     use compiler;
     use interpreter;
+    use interpreter::ContextBuilder;
 
     use super::*;
 
@@ -380,13 +384,14 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.stack_mut().set_global_val("alpha", Value::scalar(42i32));
-        context.stack_mut().set_global_val("omega", Value::scalar(46i32));
+        context
+            .stack_mut()
+            .set_global_val("alpha", Value::scalar(42i32));
+        context
+            .stack_mut()
+            .set_global_val("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(
-            output,
-            "#1 test 42, #2 test 43, #3 test 44, #4 test 45, "
-        );
+        assert_eq!(output, "#1 test 42, #2 test 43, #3 test 44, #4 test 45, ");
     }
 
     #[test]
@@ -632,12 +637,15 @@ mod test {
         ).unwrap();
 
         let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("shout",
+        filters.insert(
+            "shout",
             ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
                 as interpreter::FnFilterValue)
                 .into(),
-                    );
-        let mut context = ContextBuilder::new().set_filters(&sync::Arc::new(filters)).build();
+        );
+        let mut context = ContextBuilder::new()
+            .set_filters(&sync::Arc::new(filters))
+            .build();
 
         context.stack_mut().set_global_val(
             "array",

@@ -153,10 +153,12 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
             x if SINGLE_STRING_LITERAL.is_match(x) || DOUBLE_STRING_LITERAL.is_match(x) => {
                 Token::StringLiteral(x[1..x.len() - 1].to_owned())
             }
-            x if NUMBER_LITERAL.is_match(x) => x.parse::<i32>()
+            x if NUMBER_LITERAL.is_match(x) => x
+                .parse::<i32>()
                 .map(Token::IntegerLiteral)
                 .unwrap_or_else(|_e| {
-                    let x = x.parse::<f64>()
+                    let x = x
+                        .parse::<f64>()
                         .expect("matches to NUMBER_LITERAL are parseable as floats");
                     Token::FloatLiteral(x)
                 }),

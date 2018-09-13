@@ -1,10 +1,10 @@
 use std::io::Write;
 
-use error::Result;
 use compiler::LiquidOptions;
 use compiler::ResultLiquidExt;
 use compiler::Token;
 use compiler::{expect, parse_output, unexpected_token_error};
+use error::Result;
 use interpreter::Context;
 use interpreter::Output;
 use interpreter::Renderable;
@@ -23,10 +23,13 @@ impl Assign {
 
 impl Renderable for Assign {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = self.src
+        let value = self
+            .src
             .apply_filters(context)
             .trace_with(|| self.trace().into())?;
-        context.stack_mut().set_global_val(self.dst.to_owned(), value);
+        context
+            .stack_mut()
+            .set_global_val(self.dst.to_owned(), value);
         Ok(())
     }
 }
@@ -101,7 +104,10 @@ mod test {
             );
 
             let output = template.render(&mut context).unwrap();
-            assert_eq!(context.stack().get_val("freestyle"), Some(&Value::scalar(false)));
+            assert_eq!(
+                context.stack().get_val("freestyle"),
+                Some(&Value::scalar(false))
+            );
             assert_eq!(output, "");
         }
 
@@ -119,7 +125,10 @@ mod test {
             );
 
             let output = template.render(&mut context).unwrap();
-            assert_eq!(context.stack().get_val("freestyle"), Some(&Value::scalar(true)));
+            assert_eq!(
+                context.stack().get_val("freestyle"),
+                Some(&Value::scalar(true))
+            );
             assert_eq!(output, "<p>Freestyle!</p>");
         }
     }

@@ -114,7 +114,8 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
         .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let offset = offset as isize;
 
-    let length = args.get(1)
+    let length = args
+        .get(1)
         .unwrap_or(&Value::scalar(1))
         .as_scalar()
         .and_then(Scalar::to_integer)
@@ -178,14 +179,16 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
 pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 2)?;
 
-    let length = args.get(0)
+    let length = args
+        .get(0)
         .unwrap_or(&Value::scalar(50i32))
         .as_scalar()
         .and_then(Scalar::to_integer)
         .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let length = length as usize;
 
-    let truncate_string = args.get(1)
+    let truncate_string = args
+        .get(1)
         .map(Value::to_str)
         .unwrap_or_else(|| "...".into());
 
@@ -209,14 +212,16 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
 pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 2)?;
 
-    let words = args.get(0)
+    let words = args
+        .get(0)
         .unwrap_or(&Value::scalar(50i32))
         .as_scalar()
         .and_then(Scalar::to_integer)
         .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
     let words = words as usize;
 
-    let truncate_string = args.get(1)
+    let truncate_string = args
+        .get(1)
         .map(Value::to_str)
         .unwrap_or_else(|| "...".into());
 
@@ -243,7 +248,10 @@ pub fn split(input: &Value, args: &[Value]) -> FilterResult {
 
     // Split and construct resulting Array
     Ok(Value::Array(
-        input.split(pattern.as_ref()).map(|s| Value::scalar(s.to_owned())).collect(),
+        input
+            .split(pattern.as_ref())
+            .map(|s| Value::scalar(s.to_owned()))
+            .collect(),
     ))
 }
 
@@ -509,7 +517,8 @@ pub fn first(input: &Value, args: &[Value]) -> FilterResult {
 
     match *input {
         Value::Scalar(ref x) => {
-            let c = x.to_str()
+            let c = x
+                .to_str()
                 .chars()
                 .next()
                 .map(|c| c.to_string())
@@ -528,7 +537,8 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
 
     match *input {
         Value::Scalar(ref x) => {
-            let c = x.to_str()
+            let c = x
+                .to_str()
                 .chars()
                 .last()
                 .map(|c| c.to_string())
@@ -545,7 +555,8 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
 pub fn round(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 1)?;
 
-    let n = args.get(0)
+    let n = args
+        .get(0)
         .unwrap_or(&Value::scalar(0i32))
         .as_scalar()
         .and_then(Scalar::to_integer)

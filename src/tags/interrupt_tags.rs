@@ -1,9 +1,9 @@
 use std::io::Write;
 
-use error::Result;
 use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
 use compiler::Token;
+use error::Result;
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
 

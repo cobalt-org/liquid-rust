@@ -8,7 +8,8 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 0, 0)?;
 
     match *input {
-        Value::Scalar(ref s) => s.to_integer()
+        Value::Scalar(ref s) => s
+            .to_integer()
             .map(|i| Value::scalar(i.abs()))
             .or_else(|| s.to_float().map(|i| Value::scalar(i.abs())))
             .ok_or_else(|| FilterError::InvalidType("Numeric value expected".to_owned())),

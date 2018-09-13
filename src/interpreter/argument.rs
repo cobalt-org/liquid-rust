@@ -16,7 +16,10 @@ impl Argument {
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let val = match *self {
             Argument::Val(ref x) => x.clone(),
-            Argument::Var(ref x) => context.stack().get_val_by_index(x.indexes().iter())?.clone(),
+            Argument::Var(ref x) => context
+                .stack()
+                .get_val_by_index(x.indexes().iter())?
+                .clone(),
         };
         Ok(val)
     }

@@ -1,10 +1,10 @@
 use std::io::Write;
 
-use error::{Result, ResultLiquidExt};
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
+use error::{Result, ResultLiquidExt};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -30,7 +30,9 @@ impl Renderable for Capture {
             .trace_with(|| self.trace().into())?;
 
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
-        context.stack_mut().set_global_val(self.id.to_owned(), Value::scalar(output));
+        context
+            .stack_mut()
+            .set_global_val(self.id.to_owned(), Value::scalar(output));
         Ok(())
     }
 }
@@ -53,7 +55,7 @@ pub fn capture_block(
     };
 
     let t = Template::new(
-        parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id).into())?
+        parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id).into())?,
     );
 
     Ok(Box::new(Capture { id, template: t }))
@@ -87,7 +89,8 @@ mod test {
             .unwrap();
 
         let mut ctx = Context::new();
-        ctx.stack_mut().set_global_val("item", Value::scalar("potato"));
+        ctx.stack_mut()
+            .set_global_val("item", Value::scalar("potato"));
         ctx.stack_mut().set_global_val("i", Value::scalar(42f64));
 
         let output = template.render(&mut ctx).unwrap();
