@@ -7,6 +7,7 @@ use error::Result;
 
 use interpreter;
 use interpreter::Renderable;
+use interpreter::Globals;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
@@ -22,10 +23,10 @@ impl Template {
     }
 
     /// Renders an instance of the Template, using the given globals.
-    pub fn render_to(&self, writer: &mut Write, globals: &Object) -> Result<()> {
+    pub fn render_to(&self, writer: &mut Write, globals: &Globals) -> Result<()> {
         let mut data = interpreter::ContextBuilder::new()
             .set_filters(&self.filters)
-            .set_globals(globals.clone())
+            .set_globals(globals)
             .build();
         self.template.render_to(writer, &mut data)
     }

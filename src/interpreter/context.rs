@@ -7,6 +7,7 @@ use value::{Index, Object, Value};
 
 use super::Argument;
 use super::{BoxedValueFilter, FilterValue};
+use super::Globals;
 
 pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
@@ -68,11 +69,14 @@ impl CycleStateInner {
 }
 
 /// See `cycle` tag.
-pub struct CycleState<'a> {
-    context: &'a mut Context,
+pub struct CycleState<'a, 'g>
+where
+    'g: 'a
+{
+    context: &'a mut Context<'g>,
 }
 
-impl<'a> CycleState<'a> {
+impl<'a, 'g> CycleState<'a, 'g> {
     pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Value> {
         let index = self.context.cycles.cycle_index(name, values.len());
         if index >= values.len() {
@@ -87,22 +91,27 @@ impl<'a> CycleState<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Stack {
-    globals: Object,
+lazy_static! {
+    static ref EMPTY_GLOBALS: Object = Object::new();
+}
+
+#[derive(Debug, Clone)]
+pub struct Stack<'g> {
+    globals: &'g Globals,
     stack: Vec<Object>,
 }
 
-impl Stack {
+impl<'g> Stack<'g> {
     pub fn empty() -> Self {
+        let empty: &Object = &*EMPTY_GLOBALS;
         Self {
-            globals: Object::new(),
+            globals: empty,
             // Mutable frame for globals.
             stack: vec![Object::new()],
         }
     }
 
-    pub fn with_globals(globals: Object) -> Self {
+    pub fn with_globals(globals: &'g Globals) -> Self {
         let mut stack = Self::empty();
         stack.globals = globals;
         stack
@@ -198,25 +207,28 @@ impl Stack {
     }
 }
 
-impl Default for Stack {
+impl<'g> Default for Stack<'g> {
     fn default() -> Self {
         Self::empty()
     }
 }
 
-#[derive(Default)]
-pub struct ContextBuilder {
-    globals: Object,
+pub struct ContextBuilder<'g> {
+    globals: &'g Globals,
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
 
-impl ContextBuilder {
+impl<'g> ContextBuilder<'g> {
     /// Creates a new, empty rendering context.
     pub fn new() -> Self {
-        Default::default()
+        let empty: &Object = &*EMPTY_GLOBALS;
+        Self {
+            globals: empty,
+            filters: Default::default(),
+        }
     }
 
-    pub fn set_globals(mut self, values: Object) -> Self {
+    pub fn set_globals(mut self, values: &'g Globals) -> Self {
         self.globals = values;
         self
     }
@@ -229,7 +241,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn build(self) -> Context {
+    pub fn build(self) -> Context<'g> {
         Context {
             stack: Stack::with_globals(self.globals),
             interrupt: InterruptState::default(),
@@ -239,9 +251,15 @@ impl ContextBuilder {
     }
 }
 
+impl<'g> Default for ContextBuilder<'g> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Default)]
-pub struct Context {
-    stack: Stack,
+pub struct Context<'g> {
+    stack: Stack<'g>,
 
     interrupt: InterruptState,
     cycles: CycleStateInner,
@@ -249,7 +267,7 @@ pub struct Context {
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
 
-impl Context {
+impl<'g> Context<'g> {
     pub fn new() -> Self {
         Context::default()
     }
@@ -269,7 +287,9 @@ impl Context {
         &mut self.interrupt
     }
 
-    pub fn cycles(&mut self) -> CycleState {
+    pub fn cycles<'a>(&'a mut self) -> CycleState<'a, 'g>
+        where 'g: 'a
+    {
         CycleState { context: self }
     }
 
@@ -277,7 +297,9 @@ impl Context {
         &self.stack
     }
 
-    pub fn stack_mut(&mut self) -> &mut Stack {
+    pub fn stack_mut<'a>(&'a mut self) -> &'a mut Stack<'g>
+        where 'g: 'a
+    {
         &mut self.stack
     }
 

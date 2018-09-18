@@ -1,6 +1,7 @@
 mod argument;
 mod context;
 mod filter;
+mod globals;
 mod output;
 mod renderable;
 mod template;
@@ -12,6 +13,7 @@ pub use self::context::{
     unexpected_value_error, Context, ContextBuilder, Interrupt, InterruptState,
 };
 pub use self::filter::{BoxedValueFilter, FilterError, FilterResult, FilterValue, FnFilterValue};
+pub use self::globals::Globals;
 pub use self::output::{FilterPrototype, Output};
 pub use self::renderable::Renderable;
 pub use self::template::Template;
