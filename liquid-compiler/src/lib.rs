@@ -1,3 +1,18 @@
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+extern crate liquid_error;
+extern crate liquid_value;
+extern crate liquid_interpreter;
+
+// Minimize retrofits
+mod interpreter {
+    pub(crate) use liquid_interpreter::*;
+}
+mod value {
+    pub(crate) use liquid_value::*;
+}
+
 mod block;
 mod include;
 mod lexer;
@@ -6,7 +21,7 @@ mod parser;
 mod tag;
 mod token;
 
-pub use super::error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
+pub use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 
 pub use self::block::{BoxedBlockParser, FnParseBlock, ParseBlock, ParseBlockClone};
 pub use self::include::{FilesystemInclude, Include, IncludeClone, NullInclude};

@@ -1,3 +1,20 @@
+#[macro_use]
+extern crate lazy_static;
+extern crate itertools;
+extern crate liquid_error;
+extern crate liquid_value;
+
+#[cfg(test)]
+extern crate serde_yaml;
+
+// Minimize retrofits
+mod error {
+    pub(crate) use liquid_error::*;
+}
+mod value {
+    pub(crate) use liquid_value::*;
+}
+
 mod argument;
 mod context;
 mod filter;

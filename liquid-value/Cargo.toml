@@ -1,0 +1,26 @@
+[package]
+name = "liquid-value"
+version = "0.15.0"
+authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
+description = "The liquid templating language for Rust"
+repository = "https://github.com/cobalt-org/liquid-rust/tree/master/liquid-value"
+documentation = "https://docs.rs/liquid-value"
+readme = "README.md"
+categories = ["template-engine"]
+keywords = ["liquid", "template", "templating", "language", "html"]
+license = "MIT"
+
+[badges]
+travis-ci = { repository = "cobalt-org/liquid-rust" }
+appveyor  = { repository = "johannhof/liquid-rust" }
+
+[features]
+default = ["serde"]
+
+[dependencies]
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+difference = "2.0"
+serde_yaml = "0.8"

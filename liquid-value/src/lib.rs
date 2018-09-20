@@ -1,3 +1,8 @@
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
+extern crate chrono;
+
 mod index;
 mod scalar;
 mod values;

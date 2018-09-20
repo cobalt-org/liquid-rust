@@ -35,19 +35,33 @@ extern crate url;
 #[macro_use]
 extern crate lazy_static;
 #[cfg(feature = "serde")]
-#[macro_use]
 extern crate serde;
 #[cfg(test)]
 extern crate serde_yaml;
 
-mod error;
+extern crate liquid_error;
+extern crate liquid_value;
+extern crate liquid_interpreter;
+extern crate liquid_compiler;
+
+// Minimize retrofits
+mod error {
+    pub use liquid_error::*;
+}
+mod value {
+    pub use liquid_value::*;
+}
+
 mod parser;
 mod template;
-mod value;
 
-pub mod compiler;
+pub mod compiler {
+    pub use liquid_compiler::*;
+}
 pub mod filters;
-pub mod interpreter;
+pub mod interpreter {
+    pub use liquid_interpreter::*;
+}
 pub mod tags;
 
 pub use error::Error;
