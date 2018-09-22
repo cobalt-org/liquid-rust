@@ -1,7 +1,6 @@
 //! Liquid template language interpreter.
 
 #![warn(missing_docs)]
-#![warn(unreachable_pub)]
 #![warn(unused_extern_crates)]
 
 extern crate itertools;

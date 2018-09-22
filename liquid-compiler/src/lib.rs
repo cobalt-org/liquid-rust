@@ -1,4 +1,3 @@
-#![warn(unreachable_pub)]
 #![warn(unused_extern_crates)]
 
 #[macro_use]
