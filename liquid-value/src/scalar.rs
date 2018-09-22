@@ -8,19 +8,17 @@ use chrono;
 pub type Date = chrono::DateTime<chrono::FixedOffset>;
 
 /// A Liquid scalar value
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Scalar(ScalarEnum);
 
 /// An enum to represent different value types
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 enum ScalarEnum {
     Integer(i32),
     Float(f64),
     Bool(bool),
-    #[cfg_attr(feature = "serde", serde(with = "friendly_date"))]
+    #[serde(with = "friendly_date")]
     Date(Date),
     Str(borrow::Cow<'static, str>),
 }
@@ -219,7 +217,6 @@ impl fmt::Display for Scalar {
 
 const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S %z";
 
-#[cfg(feature = "serde")]
 mod friendly_date {
     use super::*;
     use serde::{self, Deserialize, Deserializer, Serializer};

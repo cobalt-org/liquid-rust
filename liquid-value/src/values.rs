@@ -18,9 +18,8 @@ type MapImpl<K, V> = BTreeMap<K, V>;
 type MapImpl<K, V> = HashMap<K, V>;
 
 /// An enum to represent different value types
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Value {
     /// A scalar value.
     Scalar(Scalar),

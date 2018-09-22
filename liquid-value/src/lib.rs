@@ -5,7 +5,6 @@
 #![warn(unreachable_pub)]
 #![warn(unused_extern_crates)]
 
-#[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde;
 extern crate chrono;

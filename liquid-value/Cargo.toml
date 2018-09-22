@@ -14,13 +14,10 @@ license = "MIT"
 travis-ci = { repository = "cobalt-org/liquid-rust" }
 appveyor  = { repository = "johannhof/liquid-rust" }
 
-[features]
-default = ["serde"]
-
 [dependencies]
 # Exposed in API
 chrono = "0.4"
-serde = { version = "1.0", features = ["derive"], optional = true }
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 difference = "2.0"
