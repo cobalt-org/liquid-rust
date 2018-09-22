@@ -1,8 +1,9 @@
+use liquid_interpreter::Renderable;
+
+use super::error::Result;
 use super::Element;
 use super::LiquidOptions;
-use super::Result;
 use super::Token;
-use interpreter::Renderable;
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
@@ -45,11 +46,11 @@ pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result
 
 #[derive(Clone)]
 struct FnBlockParser {
-    pub parser: FnParseBlock,
+    parser: FnParseBlock,
 }
 
 impl FnBlockParser {
-    pub fn new(parser: FnParseBlock) -> Self {
+    fn new(parser: FnParseBlock) -> Self {
         Self { parser }
     }
 }

@@ -16,7 +16,6 @@ pub trait ResultLiquidChainExt<T, E> {
         F: FnOnce() -> String;
 }
 
-/// `Result` convenience extension methods for working with `Error`.
 impl<T, E> ResultLiquidChainExt<T, E> for result::Result<T, E>
 where
     E: error::Error + Send + Sync + 'static,
@@ -33,13 +32,19 @@ where
     }
 }
 
+/// Add context to a `liquid_error::Error`.
 pub trait ResultLiquidExt<T> {
+    /// Add a new stack frame to the `liquid_error::Error`.
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
         F: FnOnce() -> Trace;
+
+    /// Add state the current stack frame.
     fn context<S>(self, key: &'static str, value: &S) -> Result<T>
     where
         S: ToString;
+
+    /// Add state the current stack frame.
     fn context_with<F>(self, context: F) -> Result<T>
     where
         F: FnOnce() -> (borrow::Cow<'static, str>, String);
@@ -215,11 +220,11 @@ impl Trace {
         self.context.push((key, value));
     }
 
-    pub fn get_trace(&self) -> Option<&str> {
+    pub(self) fn get_trace(&self) -> Option<&str> {
         self.trace.as_ref().map(|s| s.as_ref())
     }
 
-    pub fn get_context(&self) -> &[(borrow::Cow<'static, str>, String)] {
+    pub(self) fn get_context(&self) -> &[(borrow::Cow<'static, str>, String)] {
         self.context.as_ref()
     }
 }

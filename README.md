@@ -34,8 +34,8 @@ let template = liquid::ParserBuilder::with_liquid()
     .build()
     .parse("Liquid! {{num | minus: 2}}").unwrap();
 
-let mut globals = liquid::Object::new();
-globals.insert("num".into(), liquid::Value::scalar(4f64));
+let mut globals = liquid::value::Object::new();
+globals.insert("num".into(), liquid::value::Value::scalar(4f64));
 
 let output = template.render(&globals).unwrap();
 assert_eq!(output, "Liquid! 2".to_string());

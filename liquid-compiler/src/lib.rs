@@ -1,17 +1,12 @@
+#![warn(unreachable_pub)]
+#![warn(unused_extern_crates)]
+
 #[macro_use]
 extern crate lazy_static;
-extern crate regex;
 extern crate liquid_error;
-extern crate liquid_value;
 extern crate liquid_interpreter;
-
-// Minimize retrofits
-mod interpreter {
-    pub(crate) use liquid_interpreter::*;
-}
-mod value {
-    pub(crate) use liquid_value::*;
-}
+extern crate liquid_value;
+extern crate regex;
 
 mod block;
 mod include;
@@ -21,15 +16,18 @@ mod parser;
 mod tag;
 mod token;
 
-pub use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
+pub mod error {
+    pub use liquid_error::*;
+}
 
-pub use self::block::{BoxedBlockParser, FnParseBlock, ParseBlock, ParseBlockClone};
-pub use self::include::{FilesystemInclude, Include, IncludeClone, NullInclude};
-pub use self::lexer::{tokenize, Element};
-pub use self::options::LiquidOptions;
-pub use self::parser::{
-    consume_value_token, expect, parse, parse_indexes, parse_output, split_block,
-    unexpected_token_error, value_token, BlockSplit,
-};
-pub use self::tag::{BoxedTagParser, FnParseTag, ParseTag, ParseTagClone};
-pub use self::token::{ComparisonOperator, Token};
+pub mod value {
+    pub use liquid_value::*;
+}
+
+pub use block::*;
+pub use include::*;
+pub use lexer::*;
+pub use options::*;
+pub use parser::*;
+pub use tag::*;
+pub use token::*;

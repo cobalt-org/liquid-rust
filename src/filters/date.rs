@@ -1,8 +1,8 @@
-use interpreter::FilterResult;
-use value::Scalar;
-use value::Value;
+use liquid_value::Scalar;
+use liquid_value::Value;
 
 use super::check_args_len;
+use interpreter::FilterResult;
 
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;

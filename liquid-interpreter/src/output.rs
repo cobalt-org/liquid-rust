@@ -10,6 +10,7 @@ use super::Argument;
 use super::Context;
 use super::Renderable;
 
+/// A `Value` filter.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FilterPrototype {
     name: String,
@@ -17,6 +18,7 @@ pub struct FilterPrototype {
 }
 
 impl FilterPrototype {
+    /// Create filter expression.
     pub fn new(name: &str, arguments: Vec<Argument>) -> FilterPrototype {
         FilterPrototype {
             name: name.to_owned(),
@@ -36,37 +38,21 @@ impl fmt::Display for FilterPrototype {
     }
 }
 
+/// A `Value` expression.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Output {
     entry: Argument,
     filters: Vec<FilterPrototype>,
 }
 
-impl fmt::Display for Output {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{} | {}",
-            self.entry,
-            itertools::join(&self.filters, " | ")
-        )
-    }
-}
-
-impl Renderable for Output {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let entry = self.apply_filters(context)?;
-        write!(writer, "{}", entry).chain("Failed to render")?;
-        Ok(())
-    }
-}
-
 impl Output {
+    /// Create a new expression.
     pub fn new(entry: Argument, filters: Vec<FilterPrototype>) -> Output {
         Output { entry, filters }
     }
 
-    pub fn apply_filters(&self, context: &Context) -> Result<Value> {
+    /// Process `Value` expression within `context`'s stack.
+    pub fn evaluate(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
         let mut entry = self.entry.evaluate(context)?;
 
@@ -90,5 +76,24 @@ impl Output {
         }
 
         Ok(entry)
+    }
+}
+
+impl fmt::Display for Output {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} | {}",
+            self.entry,
+            itertools::join(&self.filters, " | ")
+        )
+    }
+}
+
+impl Renderable for Output {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+        let entry = self.evaluate(context)?;
+        write!(writer, "{}", entry).chain("Failed to render")?;
+        Ok(())
     }
 }

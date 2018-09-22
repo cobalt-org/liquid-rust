@@ -13,12 +13,12 @@ pub use self::url::{url_decode, url_encode};
 use std::cmp;
 
 use itertools;
+use liquid_value::Index;
+use liquid_value::Scalar;
+use liquid_value::Value;
 use unicode_segmentation::UnicodeSegmentation;
 
 use interpreter::{FilterError, FilterResult};
-use value::Index;
-use value::Scalar;
-use value::Value;
 
 // Helper functions for the filters.
 fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {

@@ -1,14 +1,15 @@
 use std::io::Write;
 
+use liquid_error::{Result, ResultLiquidExt};
+use liquid_value::Value;
+
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
-use error::{Result, ResultLiquidExt};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use value::Value;
 
 #[derive(Debug)]
 struct Capture {

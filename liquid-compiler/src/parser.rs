@@ -7,18 +7,18 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::slice::Iter;
 
-use super::{Error, Result};
+use liquid_interpreter::Renderable;
+use liquid_interpreter::Text;
+use liquid_interpreter::Variable;
+use liquid_interpreter::{FilterPrototype, Output};
+use liquid_value::Index;
 
+use super::error::{Error, Result};
 use super::Element;
 use super::LiquidOptions;
 use super::ParseBlock;
 use super::ParseTag;
 use super::Token;
-use interpreter::Renderable;
-use interpreter::Text;
-use interpreter::Variable;
-use interpreter::{FilterPrototype, Output};
-use value::Index;
 
 /// Parses the provided elements into a number of Renderable items
 /// This is the internal version of parse that accepts Elements tokenized
@@ -324,10 +324,12 @@ pub fn split_block<'a>(
 
 #[cfg(test)]
 mod test_parse_output {
-    use super::super::lexer::granularize;
     use super::*;
-    use interpreter::Argument;
-    use value::Value;
+
+    use liquid_interpreter::Argument;
+    use liquid_value::Value;
+
+    use super::super::lexer::granularize;
 
     #[test]
     fn parses_filters() {
@@ -404,17 +406,19 @@ mod test_expect {
 
 #[cfg(test)]
 mod test_split_block {
+    use super::*;
+
     use std::collections::HashMap;
     use std::io::Write;
+
+    use liquid_interpreter;
+    use liquid_interpreter::Context;
+    use liquid_interpreter::Renderable;
 
     use super::super::split_block;
     use super::super::tokenize;
     use super::super::BoxedBlockParser;
     use super::super::FnParseBlock;
-    use super::*;
-    use interpreter;
-    use interpreter::Context;
-    use interpreter::Renderable;
 
     #[derive(Debug)]
     struct NullBlock;
@@ -425,7 +429,7 @@ mod test_split_block {
         }
     }
 
-    pub fn null_block(
+    fn null_block(
         _tag_name: &str,
         _arguments: &[Token],
         _tokens: &[Element],
@@ -450,7 +454,7 @@ mod test_split_block {
         let text = "{{}}";
 
         let tokens = tokenize(&text).unwrap();
-        let template = parse(&tokens, &options()).map(interpreter::Template::new);
+        let template = parse(&tokens, &options()).map(liquid_interpreter::Template::new);
         assert!(template.is_err());
     }
 

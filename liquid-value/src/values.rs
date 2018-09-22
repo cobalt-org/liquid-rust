@@ -22,9 +22,13 @@ type MapImpl<K, V> = HashMap<K, V>;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Value {
+    /// A scalar value.
     Scalar(Scalar),
+    /// A sequence of `Value`s.
     Array(Array),
+    /// A sequence of key/`Value` pairs.
     Object(Object),
+    /// Nothing.
     Nil,
 }
 
@@ -35,19 +39,23 @@ pub type Array = Vec<Value>;
 pub type Object = MapImpl<borrow::Cow<'static, str>, Value>;
 
 impl Value {
+    /// Create as a `Scalar`.
     pub fn scalar<T: Into<Scalar>>(value: T) -> Self {
         Value::Scalar(Scalar::new(value))
     }
 
+    /// Create as an `Array`.
     pub fn array<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let v: Array = iter.into_iter().collect();
         Value::Array(v)
     }
 
+    /// Create as nothing.
     pub fn nil() -> Self {
         Value::Nil
     }
 
+    /// Interpret as a string.
     pub fn to_str(&self) -> borrow::Cow<str> {
         match *self {
             Value::Scalar(ref x) => x.to_str(),
@@ -136,6 +144,7 @@ impl Value {
         }
     }
 
+    /// Whether a default constructed value.
     pub fn is_default(&self) -> bool {
         match *self {
             Value::Scalar(ref x) => x.is_default(),
@@ -145,6 +154,7 @@ impl Value {
         }
     }
 
+    /// Report the data type (generally for error reporting).
     pub fn type_name(&self) -> &'static str {
         match *self {
             Value::Scalar(ref x) => x.type_name(),
@@ -154,6 +164,7 @@ impl Value {
         }
     }
 
+    /// Access a contained `Value`.
     pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
         let index: &Index = index.into();
         self.get_index(index)

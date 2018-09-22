@@ -1,8 +1,8 @@
-use super::Result;
+use liquid_interpreter::Renderable;
 
+use super::error::Result;
 use super::LiquidOptions;
 use super::Token;
-use interpreter::Renderable;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///
@@ -42,11 +42,11 @@ pub type FnParseTag = fn(&str, &[Token], &LiquidOptions) -> Result<Box<Renderabl
 
 #[derive(Clone)]
 struct FnTagParser {
-    pub parser: FnParseTag,
+    parser: FnParseTag,
 }
 
 impl FnTagParser {
-    pub fn new(parser: FnParseTag) -> Self {
+    fn new(parser: FnParseTag) -> Self {
         Self { parser }
     }
 }

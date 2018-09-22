@@ -4,7 +4,7 @@ extern crate serde_yaml;
 #[test]
 pub fn upcase() {
     let text = "{{ text | upcase}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: hello
 "#,
@@ -20,7 +20,7 @@ text: hello
 #[test]
 pub fn downcase() {
     let text = "{{ text | downcase}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: HELLO tHeRe
 "#,
@@ -36,7 +36,7 @@ text: HELLO tHeRe
 #[test]
 pub fn capitalize() {
     let text = "{{ text | capitalize}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: hello world
 "#,
@@ -53,7 +53,7 @@ text: hello world
 #[cfg(feature = "extra-filters")]
 pub fn pluralize_none() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 count: 0
 "#,
@@ -71,7 +71,7 @@ count: 0
 #[cfg(feature = "extra-filters")]
 pub fn pluralize_singular() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 count: 1
 "#,
@@ -89,7 +89,7 @@ count: 1
 #[cfg(feature = "extra-filters")]
 pub fn pluralize_plural() {
     let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 count: 10
 "#,
@@ -106,7 +106,7 @@ count: 10
 #[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 num: 4
 "#,
@@ -122,7 +122,7 @@ num: 4
 #[test]
 pub fn plus() {
     let text = "{{ num | plus : 2 }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 num: 4
 "#,
@@ -138,7 +138,7 @@ num: 4
 #[test]
 pub fn minus_error() {
     let text = "{{ num | minus }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 num: 4
 "#,
@@ -154,7 +154,7 @@ num: 4
 #[test]
 pub fn first_numeric_array() {
     let text = "{{ nums | first }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: [12, 1]
 "#,
@@ -170,7 +170,7 @@ nums: [12, 1]
 #[test]
 pub fn first_string_array() {
     let text = "{{ nums | first }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: ["first", "second"]
 "#,
@@ -186,7 +186,7 @@ nums: ["first", "second"]
 #[test]
 pub fn first_char() {
     let text = "{{ nums | first }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: first
 "#,
@@ -202,7 +202,7 @@ nums: first
 #[test]
 pub fn last_numeric_array() {
     let text = "{{ nums | last }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: [12, 1]
 "#,
@@ -218,7 +218,7 @@ nums: [12, 1]
 #[test]
 pub fn last_string_array() {
     let text = "{{ nums | last }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: ["first", "second"]
 "#,
@@ -234,7 +234,7 @@ nums: ["first", "second"]
 #[test]
 pub fn last_char() {
     let text = "{{ nums | last }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 nums: second
 "#,
@@ -250,7 +250,7 @@ nums: second
 #[test]
 pub fn replace_first() {
     let text = "{{ text | replace_first: 'bar', 'foo' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 "#,
@@ -266,7 +266,7 @@ text: bar2bar
 #[test]
 pub fn replace() {
     let text = "{{ text | replace: 'bar', 'foo' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 "#,
@@ -282,7 +282,7 @@ text: bar2bar
 #[test]
 pub fn prepend_constant() {
     let text = "{{ text | prepend: 'fifo' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 "#,
@@ -298,7 +298,7 @@ text: bar2bar
 #[test]
 pub fn prepend_variable() {
     let text = "{{ text | prepend: myvar }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 myvar: fifo
@@ -315,7 +315,7 @@ myvar: fifo
 #[test]
 pub fn append() {
     let text = "{{ text | append: 'lifo' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: roobarb
 "#,
@@ -335,7 +335,7 @@ text: roobarb
 pub fn split_with_comma() {
     let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member \
                 in beatles %}{{ member }}\n{% endfor %}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -349,7 +349,7 @@ pub fn split_with_comma() {
 pub fn split_no_comma() {
     let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: \
                 {{ letter }}\n{% endfor %}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -362,7 +362,7 @@ pub fn split_no_comma() {
 #[test]
 pub fn split_then_join() {
     let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -375,7 +375,7 @@ pub fn split_then_join() {
 #[test]
 pub fn slice_one() {
     let text = "{{ '0123456' | slice: 2 }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -388,7 +388,7 @@ pub fn slice_one() {
 #[test]
 pub fn slice_negative() {
     let text = "{{ '6543210' | slice: -4, 3 }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -401,7 +401,7 @@ pub fn slice_negative() {
 // Slicing with overflow should fit to string size
 pub fn slice_overflow() {
     let text = "{{ 'xx0123456' | slice: 2, 11 }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -414,7 +414,7 @@ pub fn slice_overflow() {
 // Slicing empty string should not fail
 pub fn slice_empty() {
     let text = "{{ '' | slice: 2 }}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -427,7 +427,7 @@ pub fn slice_empty() {
 // Split string, sort it then re-join
 pub fn split_sort_join() {
     let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
-    let globals: liquid::Object = Default::default();
+    let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -441,7 +441,8 @@ pub fn modulo() {
     let text = "{{ num | modulo: 2 }}";
     let samples = [(4_f64, "0"), (3_f64, "1"), (5.1, "1.0999999999999996")];
     for t in &samples {
-        let globals: liquid::Object = serde_yaml::from_str(&format!("num: {}", t.0)).unwrap();
+        let globals: liquid::value::Object =
+            serde_yaml::from_str(&format!("num: {}", t.0)).unwrap();
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)
@@ -463,8 +464,8 @@ pub fn escape() {
         ("&etc.", "&amp;etc."),
     ];
     for t in &samples {
-        let mut globals = liquid::Object::new();
-        globals.insert("var".into(), liquid::Value::scalar(t.0));
+        let mut globals = liquid::value::Object::new();
+        globals.insert("var".into(), liquid::value::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)
@@ -486,8 +487,8 @@ pub fn escape_once() {
         ("&lt;&gt;&amp;&#39;&quot;", "&lt;&gt;&amp;&#39;&quot;"),
     ];
     for t in &samples {
-        let mut globals = liquid::Object::new();
-        globals.insert("var".into(), liquid::Value::scalar(t.0));
+        let mut globals = liquid::value::Object::new();
+        globals.insert("var".into(), liquid::value::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .parse(text)
@@ -500,7 +501,7 @@ pub fn escape_once() {
 #[test]
 pub fn remove_first_constant() {
     let text = "{{ text | remove_first: 'bar' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 "#,
@@ -516,7 +517,7 @@ text: bar2bar
 #[test]
 pub fn remove_first_variable() {
     let text = "{{ text | remove_first: myvar }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 myvar: bar
@@ -533,7 +534,7 @@ myvar: bar
 #[test]
 pub fn remove() {
     let text = "{{ text | remove: 'bar' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: bar2bar
 "#,
@@ -549,7 +550,7 @@ text: bar2bar
 #[test]
 pub fn strip_html() {
     let text = "{{ text | strip_html }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: "<!-- <b> Comment -->Lorem <a>ipsum </b>dolor"
 "#,
@@ -565,7 +566,7 @@ text: "<!-- <b> Comment -->Lorem <a>ipsum </b>dolor"
 #[test]
 pub fn truncatewords() {
     let text = "{{ text | truncatewords: 1, '...' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: "first second third"
 "#,
@@ -581,7 +582,7 @@ text: "first second third"
 #[test]
 pub fn default_use() {
     let text = "{{ text | default: 'bar' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: false
 "#,
@@ -597,7 +598,7 @@ text: false
 #[test]
 pub fn default_pass() {
     let text = "{{ text | default: 'bar' }}";
-    let globals: liquid::Object = serde_yaml::from_str(
+    let globals: liquid::value::Object = serde_yaml::from_str(
         r#"
 text: foo
 "#,

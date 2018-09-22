@@ -1,3 +1,10 @@
+//! Liquid Value type.
+
+#![warn(missing_docs)]
+#![warn(missing_debug_implementations)]
+#![warn(unreachable_pub)]
+#![warn(unused_extern_crates)]
+
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde;
@@ -7,6 +14,6 @@ mod index;
 mod scalar;
 mod values;
 
-pub use self::index::Index;
-pub use self::scalar::{Date, Scalar};
-pub use self::values::{Array, Object, Value};
+pub use index::*;
+pub use scalar::*;
+pub use values::*;

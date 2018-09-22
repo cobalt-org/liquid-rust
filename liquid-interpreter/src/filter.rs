@@ -3,14 +3,19 @@ use std::fmt;
 use std::error::Error;
 use value::Value;
 
+/// Replace this with `liquid_error::Error`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum FilterError {
+    /// Invalid data type.
     InvalidType(String),
+    /// Invalid number of arguments.
     InvalidArgumentCount(String),
-    InvalidArgument(u16, String), // (position, "expected / given ")
+    /// Invalid argument at a given position.
+    InvalidArgument(u16, String),
 }
 
 impl FilterError {
+    /// Quick and dirty way to create an error.
     pub fn invalid_type<T>(s: &str) -> Result<T, FilterError> {
         Err(FilterError::InvalidType(s.to_owned()))
     }
@@ -40,6 +45,7 @@ impl Error for FilterError {
     }
 }
 
+/// Expected return type of a `Filter`.
 pub type FilterResult = Result<Value, FilterError>;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
@@ -49,10 +55,13 @@ pub type FilterResult = Result<Value, FilterError>;
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
 pub trait FilterValue: Send + Sync + FilterValueClone {
+    /// Filter `input` based on `arguments`.
     fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult;
 }
 
+/// Support cloning of `Box<FilterValue>`.
 pub trait FilterValueClone {
+    /// Cloning of `dyn FilterValue`.
     fn clone_box(&self) -> Box<FilterValue>;
 }
 
@@ -71,15 +80,16 @@ impl Clone for Box<FilterValue> {
     }
 }
 
+/// Function signature that can act as a `FilterValue`.
 pub type FnFilterValue = fn(&Value, &[Value]) -> FilterResult;
 
 #[derive(Clone)]
 struct FnValueFilter {
-    pub filter: FnFilterValue,
+    filter: FnFilterValue,
 }
 
 impl FnValueFilter {
-    pub fn new(filter: FnFilterValue) -> Self {
+    fn new(filter: FnFilterValue) -> Self {
         Self { filter }
     }
 }
@@ -96,6 +106,7 @@ enum EnumValueFilter {
     Heap(Box<FilterValue>),
 }
 
+/// Custom `Box<FilterValue>` with a `FnFilterValue` optimization.
 #[derive(Clone)]
 pub struct BoxedValueFilter {
     filter: EnumValueFilter,

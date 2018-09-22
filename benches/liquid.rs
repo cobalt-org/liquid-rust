@@ -20,7 +20,7 @@ fn bench_render_text(b: &mut test::Bencher) {
         .parse(TEXT_ONLY)
         .expect("Benchmark template parsing failed");
 
-    let data = liquid::Object::new();
+    let data = liquid::value::Object::new();
 
     b.iter(|| template.render(&data));
 }
@@ -49,7 +49,7 @@ fn bench_render_variable(b: &mut test::Bencher) {
         .parse(VARIABLE_ONLY)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::Object =
+    let data: liquid::value::Object =
         serde_yaml::from_str(VARIABLE_ONLY_OBJECT).expect("Benchmark object parsing failed");
 
     b.iter(|| template.render(&data));
@@ -97,7 +97,7 @@ fn bench_render_template(b: &mut test::Bencher) {
         .parse(ITERATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::Object =
+    let data: liquid::value::Object =
         serde_yaml::from_str(ITERATE_OBJECT).expect("Benchmark object parsing failed");
 
     b.iter(|| template.render(&data));

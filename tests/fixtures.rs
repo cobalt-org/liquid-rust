@@ -3,11 +3,12 @@ extern crate difference;
 extern crate liquid;
 extern crate serde_yaml;
 
-use liquid::*;
 use std::fs::File;
 use std::io::Read;
 
-fn compare_by_file(name: &str, globals: &Object) {
+use liquid::*;
+
+fn compare_by_file(name: &str, globals: &value::Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
@@ -31,7 +32,7 @@ fn compare_by_file(name: &str, globals: &Object) {
 
 #[test]
 pub fn chained_filters() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 foo: foofoo
 "#,
@@ -41,7 +42,7 @@ foo: foofoo
 
 #[test]
 pub fn example() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 num: 5
 numTwo: 6
@@ -52,15 +53,15 @@ numTwo: 6
 
 #[test]
 pub fn include() {
-    let mut globals: liquid::Object = Default::default();
-    globals.insert("num".into(), Value::scalar(5f64));
-    globals.insert("numTwo".into(), Value::scalar(10f64));
+    let mut globals: value::Object = Default::default();
+    globals.insert("num".into(), value::Value::scalar(5f64));
+    globals.insert("numTwo".into(), value::Value::scalar(10f64));
     compare_by_file("include", &globals);
 }
 
 #[test]
 pub fn include_with_context() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 content: "hello, world!"
 "#,

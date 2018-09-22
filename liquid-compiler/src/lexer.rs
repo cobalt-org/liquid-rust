@@ -7,8 +7,7 @@ use std::fmt;
 
 use regex::Regex;
 
-use super::{Error, Result};
-
+use super::error::{Error, Result};
 use super::ComparisonOperator;
 use super::Token;
 

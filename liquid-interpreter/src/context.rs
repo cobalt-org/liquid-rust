@@ -6,22 +6,26 @@ use std::borrow;
 use value::{Index, Object, Value};
 
 use super::Argument;
-use super::{BoxedValueFilter, FilterValue};
 use super::Globals;
+use super::{BoxedValueFilter, FilterValue};
 
+/// Format an error for an unexpected value.
 pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
     unexpected_value_error_string(expected, actual)
 }
 
-pub fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
+fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
     Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
+/// Block processing interrupt state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Interrupt {
+    /// Restart processing the current block.
     Continue,
+    /// Stop processing the current block.
     Break,
 }
 
@@ -36,6 +40,7 @@ pub struct InterruptState {
 }
 
 impl InterruptState {
+    /// An interrupt state is active.
     pub fn interrupted(&self) -> bool {
         self.interrupt.is_some()
     }
@@ -71,12 +76,13 @@ impl CycleStateInner {
 /// See `cycle` tag.
 pub struct CycleState<'a, 'g>
 where
-    'g: 'a
+    'g: 'a,
 {
     context: &'a mut Context<'g>,
 }
 
 impl<'a, 'g> CycleState<'a, 'g> {
+    /// See `cycle` tag.
     pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Value> {
         let index = self.context.cycles.cycle_index(name, values.len());
         if index >= values.len() {
@@ -95,6 +101,7 @@ lazy_static! {
     static ref EMPTY_GLOBALS: Object = Object::new();
 }
 
+/// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
     globals: &'g Globals,
@@ -102,6 +109,7 @@ pub struct Stack<'g> {
 }
 
 impl<'g> Stack<'g> {
+    /// Create an empty stack
     pub fn empty() -> Self {
         let empty: &Object = &*EMPTY_GLOBALS;
         Self {
@@ -111,6 +119,7 @@ impl<'g> Stack<'g> {
         }
     }
 
+    /// Create a stack initialized with read-only `Globals`.
     pub fn with_globals(globals: &'g Globals) -> Self {
         let mut stack = Self::empty();
         stack.globals = globals;
@@ -146,6 +155,7 @@ impl<'g> Stack<'g> {
         self.globals.get(name)
     }
 
+    /// Recursively index into the stack.
     pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(
         &self,
         mut indexes: I,
@@ -213,6 +223,7 @@ impl<'g> Default for Stack<'g> {
     }
 }
 
+/// Create processing context for a template.
 pub struct ContextBuilder<'g> {
     globals: &'g Globals,
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
@@ -228,11 +239,13 @@ impl<'g> ContextBuilder<'g> {
         }
     }
 
+    /// Initialize the stack with the given globals.
     pub fn set_globals(mut self, values: &'g Globals) -> Self {
         self.globals = values;
         self
     }
 
+    /// Initialize the context with the given filters.
     pub fn set_filters(
         mut self,
         filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
@@ -241,6 +254,7 @@ impl<'g> ContextBuilder<'g> {
         self
     }
 
+    /// Create the `Context`.
     pub fn build(self) -> Context<'g> {
         Context {
             stack: Stack::with_globals(self.globals),
@@ -257,6 +271,7 @@ impl<'g> Default for ContextBuilder<'g> {
     }
 }
 
+/// Processing context for a template.
 #[derive(Default)]
 pub struct Context<'g> {
     stack: Stack<'g>,
@@ -268,10 +283,14 @@ pub struct Context<'g> {
 }
 
 impl<'g> Context<'g> {
+    /// Create a default `Context`.
+    ///
+    /// See `ContextBuilder` for more control.
     pub fn new() -> Self {
         Context::default()
     }
 
+    /// Grab a `FilterValue`.
     pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {
         self.filters.get(name).map(|f| {
             let f: &FilterValue = f;
@@ -279,26 +298,33 @@ impl<'g> Context<'g> {
         })
     }
 
+    /// Access the block's `InterruptState`.
     pub fn interrupt(&self) -> &InterruptState {
         &self.interrupt
     }
 
+    /// Access the block's `InterruptState`.
     pub fn interrupt_mut(&mut self) -> &mut InterruptState {
         &mut self.interrupt
     }
 
+    /// See `cycle` tag.
     pub fn cycles<'a>(&'a mut self) -> CycleState<'a, 'g>
-        where 'g: 'a
+    where
+        'g: 'a,
     {
         CycleState { context: self }
     }
 
+    /// Access the current `Stack`.
     pub fn stack(&self) -> &Stack {
         &self.stack
     }
 
+    /// Access the current `Stack`.
     pub fn stack_mut<'a>(&'a mut self) -> &'a mut Stack<'g>
-        where 'g: 'a
+    where
+        'g: 'a,
     {
         &mut self.stack
     }

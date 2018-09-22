@@ -11,7 +11,7 @@ use std::io::Read;
 // tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to
 // fixtures that might necessitate changes to the parse_file method tested here.
 
-fn compare_by_file(name: &str, globals: &Object) {
+fn compare_by_file(name: &str, globals: &value::Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
@@ -44,7 +44,7 @@ pub fn error_on_nonexistent_file() {
 
 #[test]
 pub fn chained_filters_by_file() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 foo: foofoo
 "#,
@@ -54,7 +54,7 @@ foo: foofoo
 
 #[test]
 pub fn example_by_file() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 num: 5
 numTwo: 6
@@ -65,15 +65,15 @@ numTwo: 6
 
 #[test]
 pub fn include_by_file() {
-    let mut globals: Object = Default::default();
-    globals.insert("num".into(), Value::scalar(5f64));
-    globals.insert("numTwo".into(), Value::scalar(10f64));
+    let mut globals: value::Object = Default::default();
+    globals.insert("num".into(), value::Value::scalar(5f64));
+    globals.insert("numTwo".into(), value::Value::scalar(10f64));
     compare_by_file("include", &globals);
 }
 
 #[test]
 pub fn include_with_context_by_file() {
-    let globals: Object = serde_yaml::from_str(
+    let globals: value::Object = serde_yaml::from_str(
         r#"
 content: "hello, world!"
 "#,

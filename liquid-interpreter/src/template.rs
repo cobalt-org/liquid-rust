@@ -4,9 +4,17 @@ use super::Context;
 use super::Renderable;
 use error::Result;
 
+/// An executable template block.
 #[derive(Debug)]
 pub struct Template {
-    pub elements: Vec<Box<Renderable>>,
+    elements: Vec<Box<Renderable>>,
+}
+
+impl Template {
+    /// Create an executable template block.
+    pub fn new(elements: Vec<Box<Renderable>>) -> Template {
+        Template { elements }
+    }
 }
 
 impl Renderable for Template {
@@ -23,11 +31,5 @@ impl Renderable for Template {
             }
         }
         Ok(())
-    }
-}
-
-impl Template {
-    pub fn new(elements: Vec<Box<Renderable>>) -> Template {
-        Template { elements }
     }
 }

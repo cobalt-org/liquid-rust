@@ -4,6 +4,7 @@ use std::fmt;
 
 use chrono;
 
+/// Liquid's native date/time type.
 pub type Date = chrono::DateTime<chrono::FixedOffset>;
 
 /// A Liquid scalar value
@@ -25,10 +26,12 @@ enum ScalarEnum {
 }
 
 impl Scalar {
+    /// Convert a value into a `Scalar`.
     pub fn new<T: Into<Self>>(value: T) -> Self {
         value.into()
     }
 
+    /// Interpret as a string.
     pub fn to_str(&self) -> borrow::Cow<str> {
         match self.0 {
             ScalarEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
@@ -39,6 +42,7 @@ impl Scalar {
         }
     }
 
+    /// Convert to a string.
     pub fn into_string(self) -> String {
         match self.0 {
             ScalarEnum::Integer(x) => x.to_string(),
@@ -94,7 +98,7 @@ impl Scalar {
         }
     }
 
-    /// Evaluate using Liquid "truthiness"
+    /// Whether a default constructed value.
     pub fn is_default(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self.0 {
@@ -104,6 +108,7 @@ impl Scalar {
         }
     }
 
+    /// Report the data type (generally for error reporting).
     pub fn type_name(&self) -> &'static str {
         match self.0 {
             ScalarEnum::Integer(_) => "whole number",
@@ -219,7 +224,7 @@ mod friendly_date {
     use super::*;
     use serde::{self, Deserialize, Deserializer, Serializer};
 
-    pub fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -227,7 +232,7 @@ mod friendly_date {
         serializer.serialize_str(&s)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where
         D: Deserializer<'de>,
     {

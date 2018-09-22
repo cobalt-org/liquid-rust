@@ -1,10 +1,11 @@
 use std::fmt;
 
+use liquid_interpreter::Argument;
+use liquid_interpreter::Variable;
+use liquid_value::{Index, Value};
+
+use super::error::Result;
 use super::parser::unexpected_token_error;
-use super::Result;
-use interpreter::Argument;
-use interpreter::Variable;
-use value::{Index, Value};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ComparisonOperator {
@@ -119,7 +120,8 @@ impl fmt::Display for Token {
 #[cfg(test)]
 mod test {
     use super::*;
-    use interpreter::Context;
+
+    use liquid_interpreter::Context;
 
     #[test]
     fn evaluate_handles_string_literals() {

@@ -9,17 +9,20 @@ use value::Index;
 use super::Context;
 use super::Renderable;
 
+/// A `Value` reference.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Variable {
     indexes: Vec<Index>,
 }
 
 impl Variable {
+    /// Create a `Value` reference.
     pub fn new<I: Into<Index>>(value: I) -> Self {
         let indexes = vec![value.into()];
         Self { indexes }
     }
 
+    /// Access the `Value` reference.
     pub fn indexes(&self) -> &[Index] {
         &self.indexes
     }
@@ -50,8 +53,8 @@ impl Renderable for Variable {
 mod test {
     use serde_yaml;
 
-    use super::*;
     use super::super::ContextBuilder;
+    use super::*;
     use value::Object;
 
     #[test]

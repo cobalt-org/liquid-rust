@@ -1,10 +1,11 @@
 use std::io::Write;
 
+use liquid_error::Result;
+use liquid_error::ResultLiquidExt;
+
 use compiler::LiquidOptions;
-use compiler::ResultLiquidExt;
 use compiler::Token;
 use compiler::{expect, parse_output, unexpected_token_error};
-use error::Result;
 use interpreter::Context;
 use interpreter::Output;
 use interpreter::Renderable;
@@ -25,7 +26,7 @@ impl Renderable for Assign {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = self
             .src
-            .apply_filters(context)
+            .evaluate(context)
             .trace_with(|| self.trace().into())?;
         context
             .stack_mut()

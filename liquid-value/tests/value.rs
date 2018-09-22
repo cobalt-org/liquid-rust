@@ -79,7 +79,10 @@ pub fn deserialize_nil() {
     assert_eq!(actual, liquid_value::Value::Nil);
 
     let actual: liquid_value::Value = serde_yaml::from_str("---\n- ").unwrap();
-    assert_eq!(actual, liquid_value::Value::Array(vec![liquid_value::Value::Nil]));
+    assert_eq!(
+        actual,
+        liquid_value::Value::Array(vec![liquid_value::Value::Nil])
+    );
 }
 
 #[test]

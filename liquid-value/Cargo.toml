@@ -18,6 +18,7 @@ appveyor  = { repository = "johannhof/liquid-rust" }
 default = ["serde"]
 
 [dependencies]
+# Exposed in API
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
