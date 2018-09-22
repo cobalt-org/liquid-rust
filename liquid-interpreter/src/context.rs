@@ -97,23 +97,18 @@ impl<'a, 'g> CycleState<'a, 'g> {
     }
 }
 
-lazy_static! {
-    static ref EMPTY_GLOBALS: Object = Object::new();
-}
-
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
-    globals: &'g Globals,
+    globals: Option<&'g Globals>,
     stack: Vec<Object>,
 }
 
 impl<'g> Stack<'g> {
     /// Create an empty stack
     pub fn empty() -> Self {
-        let empty: &Object = &*EMPTY_GLOBALS;
         Self {
-            globals: empty,
+            globals: None,
             // Mutable frame for globals.
             stack: vec![Object::new()],
         }
@@ -122,7 +117,7 @@ impl<'g> Stack<'g> {
     /// Create a stack initialized with read-only `Globals`.
     pub fn with_globals(globals: &'g Globals) -> Self {
         let mut stack = Self::empty();
-        stack.globals = globals;
+        stack.globals = Some(globals);
         stack
     }
 
@@ -152,7 +147,7 @@ impl<'g> Stack<'g> {
                 return rval;
             }
         }
-        self.globals.get(name)
+        self.globals.and_then(|g| g.get(name))
     }
 
     /// Recursively index into the stack.
@@ -225,23 +220,22 @@ impl<'g> Default for Stack<'g> {
 
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
-    globals: &'g Globals,
+    globals: Option<&'g Globals>,
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
 
 impl<'g> ContextBuilder<'g> {
     /// Creates a new, empty rendering context.
     pub fn new() -> Self {
-        let empty: &Object = &*EMPTY_GLOBALS;
         Self {
-            globals: empty,
+            globals: None,
             filters: Default::default(),
         }
     }
 
     /// Initialize the stack with the given globals.
     pub fn set_globals(mut self, values: &'g Globals) -> Self {
-        self.globals = values;
+        self.globals = Some(values);
         self
     }
 
@@ -256,8 +250,12 @@ impl<'g> ContextBuilder<'g> {
 
     /// Create the `Context`.
     pub fn build(self) -> Context<'g> {
+        let stack = match self.globals {
+            Some(globals) => Stack::with_globals(globals),
+            None => Stack::empty(),
+        };
         Context {
-            stack: Stack::with_globals(self.globals),
+            stack,
             interrupt: InterruptState::default(),
             cycles: CycleStateInner::default(),
             filters: self.filters,

@@ -4,8 +4,6 @@
 #![warn(unreachable_pub)]
 #![warn(unused_extern_crates)]
 
-#[macro_use]
-extern crate lazy_static;
 extern crate itertools;
 extern crate liquid_error;
 extern crate liquid_value;

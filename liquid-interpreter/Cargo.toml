@@ -15,7 +15,6 @@ travis-ci = { repository = "cobalt-org/liquid-rust" }
 appveyor  = { repository = "johannhof/liquid-rust" }
 
 [dependencies]
-lazy_static = "1.0"
 itertools = "0.7.0"
 # Exposed in API
 liquid-error = { version = "0.15.0", path = "../liquid-error" }
