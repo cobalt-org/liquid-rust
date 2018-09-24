@@ -7,13 +7,13 @@ use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{expect, parse_output, unexpected_token_error};
 use interpreter::Context;
-use interpreter::Output;
+use interpreter::FilterChain;
 use interpreter::Renderable;
 
 #[derive(Clone, Debug)]
 struct Assign {
     dst: String,
-    src: Output,
+    src: FilterChain,
 }
 
 impl Assign {

@@ -12,22 +12,22 @@ use super::Renderable;
 
 /// A `Value` filter.
 #[derive(Clone, Debug, PartialEq)]
-pub struct FilterPrototype {
+pub struct FilterCall {
     name: String,
     arguments: Vec<Argument>,
 }
 
-impl FilterPrototype {
+impl FilterCall {
     /// Create filter expression.
-    pub fn new(name: &str, arguments: Vec<Argument>) -> FilterPrototype {
-        FilterPrototype {
+    pub fn new(name: &str, arguments: Vec<Argument>) -> FilterCall {
+        FilterCall {
             name: name.to_owned(),
             arguments,
         }
     }
 }
 
-impl fmt::Display for FilterPrototype {
+impl fmt::Display for FilterCall {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -40,15 +40,15 @@ impl fmt::Display for FilterPrototype {
 
 /// A `Value` expression.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Output {
+pub struct FilterChain {
     entry: Argument,
-    filters: Vec<FilterPrototype>,
+    filters: Vec<FilterCall>,
 }
 
-impl Output {
+impl FilterChain {
     /// Create a new expression.
-    pub fn new(entry: Argument, filters: Vec<FilterPrototype>) -> Output {
-        Output { entry, filters }
+    pub fn new(entry: Argument, filters: Vec<FilterCall>) -> Self {
+        Self { entry, filters }
     }
 
     /// Process `Value` expression within `context`'s stack.
@@ -79,7 +79,7 @@ impl Output {
     }
 }
 
-impl fmt::Display for Output {
+impl fmt::Display for FilterChain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -90,7 +90,7 @@ impl fmt::Display for Output {
     }
 }
 
-impl Renderable for Output {
+impl Renderable for FilterChain {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let entry = self.evaluate(context)?;
         write!(writer, "{}", entry).chain("Failed to render")?;
