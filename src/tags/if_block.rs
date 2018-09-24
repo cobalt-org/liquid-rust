@@ -1,7 +1,8 @@
 use std::fmt;
 use std::io::Write;
 
-use error::{Result, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt};
+use liquid_value::Value;
 
 use compiler::ComparisonOperator;
 use compiler::Element;
@@ -12,7 +13,6 @@ use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
 use interpreter::{unexpected_value_error, Argument};
-use value::Value;
 
 #[derive(Clone, Debug)]
 struct BinaryCondition {

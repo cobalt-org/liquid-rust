@@ -25,7 +25,7 @@ pub fn pass_between_threads() {
         let template = Arc::clone(&template);
         let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter + 1);
         handles.push(thread::spawn(move || {
-            let globals: liquid::Object = serde_yaml::from_str(&format!(
+            let globals: liquid::value::Object = serde_yaml::from_str(&format!(
                 r#"
 num: {}
 numTwo: {}

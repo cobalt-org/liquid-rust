@@ -1,11 +1,11 @@
 use std::io::Write;
 
 use itertools;
+use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, unexpected_token_error, value_token};
-use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use interpreter::Argument;
 use interpreter::Context;
 use interpreter::Renderable;

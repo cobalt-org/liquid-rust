@@ -1,9 +1,10 @@
 use std::io::Write;
 
+use liquid_error::Result;
+
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
-use error::Result;
 use interpreter::Context;
 use interpreter::Renderable;
 

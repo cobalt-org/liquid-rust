@@ -45,28 +45,28 @@ fn option<'a>(name: &'a str, value: &'a str) -> clap::Arg<'a, 'a> {
 }
 
 #[cfg(feature = "serde_yaml")]
-fn load_yaml(path: &path::Path) -> Result<liquid::Value> {
+fn load_yaml(path: &path::Path) -> Result<liquid::value::Value> {
     let f = fs::File::open(path)?;
     serde_yaml::from_reader(f).map_err(|e| e.into())
 }
 
 #[cfg(not(feature = "serde_yaml"))]
-fn load_yaml(_path: &path::Path) -> Result<liquid::Value> {
+fn load_yaml(_path: &path::Path) -> Result<liquid::value::Value> {
     bail!("yaml is unsupported");
 }
 
 #[cfg(feature = "serde_json")]
-fn load_json(path: &path::Path) -> Result<liquid::Value> {
+fn load_json(path: &path::Path) -> Result<liquid::value::Value> {
     let f = fs::File::open(path)?;
     serde_json::from_reader(f).map_err(|e| e.into())
 }
 
 #[cfg(not(feature = "serde_json"))]
-fn load_json(_path: &path::Path) -> Result<liquid::Value> {
+fn load_json(_path: &path::Path) -> Result<liquid::value::Value> {
     bail!("json is unsupported");
 }
 
-fn build_context(path: &path::Path) -> Result<liquid::Object> {
+fn build_context(path: &path::Path) -> Result<liquid::value::Object> {
     let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
     let value = if extension == ffi::OsStr::new("yaml") {
         load_yaml(path)
@@ -76,7 +76,7 @@ fn build_context(path: &path::Path) -> Result<liquid::Object> {
         Err("Unsupported file type".into())
     }?;
     let value = match value {
-        liquid::Value::Object(o) => Ok(o),
+        liquid::value::Value::Object(o) => Ok(o),
         _ => Err("File must be an object"),
     }?;
 
@@ -115,7 +115,7 @@ fn run() -> Result<()> {
             build_context(p.as_path())
         })
         .map_or(Ok(None), |r| r.map(Some))?
-        .unwrap_or_else(liquid::Object::new);
+        .unwrap_or_else(liquid::value::Object::new);
     let output = template.render(&data)?;
     match matches.value_of("output") {
         Some(path) => {

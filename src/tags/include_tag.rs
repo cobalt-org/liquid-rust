@@ -1,10 +1,11 @@
 use std::io::Write;
 
+use liquid_error::{Result, ResultLiquidExt};
+
 use compiler::tokenize;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{parse, unexpected_token_error};
-use error::{Result, ResultLiquidExt};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;

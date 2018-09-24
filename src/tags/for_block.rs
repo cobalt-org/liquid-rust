@@ -3,8 +3,8 @@ use std::io::Write;
 use std::slice::Iter;
 
 use itertools;
-
-use error::{Result, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt};
+use liquid_value::{Object, Scalar, Value};
 
 use compiler::Element;
 use compiler::LiquidOptions;
@@ -14,7 +14,6 @@ use interpreter::Argument;
 use interpreter::Renderable;
 use interpreter::Template;
 use interpreter::{unexpected_value_error, Context, Interrupt};
-use value::{Object, Scalar, Value};
 
 #[derive(Clone, Debug)]
 enum Range {

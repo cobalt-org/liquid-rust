@@ -4,11 +4,12 @@ use std::io::prelude::Read;
 use std::path;
 use std::sync;
 
+use liquid_compiler as compiler;
+use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_interpreter as interpreter;
+
 use super::Template;
-use compiler;
-use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use filters;
-use interpreter;
 use tags;
 
 #[derive(Default, Clone)]
@@ -230,7 +231,7 @@ impl Parser {
     ///     .build()
     ///     .parse("Liquid!").unwrap();
     ///
-    /// let globals = liquid::Object::new();
+    /// let globals = liquid::value::Object::new();
     /// let output = template.render(&globals).unwrap();
     /// assert_eq!(output, "Liquid!".to_string());
     /// ```
@@ -260,8 +261,8 @@ impl Parser {
     ///     .build()
     ///     .parse_file("path/to/template.txt").unwrap();
     ///
-    /// let mut globals = liquid::Object::new();
-    /// globals.insert("data".into(), liquid::Value::scalar(4f64));
+    /// let mut globals = liquid::value::Object::new();
+    /// globals.insert("data".into(), liquid::value::Value::scalar(4f64));
     /// let output = template.render(&globals).unwrap();
     /// assert_eq!(output, "Liquid! 4\n".to_string());
     /// ```
