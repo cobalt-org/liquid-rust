@@ -34,7 +34,7 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
         let render = match *token.unwrap() {
             Element::Expression(ref tokens, _) => parse_expression(tokens, options)?,
             Element::Tag(ref tokens, _) => parse_tag(&mut iter, tokens, options)?,
-            Element::Raw(ref x) => Box::new(Text::new(x)),
+            Element::Raw(ref x) => Box::new(Text::new(x.as_str())),
         };
         ret.push(render);
         token = iter.next();
@@ -202,7 +202,7 @@ fn parse_tag(
             // The whole nesting count machinery below is to ensure we only stop
             // collecting elements when we have an un-nested closing tag.
 
-            let end_tag = Token::Identifier("end".to_owned() + x);
+            let end_tag = Token::Identifier(format!("end{}", x));
             let mut children = vec![];
             let mut nesting_depth = 0;
             for t in iter {

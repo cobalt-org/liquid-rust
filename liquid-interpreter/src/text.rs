@@ -12,9 +12,9 @@ pub struct Text {
 
 impl Text {
     /// Create a raw template expression.
-    pub fn new(text: &str) -> Text {
+    pub fn new<S: Into<String>>(text: S) -> Text {
         Text {
-            text: text.to_owned(),
+            text: text.into(),
         }
     }
 }
