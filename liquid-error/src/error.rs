@@ -62,7 +62,7 @@ impl<T> ResultLiquidExt<T> for Result<T> {
     fn context<K, V>(self, key: K, value: V) -> Result<T>
     where
         K: Into<borrow::Cow<'static, str>>,
-        V: Into<borrow::Cow<'static, str>>
+        V: Into<borrow::Cow<'static, str>>,
     {
         self.map_err(|err| err.context(key, value))
     }

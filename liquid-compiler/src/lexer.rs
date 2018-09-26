@@ -172,7 +172,11 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
                 Token::Dot
             }
             x if IDENTIFIER.is_match(x) => Token::Identifier(x.to_owned()),
-            x => return Err(Error::with_msg("Invalid identifier").context("identifier", format!("{}", x))),
+            x => {
+                return Err(
+                    Error::with_msg("Invalid identifier").context("identifier", format!("{}", x))
+                )
+            }
         });
         if let Some(v) = push_more {
             result.extend(v);
