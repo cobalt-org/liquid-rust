@@ -1,52 +1,9 @@
-use std::fmt;
+use liquid_error;
 
-use std::error::Error;
 use value::Value;
 
-/// Replace this with `liquid_error::Error`.
-#[derive(Debug, PartialEq, Eq)]
-pub enum FilterError {
-    /// Invalid data type.
-    InvalidType(String),
-    /// Invalid number of arguments.
-    InvalidArgumentCount(String),
-    /// Invalid argument at a given position.
-    InvalidArgument(u16, String),
-}
-
-impl FilterError {
-    /// Quick and dirty way to create an error.
-    pub fn invalid_type<T>(s: &str) -> Result<T, FilterError> {
-        Err(FilterError::InvalidType(s.to_owned()))
-    }
-}
-
-impl fmt::Display for FilterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            FilterError::InvalidType(ref e) => write!(f, "Invalid type : {}", e),
-            FilterError::InvalidArgumentCount(ref e) => {
-                write!(f, "Invalid number of arguments : {}", e)
-            }
-            FilterError::InvalidArgument(ref pos, ref e) => {
-                write!(f, "Invalid argument given at position {} : {}", pos, e)
-            }
-        }
-    }
-}
-
-impl Error for FilterError {
-    fn description(&self) -> &str {
-        match *self {
-            FilterError::InvalidType(ref e)
-            | FilterError::InvalidArgumentCount(ref e)
-            | FilterError::InvalidArgument(_, ref e) => e,
-        }
-    }
-}
-
 /// Expected return type of a `Filter`.
-pub type FilterResult = Result<Value, FilterError>;
+pub type FilterResult = Result<Value, liquid_error::Error>;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///

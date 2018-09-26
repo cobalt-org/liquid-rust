@@ -13,9 +13,7 @@ pub struct Text {
 impl Text {
     /// Create a raw template expression.
     pub fn new<S: Into<String>>(text: S) -> Text {
-        Text {
-            text: text.into(),
-        }
+        Text { text: text.into() }
     }
 }
 
