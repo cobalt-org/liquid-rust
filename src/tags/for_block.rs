@@ -150,7 +150,7 @@ impl Renderable for For {
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
                             .context_with(|| (self.var_name.clone().into(), v.to_string()))
-                            .context("index", &(i + 1))?;
+                            .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                         // given that we're at the end of the loop body
                         // already, dealing with a `continue` signal is just

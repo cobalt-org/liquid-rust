@@ -22,21 +22,21 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use interpreter::FilterResult;
 
-pub fn invalid_input<'s, S: Into<Cow<'s, str>>>(cause: S) -> liquid_error::Error {
-    liquid_error::Error::with_msg("Invalid input").context("cause", &cause.into())
+pub fn invalid_input<S: Into<Cow<'static, str>>>(cause: S) -> liquid_error::Error {
+    liquid_error::Error::with_msg("Invalid input").context("cause", cause)
 }
 
-pub fn invalid_argument_count<'s, S: Into<Cow<'s, str>>>(cause: S) -> liquid_error::Error {
-    liquid_error::Error::with_msg("Invalid number of arguments").context("cause", &cause.into())
+pub fn invalid_argument_count<S: Into<Cow<'static, str>>>(cause: S) -> liquid_error::Error {
+    liquid_error::Error::with_msg("Invalid number of arguments").context("cause", cause)
 }
 
-pub fn invalid_argument<'s, S: Into<Cow<'s, str>>>(
+pub fn invalid_argument<S: Into<Cow<'static, str>>>(
     position: usize,
     cause: S,
 ) -> liquid_error::Error {
     liquid_error::Error::with_msg("Invalid argument")
-        .context("position", &position)
-        .context("cause", &cause.into())
+        .context("position", format!("{}", position))
+        .context("cause", cause)
 }
 
 // Helper functions for the filters.
@@ -46,14 +46,14 @@ fn check_args_len(
     optional: usize,
 ) -> Result<(), liquid_error::Error> {
     if args.len() < required {
-        return Err(invalid_argument_count(&format!(
+        return Err(invalid_argument_count(format!(
             "expected at least {}, {} given",
             required,
             args.len()
         )));
     }
     if required + optional < args.len() {
-        return Err(invalid_argument_count(&format!(
+        return Err(invalid_argument_count(format!(
             "expected at most {}, {} given",
             required + optional,
             args.len()

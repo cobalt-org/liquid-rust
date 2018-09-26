@@ -59,7 +59,7 @@ impl FilterChain {
         // apply all specified filters
         for filter in &self.filters {
             let f = context.get_filter(&filter.name).ok_or_else(|| {
-                Error::with_msg("Unsupported filter").context("filter", &filter.name)
+                Error::with_msg("Unsupported filter").context("filter", filter.name.clone())
             })?;
 
             let arguments: Result<Vec<Value>> = filter
@@ -71,8 +71,8 @@ impl FilterChain {
             entry = f
                 .filter(&entry, &*arguments)
                 .chain("Filter error")
-                .context("input", &entry)
-                .context_with(|| ("args".into(), itertools::join(&arguments, ", ")))?;
+                .context_with(|| ("input".to_owned(), format!("{}", &entry)))
+                .context_with(|| ("args".to_owned(), itertools::join(&arguments, ", ")))?;
         }
 
         Ok(entry)
