@@ -28,7 +28,7 @@ impl Renderable for Capture {
         let mut captured = Vec::new();
         self.template
             .render_to(&mut captured, context)
-            .trace_with(|| self.trace().into())?;
+            .trace_with(|| self.trace())?;
 
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
         context
@@ -55,9 +55,8 @@ pub fn capture_block(
         return Err(unexpected_token_error("`%}`", t));
     };
 
-    let t = Template::new(
-        parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id).into())?,
-    );
+    let t =
+        Template::new(parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id))?);
 
     Ok(Box::new(Capture { id, template: t }))
 }

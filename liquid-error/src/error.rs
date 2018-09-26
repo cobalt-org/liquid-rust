@@ -35,6 +35,11 @@ where
 /// Add context to a `liquid_error::Error`.
 pub trait ResultLiquidExt<T> {
     /// Add a new stack frame to the `liquid_error::Error`.
+    fn trace<S>(self, trace: S) -> Result<T>
+    where
+        S: Into<borrow::Cow<'static, str>>;
+
+    /// Add a new stack frame to the `liquid_error::Error`.
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
         F: FnOnce() -> String;
@@ -52,6 +57,13 @@ pub trait ResultLiquidExt<T> {
 }
 
 impl<T> ResultLiquidExt<T> for Result<T> {
+    fn trace<S>(self, trace: S) -> Result<T>
+    where
+        S: Into<borrow::Cow<'static, str>>,
+    {
+        self.map_err(|err| err.trace(trace))
+    }
+
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
         F: FnOnce() -> String,

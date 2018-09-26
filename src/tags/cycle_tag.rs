@@ -30,7 +30,7 @@ impl Renderable for Cycle {
         let value = context
             .cycles()
             .cycle_element(&self.name, &self.values)
-            .trace_with(|| self.trace().into())?;
+            .trace_with(|| self.trace())?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }

@@ -163,14 +163,13 @@ impl<'g> Stack<'g> {
         })?;
         let value = self
             .get_val(key)
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", format!("{}", key)))?;
+            .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
             let child = value.get(index);
-            let child = child.ok_or_else(|| {
-                Error::with_msg("Invalid index").context("index", format!("{}", key))
-            })?;
+            let child = child
+                .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
             Ok(child)
         })
     }

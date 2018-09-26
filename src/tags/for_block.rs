@@ -85,7 +85,7 @@ fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isi
         .as_scalar()
         .and_then(Scalar::to_integer)
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
-        .context_with(|| (arg_name.to_string().into(), value.to_string()))?;
+        .context_with(|| (arg_name.to_string(), value.to_string()))?;
 
     Ok(value as isize)
 }
@@ -111,18 +111,15 @@ fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed:
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut range = self
-            .range
-            .evaluate(context)
-            .trace_with(|| self.trace().into())?;
+        let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
         let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
 
         match range.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
                     t.render_to(writer, context)
-                        .trace_with(|| "{{% else %}}".to_owned().into())
-                        .trace_with(|| self.trace().into())?;
+                        .trace("{{% else %}}")
+                        .trace_with(|| self.trace())?;
                 }
             }
 
@@ -148,8 +145,8 @@ impl Renderable for For {
                             .set_val(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
-                            .trace_with(|| self.trace().into())
-                            .context_with(|| (self.var_name.clone().into(), v.to_string()))
+                            .trace_with(|| self.trace())
+                            .context_with(|| (self.var_name.clone(), v.to_string()))
                             .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                         // given that we're at the end of the loop body
@@ -273,14 +270,14 @@ pub fn for_block(
     let (leading, trailing) = split_block(tokens, &["else"], options);
     let item_template = Template::new(
         parse(leading, options)
-            .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?,
+            .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed))?,
     );
 
     let else_template = match trailing {
         Some(split) => {
             let parsed = parse(&split.trailing[1..], options)
-                .trace_with(|| "{{% else %}}".to_owned().into())
-                .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed).into())?;
+                .trace("{{% else %}}")
+                .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed))?;
             Some(Template::new(parsed))
         }
         None => None,
