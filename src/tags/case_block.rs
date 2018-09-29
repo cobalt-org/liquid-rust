@@ -60,18 +60,18 @@ impl Renderable for Case {
                 return case
                     .template
                     .render_to(writer, context)
-                    .trace_with(|| case.trace().into())
-                    .trace_with(|| self.trace().into())
-                    .context_with(|| (self.target.to_string().into(), value.to_string()));
+                    .trace_with(|| case.trace())
+                    .trace_with(|| self.trace())
+                    .context_with(|| (self.target.to_string(), value.to_string()));
             }
         }
 
         if let Some(ref t) = self.else_block {
             return t
                 .render_to(writer, context)
-                .trace_with(|| "{{% else %}}".to_owned().into())
-                .trace_with(|| self.trace().into())
-                .context_with(|| (self.target.to_string().into(), value.to_string()));
+                .trace("{{% else %}}")
+                .trace_with(|| self.trace())
+                .context_with(|| (self.target.to_string(), value.to_string()));
         }
 
         Ok(())
@@ -125,16 +125,15 @@ fn parse_sections<'e>(
 
     match parse_condition(&children[0])? {
         Conditional::Cond(conds) => {
-            let template = Template::new(parse(leading, options).trace_with(|| {
-                format!("{{% when {} %}}", itertools::join(conds.iter(), " or ")).into()
-            })?);
+            let template =
+                Template::new(parse(leading, options).trace_with(|| {
+                    format!("{{% when {} %}}", itertools::join(conds.iter(), " or "))
+                })?);
             case.cases.push(CaseOption::new(conds, template));
         }
         Conditional::Else => {
             if case.else_block.is_none() {
-                let template = Template::new(
-                    parse(leading, options).trace_with(|| "{{% else %}}".to_owned().into())?,
-                );
+                let template = Template::new(parse(leading, options).trace("{{% else %}}")?);
                 case.else_block = Some(template)
             } else {
                 return Err(Error::with_msg("Only one else block allowed"));
@@ -168,7 +167,7 @@ pub fn case_block(
 
     loop {
         let trailing = parse_sections(&mut result, children, options)
-            .trace_with(|| format!("{{% case {} %}}", result.target).into())?;
+            .trace_with(|| format!("{{% case {} %}}", result.target))?;
         match trailing {
             Some(split) => children = split.trailing,
             None => break,

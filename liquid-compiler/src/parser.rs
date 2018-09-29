@@ -10,7 +10,7 @@ use std::slice::Iter;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Text;
 use liquid_interpreter::Variable;
-use liquid_interpreter::{FilterPrototype, Output};
+use liquid_interpreter::{FilterCall, FilterChain};
 use liquid_value::Index;
 
 use super::error::{Error, Result};
@@ -34,7 +34,7 @@ pub fn parse(elements: &[Element], options: &LiquidOptions) -> Result<Vec<Box<Re
         let render = match *token.unwrap() {
             Element::Expression(ref tokens, _) => parse_expression(tokens, options)?,
             Element::Tag(ref tokens, _) => parse_tag(&mut iter, tokens, options)?,
-            Element::Raw(ref x) => Box::new(Text::new(x)),
+            Element::Raw(ref x) => Box::new(Text::new(x.as_str())),
         };
         ret.push(render);
         token = iter.next();
@@ -117,10 +117,10 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
     Ok(indexes)
 }
 
-/// Creates an Output, a wrapper around values, variables and filters
+/// Creates an FilterChain, a wrapper around values, variables and filters
 /// used internally, from a list of Tokens. This is mostly useful
 /// for correctly parsing complex expressions with filters.
-pub fn parse_output(tokens: &[Token]) -> Result<Output> {
+pub fn parse_output(tokens: &[Token]) -> Result<FilterChain> {
     let entry = tokens[0].to_arg()?;
 
     let mut filters = vec![];
@@ -140,7 +140,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
 
         match iter.peek() {
             Some(&&Token::Pipe) | None => {
-                filters.push(FilterPrototype::new(name, args));
+                filters.push(FilterCall::new(name, args));
                 continue;
             }
             _ => (),
@@ -168,10 +168,10 @@ pub fn parse_output(tokens: &[Token]) -> Result<Output> {
             }
         }
 
-        filters.push(FilterPrototype::new(name, args));
+        filters.push(FilterCall::new(name, args));
     }
 
-    Ok(Output::new(entry, filters))
+    Ok(FilterChain::new(entry, filters))
 }
 
 // a tag can be either a single-element tag or a block, which can contain other
@@ -202,7 +202,7 @@ fn parse_tag(
             // The whole nesting count machinery below is to ensure we only stop
             // collecting elements when we have an un-nested closing tag.
 
-            let end_tag = Token::Identifier("end".to_owned() + x);
+            let end_tag = Token::Identifier(format!("end{}", x));
             let mut children = vec![];
             let mut nesting_depth = 0;
             for t in iter {
@@ -223,7 +223,7 @@ fn parse_tag(
             options.blocks[x.as_str()].parse(x, &tokens[1..], &children, options)
         }
 
-        ref x => Err(Error::with_msg("Tag is not supported").context("tag", x)),
+        ref x => Err(Error::with_msg("Tag is not supported").context("tag", format!("{}", x))),
     }
 }
 
@@ -338,10 +338,10 @@ mod test_parse_output {
         let result = parse_output(&tokens);
         assert_eq!(
             result.unwrap(),
-            Output::new(
+            FilterChain::new(
                 Argument::Var(Variable::new("abc")),
                 vec![
-                    FilterPrototype::new(
+                    FilterCall::new(
                         "def",
                         vec![
                             Argument::Val(Value::scalar("1")),
@@ -349,7 +349,7 @@ mod test_parse_output {
                             Argument::Val(Value::scalar("3")),
                         ],
                     ),
-                    FilterPrototype::new("blabla", vec![]),
+                    FilterCall::new("blabla", vec![]),
                 ]
             )
         );

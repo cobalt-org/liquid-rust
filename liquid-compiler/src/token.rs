@@ -92,28 +92,27 @@ impl Token {
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let out = match *self {
-            Token::Pipe => "|".to_owned(),
-            Token::Dot => ".".to_owned(),
-            Token::Colon => ":".to_owned(),
-            Token::Comma => ",".to_owned(),
-            Token::OpenSquare => "[".to_owned(),
-            Token::CloseSquare => "]".to_owned(),
-            Token::OpenRound => "(".to_owned(),
-            Token::CloseRound => ")".to_owned(),
-            Token::Question => "?".to_owned(),
-            Token::Dash => "-".to_owned(),
-            Token::DotDot => "..".to_owned(),
-            Token::Assignment => "=".to_owned(),
-            Token::Or => "or".to_owned(),
+        match *self {
+            Token::Pipe => write!(f, "|"),
+            Token::Dot => write!(f, "."),
+            Token::Colon => write!(f, ":"),
+            Token::Comma => write!(f, ","),
+            Token::OpenSquare => write!(f, "["),
+            Token::CloseSquare => write!(f, "]"),
+            Token::OpenRound => write!(f, "("),
+            Token::CloseRound => write!(f, ")"),
+            Token::Question => write!(f, "?"),
+            Token::Dash => write!(f, "-"),
+            Token::DotDot => write!(f, ".."),
+            Token::Assignment => write!(f, "="),
+            Token::Or => write!(f, "or"),
 
-            Token::Comparison(ref x) => x.to_string(),
-            Token::Identifier(ref x) | Token::StringLiteral(ref x) => x.clone(),
-            Token::IntegerLiteral(ref x) => x.to_string(),
-            Token::FloatLiteral(ref x) => x.to_string(),
-            Token::BooleanLiteral(ref x) => x.to_string(),
-        };
-        write!(f, "{}", out)
+            Token::Comparison(ref x) => write!(f, "{}", x),
+            Token::Identifier(ref x) | Token::StringLiteral(ref x) => write!(f, "{}", x),
+            Token::IntegerLiteral(ref x) => write!(f, "{}", x),
+            Token::FloatLiteral(ref x) => write!(f, "{}", x),
+            Token::BooleanLiteral(ref x) => write!(f, "{}", x),
+        }
     }
 }
 

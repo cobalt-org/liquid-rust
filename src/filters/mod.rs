@@ -10,27 +10,50 @@ pub use self::html::{escape, escape_once, newline_to_br, strip_html};
 pub use self::math::{abs, divided_by, minus, modulo, plus, times};
 pub use self::url::{url_decode, url_encode};
 
+use std::borrow::Cow;
 use std::cmp;
 
 use itertools;
+use liquid_error;
 use liquid_value::Index;
 use liquid_value::Scalar;
 use liquid_value::Value;
 use unicode_segmentation::UnicodeSegmentation;
 
-use interpreter::{FilterError, FilterResult};
+use interpreter::FilterResult;
+
+pub fn invalid_input<S: Into<Cow<'static, str>>>(cause: S) -> liquid_error::Error {
+    liquid_error::Error::with_msg("Invalid input").context("cause", cause)
+}
+
+pub fn invalid_argument_count<S: Into<Cow<'static, str>>>(cause: S) -> liquid_error::Error {
+    liquid_error::Error::with_msg("Invalid number of arguments").context("cause", cause)
+}
+
+pub fn invalid_argument<S: Into<Cow<'static, str>>>(
+    position: usize,
+    cause: S,
+) -> liquid_error::Error {
+    liquid_error::Error::with_msg("Invalid argument")
+        .context("position", format!("{}", position))
+        .context("cause", cause)
+}
 
 // Helper functions for the filters.
-fn check_args_len(args: &[Value], required: usize, optional: usize) -> Result<(), FilterError> {
+fn check_args_len(
+    args: &[Value],
+    required: usize,
+    optional: usize,
+) -> Result<(), liquid_error::Error> {
     if args.len() < required {
-        return Err(FilterError::InvalidArgumentCount(format!(
+        return Err(invalid_argument_count(format!(
             "expected at least {}, {} given",
             required,
             args.len()
         )));
     }
     if required + optional < args.len() {
-        return Err(FilterError::InvalidArgumentCount(format!(
+        return Err(invalid_argument_count(format!(
             "expected at most {}, {} given",
             required + optional,
             args.len()
@@ -111,7 +134,7 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
     let offset = args[0]
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
     let offset = offset as isize;
 
     let length = args
@@ -119,12 +142,9 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
         .unwrap_or(&Value::scalar(1))
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
     if length < 1 {
-        return Err(FilterError::InvalidArgument(
-            1,
-            "Positive number expected".to_owned(),
-        ));
+        return Err(invalid_argument(1, "Positive number expected"));
     }
     let length = length as isize;
 
@@ -184,7 +204,7 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
         .unwrap_or(&Value::scalar(50i32))
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
     let length = length as usize;
 
     let truncate_string = args
@@ -217,7 +237,7 @@ pub fn truncatewords(input: &Value, args: &[Value]) -> FilterResult {
         .unwrap_or(&Value::scalar(50i32))
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
     let words = words as usize;
 
     let truncate_string = args
@@ -315,7 +335,7 @@ pub fn join(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array of strings expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array of strings expected"))?;
     let input = input.iter().map(|x| x.to_str());
 
     Ok(Value::scalar(itertools::join(input, glue.as_ref())))
@@ -328,7 +348,7 @@ pub fn sort(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
     let mut sorted = array.clone();
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
     Ok(Value::array(sorted))
@@ -341,7 +361,7 @@ pub fn sort_natural(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
     let mut sorted: Vec<_> = array
         .iter()
         .map(|v| (v.to_str().to_lowercase(), v.clone()))
@@ -361,7 +381,7 @@ pub fn uniq(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
     let mut deduped: Vec<Value> = Vec::new();
     for x in array.iter() {
         if !deduped.contains(x) {
@@ -377,7 +397,7 @@ pub fn reverse(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
     let mut reversed = array.clone();
     reversed.reverse();
     Ok(Value::array(reversed))
@@ -389,7 +409,7 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
 
     let property = args[0].to_str();
     let property = Index::with_key(property.into_owned());
@@ -408,7 +428,7 @@ pub fn compact(input: &Value, args: &[Value]) -> FilterResult {
 
     let array = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
 
     // TODO optional property parameter
 
@@ -487,12 +507,12 @@ pub fn concat(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_array()
-        .ok_or_else(|| FilterError::InvalidType("Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Array expected"))?;
     let input = input.iter().cloned();
 
     let array = args[0]
         .as_array()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Array expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Array expected"))?;
     let array = array.iter().cloned();
 
     let result = input.chain(array);
@@ -526,9 +546,7 @@ pub fn first(input: &Value, args: &[Value]) -> FilterResult {
             Ok(Value::scalar(c))
         }
         Value::Array(ref x) => Ok(x.first().cloned().unwrap_or_else(|| Value::scalar(""))),
-        _ => Err(FilterError::InvalidType(
-            "String or Array expected".to_owned(),
-        )),
+        _ => Err(invalid_input("String or Array expected")),
     }
 }
 
@@ -546,9 +564,7 @@ pub fn last(input: &Value, args: &[Value]) -> FilterResult {
             Ok(Value::scalar(c))
         }
         Value::Array(ref x) => Ok(x.last().cloned().unwrap_or_else(|| Value::scalar(""))),
-        _ => Err(FilterError::InvalidType(
-            "String or Array expected".to_owned(),
-        )),
+        _ => Err(invalid_input("String or Array expected")),
     }
 }
 
@@ -560,20 +576,17 @@ pub fn round(input: &Value, args: &[Value]) -> FilterResult {
         .unwrap_or(&Value::scalar(0i32))
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
 
     let input = input
         .as_scalar()
         .and_then(Scalar::to_float)
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     if n == 0 {
         Ok(Value::scalar(input.round() as i32))
     } else if n < 0 {
-        Err(FilterError::InvalidArgument(
-            0,
-            "Positive number expected".to_owned(),
-        ))
+        Err(invalid_argument(0, "Positive number expected"))
     } else {
         let multiplier = 10.0_f64.powi(n);
         Ok(Value::scalar((input * multiplier).round() / multiplier))
@@ -586,7 +599,7 @@ pub fn ceil(input: &Value, args: &[Value]) -> FilterResult {
     let n = input
         .as_scalar()
         .and_then(Scalar::to_float)
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
     Ok(Value::scalar(n.ceil() as i32))
 }
 
@@ -596,7 +609,7 @@ pub fn floor(input: &Value, args: &[Value]) -> FilterResult {
     let n = input
         .as_scalar()
         .and_then(Scalar::to_float)
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
     Ok(Value::scalar(n.floor() as i32))
 }
 
@@ -619,7 +632,7 @@ pub fn pluralize(input: &Value, args: &[Value]) -> FilterResult {
     let n = input
         .as_scalar()
         .and_then(Scalar::to_integer)
-        .ok_or_else(|| FilterError::InvalidType("Whole number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Whole number expected"))?;
     if (n as isize) == 1 {
         Ok(args[0].clone())
     } else {
@@ -700,16 +713,14 @@ mod tests {
     fn unit_concat_wrong_type() {
         let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
         let args = &[Value::scalar(1f64)];
-        let result = FilterError::InvalidArgument(0, "Array expected".to_owned());
-        assert_eq!(failed!(concat, input, args), result);
+        failed!(concat, input, args);
     }
 
     #[test]
     fn unit_concat_no_args() {
         let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
         let args = &[];
-        let result = FilterError::InvalidArgumentCount("expected at least 1, 0 given".to_owned());
-        assert_eq!(failed!(concat, input, args), result);
+        failed!(concat, input, args);
     }
 
     #[test]
@@ -719,8 +730,7 @@ mod tests {
             Value::Array(vec![Value::scalar(3f64), Value::scalar("a")]),
             Value::scalar(2f64),
         ];
-        let result = FilterError::InvalidArgumentCount("expected at most 1, 2 given".to_owned());
-        assert_eq!(failed!(concat, input, args), result);
+        failed!(concat, input, args);
     }
 
     #[test]
@@ -893,9 +903,7 @@ mod tests {
     fn unit_lstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(lstrip, input, args), desired_result);
+        failed!(lstrip, input, args);
     }
 
     #[test]
@@ -1040,9 +1048,7 @@ mod tests {
             Value::scalar(2f64),
         ]);
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(reverse, input, args), desired_result);
+        failed!(reverse, input, args);
     }
 
     #[test]
@@ -1116,8 +1122,7 @@ mod tests {
     fn unit_reverse_string() {
         let input = &tos!("abc");
         let args = &[];
-        let desired_result = FilterError::InvalidType("Array expected".to_owned());
-        assert_eq!(failed!(reverse, input, args), desired_result);
+        failed!(reverse, input, args);
     }
 
     #[test]
@@ -1156,9 +1161,7 @@ mod tests {
     fn unit_rstrip_one_argument() {
         let input = &tos!(" 	 \n \r test");
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(rstrip, input, args), desired_result);
+        failed!(rstrip, input, args);
     }
 
     #[test]
@@ -1278,9 +1281,7 @@ mod tests {
     fn unit_strip_one_argument() {
         let input = &tos!(" 	 \n \r test 	 \n \r ");
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(strip, input, args), desired_result);
+        failed!(strip, input, args);
     }
 
     #[test]
@@ -1336,9 +1337,7 @@ mod tests {
     fn unit_strip_newlines_one_argument() {
         let input = &tos!("ab\n");
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(strip_newlines, input, args), desired_result);
+        failed!(strip_newlines, input, args);
     }
 
     #[test]
@@ -1403,9 +1402,7 @@ mod tests {
     fn unit_truncate_three_arguments() {
         let input = &tos!("I often quote myself.  It adds spice to my conversation.");
         let args = &[Value::scalar(17i32), tos!("..."), Value::scalar(0i32)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 2, 3 given".to_string());
-        assert_eq!(failed!(truncate, input, args), desired_result);
+        failed!(truncate, input, args);
     }
 
     #[test]
@@ -1513,17 +1510,14 @@ mod tests {
     fn unit_uniq_non_array() {
         let input = &Value::scalar(0f64);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Array expected".to_string());
-        assert_eq!(failed!(uniq, input, args), desired_result);
+        failed!(uniq, input, args);
     }
 
     #[test]
     fn unit_uniq_one_argument() {
         let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_string());
-        assert_eq!(failed!(uniq, input, args), desired_result);
+        failed!(uniq, input, args);
     }
 
     #[test]

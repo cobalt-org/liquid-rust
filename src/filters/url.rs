@@ -2,9 +2,9 @@ use liquid_value::Value;
 use url::percent_encoding;
 use url::percent_encoding::EncodeSet;
 
-use interpreter::{FilterError, FilterResult};
+use interpreter::FilterResult;
 
-use super::check_args_len;
+use super::{check_args_len, invalid_input};
 
 #[derive(Clone)]
 struct UrlEncodeSet(String);
@@ -52,7 +52,7 @@ pub fn url_decode(input: &Value, args: &[Value]) -> FilterResult {
 
     let result = percent_encoding::percent_decode(s.as_bytes())
         .decode_utf8()
-        .map_err(|_| FilterError::InvalidType("Malformed UTF-8".to_owned()))?
+        .map_err(|_| invalid_input("Malformed UTF-8"))?
         .into_owned();
     Ok(Value::scalar(result))
 }

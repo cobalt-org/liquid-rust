@@ -1,7 +1,7 @@
 use liquid_value::Value;
 
-use super::check_args_len;
-use interpreter::{FilterError, FilterResult};
+use super::{check_args_len, invalid_argument, invalid_input};
+use interpreter::FilterResult;
 
 /// Returns the absolute value of a number.
 pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
@@ -12,8 +12,8 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
             .to_integer()
             .map(|i| Value::scalar(i.abs()))
             .or_else(|| s.to_float().map(|i| Value::scalar(i.abs())))
-            .ok_or_else(|| FilterError::InvalidType("Numeric value expected".to_owned())),
-        _ => Err(FilterError::InvalidType("Number expected".to_owned())),
+            .ok_or_else(|| invalid_input("Numeric value expected")),
+        _ => Err(invalid_input("Number expected")),
     }
 }
 
@@ -22,11 +22,11 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     let operand = args[0]
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     let result = input
         .to_integer()
@@ -36,7 +36,7 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i + o)))
         })
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -46,11 +46,11 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     let operand = args[0]
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     let result = input
         .to_integer()
@@ -60,7 +60,7 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i - o)))
         })
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -70,11 +70,11 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     let operand = args[0]
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     let result = input
         .to_integer()
@@ -84,7 +84,7 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i * o)))
         })
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -94,11 +94,11 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     let operand = args[0]
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     let result = input
         .to_integer()
@@ -108,7 +108,7 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i / o)))
         })
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -118,11 +118,11 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidType("Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_input("Number expected"))?;
 
     let operand = args[0]
         .as_scalar()
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     let result = input
         .to_integer()
@@ -132,7 +132,7 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i % o)))
         })
-        .ok_or_else(|| FilterError::InvalidArgument(0, "Number expected".to_owned()))?;
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -186,17 +186,14 @@ mod tests {
     fn unit_abs_not_number_or_string() {
         let input = &Value::scalar(true);
         let args = &[];
-        let desired_result = FilterError::InvalidType("Numeric value expected".to_owned());
-        assert_eq!(failed!(abs, input, args), desired_result);
+        failed!(abs, input, args);
     }
 
     #[test]
     fn unit_abs_one_argument() {
         let input = &Value::scalar(-1f64);
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(abs, input, args), desired_result);
+        failed!(abs, input, args);
     }
 
     #[test]

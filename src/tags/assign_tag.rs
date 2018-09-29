@@ -7,13 +7,13 @@ use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{expect, parse_output, unexpected_token_error};
 use interpreter::Context;
-use interpreter::Output;
+use interpreter::FilterChain;
 use interpreter::Renderable;
 
 #[derive(Clone, Debug)]
 struct Assign {
     dst: String,
-    src: Output,
+    src: FilterChain,
 }
 
 impl Assign {
@@ -24,10 +24,7 @@ impl Assign {
 
 impl Renderable for Assign {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = self
-            .src
-            .evaluate(context)
-            .trace_with(|| self.trace().into())?;
+        let value = self.src.evaluate(context).trace_with(|| self.trace())?;
         context
             .stack_mut()
             .set_global_val(self.dst.to_owned(), value);

@@ -39,7 +39,7 @@ impl NullInclude {
 
 impl Include for NullInclude {
     fn include(&self, relative_path: &str) -> Result<String> {
-        Err(Error::with_msg("File does not exist").context("path", &relative_path.to_owned()))
+        Err(Error::with_msg("File does not exist").context("path", relative_path.to_owned()))
     }
 }
 
@@ -75,8 +75,8 @@ impl Include for FilesystemInclude {
             .context_with(|| ("non-existent path".into(), path.to_string_lossy().into()))?;
         if !path.starts_with(&root) {
             return Err(Error::with_msg("Snippet is outside of source")
-                .context("source", &root.to_string_lossy())
-                .context("full path", &path.to_string_lossy()));
+                .context("source", format!("{}", root.display()))
+                .context("full path", format!("{}", path.display())));
         }
 
         let mut file = File::open(&path)

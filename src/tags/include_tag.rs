@@ -20,7 +20,7 @@ impl Renderable for Include {
     fn render_to(&self, writer: &mut Write, mut context: &mut Context) -> Result<()> {
         self.partial
             .render_to(writer, &mut context)
-            .trace_with(|| format!("{{% include {} %}}", self.name).into())?;
+            .trace_with(|| format!("{{% include {} %}}", self.name))?;
 
         Ok(())
     }
@@ -46,8 +46,7 @@ pub fn include_tag(
         arg => return Err(unexpected_token_error("string", arg)),
     };
 
-    let partial =
-        parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name).into())?;
+    let partial = parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
 
     Ok(Box::new(Include {
         name: name.to_owned(),

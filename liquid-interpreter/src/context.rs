@@ -88,8 +88,8 @@ impl<'a, 'g> CycleState<'a, 'g> {
         if index >= values.len() {
             return Err(Error::with_msg(
                 "cycle index out of bounds, most likely from mismatched cycles",
-            ).context("index", &index)
-                .context("count", &values.len()));
+            ).context("index", format!("{}", index))
+                .context("count", format!("{}", values.len())));
         }
 
         let val = values[index].evaluate(self.context)?;
@@ -159,17 +159,17 @@ impl<'g> Stack<'g> {
             .next()
             .ok_or_else(|| Error::with_msg("No index provided"))?;
         let key = key.as_key().ok_or_else(|| {
-            Error::with_msg("Root index must be an object key").context("index", &key)
+            Error::with_msg("Root index must be an object key").context("index", format!("{}", key))
         })?;
         let value = self
             .get_val(key)
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
+            .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
             let child = value.get(index);
-            let child =
-                child.ok_or_else(|| Error::with_msg("Invalid index").context("index", &key))?;
+            let child = child
+                .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
             Ok(child)
         })
     }

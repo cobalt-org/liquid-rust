@@ -133,16 +133,16 @@ impl Conditional {
 
 impl Renderable for Conditional {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let condition = self.compare(context).trace_with(|| self.trace().into())?;
+        let condition = self.compare(context).trace_with(|| self.trace())?;
         if condition {
             self.if_true
                 .render_to(writer, context)
-                .trace_with(|| self.trace().into())?;
+                .trace_with(|| self.trace())?;
         } else if let Some(ref template) = self.if_false {
             template
                 .render_to(writer, context)
-                .trace_with(|| "{{% else %}}".to_owned().into())
-                .trace_with(|| self.trace().into())?;
+                .trace("{{% else %}}")
+                .trace_with(|| self.trace())?;
         }
 
         Ok(())
@@ -199,7 +199,7 @@ pub fn if_block(
     let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
 
     let if_true =
-        parse(leading_tokens, options).trace_with(|| format!("{{% if {} %}}", condition).into())?;
+        parse(leading_tokens, options).trace_with(|| format!("{{% if {} %}}", condition))?;
     let if_true = Template::new(if_true);
 
     let if_false = match trailing_tokens {
@@ -207,7 +207,7 @@ pub fn if_block(
 
         Some(ref split) if split.delimiter == "else" => parse(&split.trailing[1..], options)
             .map(Some)
-            .trace_with(|| "{{% else %}}".to_owned().into()),
+            .trace("{{% else %}}"),
 
         Some(ref split) if split.delimiter == "elsif" => {
             let child_tokens: Vec<Element> = split.trailing.iter().skip(1).cloned().collect();
@@ -218,7 +218,7 @@ pub fn if_block(
         Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter),
     };
     let if_false = if_false
-        .trace_with(|| format!("{{% if {} %}}", condition).into())?
+        .trace_with(|| format!("{{% if {} %}}", condition))?
         .map(Template::new);
 
     Ok(Box::new(Conditional {

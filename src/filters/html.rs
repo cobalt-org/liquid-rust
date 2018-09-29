@@ -101,7 +101,6 @@ pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
 mod tests {
 
     use super::*;
-    use interpreter::FilterError;
 
     macro_rules! unit {
         ($a:ident, $b:expr) => {{
@@ -218,8 +217,6 @@ mod tests {
     fn unit_newline_to_br_one_argument() {
         let input = &tos!("a\nb");
         let args = &[Value::scalar(0f64)];
-        let desired_result =
-            FilterError::InvalidArgumentCount("expected at most 0, 1 given".to_owned());
-        assert_eq!(failed!(newline_to_br, input, args), desired_result);
+        failed!(newline_to_br, input, args);
     }
 }
