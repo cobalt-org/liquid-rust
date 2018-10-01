@@ -57,6 +57,7 @@ mod test {
     use interpreter;
     use tags;
     use value::Value;
+    use value::Index;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -103,8 +104,8 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get_val("freestyle"),
-                Some(&Value::scalar(false))
+                context.stack().get_val_by_index([Index::with_key("freestyle")].iter()).unwrap(),
+                &Value::scalar(false)
             );
             assert_eq!(output, "");
         }
@@ -124,8 +125,8 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get_val("freestyle"),
-                Some(&Value::scalar(true))
+                context.stack().get_val_by_index([Index::with_key("freestyle")].iter()).unwrap(),
+                &Value::scalar(true)
             );
             assert_eq!(output, "<p>Freestyle!</p>");
         }

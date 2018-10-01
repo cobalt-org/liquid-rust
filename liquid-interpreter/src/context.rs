@@ -140,16 +140,6 @@ impl<'g> Stack<'g> {
         };
     }
 
-    /// Gets a value from the rendering context.
-    pub fn get_val<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        for frame in self.stack.iter().rev() {
-            if let rval @ Some(_) = frame.get(name) {
-                return rval;
-            }
-        }
-        self.globals.and_then(|g| g.get(name))
-    }
-
     /// Recursively index into the stack.
     pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(
         &self,
@@ -172,6 +162,15 @@ impl<'g> Stack<'g> {
                 .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
             Ok(child)
         })
+    }
+
+    fn get_val<'a>(&'a self, name: &str) -> Option<&'a Value> {
+        for frame in self.stack.iter().rev() {
+            if let rval @ Some(_) = frame.get(name) {
+                return rval;
+            }
+        }
+        self.globals.and_then(|g| g.get(name))
     }
 
     /// Sets a value in the global context.
