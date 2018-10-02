@@ -149,7 +149,8 @@ pub fn deserialize_object() {
         ("Num".into(), liquid_value::Value::scalar(1f64)),
         ("Bool".into(), liquid_value::Value::scalar(true)),
         ("Str".into(), liquid_value::Value::scalar("true")),
-    ].iter()
+    ]
+        .iter()
         .cloned()
         .collect();
     let expected = liquid_value::Value::Object(expected);

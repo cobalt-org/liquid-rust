@@ -15,9 +15,11 @@ travis-ci = { repository = "cobalt-org/liquid-rust" }
 appveyor  = { repository = "johannhof/liquid-rust" }
 
 [dependencies]
+num-traits = "0.2"
 # Exposed in API
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
+liquid-error = { version = "0.15.0", path = "../liquid-error" }
 
 [dev-dependencies]
 difference = "2.0"
