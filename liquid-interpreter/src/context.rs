@@ -151,9 +151,7 @@ impl<'g> Stack<'g> {
         let key = key.as_key().ok_or_else(|| {
             Error::with_msg("Root index must be an object key").context("index", format!("{}", key))
         })?;
-        let value = self
-            .get_val(key)
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
+        let value = self.get_val(key)?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
@@ -164,13 +162,15 @@ impl<'g> Stack<'g> {
         })
     }
 
-    fn get_val<'a>(&'a self, name: &str) -> Option<&'a Value> {
+    fn get_val<'a>(&'a self, name: &str) -> Result<&'a Value> {
         for frame in self.stack.iter().rev() {
-            if let rval @ Some(_) = frame.get(name) {
-                return rval;
+            if let Some(rval) = frame.get(name) {
+                return Ok(rval);
             }
         }
-        self.globals.and_then(|g| g.get(name))
+        self.globals
+            .ok_or_else(|| Error::with_msg("Invalid index").context("index", name.to_owned()))
+            .and_then(|g| g.get(name))
     }
 
     /// Sets a value in the global context.
@@ -361,7 +361,7 @@ mod test {
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
         ctx.stack_mut().set_global_val("post", Value::Object(post));
-        assert!(ctx.stack().get_val("post.number").is_none());
+        assert!(ctx.stack().get_val("post.number").is_err());
     }
 
     #[test]
