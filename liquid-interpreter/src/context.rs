@@ -1,8 +1,8 @@
+use std::borrow;
 use std::collections::HashMap;
 use std::sync;
 
 use error::{Error, Result};
-use std::borrow;
 use value::{Index, Object, Value};
 
 use super::Argument;
