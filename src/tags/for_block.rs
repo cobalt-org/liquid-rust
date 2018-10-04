@@ -139,10 +139,8 @@ impl Renderable for For {
 
                         scope
                             .stack_mut()
-                            .set_val("forloop", Value::Object(helper_vars.clone()));
-                        scope
-                            .stack_mut()
-                            .set_val(self.var_name.to_owned(), v.clone());
+                            .set("forloop", Value::Object(helper_vars.clone()));
+                        scope.stack_mut().set(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace())
@@ -328,7 +326,7 @@ mod test {
         ).unwrap();
 
         let mut context: Context = Default::default();
-        context.stack_mut().set_global_val(
+        context.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -382,10 +380,10 @@ mod test {
         let mut context = Context::new();
         context
             .stack_mut()
-            .set_global_val("alpha", Value::scalar(42i32));
+            .set_global("alpha", Value::scalar(42i32));
         context
             .stack_mut()
-            .set_global_val("omega", Value::scalar(46i32));
+            .set_global("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "#1 test 42, #2 test 43, #3 test 44, #4 test 45, ");
     }
@@ -438,13 +436,13 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.stack_mut().set_global_val("i", Value::scalar(0i32));
-        context.stack_mut().set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global("i", Value::scalar(0i32));
+        context.stack_mut().set_global("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty outer");
 
-        context.stack_mut().set_global_val("i", Value::scalar(1i32));
-        context.stack_mut().set_global_val("j", Value::scalar(0i32));
+        context.stack_mut().set_global("i", Value::scalar(1i32));
+        context.stack_mut().set_global("j", Value::scalar(0i32));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty inner");
     }
@@ -643,7 +641,7 @@ mod test {
             .set_filters(&sync::Arc::new(filters))
             .build();
 
-        context.stack_mut().set_global_val(
+        context.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar("alpha"),

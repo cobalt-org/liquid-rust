@@ -307,7 +307,8 @@ mod test {
         let a: Object = [
             ("alpha".into(), Value::scalar("1")),
             ("beta".into(), Value::scalar(2f64)),
-        ].into_iter()
+        ]
+            .into_iter()
             .cloned()
             .collect();
         let a = Value::Object(a);
@@ -316,7 +317,8 @@ mod test {
             ("alpha".into(), Value::scalar("1")),
             ("beta".into(), Value::scalar(2f64)),
             ("gamma".into(), Value::Array(vec![])),
-        ].into_iter()
+        ]
+            .into_iter()
             .cloned()
             .collect();
         let b = Value::Object(b);

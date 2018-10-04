@@ -46,7 +46,8 @@ pub fn include_tag(
         arg => return Err(unexpected_token_error("string", arg)),
     };
 
-    let partial = parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
+    let partial =
+        parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
 
     Ok(Box::new(Include {
         name: name.to_owned(),
@@ -103,10 +104,10 @@ mod test {
             .build();
         context
             .stack_mut()
-            .set_global_val("num", value::Value::scalar(5f64));
+            .set_global("num", value::Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global_val("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }
@@ -126,10 +127,10 @@ mod test {
             .build();
         context
             .stack_mut()
-            .set_global_val("num", value::Value::scalar(5f64));
+            .set_global("num", value::Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global_val("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }

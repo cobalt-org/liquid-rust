@@ -1,9 +1,9 @@
+use std::borrow;
 use std::collections::HashMap;
 use std::sync;
 
 use error::{Error, Result};
-use std::borrow;
-use value::{Index, Object, Value};
+use value::{Object, Path, Value};
 
 use super::Argument;
 use super::Globals;
@@ -89,7 +89,7 @@ impl<'a, 'g> CycleState<'a, 'g> {
             return Err(Error::with_msg(
                 "cycle index out of bounds, most likely from mismatched cycles",
             ).context("index", format!("{}", index))
-                .context("count", format!("{}", values.len())));
+            .context("count", format!("{}", values.len())));
         }
 
         let val = values[index].evaluate(self.context)?;
@@ -140,30 +140,16 @@ impl<'g> Stack<'g> {
         };
     }
 
-    /// Gets a value from the rendering context.
-    pub fn get_val<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        for frame in self.stack.iter().rev() {
-            if let rval @ Some(_) = frame.get(name) {
-                return rval;
-            }
-        }
-        self.globals.and_then(|g| g.get(name))
-    }
-
     /// Recursively index into the stack.
-    pub fn get_val_by_index<'i, I: Iterator<Item = &'i Index>>(
-        &self,
-        mut indexes: I,
-    ) -> Result<&Value> {
+    pub fn get(&self, path: &Path) -> Result<&Value> {
+        let mut indexes = path.iter();
         let key = indexes
             .next()
             .ok_or_else(|| Error::with_msg("No index provided"))?;
         let key = key.as_key().ok_or_else(|| {
             Error::with_msg("Root index must be an object key").context("index", format!("{}", key))
         })?;
-        let value = self
-            .get_val(key)
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
+        let value = self.get_root(key)?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
@@ -174,8 +160,19 @@ impl<'g> Stack<'g> {
         })
     }
 
+    fn get_root<'a>(&'a self, name: &str) -> Result<&'a Value> {
+        for frame in self.stack.iter().rev() {
+            if let Some(rval) = frame.get(name) {
+                return Ok(rval);
+            }
+        }
+        self.globals
+            .ok_or_else(|| Error::with_msg("Invalid index").context("index", name.to_owned()))
+            .and_then(|g| g.get(name))
+    }
+
     /// Sets a value in the global context.
-    pub fn set_global_val<S>(&mut self, name: S, val: Value) -> Option<Value>
+    pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
         S: Into<borrow::Cow<'static, str>>,
     {
@@ -190,7 +187,7 @@ impl<'g> Stack<'g> {
     /// Panics if there is no frame on the local values stack. Context
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
-    pub fn set_val<S>(&mut self, name: S, val: Value) -> Option<Value>
+    pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
         S: Into<borrow::Cow<'static, str>>,
     {
@@ -345,71 +342,69 @@ impl<'g> Context<'g> {
 mod test {
     use super::*;
 
+    use value::Index;
+
     #[test]
-    fn get_val() {
+    fn stack_get_root() {
         let mut ctx = Context::new();
-        ctx.stack_mut()
-            .set_global_val("number", Value::scalar(42f64));
+        ctx.stack_mut().set_global("number", Value::scalar(42f64));
         assert_eq!(
-            ctx.stack().get_val("number").unwrap(),
+            ctx.stack().get_root("number").unwrap(),
             &Value::scalar(42f64)
         );
     }
 
     #[test]
-    fn get_val_failure() {
+    fn stack_get_root_failure() {
         let mut ctx = Context::new();
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
-        ctx.stack_mut().set_global_val("post", Value::Object(post));
-        assert!(ctx.stack().get_val("post.number").is_none());
+        ctx.stack_mut().set_global("post", Value::Object(post));
+        assert!(ctx.stack().get_root("post.number").is_err());
     }
 
     #[test]
-    fn get_val_by_index() {
+    fn stack_get() {
         let mut ctx = Context::new();
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
-        ctx.stack_mut().set_global_val("post", Value::Object(post));
-        let indexes = vec![Index::with_key("post"), Index::with_key("number")];
-        assert_eq!(
-            ctx.stack().get_val_by_index(indexes.iter()).unwrap(),
-            &Value::scalar(42f64)
-        );
+        ctx.stack_mut().set_global("post", Value::Object(post));
+        let indexes = vec![Index::with_key("post"), Index::with_key("number")]
+            .into_iter()
+            .collect();
+        assert_eq!(ctx.stack().get(&indexes).unwrap(), &Value::scalar(42f64));
     }
 
     #[test]
     fn scoped_variables() {
         let mut ctx = Context::new();
-        ctx.stack_mut().set_global_val("test", Value::scalar(42f64));
-        assert_eq!(ctx.stack().get_val("test").unwrap(), &Value::scalar(42f64));
+        ctx.stack_mut().set_global("test", Value::scalar(42f64));
+        assert_eq!(ctx.stack().get_root("test").unwrap(), &Value::scalar(42f64));
 
         ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(
-                new_scope.stack().get_val("test").unwrap(),
+                new_scope.stack().get_root("test").unwrap(),
                 &Value::scalar(42f64)
             );
 
             // set a new local value, and assert that it overrides the previous value
-            new_scope
-                .stack_mut()
-                .set_val("test", Value::scalar(3.14f64));
+            new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
-                new_scope.stack().get_val("test").unwrap(),
+                new_scope.stack().get_root("test").unwrap(),
                 &Value::scalar(3.14f64)
             );
 
             // sat a new val that we will pick up outside the scope
             new_scope
                 .stack_mut()
-                .set_global_val("global", Value::scalar("some value"));
+                .set_global("global", Value::scalar("some value"));
         });
 
         // assert that the value has reverted to the old one
-        assert_eq!(ctx.stack().get_val("test").unwrap(), &Value::scalar(42f64));
+        assert_eq!(ctx.stack().get_root("test").unwrap(), &Value::scalar(42f64));
         assert_eq!(
-            ctx.stack().get_val("global").unwrap(),
+            ctx.stack().get_root("global").unwrap(),
             &Value::scalar("some value")
         );
     }

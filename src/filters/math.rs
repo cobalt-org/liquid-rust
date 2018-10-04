@@ -35,8 +35,7 @@ pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
             input
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i + o)))
-        })
-        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -59,8 +58,7 @@ pub fn minus(input: &Value, args: &[Value]) -> FilterResult {
             input
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i - o)))
-        })
-        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -83,8 +81,7 @@ pub fn times(input: &Value, args: &[Value]) -> FilterResult {
             input
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i * o)))
-        })
-        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -107,8 +104,7 @@ pub fn divided_by(input: &Value, args: &[Value]) -> FilterResult {
             input
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i / o)))
-        })
-        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }
@@ -131,8 +127,7 @@ pub fn modulo(input: &Value, args: &[Value]) -> FilterResult {
             input
                 .to_float()
                 .and_then(|i| operand.to_float().map(|o| Value::scalar(i % o)))
-        })
-        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
 
     Ok(result)
 }

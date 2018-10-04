@@ -125,10 +125,9 @@ fn parse_sections<'e>(
 
     match parse_condition(&children[0])? {
         Conditional::Cond(conds) => {
-            let template =
-                Template::new(parse(leading, options).trace_with(|| {
-                    format!("{{% when {} %}}", itertools::join(conds.iter(), " or "))
-                })?);
+            let template = Template::new(parse(leading, options).trace_with(|| {
+                format!("{{% when {} %}}", itertools::join(conds.iter(), " or "))
+            })?);
             case.cases.push(CaseOption::new(conds, template));
         }
         Conditional::Else => {
@@ -210,18 +209,16 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.stack_mut().set_global_val("x", Value::scalar(2f64));
+        context.stack_mut().set_global("x", Value::scalar(2f64));
         assert_eq!(template.render(&mut context).unwrap(), "two");
 
-        context.stack_mut().set_global_val("x", Value::scalar(3f64));
+        context.stack_mut().set_global("x", Value::scalar(3f64));
         assert_eq!(template.render(&mut context).unwrap(), "three and a half");
 
-        context.stack_mut().set_global_val("x", Value::scalar(4f64));
+        context.stack_mut().set_global("x", Value::scalar(4f64));
         assert_eq!(template.render(&mut context).unwrap(), "three and a half");
 
-        context
-            .stack_mut()
-            .set_global_val("x", Value::scalar("nope"));
+        context.stack_mut().set_global("x", Value::scalar("nope"));
         assert_eq!(template.render(&mut context).unwrap(), "otherwise");
     }
 
@@ -242,9 +239,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context
-            .stack_mut()
-            .set_global_val("x", Value::scalar("nope"));
+        context.stack_mut().set_global("x", Value::scalar("nope"));
         assert_eq!(template.render(&mut context).unwrap(), "");
     }
 

@@ -180,7 +180,7 @@ mod test {
     #[test]
     fn evaluate_handles_identifiers() {
         let mut ctx = Context::new();
-        ctx.stack_mut().set_global_val("var0", Value::scalar(42f64));
+        ctx.stack_mut().set_global("var0", Value::scalar(42f64));
         assert_eq!(
             Token::Identifier("var0".to_owned())
                 .to_arg()
