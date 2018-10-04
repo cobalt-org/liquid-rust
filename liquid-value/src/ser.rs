@@ -121,7 +121,7 @@ impl serde::Serializer for Serializer {
 
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<Value, SerError> {
-        self.serialize_f64(value as f64)
+        self.serialize_f64(f64::from(value))
     }
 
     #[inline]
@@ -142,7 +142,7 @@ impl serde::Serializer for Serializer {
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Value, SerError> {
-        let vec = value.iter().map(|&b| Value::scalar(b as i32)).collect();
+        let vec = value.iter().map(|&b| Value::scalar(i32::from(b))).collect();
         Ok(Value::Array(vec))
     }
 
