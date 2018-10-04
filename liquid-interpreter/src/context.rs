@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync;
 
 use error::{Error, Result};
-use value::{Object, Value, Path};
+use value::{Object, Path, Value};
 
 use super::Argument;
 use super::Globals;
@@ -89,7 +89,7 @@ impl<'a, 'g> CycleState<'a, 'g> {
             return Err(Error::with_msg(
                 "cycle index out of bounds, most likely from mismatched cycles",
             ).context("index", format!("{}", index))
-                .context("count", format!("{}", values.len())));
+            .context("count", format!("{}", values.len())));
         }
 
         let val = values[index].evaluate(self.context)?;
@@ -141,10 +141,7 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn get(
-        &self,
-        path: &Path,
-    ) -> Result<&Value> {
+    pub fn get(&self, path: &Path) -> Result<&Value> {
         let mut indexes = path.iter();
         let key = indexes
             .next()
@@ -350,8 +347,7 @@ mod test {
     #[test]
     fn stack_get_root() {
         let mut ctx = Context::new();
-        ctx.stack_mut()
-            .set_global("number", Value::scalar(42f64));
+        ctx.stack_mut().set_global("number", Value::scalar(42f64));
         assert_eq!(
             ctx.stack().get_root("number").unwrap(),
             &Value::scalar(42f64)
@@ -373,11 +369,10 @@ mod test {
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
         ctx.stack_mut().set_global("post", Value::Object(post));
-        let indexes = vec![Index::with_key("post"), Index::with_key("number")].into_iter().collect();
-        assert_eq!(
-            ctx.stack().get(&indexes).unwrap(),
-            &Value::scalar(42f64)
-        );
+        let indexes = vec![Index::with_key("post"), Index::with_key("number")]
+            .into_iter()
+            .collect();
+        assert_eq!(ctx.stack().get(&indexes).unwrap(), &Value::scalar(42f64));
     }
 
     #[test]
@@ -394,9 +389,7 @@ mod test {
             );
 
             // set a new local value, and assert that it overrides the previous value
-            new_scope
-                .stack_mut()
-                .set("test", Value::scalar(3.14f64));
+            new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
                 new_scope.stack().get_root("test").unwrap(),
                 &Value::scalar(3.14f64)

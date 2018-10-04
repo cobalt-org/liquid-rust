@@ -113,8 +113,7 @@ fn run() -> Result<()> {
         .map(|s| {
             let p = path::PathBuf::from(s);
             build_context(p.as_path())
-        })
-        .map_or(Ok(None), |r| r.map(Some))?
+        }).map_or(Ok(None), |r| r.map(Some))?
         .unwrap_or_else(liquid::value::Object::new);
     let output = template.render(&data)?;
     match matches.value_of("output") {

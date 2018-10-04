@@ -90,13 +90,17 @@ mod test {
             .unwrap();
 
         let mut ctx = Context::new();
-        ctx.stack_mut()
-            .set_global("item", Value::scalar("potato"));
+        ctx.stack_mut().set_global("item", Value::scalar("potato"));
         ctx.stack_mut().set_global("i", Value::scalar(42f64));
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
-            ctx.stack().get(&vec![Index::with_key("attribute_name")].into_iter().collect()).unwrap(),
+            ctx.stack()
+                .get(
+                    &vec![Index::with_key("attribute_name")]
+                        .into_iter()
+                        .collect()
+                ).unwrap(),
             &Value::scalar("potato-42-color")
         );
         assert_eq!(output, "");

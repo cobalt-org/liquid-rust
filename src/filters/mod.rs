@@ -221,7 +221,8 @@ pub fn truncate(input: &Value, args: &[Value]) -> FilterResult {
             .take(l)
             .collect::<Vec<&str>>()
             .join("")
-            .to_string() + truncate_string.as_ref();
+            .to_string()
+            + truncate_string.as_ref();
         Value::scalar(result)
     } else {
         input.clone()

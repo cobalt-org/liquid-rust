@@ -61,8 +61,7 @@ impl ParserBuilder {
             .filter(
                 "capitalize",
                 filters::capitalize as interpreter::FnFilterValue,
-            )
-            .filter("ceil", filters::ceil as interpreter::FnFilterValue)
+            ).filter("ceil", filters::ceil as interpreter::FnFilterValue)
             .filter("compact", filters::compact as interpreter::FnFilterValue)
             .filter("concat", filters::concat as interpreter::FnFilterValue)
             .filter("date", filters::date as interpreter::FnFilterValue)
@@ -70,14 +69,12 @@ impl ParserBuilder {
             .filter(
                 "divided_by",
                 filters::divided_by as interpreter::FnFilterValue,
-            )
-            .filter("downcase", filters::downcase as interpreter::FnFilterValue)
+            ).filter("downcase", filters::downcase as interpreter::FnFilterValue)
             .filter("escape", filters::escape as interpreter::FnFilterValue)
             .filter(
                 "escape_once",
                 filters::escape_once as interpreter::FnFilterValue,
-            )
-            .filter("first", filters::first as interpreter::FnFilterValue)
+            ).filter("first", filters::first as interpreter::FnFilterValue)
             .filter("floor", filters::floor as interpreter::FnFilterValue)
             .filter("join", filters::join as interpreter::FnFilterValue)
             .filter("last", filters::last as interpreter::FnFilterValue)
@@ -88,20 +85,17 @@ impl ParserBuilder {
             .filter(
                 "newline_to_br",
                 filters::newline_to_br as interpreter::FnFilterValue,
-            )
-            .filter("plus", filters::plus as interpreter::FnFilterValue)
+            ).filter("plus", filters::plus as interpreter::FnFilterValue)
             .filter("prepend", filters::prepend as interpreter::FnFilterValue)
             .filter("remove", filters::remove as interpreter::FnFilterValue)
             .filter(
                 "remove_first",
                 filters::remove_first as interpreter::FnFilterValue,
-            )
-            .filter("replace", filters::replace as interpreter::FnFilterValue)
+            ).filter("replace", filters::replace as interpreter::FnFilterValue)
             .filter(
                 "replace_first",
                 filters::replace_first as interpreter::FnFilterValue,
-            )
-            .filter("reverse", filters::reverse as interpreter::FnFilterValue)
+            ).filter("reverse", filters::reverse as interpreter::FnFilterValue)
             .filter("round", filters::round as interpreter::FnFilterValue)
             .filter("rstrip", filters::rstrip as interpreter::FnFilterValue)
             .filter("size", filters::size as interpreter::FnFilterValue)
@@ -110,30 +104,25 @@ impl ParserBuilder {
             .filter(
                 "sort_natural",
                 filters::sort_natural as interpreter::FnFilterValue,
-            )
-            .filter("split", filters::split as interpreter::FnFilterValue)
+            ).filter("split", filters::split as interpreter::FnFilterValue)
             .filter("strip", filters::strip as interpreter::FnFilterValue)
             .filter(
                 "strip_html",
                 filters::strip_html as interpreter::FnFilterValue,
-            )
-            .filter(
+            ).filter(
                 "strip_newlines",
                 filters::strip_newlines as interpreter::FnFilterValue,
-            )
-            .filter("times", filters::times as interpreter::FnFilterValue)
+            ).filter("times", filters::times as interpreter::FnFilterValue)
             .filter("truncate", filters::truncate as interpreter::FnFilterValue)
             .filter(
                 "truncatewords",
                 filters::truncatewords as interpreter::FnFilterValue,
-            )
-            .filter("uniq", filters::uniq as interpreter::FnFilterValue)
+            ).filter("uniq", filters::uniq as interpreter::FnFilterValue)
             .filter("upcase", filters::upcase as interpreter::FnFilterValue)
             .filter(
                 "url_decode",
                 filters::url_decode as interpreter::FnFilterValue,
-            )
-            .filter(
+            ).filter(
                 "url_encode",
                 filters::url_encode as interpreter::FnFilterValue,
             )

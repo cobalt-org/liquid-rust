@@ -140,9 +140,7 @@ impl Renderable for For {
                         scope
                             .stack_mut()
                             .set("forloop", Value::Object(helper_vars.clone()));
-                        scope
-                            .stack_mut()
-                            .set(self.var_name.to_owned(), v.clone());
+                        scope.stack_mut().set(self.var_name.to_owned(), v.clone());
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace())

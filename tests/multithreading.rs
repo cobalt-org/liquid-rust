@@ -39,8 +39,7 @@ numTwo: {}
                 .expect(&format!(
                     "Expected output file does not exist: {}",
                     output_file
-                ))
-                .read_to_string(&mut comp)
+                )).read_to_string(&mut comp)
                 .expect(&format!("Failed to read file: {}", output_file));
 
             assert_diff!(&comp, &output, " ", 0);

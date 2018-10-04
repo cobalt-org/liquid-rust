@@ -20,10 +20,7 @@ impl Argument {
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let val = match *self {
             Argument::Val(ref x) => x.clone(),
-            Argument::Var(ref x) => context
-                .stack()
-                .get(x.path())?
-                .clone(),
+            Argument::Var(ref x) => context.stack().get(x.path())?.clone(),
         };
         Ok(val)
     }

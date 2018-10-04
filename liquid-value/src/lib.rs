@@ -12,10 +12,10 @@ extern crate liquid_error;
 extern crate num_traits;
 
 mod index;
+mod path;
 mod scalar;
 mod ser;
 mod values;
-mod path;
 
 /// Liquid Processing Errors.
 pub mod error {

@@ -25,9 +25,7 @@ impl Assign {
 impl Renderable for Assign {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
         let value = self.src.evaluate(context).trace_with(|| self.trace())?;
-        context
-            .stack_mut()
-            .set_global(self.dst.to_owned(), value);
+        context.stack_mut().set_global(self.dst.to_owned(), value);
         Ok(())
     }
 }
@@ -56,8 +54,8 @@ mod test {
     use compiler;
     use interpreter;
     use tags;
-    use value::Value;
     use value::Index;
+    use value::Value;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -104,7 +102,10 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get(&vec![Index::with_key("freestyle")].into_iter().collect()).unwrap(),
+                context
+                    .stack()
+                    .get(&vec![Index::with_key("freestyle")].into_iter().collect())
+                    .unwrap(),
                 &Value::scalar(false)
             );
             assert_eq!(output, "");
@@ -125,7 +126,10 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get(&vec![Index::with_key("freestyle")].into_iter().collect()).unwrap(),
+                context
+                    .stack()
+                    .get(&vec![Index::with_key("freestyle")].into_iter().collect())
+                    .unwrap(),
                 &Value::scalar(true)
             );
             assert_eq!(output, "<p>Freestyle!</p>");

@@ -48,7 +48,7 @@ impl serde::ser::Error for SerError {
     where
         T: fmt::Display,
     {
-       SerError(error::Error::with_msg(format!("{}", msg)))
+        SerError(error::Error::with_msg(format!("{}", msg)))
     }
 }
 
@@ -56,10 +56,7 @@ struct Serializer;
 
 impl Serializer {
     #[inline]
-    fn serialize_as_i32<T: num_traits::cast::NumCast>(
-        self,
-        value: T,
-    ) -> Result<Value, SerError> {
+    fn serialize_as_i32<T: num_traits::cast::NumCast>(self, value: T) -> Result<Value, SerError> {
         let value = num_traits::cast::cast::<T, i32>(value)
             .ok_or_else(|| SerError(error::Error::with_msg("Cannot fit number")))?;
         Ok(Value::scalar(value))
@@ -593,11 +590,7 @@ impl serde::ser::SerializeStruct for SerializeMap {
     type Ok = Value;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        key: &'static str,
-        value: &T,
-    ) -> Result<(), SerError>
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
     where
         T: Serialize,
     {
@@ -620,11 +613,7 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
     type Ok = Value;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        key: &'static str,
-        value: &T,
-    ) -> Result<(), SerError>
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
     where
         T: Serialize,
     {

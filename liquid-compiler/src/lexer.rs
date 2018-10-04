@@ -235,9 +235,7 @@ mod test {
         );
         assert_eq!(
             split_atom("truc | filter:arg1,arg2"),
-            vec![
-                "truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2",
-            ]
+            vec!["truc", " ", "", "|", "", " ", "filter", ":", "arg1", ",", "arg2",]
         );
     }
 

@@ -451,9 +451,7 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context
-            .stack_mut()
-            .set_global("a", Value::scalar("else"));
+        context.stack_mut().set_global("a", Value::scalar("else"));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "fourth");
     }
@@ -521,9 +519,7 @@ mod test {
         let mut context = Context::new();
         let mut obj = Object::new();
         obj.insert("Star Wars".into(), Value::scalar("1977"));
-        context
-            .stack_mut()
-            .set_global("movies", Value::Object(obj));
+        context.stack_mut().set_global("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if true");
     }
@@ -538,9 +534,7 @@ mod test {
 
         let mut context = Context::new();
         let obj = Object::new();
-        context
-            .stack_mut()
-            .set_global("movies", Value::Object(obj));
+        context.stack_mut().set_global("movies", Value::Object(obj));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
     }
@@ -559,9 +553,7 @@ mod test {
             Value::scalar("Star Trek"),
             Value::scalar("Alien"),
         ];
-        context
-            .stack_mut()
-            .set_global("movies", Value::Array(arr));
+        context.stack_mut().set_global("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if true");
     }
@@ -576,9 +568,7 @@ mod test {
 
         let mut context = Context::new();
         let arr = vec![Value::scalar("Alien")];
-        context
-            .stack_mut()
-            .set_global("movies", Value::Array(arr));
+        context.stack_mut().set_global("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
     }

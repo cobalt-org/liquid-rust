@@ -46,7 +46,8 @@ pub fn include_tag(
         arg => return Err(unexpected_token_error("string", arg)),
     };
 
-    let partial = parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
+    let partial =
+        parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
 
     Ok(Box::new(Include {
         name: name.to_owned(),

@@ -176,15 +176,9 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context
-            .stack_mut()
-            .set_global("alpha", Value::scalar(1f64));
-        context
-            .stack_mut()
-            .set_global("beta", Value::scalar(2f64));
-        context
-            .stack_mut()
-            .set_global("gamma", Value::scalar(3f64));
+        context.stack_mut().set_global("alpha", Value::scalar(1f64));
+        context.stack_mut().set_global("beta", Value::scalar(2f64));
+        context.stack_mut().set_global("gamma", Value::scalar(3f64));
 
         let output = template.render(&mut context);
 

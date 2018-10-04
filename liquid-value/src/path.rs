@@ -14,7 +14,7 @@ pub struct Path {
 
 impl Path {
     /// Create a `Path` from iterator of `Index`s
-    pub fn new<T: IntoIterator<Item=Index>>(indexes: T) -> Self {
+    pub fn new<T: IntoIterator<Item = Index>>(indexes: T) -> Self {
         let indexes = indexes.into_iter().collect();
         Self { indexes }
     }
