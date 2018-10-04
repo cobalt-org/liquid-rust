@@ -21,6 +21,7 @@ impl Variable {
         Self { path }
     }
 
+    /// The path to the variable in the stack.
     pub fn path(&self) -> &Path {
         &self.path
     }
