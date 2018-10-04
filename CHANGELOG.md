@@ -1,15 +1,50 @@
+<a name="0.16.0"></a>
+## 0.16.0 (2018-10-04)
+
+
+#### Breaking Changes
+
+* Force serde to always be on ([7f1e2027](https://github.com/cobalt-org/liquid-rust/commit/7f1e2027c28cfd8e34e9ac7e98efd50867c5052d))
+* **context:**  Reduce scope of public API ([866eb0cb](https://github.com/cobalt-org/liquid-rust/commit/866eb0cb3758a919919009a421c92cd8a148906d))
+  * Isolate context creation ([00cac8cb](https://github.com/cobalt-org/liquid-rust/commit/00cac8cb1804e3e1c0514673a9ecc23a13a5f006))
+  * Isolate Stack state ([3f8e9432](https://github.com/cobalt-org/liquid-rust/commit/3f8e9432e481fb67ee82d1120405f00112f60810))
+  * Isolate cycle state ([34dc950a](https://github.com/cobalt-org/liquid-rust/commit/34dc950a3eddd54340910029d6b4bf13e27721b0))
+  * Isolate interrupt state ([06596643](https://github.com/cobalt-org/liquid-rust/commit/06596643a46ec40eadba000602f4af7aa81fe2a4))
+* **error:**  Clean up error API ([6a950048](https://github.com/cobalt-org/liquid-rust/commit/6a9500488bf6c3bbcc0cbc8c09f52f694595cb6f))
+  * **filter:**  Switch to standard error type ([3d18b718](https://github.com/cobalt-org/liquid-rust/commit/3d18b71865b38d9f0a3aa4722d0a7adad13c2016))
+* Cleanup each crate's API ([2e4ab661](https://github.com/cobalt-org/liquid-rust/commit/2e4ab66116ee97183b4d712006bba459f02b3b88))
+  * Reduce allocations ([cbb1d254](https://github.com/cobalt-org/liquid-rust/commit/cbb1d254b0ed15b32674e7688af6c55cee91c125), closes [#188](https://github.com/cobalt-org/liquid-rust/issues/188))
+* **interpreter:**  Clarify names ([6b96f92b](https://github.com/cobalt-org/liquid-rust/commit/6b96f92be169aad4d9393cb48d9ad37e856d014a))
+* **perf:**  Don't clone globals ([fbc1c153](https://github.com/cobalt-org/liquid-rust/commit/fbc1c153df9988db09cbb8a0a148c8a30b9ab598))
+* **render:**  Use a Write ([0093a595](https://github.com/cobalt-org/liquid-rust/commit/0093a595b9dc0f335c3f8eed7a0309123a82b708), closes [#187](https://github.com/cobalt-org/liquid-rust/issues/187))
+* **value:**
+  *  Support str's ([e3aae68d](https://github.com/cobalt-org/liquid-rust/commit/e3aae68d672570db89aeea3daf58423b8f9e6bda))
+  *  Reduce allocations with `Cow` ([7fd1e62d](https://github.com/cobalt-org/liquid-rust/commit/7fd1e62d7622ea5e61ef52f225b897f318d59b2c))
+
+#### Features
+
+* **for-block:**  Support iterating on Object ([2469bfc0](https://github.com/cobalt-org/liquid-rust/commit/2469bfc0678b75e16e466cc73b7761b1eb27658d), closes [#201](https://github.com/cobalt-org/liquid-rust/issues/201))
+* **value:**  Create `to_value` ([61ae6de6](https://github.com/cobalt-org/liquid-rust/commit/61ae6de625c53171327263bafec954f0ee2a4977))
+
+#### Performance
+
+* Reduce allocations ([cbb1d254](https://github.com/cobalt-org/liquid-rust/commit/cbb1d254b0ed15b32674e7688af6c55cee91c125), closes [#188](https://github.com/cobalt-org/liquid-rust/issues/188))
+* **render:**  Use a Write ([0093a595](https://github.com/cobalt-org/liquid-rust/commit/0093a595b9dc0f335c3f8eed7a0309123a82b708), closes [#187](https://github.com/cobalt-org/liquid-rust/issues/187))
+* **value:**  Support `&'static str`'s ([e3aae68d](https://github.com/cobalt-org/liquid-rust/commit/e3aae68d672570db89aeea3daf58423b8f9e6bda)) ([7fd1e62d](https://github.com/cobalt-org/liquid-rust/commit/7fd1e62d7622ea5e61ef52f225b897f318d59b2c))
+
+
 <a name="0.15.0"></a>
 ## 0.15.0 (2018-07-30)
 
 
 #### Breaking Changes
 
-*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507))
 
 #### Features
 
 *   Expose filters/tags ([027a67cc](https://github.com/cobalt-org/liquid-rust/commit/027a67cccb9b40ffac0e25d5d9cd4501bdbe4d63))
-*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+*   Upgrade from f32 to f64 ([3eddded2](https://github.com/cobalt-org/liquid-rust/commit/3eddded24056c9f5c2d2d2f3adf143809fe82507))
 * **date:**  Support today/now ([6a1e0a0f](https://github.com/cobalt-org/liquid-rust/commit/6a1e0a0f3ddc7892e8c84597929dbebc4dd80d29), closes [#181](https://github.com/cobalt-org/liquid-rust/issues/181))
 
 
@@ -162,11 +197,11 @@ Minor docs change.
 #### Bug Fixes
 
 * **dbg:**  Remove debug code ([7bf2a3d4](https://github.com/cobalt-org/liquid-rust/commit/7bf2a3d4754252a0c67c7c514e1dca542e565e4c))
-* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08))
 
 #### Breaking Changes
 
-* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+* **for:**  Remove non-standard for_loop variable ([0d9515fe](https://github.com/cobalt-org/liquid-rust/commit/0d9515fe1a8c89e9604beb1a69370256d0f23f08))
 
 
 
