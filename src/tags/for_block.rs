@@ -74,6 +74,14 @@ fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
         Value::Array(x) => Ok(x),
+        Value::Object(x) => {
+            let x = x
+                .iter()
+                .map(|(k, v)| {
+                    Value::Array(vec![Value::scalar(k.as_ref().to_owned()), v.to_owned()])
+                }).collect();
+            Ok(x)
+        }
         x => Err(unexpected_value_error("array", Some(x.type_name()))),
     }
 }
