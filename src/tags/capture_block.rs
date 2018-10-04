@@ -33,7 +33,7 @@ impl Renderable for Capture {
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
         context
             .stack_mut()
-            .set_global_val(self.id.to_owned(), Value::scalar(output));
+            .set_global(self.id.to_owned(), Value::scalar(output));
         Ok(())
     }
 }
@@ -91,12 +91,12 @@ mod test {
 
         let mut ctx = Context::new();
         ctx.stack_mut()
-            .set_global_val("item", Value::scalar("potato"));
-        ctx.stack_mut().set_global_val("i", Value::scalar(42f64));
+            .set_global("item", Value::scalar("potato"));
+        ctx.stack_mut().set_global("i", Value::scalar(42f64));
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
-            ctx.stack().get_val_by_index([Index::with_key("attribute_name")].iter()).unwrap(),
+            ctx.stack().get(&vec![Index::with_key("attribute_name")].into_iter().collect()).unwrap(),
             &Value::scalar("potato-42-color")
         );
         assert_eq!(output, "");

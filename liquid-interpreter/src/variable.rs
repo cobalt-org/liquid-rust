@@ -1,10 +1,9 @@
 use std::fmt;
 use std::io::Write;
 
-use itertools;
-
 use error::{Result, ResultLiquidChainExt};
 use value::Index;
+use value::Path;
 
 use super::Context;
 use super::Renderable;
@@ -12,38 +11,36 @@ use super::Renderable;
 /// A `Value` reference.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Variable {
-    indexes: Vec<Index>,
+    path: Path,
 }
 
 impl Variable {
     /// Create a `Value` reference.
     pub fn new<I: Into<Index>>(value: I) -> Self {
-        let indexes = vec![value.into()];
-        Self { indexes }
+        let path = Path::with_index(value);
+        Self { path }
     }
 
-    /// Access the `Value` reference.
-    pub fn indexes(&self) -> &[Index] {
-        &self.indexes
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 }
 
 impl Extend<Index> for Variable {
     fn extend<T: IntoIterator<Item = Index>>(&mut self, iter: T) {
-        self.indexes.extend(iter);
+        self.path.extend(iter);
     }
 }
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = itertools::join(self.indexes().iter(), ".");
-        write!(f, "{}", data)
+        write!(f, "{}", self.path)
     }
 }
 
 impl Renderable for Variable {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = context.stack().get_val_by_index(self.indexes.iter())?;
+        let value = context.stack().get(&self.path)?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }

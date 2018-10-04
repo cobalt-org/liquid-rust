@@ -7,6 +7,7 @@
 #[macro_use]
 extern crate serde;
 extern crate chrono;
+extern crate itertools;
 extern crate liquid_error;
 extern crate num_traits;
 
@@ -14,6 +15,7 @@ mod index;
 mod scalar;
 mod ser;
 mod values;
+mod path;
 
 /// Liquid Processing Errors.
 pub mod error {
@@ -21,6 +23,7 @@ pub mod error {
 }
 
 pub use index::*;
+pub use path::*;
 pub use scalar::*;
 pub use ser::*;
 pub use values::*;

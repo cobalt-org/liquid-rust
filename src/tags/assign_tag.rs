@@ -27,7 +27,7 @@ impl Renderable for Assign {
         let value = self.src.evaluate(context).trace_with(|| self.trace())?;
         context
             .stack_mut()
-            .set_global_val(self.dst.to_owned(), value);
+            .set_global(self.dst.to_owned(), value);
         Ok(())
     }
 }
@@ -93,7 +93,7 @@ mod test {
         // test one: no matching value in `tags`
         {
             let mut context = Context::new();
-            context.stack_mut().set_global_val(
+            context.stack_mut().set_global(
                 "tags",
                 Value::Array(vec![
                     Value::scalar("alpha"),
@@ -104,7 +104,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get_val_by_index([Index::with_key("freestyle")].iter()).unwrap(),
+                context.stack().get(&vec![Index::with_key("freestyle")].into_iter().collect()).unwrap(),
                 &Value::scalar(false)
             );
             assert_eq!(output, "");
@@ -113,7 +113,7 @@ mod test {
         // test two: matching value in `tags`
         {
             let mut context = Context::new();
-            context.stack_mut().set_global_val(
+            context.stack_mut().set_global(
                 "tags",
                 Value::Array(vec![
                     Value::scalar("alpha"),
@@ -125,7 +125,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get_val_by_index([Index::with_key("freestyle")].iter()).unwrap(),
+                context.stack().get(&vec![Index::with_key("freestyle")].into_iter().collect()).unwrap(),
                 &Value::scalar(true)
             );
             assert_eq!(output, "<p>Freestyle!</p>");

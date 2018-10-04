@@ -103,10 +103,10 @@ mod test {
             .build();
         context
             .stack_mut()
-            .set_global_val("num", value::Value::scalar(5f64));
+            .set_global("num", value::Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global_val("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }
@@ -126,10 +126,10 @@ mod test {
             .build();
         context
             .stack_mut()
-            .set_global_val("num", value::Value::scalar(5f64));
+            .set_global("num", value::Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global_val("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot\n");
     }

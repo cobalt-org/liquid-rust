@@ -178,13 +178,13 @@ mod test {
         let mut context = Context::new();
         context
             .stack_mut()
-            .set_global_val("alpha", Value::scalar(1f64));
+            .set_global("alpha", Value::scalar(1f64));
         context
             .stack_mut()
-            .set_global_val("beta", Value::scalar(2f64));
+            .set_global("beta", Value::scalar(2f64));
         context
             .stack_mut()
-            .set_global_val("gamma", Value::scalar(3f64));
+            .set_global("gamma", Value::scalar(3f64));
 
         let output = template.render(&mut context);
 

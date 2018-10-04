@@ -22,7 +22,7 @@ impl Argument {
             Argument::Val(ref x) => x.clone(),
             Argument::Var(ref x) => context
                 .stack()
-                .get_val_by_index(x.indexes().iter())?
+                .get(x.path())?
                 .clone(),
         };
         Ok(val)
