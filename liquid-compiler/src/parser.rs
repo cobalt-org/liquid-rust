@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::slice::Iter;
 
+use liquid_interpreter::Argument;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Text;
 use liquid_interpreter::Variable;
@@ -61,7 +62,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             if tokens.len() > 1 && (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) =>
         {
             let indexes = parse_indexes(&tokens[1..])?;
-            let mut result = Variable::new(x.clone());
+            let mut result = Variable::with_index(x.clone());
             result.extend(indexes);
             Ok(Box::new(result))
         }
@@ -121,11 +122,22 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
 /// used internally, from a list of Tokens. This is mostly useful
 /// for correctly parsing complex expressions with filters.
 pub fn parse_output(tokens: &[Token]) -> Result<FilterChain> {
-    let entry = tokens[0].to_arg()?;
+    let first_pipe = tokens
+        .iter()
+        .enumerate()
+        .filter_map(|(i, t)| if *t == Token::Pipe { Some(i) } else { None })
+        .next()
+        .unwrap_or_else(|| tokens.len());
+
+    let mut entry = tokens[0].to_arg()?;
+    if let Argument::Var(ref mut entry) = &mut entry {
+        let indexes = parse_indexes(&tokens[1..first_pipe])?;
+        entry.extend(indexes);
+    }
+    let tokens = &tokens[first_pipe..];
 
     let mut filters = vec![];
     let mut iter = tokens.iter().peekable();
-    iter.next();
 
     while iter.peek() != None {
         expect(&mut iter, &Token::Pipe)?;
@@ -339,7 +351,31 @@ mod test_parse_output {
         assert_eq!(
             result.unwrap(),
             FilterChain::new(
-                Argument::Var(Variable::new("abc")),
+                Argument::Var(Variable::with_index("abc")),
+                vec![
+                    FilterCall::new(
+                        "def",
+                        vec![
+                            Argument::Val(Value::scalar("1")),
+                            Argument::Val(Value::scalar(2.0)),
+                            Argument::Val(Value::scalar("3")),
+                        ],
+                    ),
+                    FilterCall::new("blabla", vec![]),
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn parses_index() {
+        let tokens = granularize("abc[0] | def:'1',2,'3' | blabla").unwrap();
+
+        let result = parse_output(&tokens);
+        assert_eq!(
+            result.unwrap(),
+            FilterChain::new(
+                Argument::Var(Variable::with_index("abc").push_index(0)),
                 vec![
                     FilterCall::new(
                         "def",

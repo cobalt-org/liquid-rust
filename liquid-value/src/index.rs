@@ -67,6 +67,12 @@ impl fmt::Display for Index {
     }
 }
 
+impl From<isize> for Index {
+    fn from(k: isize) -> Self {
+        Self::with_index(k)
+    }
+}
+
 impl From<String> for Index {
     fn from(k: String) -> Self {
         Self::with_key(k)

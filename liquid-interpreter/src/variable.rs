@@ -16,9 +16,22 @@ pub struct Variable {
 
 impl Variable {
     /// Create a `Value` reference.
+    #[deprecated(since = "0.16.1", note = "please use `with_index` instead")]
     pub fn new<I: Into<Index>>(value: I) -> Self {
         let path = Path::with_index(value);
         Self { path }
+    }
+
+    /// Create a `Value` reference.
+    pub fn with_index<I: Into<Index>>(value: I) -> Self {
+        let path = Path::with_index(value);
+        Self { path }
+    }
+
+    /// Append an `Index`.
+    pub fn push_index<I: Into<Index>>(mut self, value: I) -> Self {
+        self.path = self.path.push(value);
+        self
     }
 
     /// The path to the variable in the stack.
@@ -62,7 +75,7 @@ mod test {
 test_a: ["test"]
 "#,
         ).unwrap();
-        let mut actual = Variable::new("test_a");
+        let mut actual = Variable::with_index("test_a");
         let index = vec![Index::with_index(0)];
         actual.extend(index);
 
@@ -78,7 +91,7 @@ test_a: ["test"]
 test_a: ["test1", "test2"]
 "#,
         ).unwrap();
-        let mut actual = Variable::new("test_a");
+        let mut actual = Variable::with_index("test_a");
         let index = vec![Index::with_index(-1)];
         actual.extend(index);
 
@@ -95,7 +108,7 @@ test_a:
   - test_h: 5
 "#,
         ).unwrap();
-        let mut actual = Variable::new("test_a");
+        let mut actual = Variable::with_index("test_a");
         let index = vec![Index::with_index(0), Index::with_key("test_h")];
         actual.extend(index);
 

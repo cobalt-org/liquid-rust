@@ -25,6 +25,12 @@ impl Path {
         Self { indexes }
     }
 
+    /// Append an index.
+    pub fn push<I: Into<Index>>(mut self, value: I) -> Self {
+        self.indexes.push(value.into());
+        self
+    }
+
     /// Access the `Value` reference.
     pub fn iter(&self) -> IndexIter {
         IndexIter(self.indexes.iter())

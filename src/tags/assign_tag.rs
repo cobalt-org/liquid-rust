@@ -72,7 +72,70 @@ mod test {
     }
 
     #[test]
-    fn assignment_in_loop_persists_on_loop_exit() {
+    fn assign() {
+        let text = concat!("{% assign freestyle = false %}", "{{ freestyle }}");
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "false");
+    }
+
+    #[test]
+    fn assign_array_indexing() {
+        let text = concat!("{% assign freestyle = tags[1] %}", "{{ freestyle }}");
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        context.stack_mut().set_global(
+            "tags",
+            Value::Array(vec![
+                Value::scalar("alpha"),
+                Value::scalar("beta"),
+                Value::scalar("gamma"),
+            ]),
+        );
+
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "beta");
+    }
+
+    #[test]
+    fn assign_object_indexing() {
+        let text = concat!(
+            r#"{% assign freestyle = tags["greek"] %}"#,
+            "{{ freestyle }}"
+        );
+        let tokens = compiler::tokenize(text).unwrap();
+        let options = options();
+        let template = compiler::parse(&tokens, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        context.stack_mut().set_global(
+            "tags",
+            Value::Object(
+                vec![("greek".into(), Value::scalar("alpha"))]
+                    .into_iter()
+                    .collect(),
+            ),
+        );
+
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "alpha");
+    }
+
+    #[test]
+    fn assign_in_loop_persists_on_loop_exit() {
         let text = concat!(
             "{% assign freestyle = false %}",
             "{% for t in tags %}{% if t == 'freestyle' %}",
