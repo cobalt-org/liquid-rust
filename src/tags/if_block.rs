@@ -12,13 +12,13 @@ use compiler::{consume_value_token, parse, split_block, unexpected_token_error};
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{unexpected_value_error, Argument};
+use interpreter::{unexpected_value_error, Expression};
 
 #[derive(Clone, Debug)]
 struct BinaryCondition {
-    lh: Argument,
+    lh: Expression,
     comparison: ComparisonOperator,
-    rh: Argument,
+    rh: Expression,
 }
 
 impl BinaryCondition {
@@ -48,7 +48,7 @@ impl fmt::Display for BinaryCondition {
 
 #[derive(Clone, Debug)]
 struct ExistenceCondition {
-    lh: Argument,
+    lh: Expression,
 }
 
 impl ExistenceCondition {

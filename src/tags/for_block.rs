@@ -11,15 +11,15 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{expect, parse, split_block, unexpected_token_error};
-use interpreter::Argument;
+use interpreter::Expression;
 use interpreter::Renderable;
 use interpreter::Template;
 use interpreter::{unexpected_value_error, Context, Interrupt};
 
 #[derive(Clone, Debug)]
 enum Range {
-    Array(Argument),
-    Counted(Argument, Argument),
+    Array(Expression),
+    Counted(Expression, Expression),
 }
 
 impl Range {
@@ -100,7 +100,7 @@ fn iter_slice(
 }
 
 /// Extracts an integer value or an identifier from the token stream
-fn parse_attr(args: &mut Iter<Token>) -> Result<Argument> {
+fn parse_attr(args: &mut Iter<Token>) -> Result<Expression> {
     expect(args, &Token::Colon)?;
     match args.next() {
         t @ Some(Token::IntegerLiteral(_)) | t @ Some(Token::Identifier(_)) => {
@@ -111,7 +111,7 @@ fn parse_attr(args: &mut Iter<Token>) -> Result<Argument> {
 }
 
 /// Evaluates an attribute, returning Ok(None) if input is also None.
-fn evaluate_attr(attr: &Option<Argument>, context: &mut Context) -> Result<Option<usize>> {
+fn evaluate_attr(attr: &Option<Expression>, context: &mut Context) -> Result<Option<usize>> {
     match attr {
         Some(attr) => {
             let value = attr.evaluate(context)?;
@@ -132,8 +132,8 @@ struct For {
     range: Range,
     item_template: Template,
     else_template: Option<Template>,
-    limit: Option<Argument>,
-    offset: Option<Argument>,
+    limit: Option<Expression>,
+    offset: Option<Expression>,
     reversed: bool,
 }
 
@@ -149,7 +149,7 @@ impl For {
     }
 }
 
-fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
+fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
         Value::Array(x) => Ok(x),
@@ -165,7 +165,7 @@ fn get_array(context: &Context, array_id: &Argument) -> Result<Vec<Value>> {
     }
 }
 
-fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isize> {
+fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<isize> {
     let value = arg.evaluate(context)?;
 
     let value = value
@@ -243,8 +243,8 @@ fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
 fn trace_for_tag(
     var_name: &str,
     range: &Range,
-    limit: &Option<Argument>,
-    offset: &Option<Argument>,
+    limit: &Option<Expression>,
+    offset: &Option<Expression>,
     reversed: bool,
 ) -> String {
     let mut parameters = vec![];
@@ -335,9 +335,9 @@ struct TableRow {
     var_name: String,
     range: Range,
     item_template: Template,
-    cols: Option<Argument>,
-    limit: Option<Argument>,
-    offset: Option<Argument>,
+    cols: Option<Expression>,
+    limit: Option<Expression>,
+    offset: Option<Expression>,
 }
 
 impl TableRow {
@@ -355,9 +355,9 @@ impl TableRow {
 fn trace_tablerow_tag(
     var_name: &str,
     range: &Range,
-    cols: &Option<Argument>,
-    limit: &Option<Argument>,
-    offset: &Option<Argument>,
+    cols: &Option<Expression>,
+    limit: &Option<Expression>,
+    offset: &Option<Expression>,
 ) -> String {
     let mut parameters = vec![];
     if let Some(cols) = cols {

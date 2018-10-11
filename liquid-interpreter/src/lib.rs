@@ -19,8 +19,8 @@ pub mod value {
     pub use liquid_value::*;
 }
 
-mod argument;
 mod context;
+mod expression;
 mod filter;
 mod filter_chain;
 mod globals;
@@ -29,8 +29,8 @@ mod template;
 mod text;
 mod variable;
 
-pub use self::argument::*;
 pub use self::context::*;
+pub use self::expression::*;
 pub use self::filter::*;
 pub use self::filter_chain::*;
 pub use self::globals::*;

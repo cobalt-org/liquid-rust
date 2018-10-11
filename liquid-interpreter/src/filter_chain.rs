@@ -6,20 +6,20 @@ use itertools;
 use error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 use value::Value;
 
-use super::Argument;
 use super::Context;
+use super::Expression;
 use super::Renderable;
 
 /// A `Value` filter.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FilterCall {
     name: String,
-    arguments: Vec<Argument>,
+    arguments: Vec<Expression>,
 }
 
 impl FilterCall {
     /// Create filter expression.
-    pub fn new(name: &str, arguments: Vec<Argument>) -> FilterCall {
+    pub fn new(name: &str, arguments: Vec<Expression>) -> FilterCall {
         FilterCall {
             name: name.to_owned(),
             arguments,
@@ -41,13 +41,13 @@ impl fmt::Display for FilterCall {
 /// A `Value` expression.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FilterChain {
-    entry: Argument,
+    entry: Expression,
     filters: Vec<FilterCall>,
 }
 
 impl FilterChain {
     /// Create a new expression.
-    pub fn new(entry: Argument, filters: Vec<FilterCall>) -> Self {
+    pub fn new(entry: Expression, filters: Vec<FilterCall>) -> Self {
         Self { entry, filters }
     }
 

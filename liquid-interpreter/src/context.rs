@@ -5,7 +5,7 @@ use std::sync;
 use error::{Error, Result};
 use value::{Object, Path, Value};
 
-use super::Argument;
+use super::Expression;
 use super::Globals;
 use super::{BoxedValueFilter, FilterValue};
 
@@ -83,7 +83,7 @@ where
 
 impl<'a, 'g> CycleState<'a, 'g> {
     /// See `cycle` tag.
-    pub fn cycle_element(&mut self, name: &str, values: &[Argument]) -> Result<Value> {
+    pub fn cycle_element(&mut self, name: &str, values: &[Expression]) -> Result<Value> {
         let index = self.context.cycles.cycle_index(name, values.len());
         if index >= values.len() {
             return Err(Error::with_msg(
@@ -170,16 +170,15 @@ impl<'g> Stack<'g> {
         let key = indexes
             .next()
             .ok_or_else(|| Error::with_msg("No index provided"))?;
-        let key = key.as_key().ok_or_else(|| {
-            Error::with_msg("Root index must be an object key").context("index", format!("{}", key))
-        })?;
-        let value = self.get_root(key)?;
+        let key = key.to_str();
+        let value = self.get_root(key.as_ref())?;
 
         indexes.fold(Ok(value), |value, index| {
             let value = value?;
             let child = value.get(index);
-            let child = child
-                .ok_or_else(|| Error::with_msg("Invalid index").context("index", key.to_owned()))?;
+            let child = child.ok_or_else(|| {
+                Error::with_msg("Invalid index").context("index", key.as_ref().to_owned())
+            })?;
             Ok(child)
         })
     }
@@ -387,7 +386,7 @@ impl<'g> Context<'g> {
 mod test {
     use super::*;
 
-    use value::Index;
+    use value::Scalar;
 
     #[test]
     fn stack_get_root() {
@@ -414,7 +413,7 @@ mod test {
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
         ctx.stack_mut().set_global("post", Value::Object(post));
-        let indexes = vec![Index::with_key("post"), Index::with_key("number")]
+        let indexes = vec![Scalar::new("post"), Scalar::new("number")]
             .into_iter()
             .collect();
         assert_eq!(ctx.stack().get(&indexes).unwrap(), &Value::scalar(42f64));

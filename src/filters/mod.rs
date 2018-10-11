@@ -15,7 +15,6 @@ use std::cmp;
 
 use itertools;
 use liquid_error;
-use liquid_value::Index;
 use liquid_value::Scalar;
 use liquid_value::Value;
 use unicode_segmentation::UnicodeSegmentation;
@@ -413,7 +412,7 @@ pub fn map(input: &Value, args: &[Value]) -> FilterResult {
         .ok_or_else(|| invalid_input("Array expected"))?;
 
     let property = args[0].to_str();
-    let property = Index::with_key(property.into_owned());
+    let property = Scalar::new(property.into_owned());
 
     let result: Vec<_> = array
         .iter()

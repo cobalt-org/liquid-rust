@@ -54,7 +54,7 @@ mod test {
     use compiler;
     use interpreter;
     use tags;
-    use value::Index;
+    use value::Scalar;
     use value::Value;
 
     fn options() -> LiquidOptions {
@@ -167,7 +167,7 @@ mod test {
             assert_eq!(
                 context
                     .stack()
-                    .get(&vec![Index::with_key("freestyle")].into_iter().collect())
+                    .get(&vec![Scalar::new("freestyle")].into_iter().collect())
                     .unwrap(),
                 &Value::scalar(false)
             );
@@ -191,7 +191,7 @@ mod test {
             assert_eq!(
                 context
                     .stack()
-                    .get(&vec![Index::with_key("freestyle")].into_iter().collect())
+                    .get(&vec![Scalar::new("freestyle")].into_iter().collect())
                     .unwrap(),
                 &Value::scalar(true)
             );

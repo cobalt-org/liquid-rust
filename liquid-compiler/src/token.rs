@@ -1,8 +1,8 @@
 use std::fmt;
 
-use liquid_interpreter::Argument;
+use liquid_interpreter::Expression;
 use liquid_interpreter::Variable;
-use liquid_value::{Index, Value};
+use liquid_value::Value;
 
 use super::error::Result;
 use super::parser::unexpected_token_error;
@@ -71,16 +71,19 @@ impl Token {
 
     /// Translates a Token to a Value, looking it up in the context if
     /// necessary
-    pub fn to_arg(&self) -> Result<Argument> {
+    pub fn to_arg(&self) -> Result<Expression> {
         match *self {
-            Token::IntegerLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
-            Token::FloatLiteral(f) => Ok(Argument::Val(Value::scalar(f))),
-            Token::StringLiteral(ref s) => Ok(Argument::Val(Value::scalar(s.to_owned()))),
-            Token::BooleanLiteral(b) => Ok(Argument::Val(Value::scalar(b))),
+            Token::IntegerLiteral(f) => Ok(Expression::with_literal(f)),
+            Token::FloatLiteral(f) => Ok(Expression::with_literal(f)),
+            Token::StringLiteral(ref s) => Ok(Expression::with_literal(s.to_owned())),
+            Token::BooleanLiteral(b) => Ok(Expression::with_literal(b)),
             Token::Identifier(ref id) => {
                 let mut var = Variable::default();
-                var.extend(id.split('.').map(Index::with_key));
-                Ok(Argument::Var(var))
+                var.extend(
+                    id.split('.')
+                        .map(|s| Expression::with_literal(s.to_owned())),
+                );
+                Ok(Expression::Variable(var))
             }
             ref x => Err(unexpected_token_error(
                 "string | number | boolean | identifier",
