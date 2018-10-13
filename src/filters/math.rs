@@ -17,6 +17,52 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
     }
 }
 
+/// Limits a number to a minimum value.
+pub fn at_least(input: &Value, args: &[Value]) -> FilterResult {
+    check_args_len(args, 1, 0)?;
+    let input = input
+        .as_scalar()
+        .ok_or_else(|| invalid_input("Number expected"))?;
+
+    let max_value = args[0]
+        .as_scalar()
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+
+    let result = input
+        .to_integer()
+        .and_then(|i| max_value.to_integer().map(|max| Value::scalar(i.max(max))))
+        .or_else(|| {
+            input
+                .to_float()
+                .and_then(|i| max_value.to_float().map(|max| Value::scalar(i.max(max))))
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
+
+    Ok(result)
+}
+
+/// Limits a number to a maximum value.
+pub fn at_most(input: &Value, args: &[Value]) -> FilterResult {
+    check_args_len(args, 1, 0)?;
+    let input = input
+        .as_scalar()
+        .ok_or_else(|| invalid_input("Number expected"))?;
+
+    let max_value = args[0]
+        .as_scalar()
+        .ok_or_else(|| invalid_argument(0, "Number expected"))?;
+
+    let result = input
+        .to_integer()
+        .and_then(|i| max_value.to_integer().map(|max| Value::scalar(i.min(max))))
+        .or_else(|| {
+            input
+                .to_float()
+                .and_then(|i| max_value.to_float().map(|max| Value::scalar(i.min(max))))
+        }).ok_or_else(|| invalid_argument(0, "Number expected"))?;
+
+    Ok(result)
+}
+
 pub fn plus(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 1, 0)?;
 
@@ -197,6 +243,44 @@ mod tests {
         assert_eq!(unit!(abs, Value::scalar(-17f64), &[]), Value::scalar(17f64));
         assert_eq!(unit!(abs, Value::scalar(4f64), &[]), Value::scalar(4f64));
         assert_eq!(unit!(abs, tos!("-19.86"), &[]), Value::scalar(19.86f64));
+    }
+    #[test]
+    fn unit_at_least() {
+        assert_eq!(
+            unit!(at_least, Value::scalar(4f64), &[Value::scalar(5f64)]),
+            Value::scalar(5f64)
+        );
+        assert_eq!(
+            unit!(at_least, Value::scalar(4f64), &[Value::scalar(3f64)]),
+            Value::scalar(4f64)
+        );
+        assert_eq!(
+            unit!(at_least, Value::scalar(21.5), &[Value::scalar(2.25)]),
+            Value::scalar(21.5)
+        );
+        assert_eq!(
+            unit!(at_least, Value::scalar(21.5), &[Value::scalar(42.25)]),
+            Value::scalar(42.25)
+        );
+    }
+    #[test]
+    fn unit_at_most() {
+        assert_eq!(
+            unit!(at_most, Value::scalar(4f64), &[Value::scalar(5f64)]),
+            Value::scalar(4f64)
+        );
+        assert_eq!(
+            unit!(at_most, Value::scalar(4f64), &[Value::scalar(3f64)]),
+            Value::scalar(3f64)
+        );
+        assert_eq!(
+            unit!(at_most, Value::scalar(21.5), &[Value::scalar(2.25)]),
+            Value::scalar(2.25)
+        );
+        assert_eq!(
+            unit!(at_most, Value::scalar(21.5), &[Value::scalar(42.25)]),
+            Value::scalar(21.5)
+        );
     }
     #[test]
     fn unit_plus() {

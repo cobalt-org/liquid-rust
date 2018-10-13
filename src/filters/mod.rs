@@ -7,7 +7,7 @@ pub use self::date::date;
 #[cfg(feature = "extra-filters")]
 pub use self::date::date_in_tz;
 pub use self::html::{escape, escape_once, newline_to_br, strip_html};
-pub use self::math::{abs, divided_by, minus, modulo, plus, times};
+pub use self::math::{abs, at_least, at_most, divided_by, minus, modulo, plus, times};
 pub use self::url::{url_decode, url_encode};
 
 use std::borrow::Cow;
