@@ -58,6 +58,8 @@ impl ParserBuilder {
     pub fn liquid_filters(self) -> Self {
         self.filter("abs", filters::abs as interpreter::FnFilterValue)
             .filter("append", filters::append as interpreter::FnFilterValue)
+            .filter("at_least", filters::at_least as interpreter::FnFilterValue)
+            .filter("at_most", filters::at_most as interpreter::FnFilterValue)
             .filter(
                 "capitalize",
                 filters::capitalize as interpreter::FnFilterValue,
