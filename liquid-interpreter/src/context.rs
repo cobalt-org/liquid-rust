@@ -97,11 +97,34 @@ impl<'a, 'g> CycleState<'a, 'g> {
     }
 }
 
+/// Remembers the content of the last rendered `ifstate` block.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct IfChangedState {
+    last_rendered: Option<String>,
+}
+
+impl IfChangedState {
+    /// Checks whether or not a new rendered `&str` is different from
+    /// `last_rendered` and updates `last_rendered` value to the new value.
+    pub fn has_changed(&mut self, rendered: &str) -> bool {
+        let has_changed = if let Some(last_rendered) = &self.last_rendered {
+            last_rendered != rendered
+        } else {
+            true
+        };
+        self.last_rendered = Some(rendered.to_owned());
+
+        has_changed
+    }
+}
+
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
     globals: Option<&'g Globals>,
     stack: Vec<Object>,
+    // State of variables created through increment or decrement tags.
+    indexes: Object,
 }
 
 impl<'g> Stack<'g> {
@@ -109,6 +132,7 @@ impl<'g> Stack<'g> {
     pub fn empty() -> Self {
         Self {
             globals: None,
+            indexes: Object::new(),
             // Mutable frame for globals.
             stack: vec![Object::new()],
         }
@@ -169,6 +193,20 @@ impl<'g> Stack<'g> {
         self.globals
             .ok_or_else(|| Error::with_msg("Invalid index").context("index", name.to_owned()))
             .and_then(|g| g.get(name))
+            .or_else(|err| self.get_index(name).ok_or_else(|| err))
+    }
+
+    /// Used by increment and decrement tags
+    pub fn set_index<S>(&mut self, name: S, val: Value) -> Option<Value>
+    where
+        S: Into<borrow::Cow<'static, str>>,
+    {
+        self.indexes.insert(name.into(), val)
+    }
+
+    /// Used by increment and decrement tags
+    pub fn get_index<'a>(&'a self, name: &str) -> Option<&'a Value> {
+        self.indexes.get(name)
     }
 
     /// Sets a value in the global context.
@@ -255,6 +293,7 @@ impl<'g> ContextBuilder<'g> {
             stack,
             interrupt: InterruptState::default(),
             cycles: CycleStateInner::default(),
+            ifchanged: IfChangedState::default(),
             filters: self.filters,
         }
     }
@@ -273,6 +312,7 @@ pub struct Context<'g> {
 
     interrupt: InterruptState,
     cycles: CycleStateInner,
+    ifchanged: IfChangedState,
 
     filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
 }
@@ -309,6 +349,11 @@ impl<'g> Context<'g> {
         'g: 'a,
     {
         CycleState { context: self }
+    }
+
+    /// Access the block's `IfChangedState`.
+    pub fn ifchanged(&mut self) -> &mut IfChangedState {
+        &mut self.ifchanged
     }
 
     /// Access the current `Stack`.

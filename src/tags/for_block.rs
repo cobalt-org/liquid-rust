@@ -3,7 +3,7 @@ use std::io::Write;
 use std::slice::Iter;
 
 use itertools;
-use liquid_error::{Result, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use liquid_value::{Object, Scalar, Value};
 
 use compiler::Element;
@@ -45,6 +45,57 @@ impl fmt::Display for Range {
             Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
         }
     }
+}
+
+fn parse_range(args: &mut Iter<Token>) -> Result<Range> {
+    if let Some(token) = args.next() {
+        match token {
+            &Token::Identifier(_) => {
+                let arg = token.to_arg()?;
+                Ok(Range::Array(arg))
+            }
+            &Token::OpenRound => {
+                // this might be a range, let's try and see
+                let start = range_end_point(args)?.to_arg()?;
+
+                expect(args, &Token::DotDot)?;
+
+                let stop = range_end_point(args)?.to_arg()?;
+
+                expect(args, &Token::CloseRound)?;
+
+                Ok(Range::Counted(start, stop))
+            }
+            x => Err(unexpected_token_error("identifier | `(`", Some(x))),
+        }
+    } else {
+        let x: Option<String> = None;
+        Err(unexpected_token_error("identifier | `(`", x))
+    }
+}
+
+fn iter_slice(
+    range: &mut [Value],
+    limit: Option<usize>,
+    offset: usize,
+    reversed: bool,
+) -> &[Value] {
+    let end = match limit {
+        Some(n) => offset + n,
+        None => range.len(),
+    };
+
+    let slice = if end > range.len() {
+        &mut range[offset..]
+    } else {
+        &mut range[offset..end]
+    };
+
+    if reversed {
+        slice.reverse();
+    };
+
+    slice
 }
 
 #[derive(Debug)]
@@ -98,29 +149,10 @@ fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isi
     Ok(value as isize)
 }
 
-fn for_slice(range: &mut [Value], limit: Option<usize>, offset: usize, reversed: bool) -> &[Value] {
-    let end = match limit {
-        Some(n) => offset + n,
-        None => range.len(),
-    };
-
-    let slice = if end > range.len() {
-        &mut range[offset..]
-    } else {
-        &mut range[offset..end]
-    };
-
-    if reversed {
-        slice.reverse();
-    };
-
-    slice
-}
-
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
-        let range = for_slice(&mut range, self.limit, self.offset, self.reversed);
+        let range = iter_slice(&mut range, self.limit, self.offset, self.reversed);
 
         match range.len() {
             0 => {
@@ -226,30 +258,7 @@ pub fn for_block(
 
     expect(&mut args, &Token::Identifier("in".to_owned()))?;
 
-    let range = if let Some(token) = args.next() {
-        match token {
-            &Token::Identifier(_) => {
-                let arg = token.to_arg()?;
-                Range::Array(arg)
-            }
-            &Token::OpenRound => {
-                // this might be a range, let's try and see
-                let start = range_end_point(&mut args)?.to_arg()?;
-
-                expect(&mut args, &Token::DotDot)?;
-
-                let stop = range_end_point(&mut args)?.to_arg()?;
-
-                expect(&mut args, &Token::CloseRound)?;
-
-                Range::Counted(start, stop)
-            }
-            x => return Err(unexpected_token_error("identifier | `(`", Some(x))),
-        }
-    } else {
-        let x: Option<String> = None;
-        return Err(unexpected_token_error("identifier | `(`", x));
-    };
+    let range = parse_range(&mut args)?;
 
     // now we get to check for parameters...
     let mut limit: Option<usize> = None;
@@ -297,6 +306,154 @@ pub fn for_block(
         limit,
         offset,
         reversed,
+    }))
+}
+
+#[derive(Debug)]
+struct TableRow {
+    var_name: String,
+    range: Range,
+    item_template: Template,
+    cols: Option<usize>,
+    limit: Option<usize>,
+    offset: usize,
+}
+
+impl TableRow {
+    fn trace(&self) -> String {
+        trace_tablerow_tag(
+            &self.var_name,
+            &self.range,
+            self.cols,
+            self.limit,
+            self.offset,
+        )
+    }
+}
+
+fn trace_tablerow_tag(
+    var_name: &str,
+    range: &Range,
+    cols: Option<usize>,
+    limit: Option<usize>,
+    offset: usize,
+) -> String {
+    let mut parameters = vec![];
+    if let Some(cols) = cols {
+        parameters.push(format!("cols:{}", cols));
+    }
+    if let Some(limit) = limit {
+        parameters.push(format!("limit:{}", limit));
+    }
+    if 0 < offset {
+        parameters.push(format!("offset:{}", offset));
+    }
+    format!(
+        "{{% for {} in {} {} %}}",
+        var_name,
+        range,
+        itertools::join(parameters.iter(), ", ")
+    )
+}
+
+fn position_in_row(index: usize, columns_per_row: Option<usize>) -> usize {
+    if let Some(columns_per_row) = columns_per_row {
+        index % columns_per_row
+    } else {
+        index
+    }
+}
+
+impl Renderable for TableRow {
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+        let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
+        let range = iter_slice(&mut range, self.limit, self.offset, false);
+
+        context.run_in_scope(|mut scope| {
+            let mut row_num = 0;
+            let mut col_num = 0;
+            for (i, v) in range.iter().enumerate() {
+                if position_in_row(i, self.cols) == 0 {
+                    row_num += 1;
+                    col_num = 0;
+                    write!(writer, "<tr class=\"row{}\">", row_num).chain("Failed to render")?;
+                }
+                col_num += 1;
+                write!(writer, "<td class=\"col{}\">", col_num).chain("Failed to render")?;
+
+                scope.stack_mut().set(self.var_name.to_owned(), v.clone());
+                self.item_template
+                    .render_to(writer, &mut scope)
+                    .trace_with(|| self.trace())
+                    .context_with(|| (self.var_name.clone(), v.to_string()))
+                    .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
+
+                write!(writer, "</td>").chain("Failed to render")?;
+                if position_in_row(i + 1, self.cols) == 0 {
+                    write!(writer, "</tr>").chain("Failed to render")?;
+                }
+            }
+            // Close last row if it wasn't closed in the for loop
+            if position_in_row(range.len(), self.cols) != 0 {
+                write!(writer, "</tr>").chain("Failed to render")?;
+            }
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+}
+
+pub fn tablerow_block(
+    _tag_name: &str,
+    arguments: &[Token],
+    tokens: &[Element],
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
+    let mut args = arguments.iter();
+    let var_name = match args.next() {
+        Some(&Token::Identifier(ref x)) => x.clone(),
+        x => return Err(unexpected_token_error("identifier", x)),
+    };
+
+    expect(&mut args, &Token::Identifier("in".to_owned()))?;
+
+    let range = parse_range(&mut args)?;
+
+    // now we get to check for parameters...
+    let mut cols: Option<usize> = None;
+    let mut limit: Option<usize> = None;
+    let mut offset: usize = 0;
+
+    while let Some(token) = args.next() {
+        match *token {
+            Token::Identifier(ref attr) => match attr.as_ref() {
+                "cols" => cols = int_attr(&mut args)?,
+                "limit" => limit = int_attr(&mut args)?,
+                "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
+                _ => {
+                    return Err(unexpected_token_error(
+                        "`limit` | `offset` | `reversed`",
+                        Some(token),
+                    ))
+                }
+            },
+            _ => return Err(unexpected_token_error("identifier", Some(token))),
+        }
+    }
+
+    let item_template = Template::new(
+        parse(tokens, options)
+            .trace_with(|| trace_tablerow_tag(&var_name, &range, cols, limit, offset))?,
+    );
+
+    Ok(Box::new(TableRow {
+        var_name,
+        range,
+        item_template,
+        cols,
+        limit,
+        offset,
     }))
 }
 
@@ -665,5 +822,62 @@ mod test {
         );
         let output = for_tag.render(&mut context).unwrap();
         assert_eq!(output, "test ALPHA test BETA test GAMMA ");
+    }
+
+    #[test]
+    fn tablerow_without_cols() {
+        let options: LiquidOptions = Default::default();
+        let for_tag = tablerow_block(
+            "tablerow",
+            &[
+                Token::Identifier("name".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::Identifier("array".to_owned()),
+            ],
+            &compiler::tokenize("test {{name}} ").unwrap(),
+            &options,
+        ).unwrap();
+
+        let mut context: Context = Default::default();
+        context.stack_mut().set_global(
+            "array",
+            Value::Array(vec![
+                Value::scalar(22f64),
+                Value::scalar(23f64),
+                Value::scalar(24f64),
+                Value::scalar("wat".to_owned()),
+            ]),
+        );
+        let output = for_tag.render(&mut context).unwrap();
+        assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">test 22 </td><td class=\"col2\">test 23 </td><td class=\"col3\">test 24 </td><td class=\"col4\">test wat </td></tr>");
+    }
+
+    #[test]
+    fn tablerow_with_cols() {
+        let options: LiquidOptions = Default::default();
+        let for_tag = tablerow_block(
+            "tablerow",
+            &[
+                Token::Identifier("name".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::OpenRound,
+                Token::IntegerLiteral(42i32),
+                Token::DotDot,
+                Token::IntegerLiteral(46i32),
+                Token::CloseRound,
+                Token::Identifier("cols".to_owned()),
+                Token::Colon,
+                Token::IntegerLiteral(2i32),
+            ],
+            &compiler::tokenize("test {{name}} ").unwrap(),
+            &options,
+        ).unwrap();
+
+        let mut data: Context = Default::default();
+        let output = for_tag.render(&mut data).unwrap();
+        assert_eq!(
+            output,
+            "<tr class=\"row1\"><td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr><tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr><tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>"
+        );
     }
 }
