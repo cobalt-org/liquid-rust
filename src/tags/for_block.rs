@@ -29,7 +29,7 @@ impl Range {
             Range::Counted(ref start_arg, ref stop_arg) => {
                 let start = int_argument(start_arg, context, "start")?;
                 let stop = int_argument(stop_arg, context, "end")?;
-                let range = start..stop;
+                let range = start..=stop;
                 range.map(|x| Value::scalar(x as i32)).collect()
             }
         };
@@ -369,7 +369,7 @@ mod test {
         let output = for_tag.render(&mut data).unwrap();
         assert_eq!(
             output,
-            "#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | "
+            "#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | #5 test 46 | "
         );
     }
 
@@ -393,7 +393,10 @@ mod test {
             .stack_mut()
             .set_global("omega", Value::scalar(46i32));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "#1 test 42, #2 test 43, #3 test 44, #4 test 45, ");
+        assert_eq!(
+            output,
+            "#1 test 42, #2 test 43, #3 test 44, #4 test 45, #5 test 46, "
+        );
     }
 
     #[test]
@@ -420,10 +423,11 @@ mod test {
         assert_eq!(
             output,
             concat!(
-                ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,>>1>>\n",
-                ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,>>2>>\n",
-                ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,>>3>>\n",
-                ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,>>4>>\n"
+                ">>0:1>>1:0:6,1:1:7,1:2:8,1:3:9,1:4:10,>>1>>\n",
+                ">>1:2>>2:0:6,2:1:7,2:2:8,2:3:9,2:4:10,>>2>>\n",
+                ">>2:3>>3:0:6,3:1:7,3:2:8,3:3:9,3:4:10,>>3>>\n",
+                ">>3:4>>4:0:6,4:1:7,4:2:8,4:3:9,4:4:10,>>4>>\n",
+                ">>4:5>>5:0:6,5:1:7,5:2:8,5:3:9,5:4:10,>>5>>\n",
             )
         );
     }
@@ -432,8 +436,8 @@ mod test {
     fn nested_forloops_with_else() {
         // test that nested for loops parse their `else` blocks correctly
         let text = concat!(
-            "{% for x in (0..i) %}",
-            "{% for y in (0..j) %}inner{% else %}empty inner{% endfor %}",
+            "{% for x in i %}",
+            "{% for y in j %}inner{% else %}empty inner{% endfor %}",
             "{% else %}",
             "empty outer",
             "{% endfor %}"
@@ -444,13 +448,15 @@ mod test {
             .unwrap();
 
         let mut context = Context::new();
-        context.stack_mut().set_global("i", Value::scalar(0i32));
-        context.stack_mut().set_global("j", Value::scalar(0i32));
+        context.stack_mut().set_global("i", Value::Array(vec![]));
+        context.stack_mut().set_global("j", Value::Array(vec![]));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty outer");
 
-        context.stack_mut().set_global("i", Value::scalar(1i32));
-        context.stack_mut().set_global("j", Value::scalar(0i32));
+        context
+            .stack_mut()
+            .set_global("i", Value::Array(vec![Value::scalar(1i32)]));
+        context.stack_mut().set_global("j", Value::Array(vec![]));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "empty inner");
     }
@@ -501,7 +507,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "5 6 7 8 9 ");
+        assert_eq!(output, "5 6 7 8 9 10 ");
     }
 
     #[test]
@@ -535,7 +541,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "9 8 7 6 5 4 3 2 1 ");
+        assert_eq!(output, "10 9 8 7 6 5 4 3 2 1 ");
     }
 
     #[test]
@@ -584,7 +590,7 @@ mod test {
 
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "1 2 3 4 ");
+        assert_eq!(output, "1 2 3 4 5 ");
     }
 
     #[test]
@@ -597,7 +603,7 @@ mod test {
                 Token::OpenRound,
                 Token::IntegerLiteral(100i32),
                 Token::DotDot,
-                Token::IntegerLiteral(103i32),
+                Token::IntegerLiteral(102i32),
                 Token::CloseRound,
             ],
             &compiler::tokenize(concat!(
