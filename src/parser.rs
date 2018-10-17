@@ -41,6 +41,8 @@ impl ParserBuilder {
             .tag("continue", tags::continue_tag as compiler::FnParseTag)
             .tag("cycle", tags::cycle_tag as compiler::FnParseTag)
             .tag("include", tags::include_tag as compiler::FnParseTag)
+            .tag("increment", tags::increment_tag as compiler::FnParseTag)
+            .tag("decrement", tags::decrement_tag as compiler::FnParseTag)
     }
 
     /// Register built-in Liquid blocks
@@ -48,7 +50,9 @@ impl ParserBuilder {
         self.block("raw", tags::raw_block as compiler::FnParseBlock)
             .block("if", tags::if_block as compiler::FnParseBlock)
             .block("unless", tags::unless_block as compiler::FnParseBlock)
+            .block("ifchanged", tags::ifchanged_block as compiler::FnParseBlock)
             .block("for", tags::for_block as compiler::FnParseBlock)
+            .block("tablerow", tags::tablerow_block as compiler::FnParseBlock)
             .block("comment", tags::comment_block as compiler::FnParseBlock)
             .block("capture", tags::capture_block as compiler::FnParseBlock)
             .block("case", tags::case_block as compiler::FnParseBlock)
