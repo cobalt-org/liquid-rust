@@ -123,7 +123,8 @@ mod test {
             concat!(
                 "enter-0; 6, 7, break, exit-0\n",
                 "enter-1; 6, 7, break, exit-1\n",
-                "enter-2; 6, 7, break, exit-2\n"
+                "enter-2; 6, 7, break, exit-2\n",
+                "enter-3; 6, 7, break, exit-3\n",
             )
         );
     }
@@ -151,7 +152,8 @@ mod test {
                 "enter-1;exit-1\n",
                 "enter-2;continue-2\n",
                 "enter-3;exit-3\n",
-                "enter-4;exit-4\n"
+                "enter-4;exit-4\n",
+                "enter-5;exit-5\n",
             )
         );
     }
@@ -179,9 +181,10 @@ mod test {
         assert_eq!(
             output,
             concat!(
-                "enter-0; 6, 7, continue, 9, exit-0\n",
-                "enter-1; 6, 7, continue, 9, exit-1\n",
-                "enter-2; 6, 7, continue, 9, exit-2\n"
+                "enter-0; 6, 7, continue, 9, 10, exit-0\n",
+                "enter-1; 6, 7, continue, 9, 10, exit-1\n",
+                "enter-2; 6, 7, continue, 9, 10, exit-2\n",
+                "enter-3; 6, 7, continue, 9, 10, exit-3\n",
             )
         );
     }
