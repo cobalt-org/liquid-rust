@@ -6,6 +6,7 @@ use itertools;
 use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use liquid_value::{Object, Scalar, Value};
 
+use compiler::value_token;
 use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
@@ -98,14 +99,41 @@ fn iter_slice(
     slice
 }
 
+/// Extracts an integer value or an identifier from the token stream
+fn parse_attr(args: &mut Iter<Token>) -> Result<Argument> {
+    expect(args, &Token::Colon)?;
+    match args.next() {
+        t @ Some(Token::IntegerLiteral(_)) | t @ Some(Token::Identifier(_)) => {
+            value_token(t.unwrap().clone())?.to_arg()
+        }
+        x => Err(unexpected_token_error("whole number", x)),
+    }
+}
+
+/// Evaluates an attribute, returning Ok(None) if input is also None.
+fn evaluate_attr(attr: &Option<Argument>, context: &mut Context) -> Result<Option<usize>> {
+    match attr {
+        Some(attr) => {
+            let value = attr.evaluate(context)?;
+            let value = value
+                .as_scalar()
+                .and_then(Scalar::to_integer)
+                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
+                as usize;
+            Ok(Some(value))
+        }
+        None => Ok(None),
+    }
+}
+
 #[derive(Debug)]
 struct For {
     var_name: String,
     range: Range,
     item_template: Template,
     else_template: Option<Template>,
-    limit: Option<usize>,
-    offset: usize,
+    limit: Option<Argument>,
+    offset: Option<Argument>,
     reversed: bool,
 }
 
@@ -114,8 +142,8 @@ impl For {
         trace_for_tag(
             &self.var_name,
             &self.range,
-            self.limit,
-            self.offset,
+            &self.limit,
+            &self.offset,
             self.reversed,
         )
     }
@@ -152,7 +180,9 @@ fn int_argument(arg: &Argument, context: &Context, arg_name: &str) -> Result<isi
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
-        let range = iter_slice(&mut range, self.limit, self.offset, self.reversed);
+        let limit = evaluate_attr(&self.limit, context)?;
+        let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
+        let range = iter_slice(&mut range, limit, offset, self.reversed);
 
         match range.len() {
             0 => {
@@ -203,15 +233,6 @@ impl Renderable for For {
     }
 }
 
-/// Extracts an attribute with an integer value from the token stream
-fn int_attr(args: &mut Iter<Token>) -> Result<Option<usize>> {
-    expect(args, &Token::Colon)?;
-    match args.next() {
-        Some(&Token::IntegerLiteral(ref n)) => Ok(Some(*n as usize)),
-        x => Err(unexpected_token_error("whole number", x)),
-    }
-}
-
 fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
     match args.next() {
         Some(id @ &Token::IntegerLiteral(_)) | Some(id @ &Token::Identifier(_)) => Ok(id.clone()),
@@ -222,15 +243,15 @@ fn range_end_point(args: &mut Iter<Token>) -> Result<Token> {
 fn trace_for_tag(
     var_name: &str,
     range: &Range,
-    limit: Option<usize>,
-    offset: usize,
+    limit: &Option<Argument>,
+    offset: &Option<Argument>,
     reversed: bool,
 ) -> String {
     let mut parameters = vec![];
     if let Some(limit) = limit {
         parameters.push(format!("limit:{}", limit));
     }
-    if 0 < offset {
+    if let Some(offset) = offset {
         parameters.push(format!("offset:{}", offset));
     }
     if reversed {
@@ -261,15 +282,15 @@ pub fn for_block(
     let range = parse_range(&mut args)?;
 
     // now we get to check for parameters...
-    let mut limit: Option<usize> = None;
-    let mut offset: usize = 0;
+    let mut limit = None;
+    let mut offset = None;
     let mut reversed = false;
 
     while let Some(token) = args.next() {
         match *token {
             Token::Identifier(ref attr) => match attr.as_ref() {
-                "limit" => limit = int_attr(&mut args)?,
-                "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
+                "limit" => limit = Some(parse_attr(&mut args)?),
+                "offset" => offset = Some(parse_attr(&mut args)?),
                 "reversed" => reversed = true,
                 _ => {
                     return Err(unexpected_token_error(
@@ -285,14 +306,14 @@ pub fn for_block(
     let (leading, trailing) = split_block(tokens, &["else"], options);
     let item_template = Template::new(
         parse(leading, options)
-            .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed))?,
+            .trace_with(|| trace_for_tag(&var_name, &range, &limit, &offset, reversed))?,
     );
 
     let else_template = match trailing {
         Some(split) => {
             let parsed = parse(&split.trailing[1..], options)
                 .trace("{{% else %}}")
-                .trace_with(|| trace_for_tag(&var_name, &range, limit, offset, reversed))?;
+                .trace_with(|| trace_for_tag(&var_name, &range, &limit, &offset, reversed))?;
             Some(Template::new(parsed))
         }
         None => None,
@@ -314,9 +335,9 @@ struct TableRow {
     var_name: String,
     range: Range,
     item_template: Template,
-    cols: Option<usize>,
-    limit: Option<usize>,
-    offset: usize,
+    cols: Option<Argument>,
+    limit: Option<Argument>,
+    offset: Option<Argument>,
 }
 
 impl TableRow {
@@ -324,9 +345,9 @@ impl TableRow {
         trace_tablerow_tag(
             &self.var_name,
             &self.range,
-            self.cols,
-            self.limit,
-            self.offset,
+            &self.cols,
+            &self.limit,
+            &self.offset,
         )
     }
 }
@@ -334,9 +355,9 @@ impl TableRow {
 fn trace_tablerow_tag(
     var_name: &str,
     range: &Range,
-    cols: Option<usize>,
-    limit: Option<usize>,
-    offset: usize,
+    cols: &Option<Argument>,
+    limit: &Option<Argument>,
+    offset: &Option<Argument>,
 ) -> String {
     let mut parameters = vec![];
     if let Some(cols) = cols {
@@ -345,7 +366,7 @@ fn trace_tablerow_tag(
     if let Some(limit) = limit {
         parameters.push(format!("limit:{}", limit));
     }
-    if 0 < offset {
+    if let Some(offset) = offset {
         parameters.push(format!("offset:{}", offset));
     }
     format!(
@@ -367,13 +388,16 @@ fn position_in_row(index: usize, columns_per_row: Option<usize>) -> usize {
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
-        let range = iter_slice(&mut range, self.limit, self.offset, false);
+        let cols = evaluate_attr(&self.cols, context)?;
+        let limit = evaluate_attr(&self.limit, context)?;
+        let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
+        let range = iter_slice(&mut range, limit, offset, false);
 
         context.run_in_scope(|mut scope| {
             let mut row_num = 0;
             let mut col_num = 0;
             for (i, v) in range.iter().enumerate() {
-                if position_in_row(i, self.cols) == 0 {
+                if position_in_row(i, cols) == 0 {
                     row_num += 1;
                     col_num = 0;
                     write!(writer, "<tr class=\"row{}\">", row_num).chain("Failed to render")?;
@@ -389,12 +413,12 @@ impl Renderable for TableRow {
                     .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                 write!(writer, "</td>").chain("Failed to render")?;
-                if position_in_row(i + 1, self.cols) == 0 {
+                if position_in_row(i + 1, cols) == 0 {
                     write!(writer, "</tr>").chain("Failed to render")?;
                 }
             }
             // Close last row if it wasn't closed in the for loop
-            if position_in_row(range.len(), self.cols) != 0 {
+            if position_in_row(range.len(), cols) != 0 {
                 write!(writer, "</tr>").chain("Failed to render")?;
             }
             Ok(())
@@ -421,16 +445,16 @@ pub fn tablerow_block(
     let range = parse_range(&mut args)?;
 
     // now we get to check for parameters...
-    let mut cols: Option<usize> = None;
-    let mut limit: Option<usize> = None;
-    let mut offset: usize = 0;
+    let mut cols = None;
+    let mut limit = None;
+    let mut offset = None;
 
     while let Some(token) = args.next() {
         match *token {
             Token::Identifier(ref attr) => match attr.as_ref() {
-                "cols" => cols = int_attr(&mut args)?,
-                "limit" => limit = int_attr(&mut args)?,
-                "offset" => offset = int_attr(&mut args)?.unwrap_or(0),
+                "cols" => cols = Some(parse_attr(&mut args)?),
+                "limit" => limit = Some(parse_attr(&mut args)?),
+                "offset" => offset = Some(parse_attr(&mut args)?),
                 _ => {
                     return Err(unexpected_token_error(
                         "`limit` | `offset` | `reversed`",
@@ -444,7 +468,7 @@ pub fn tablerow_block(
 
     let item_template = Template::new(
         parse(tokens, options)
-            .trace_with(|| trace_tablerow_tag(&var_name, &range, cols, limit, offset))?,
+            .trace_with(|| trace_tablerow_tag(&var_name, &range, &cols, &limit, &offset))?,
     );
 
     Ok(Box::new(TableRow {
@@ -466,6 +490,8 @@ mod test {
     use interpreter;
     use interpreter::ContextBuilder;
 
+    use tags;
+
     use super::*;
 
     fn options() -> LiquidOptions {
@@ -473,6 +499,13 @@ mod test {
         options
             .blocks
             .insert("for", (for_block as compiler::FnParseBlock).into());
+        options.blocks.insert(
+            "tablerow",
+            (tablerow_block as compiler::FnParseBlock).into(),
+        );
+        options
+            .tags
+            .insert("assign", (tags::assign_tag as compiler::FnParseTag).into());
         options
     }
 
@@ -825,6 +858,25 @@ mod test {
     }
 
     #[test]
+    fn for_loop_parameters_with_variables() {
+        let text = concat!(
+            "{% assign l = 4 %}",
+            "{% assign o = 5 %}",
+            "{% for i in (1..100) limit:l offset:o %}",
+            "{{ i }} ",
+            "{% endfor %}"
+        );
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "6 7 8 9 ");
+    }
+
+    #[test]
     fn tablerow_without_cols() {
         let options: LiquidOptions = Default::default();
         let for_tag = tablerow_block(
@@ -879,5 +931,25 @@ mod test {
             output,
             "<tr class=\"row1\"><td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr><tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr><tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>"
         );
+    }
+
+    #[test]
+    fn tablerow_loop_parameters_with_variables() {
+        let text = concat!(
+            "{% assign l = 4 %}",
+            "{% assign o = 5 %}",
+            "{% assign c = 3 %}",
+            "{% tablerow i in (1..100) limit:l offset:o cols:c %}",
+            "{{ i }} ",
+            "{% endtablerow %}"
+        );
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr><tr class=\"row2\"><td class=\"col1\">9 </td></tr>");
     }
 }
