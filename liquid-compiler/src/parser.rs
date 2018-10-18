@@ -7,12 +7,11 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::slice::Iter;
 
-use liquid_interpreter::Argument;
+use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Text;
 use liquid_interpreter::Variable;
 use liquid_interpreter::{FilterCall, FilterChain};
-use liquid_value::Index;
 
 use super::error::{Error, Result};
 use super::Element;
@@ -62,7 +61,7 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
             if tokens.len() > 1 && (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) =>
         {
             let indexes = parse_indexes(&tokens[1..])?;
-            let mut result = Variable::with_index(x.clone());
+            let mut result = Variable::with_literal(x.clone());
             result.extend(indexes);
             Ok(Box::new(result))
         }
@@ -77,8 +76,8 @@ fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Ren
     }
 }
 
-pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
-    let mut indexes: Vec<Index> = Vec::new();
+pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Expression>> {
+    let mut indexes: Vec<Expression> = Vec::new();
 
     let mut rest = 0;
     while tokens.len() > rest {
@@ -86,7 +85,9 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
         rest = match tokens[0] {
             Token::Dot if tokens.len() > 1 => {
                 match tokens[1] {
-                    Token::Identifier(ref x) => indexes.push(Index::with_key(x.as_ref())),
+                    Token::Identifier(ref x) => {
+                        indexes.push(Expression::with_literal(x.to_owned()))
+                    }
                     _ => {
                         return Err(unexpected_token_error("identifier", Some(&tokens[0])));
                     }
@@ -95,11 +96,14 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Index>> {
             }
             Token::OpenSquare if tokens.len() > 2 => {
                 let index = match tokens[1] {
-                    Token::StringLiteral(ref x) => Index::with_key(x.as_ref()),
-                    Token::IntegerLiteral(ref x) => Index::with_index(*x as isize),
+                    Token::StringLiteral(ref x) => Expression::with_literal(x.to_owned()),
+                    Token::IntegerLiteral(ref x) => Expression::with_literal(*x),
+                    Token::Identifier(ref x) => {
+                        Expression::Variable(Variable::with_literal(x.to_owned()))
+                    }
                     _ => {
                         return Err(unexpected_token_error(
-                            "string | whole number",
+                            "string | whole number | identifier",
                             Some(&tokens[0]),
                         ));
                     }
@@ -130,7 +134,7 @@ pub fn parse_output(tokens: &[Token]) -> Result<FilterChain> {
         .unwrap_or_else(|| tokens.len());
 
     let mut entry = tokens[0].to_arg()?;
-    if let Argument::Var(ref mut entry) = &mut entry {
+    if let Expression::Variable(ref mut entry) = &mut entry {
         let indexes = parse_indexes(&tokens[1..first_pipe])?;
         entry.extend(indexes);
     }
@@ -335,10 +339,75 @@ pub fn split_block<'a>(
 }
 
 #[cfg(test)]
+mod test_parse_expression {
+    use super::super::lexer::granularize;
+    use super::*;
+
+    use liquid_interpreter::Context;
+    use liquid_value::Object;
+    use liquid_value::Value;
+
+    fn null_options() -> LiquidOptions {
+        LiquidOptions::default()
+    }
+
+    #[test]
+    fn string() {
+        let tokens = granularize("\"hey\"").unwrap();
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let mut context = Context::new();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("hey", result);
+    }
+
+    #[test]
+    fn object_dot_access() {
+        let tokens = granularize("post.number").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn object_index_access() {
+        let tokens = granularize("post[\"number\"]").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn object_variable_access() {
+        let tokens = granularize("post[foo]").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+        context
+            .stack_mut()
+            .set_global("foo", Value::scalar("number"));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+}
+
+#[cfg(test)]
 mod test_parse_output {
     use super::*;
 
-    use liquid_interpreter::Argument;
+    use liquid_interpreter::Expression;
     use liquid_value::Value;
 
     use super::super::lexer::granularize;
@@ -351,14 +420,14 @@ mod test_parse_output {
         assert_eq!(
             result.unwrap(),
             FilterChain::new(
-                Argument::Var(Variable::with_index("abc")),
+                Expression::Variable(Variable::with_literal("abc")),
                 vec![
                     FilterCall::new(
                         "def",
                         vec![
-                            Argument::Val(Value::scalar("1")),
-                            Argument::Val(Value::scalar(2.0)),
-                            Argument::Val(Value::scalar("3")),
+                            Expression::Literal(Value::scalar("1")),
+                            Expression::Literal(Value::scalar(2.0)),
+                            Expression::Literal(Value::scalar("3")),
                         ],
                     ),
                     FilterCall::new("blabla", vec![]),
@@ -375,14 +444,14 @@ mod test_parse_output {
         assert_eq!(
             result.unwrap(),
             FilterChain::new(
-                Argument::Var(Variable::with_index("abc").push_index(0)),
+                Expression::Variable(Variable::with_literal("abc").push_literal(0)),
                 vec![
                     FilterCall::new(
                         "def",
                         vec![
-                            Argument::Val(Value::scalar("1")),
-                            Argument::Val(Value::scalar(2.0)),
-                            Argument::Val(Value::scalar("3")),
+                            Expression::Literal(Value::scalar("1")),
+                            Expression::Literal(Value::scalar(2.0)),
+                            Expression::Literal(Value::scalar("3")),
                         ],
                     ),
                     FilterCall::new("blabla", vec![]),

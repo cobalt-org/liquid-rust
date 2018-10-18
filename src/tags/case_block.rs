@@ -8,19 +8,19 @@ use compiler::Element;
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, parse, split_block, unexpected_token_error, BlockSplit};
-use interpreter::Argument;
 use interpreter::Context;
+use interpreter::Expression;
 use interpreter::Renderable;
 use interpreter::Template;
 
 #[derive(Debug)]
 struct CaseOption {
-    args: Vec<Argument>,
+    args: Vec<Expression>,
     template: Template,
 }
 
 impl CaseOption {
-    fn new(args: Vec<Argument>, template: Template) -> CaseOption {
+    fn new(args: Vec<Expression>, template: Template) -> CaseOption {
         CaseOption { args, template }
     }
 
@@ -41,7 +41,7 @@ impl CaseOption {
 
 #[derive(Debug)]
 struct Case {
-    target: Argument,
+    target: Expression,
     cases: Vec<CaseOption>,
     else_block: Option<Template>,
 }
@@ -79,7 +79,7 @@ impl Renderable for Case {
 }
 
 enum Conditional {
-    Cond(Vec<Argument>),
+    Cond(Vec<Expression>),
     Else,
 }
 
@@ -89,7 +89,7 @@ fn parse_condition(element: &Element) -> Result<Conditional> {
             Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
 
             Token::Identifier(ref name) if name == "when" => {
-                let mut values: Vec<Argument> = Vec::new();
+                let mut values: Vec<Expression> = Vec::new();
                 let mut args = tokens[1..].iter();
 
                 values.push(consume_value_token(&mut args)?.to_arg()?);

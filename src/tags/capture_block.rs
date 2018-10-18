@@ -66,7 +66,7 @@ mod test {
     use super::*;
     use compiler;
     use interpreter;
-    use value::Index;
+    use value::Scalar;
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
@@ -96,11 +96,8 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             ctx.stack()
-                .get(
-                    &vec![Index::with_key("attribute_name")]
-                        .into_iter()
-                        .collect()
-                ).unwrap(),
+                .get(&vec![Scalar::new("attribute_name")].into_iter().collect())
+                .unwrap(),
             &Value::scalar("potato-42-color")
         );
         assert_eq!(output, "");

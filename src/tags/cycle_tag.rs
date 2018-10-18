@@ -6,14 +6,14 @@ use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 use compiler::LiquidOptions;
 use compiler::Token;
 use compiler::{consume_value_token, unexpected_token_error, value_token};
-use interpreter::Argument;
 use interpreter::Context;
+use interpreter::Expression;
 use interpreter::Renderable;
 
 #[derive(Clone, Debug)]
 struct Cycle {
     name: String,
-    values: Vec<Argument>,
+    values: Vec<Expression>,
 }
 
 impl Cycle {

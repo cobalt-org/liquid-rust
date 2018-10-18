@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 #[cfg(not(any(feature = "object_sorted")))]
 use std::collections::HashMap;
 
-use super::Index;
 use super::Scalar;
 
 #[cfg(feature = "object_sorted")]
@@ -164,32 +163,26 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn get<'i, I: Into<&'i Index>>(&self, index: I) -> Option<&Self> {
-        let index: &Index = index.into();
+    pub fn get<'i, I: Into<&'i Scalar>>(&self, index: I) -> Option<&Self> {
+        let index: &Scalar = index.into();
         self.get_index(index)
     }
 
-    fn get_index(&self, index: &Index) -> Option<&Self> {
+    fn get_index(&self, index: &Scalar) -> Option<&Self> {
         match *self {
             Value::Array(ref x) => {
-                if let Some(index) = index.as_index() {
+                if let Some(index) = index.to_integer() {
                     let index = if 0 <= index {
                         index as isize
                     } else {
-                        (x.len() as isize) + index
+                        (x.len() as isize) + (index as isize)
                     };
                     x.get(index as usize)
                 } else {
                     None
                 }
             }
-            Value::Object(ref x) => {
-                if let Some(key) = index.as_key() {
-                    x.get(key)
-                } else {
-                    None
-                }
-            }
+            Value::Object(ref x) => x.get(index.to_str().as_ref()),
             _ => None,
         }
     }
