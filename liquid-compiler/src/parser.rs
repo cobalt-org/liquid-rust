@@ -98,9 +98,12 @@ pub fn parse_indexes(mut tokens: &[Token]) -> Result<Vec<Expression>> {
                 let index = match tokens[1] {
                     Token::StringLiteral(ref x) => Expression::with_literal(x.to_owned()),
                     Token::IntegerLiteral(ref x) => Expression::with_literal(*x),
+                    Token::Identifier(ref x) => {
+                        Expression::Variable(Variable::with_literal(x.to_owned()))
+                    }
                     _ => {
                         return Err(unexpected_token_error(
-                            "string | whole number",
+                            "string | whole number | identifier",
                             Some(&tokens[0]),
                         ));
                     }
@@ -333,6 +336,71 @@ pub fn split_block<'a>(
     }
 
     (&tokens[..], None)
+}
+
+#[cfg(test)]
+mod test_parse_expression {
+    use super::super::lexer::granularize;
+    use super::*;
+
+    use liquid_interpreter::Context;
+    use liquid_value::Object;
+    use liquid_value::Value;
+
+    fn null_options() -> LiquidOptions {
+        LiquidOptions::default()
+    }
+
+    #[test]
+    fn string() {
+        let tokens = granularize("\"hey\"").unwrap();
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let mut context = Context::new();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("hey", result);
+    }
+
+    #[test]
+    fn object_dot_access() {
+        let tokens = granularize("post.number").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn object_index_access() {
+        let tokens = granularize("post[\"number\"]").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn object_variable_access() {
+        let tokens = granularize("post[foo]").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("number".into(), Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Object(post));
+        context
+            .stack_mut()
+            .set_global("foo", Value::scalar("number"));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
 }
 
 #[cfg(test)]
