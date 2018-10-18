@@ -39,10 +39,10 @@ chrono = "0.4"
 unicode-segmentation = "1.2"
 itertools = "0.7.0"
 url = "1.5"
-liquid-error = { path = "liquid-error" }
-liquid-value = { path = "liquid-value" }
-liquid-compiler = { path = "liquid-compiler" }
-liquid-interpreter = { path = "liquid-interpreter" }
+liquid-error = { version = "0.16", path = "liquid-error" }
+liquid-value = { version = "0.17", path = "liquid-value" }
+liquid-compiler = { version = "0.17", path = "liquid-compiler" }
+liquid-interpreter = { version = "0.17", path = "liquid-interpreter" }
 
 serde = { version = "1.0", optional = true, features = ["derive"] }
 clap = { version = "2.26", optional = true }
