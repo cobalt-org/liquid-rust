@@ -1,3 +1,31 @@
+<a name="0.17.0"></a>
+## 0.17.0 (2018-10-18)
+
+
+#### Breaking Changes
+
+*   Support more expressive indexing ([e579dd3d](https://github.com/cobalt-org/liquid-rust/commit/e579dd3df4465a4d3b42e3d06293f370ef5b750c), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+* **for_block:**  make ranges inclusive. ([42055c35](https://github.com/cobalt-org/liquid-rust/commit/42055c356125b0e66524a5ee7a2fa34e4af4397c))
+
+#### Features
+
+* Indexing by variable ([c216a439](https://github.com/cobalt-org/liquid-rust/commit/c216a439d978bedb88ec4baba0e8703d6877e20e), closes [#209](https://github.com/cobalt-org/liquid-rust/issues/209))
+* **for_block:**  support parameters with variables ([7376ccf5](https://github.com/cobalt-org/liquid-rust/commit/7376ccf51f5d2f0a67ca0dbad3d25d395f4fbd6d), closes [#162](https://github.com/cobalt-org/liquid-rust/issues/162))
+* **filters:**
+  * Added: "at_most" ([be3e55c0](https://github.com/cobalt-org/liquid-rust/commit/be3e55c079fe43f8f35ebe5add00fd05ef912f79))
+  * Added: "at_least" ([be3e55c0](https://github.com/cobalt-org/liquid-rust/commit/be3e55c079fe43f8f35ebe5add00fd05ef912f79))
+* **tags:**
+  * Added tablerow ([18660736](https://github.com/cobalt-org/liquid-rust/commit/1866073682eb97a62bae8eefef87dcc44740a0e6), closes [#163](https://github.com/cobalt-org/liquid-rust/issues/163))
+  * Added ifchanged ([18660736](https://github.com/cobalt-org/liquid-rust/commit/1866073682eb97a62bae8eefef87dcc44740a0e6), closes [#163](https://github.com/cobalt-org/liquid-rust/issues/163))
+  * Added increment ([18660736](https://github.com/cobalt-org/liquid-rust/commit/1866073682eb97a62bae8eefef87dcc44740a0e6), closes [#163](https://github.com/cobalt-org/liquid-rust/issues/163))
+  * Added decrement ([18660736](https://github.com/cobalt-org/liquid-rust/commit/1866073682eb97a62bae8eefef87dcc44740a0e6), closes [#163](https://github.com/cobalt-org/liquid-rust/issues/163))
+
+#### Bug Fixes
+
+* **for_block:**  make ranges inclusive. ([42055c35](https://github.com/cobalt-org/liquid-rust/commit/42055c356125b0e66524a5ee7a2fa34e4af4397c))
+
+
+
 <a name="0.16.1"></a>
 ## 0.16.1 (2018-10-05)
 

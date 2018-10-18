@@ -1,6 +1,6 @@
 [package]
 name = "liquid-compiler"
-version = "0.16.1"
+version = "0.17.0"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/liquid-compiler"
@@ -18,6 +18,6 @@ appveyor  = { repository = "johannhof/liquid-rust" }
 regex = "1.0"
 lazy_static = "1.0"
 # Exposed in API
-liquid-error = { version = "0.16.0", path = "../liquid-error" }
-liquid-value = { version = "0.16.0", path = "../liquid-value" }
-liquid-interpreter = { version = "0.16.0", path = "../liquid-interpreter" }
+liquid-error = { path = "../liquid-error" }
+liquid-value = { path = "../liquid-value" }
+liquid-interpreter = { path = "../liquid-interpreter" }
