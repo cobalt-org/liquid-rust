@@ -60,7 +60,7 @@ impl Scalar {
         }
     }
 
-    /// Interpret as an float, if possible
+    /// Interpret as a float, if possible
     pub fn to_float(&self) -> Option<f64> {
         match self.0 {
             ScalarEnum::Integer(ref x) => Some(f64::from(*x)),
@@ -70,7 +70,7 @@ impl Scalar {
         }
     }
 
-    /// Interpret as an bool, if possible
+    /// Interpret as a bool, if possible
     pub fn to_bool(&self) -> Option<bool> {
         match self.0 {
             ScalarEnum::Bool(ref x) => Some(*x),
@@ -78,7 +78,7 @@ impl Scalar {
         }
     }
 
-    /// Interpret as an bool, if possible
+    /// Interpret as a date, if possible
     pub fn to_date(&self) -> Option<Date> {
         match self.0 {
             ScalarEnum::Date(ref x) => Some(*x),
