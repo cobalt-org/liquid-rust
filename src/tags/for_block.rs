@@ -377,14 +377,6 @@ fn trace_tablerow_tag(
     )
 }
 
-fn position_in_row(index: usize, columns_per_row: Option<usize>) -> usize {
-    if let Some(columns_per_row) = columns_per_row {
-        index % columns_per_row
-    } else {
-        index
-    }
-}
-
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
@@ -394,16 +386,42 @@ impl Renderable for TableRow {
         let range = iter_slice(&mut range, limit, offset, false);
 
         context.run_in_scope(|mut scope| {
-            let mut row_num = 0;
-            let mut col_num = 0;
+            let mut helper_vars = Object::new();
+            helper_vars.insert("length".into(), Value::scalar(range.len() as i32));
+
             for (i, v) in range.iter().enumerate() {
-                if position_in_row(i, cols) == 0 {
-                    row_num += 1;
-                    col_num = 0;
-                    write!(writer, "<tr class=\"row{}\">", row_num).chain("Failed to render")?;
+                let (col_index, row_index) = match cols {
+                    Some(cols) => (i % cols, i / cols),
+                    None => (i, 0),
+                };
+
+                let first = i == 0;
+                let last = i == (range.len() - 1);
+                let col_first = col_index == 0;
+                let col_last = cols.filter(|&cols| col_index + 1 == cols).is_some() || last;
+
+                helper_vars.insert("index0".into(), Value::scalar(i as i32));
+                helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
+                helper_vars.insert(
+                    "rindex0".into(),
+                    Value::scalar((range.len() - i - 1) as i32),
+                );
+                helper_vars.insert("rindex".into(), Value::scalar((range.len() - i) as i32));
+                helper_vars.insert("first".into(), Value::scalar(first));
+                helper_vars.insert("last".into(), Value::scalar(last));
+                helper_vars.insert("col0".into(), Value::scalar(col_index as i32));
+                helper_vars.insert("col".into(), Value::scalar((col_index + 1) as i32));
+                helper_vars.insert("col_first".into(), Value::scalar(col_first));
+                helper_vars.insert("col_last".into(), Value::scalar(col_last));
+                scope
+                    .stack_mut()
+                    .set("tablerow", Value::Object(helper_vars.clone()));
+
+                if col_first {
+                    write!(writer, "<tr class=\"row{}\">", row_index + 1)
+                        .chain("Failed to render")?;
                 }
-                col_num += 1;
-                write!(writer, "<td class=\"col{}\">", col_num).chain("Failed to render")?;
+                write!(writer, "<td class=\"col{}\">", col_index + 1).chain("Failed to render")?;
 
                 scope.stack_mut().set(self.var_name.to_owned(), v.clone());
                 self.item_template
@@ -413,13 +431,9 @@ impl Renderable for TableRow {
                     .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                 write!(writer, "</td>").chain("Failed to render")?;
-                if position_in_row(i + 1, cols) == 0 {
+                if col_last {
                     write!(writer, "</tr>").chain("Failed to render")?;
                 }
-            }
-            // Close last row if it wasn't closed in the for loop
-            if position_in_row(range.len(), cols) != 0 {
-                write!(writer, "</tr>").chain("Failed to render")?;
             }
             Ok(())
         })?;
@@ -951,5 +965,51 @@ mod test {
         let mut context = Context::new();
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr><tr class=\"row2\"><td class=\"col1\">9 </td></tr>");
+    }
+
+    #[test]
+    fn tablerow_variables() {
+        let for_tag = tablerow_block(
+            "tablerow",
+            &[
+                Token::Identifier("v".to_owned()),
+                Token::Identifier("in".to_owned()),
+                Token::OpenRound,
+                Token::IntegerLiteral(100i32),
+                Token::DotDot,
+                Token::IntegerLiteral(103i32),
+                Token::CloseRound,
+                Token::Identifier("cols".to_owned()),
+                Token::Colon,
+                Token::IntegerLiteral(2i32),
+            ],
+            &compiler::tokenize(concat!(
+                "length: {{tablerow.length}}, ",
+                "index: {{tablerow.index}}, ",
+                "index0: {{tablerow.index0}}, ",
+                "rindex: {{tablerow.rindex}}, ",
+                "rindex0: {{tablerow.rindex0}}, ",
+                "col: {{tablerow.col}}, ",
+                "col0: {{tablerow.col0}}, ",
+                "value: {{v}}, ",
+                "first: {{tablerow.first}}, ",
+                "last: {{tablerow.last}}, ",
+                "col_first: {{tablerow.col_first}}, ",
+                "col_last: {{tablerow.col_last}}"
+            )).unwrap(),
+            &options(),
+        ).unwrap();
+
+        let mut data: Context = Default::default();
+        let output = for_tag.render(&mut data).unwrap();
+        assert_eq!(
+            output,
+            concat!(
+"<tr class=\"row1\"><td class=\"col1\">length: 4, index: 1, index0: 0, rindex: 4, rindex0: 3, col: 1, col0: 0, value: 100, first: true, last: false, col_first: true, col_last: false</td>",
+"<td class=\"col2\">length: 4, index: 2, index0: 1, rindex: 3, rindex0: 2, col: 2, col0: 1, value: 101, first: false, last: false, col_first: false, col_last: true</td></tr>",
+"<tr class=\"row2\"><td class=\"col1\">length: 4, index: 3, index0: 2, rindex: 2, rindex0: 1, col: 1, col0: 0, value: 102, first: false, last: false, col_first: true, col_last: false</td>",
+"<td class=\"col2\">length: 4, index: 4, index0: 3, rindex: 1, rindex0: 0, col: 2, col0: 1, value: 103, first: false, last: true, col_first: false, col_last: true</td></tr>",
+)
+        );
     }
 }
