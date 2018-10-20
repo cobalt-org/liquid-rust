@@ -52,6 +52,7 @@ pub enum Token {
     BooleanLiteral(bool),
     DotDot,
     Comparison(ComparisonOperator),
+    And,
     Or,
 }
 
@@ -108,6 +109,7 @@ impl fmt::Display for Token {
             Token::Dash => write!(f, "-"),
             Token::DotDot => write!(f, ".."),
             Token::Assignment => write!(f, "="),
+            Token::And => write!(f, "and"),
             Token::Or => write!(f, "or"),
 
             Token::Comparison(ref x) => write!(f, "{}", x),

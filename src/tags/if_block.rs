@@ -68,6 +68,8 @@ impl fmt::Display for ExistenceCondition {
 enum Condition {
     Binary(BinaryCondition),
     Existence(ExistenceCondition),
+    Conjunction(Box<Condition>, Box<Condition>),
+    Disjunction(Box<Condition>, Box<Condition>),
 }
 
 impl Condition {
@@ -75,6 +77,12 @@ impl Condition {
         match *self {
             Condition::Binary(ref c) => c.evaluate(context),
             Condition::Existence(ref c) => c.evaluate(context),
+            Condition::Conjunction(ref left, ref right) => {
+                Ok(left.evaluate(context)? && right.evaluate(context)?)
+            }
+            Condition::Disjunction(ref left, ref right) => {
+                Ok(left.evaluate(context)? || right.evaluate(context)?)
+            }
         }
     }
 }
@@ -84,6 +92,8 @@ impl fmt::Display for Condition {
         match *self {
             Condition::Binary(ref c) => write!(f, "{}", c),
             Condition::Existence(ref c) => write!(f, "{}", c),
+            Condition::Conjunction(ref left, ref right) => write!(f, "{} and {}", left, right),
+            Condition::Disjunction(ref left, ref right) => write!(f, "{} or {}", left, right),
         }
     }
 }
@@ -151,24 +161,61 @@ impl Renderable for Conditional {
 
 /// Common parsing for "if" and "unless" condition
 fn parse_condition(arguments: &[Token]) -> Result<Condition> {
-    let mut args = arguments.iter();
+    // Iterator over conditions linked with `or`
+    let mut or_iter = arguments
+        .split(|t| if let Token::Or = t { true } else { false })
+        .map(|args| {
+            // Iterator over conditions linked with `and`
+            let mut and_iter = args
+                .split(|t| if let Token::And = t { true } else { false })
+                .map(|args| {
+                    // Iterator over tokens that form a condition
+                    let mut args = args.iter();
 
-    let lh = consume_value_token(&mut args)?.to_arg()?;
+                    let lh = consume_value_token(&mut args)?.to_arg()?;
 
-    let cond = match args.next() {
-        Some(&Token::Comparison(x)) => {
-            let rh = consume_value_token(&mut args)?.to_arg()?;
-            Condition::Binary(BinaryCondition {
-                lh,
-                comparison: x,
-                rh,
-            })
-        }
-        None => Condition::Existence(ExistenceCondition { lh }),
-        x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
-    };
+                    let cond = match args.next() {
+                        Some(&Token::Comparison(x)) => {
+                            let rh = consume_value_token(&mut args)?.to_arg()?;
+                            Condition::Binary(BinaryCondition {
+                                lh,
+                                comparison: x,
+                                rh,
+                            })
+                        }
+                        None => Condition::Existence(ExistenceCondition { lh }),
+                        x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
+                    };
 
-    Ok(cond)
+                    // There shouldn't exist any more tokens before next `and` or `or`
+                    match args.next() {
+                        None => Ok(cond),
+                        x @ Some(_) => Err(unexpected_token_error("logic operator", x)),
+                    }
+                });
+            let mut lh = and_iter
+                .next()
+                .expect("There will be always at least one condition.")?;
+            for rh in and_iter {
+                let rh = match rh {
+                    Ok(rh) => rh,
+                    err @ Err(_) => return err,
+                };
+                lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
+            }
+            Ok(lh)
+        });
+    let mut lh = or_iter
+        .next()
+        .expect("There will be always at least one condition.")?;
+    for rh in or_iter {
+        let rh = match rh {
+            Ok(rh) => rh,
+            err @ Err(_) => return err,
+        };
+        lh = Condition::Disjunction(Box::new(lh), Box::new(rh));
+    }
+    Ok(lh)
 }
 
 pub fn unless_block(
@@ -571,5 +618,64 @@ mod test {
         context.stack_mut().set_global("movies", Value::Array(arr));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn multiple_conditions_and() {
+        let text = "{% if 1 == 1 and 2 == 2 %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "if true");
+
+        let text = "{% if 1 == 1 and 2 != 2 %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn multiple_conditions_or() {
+        let text = "{% if 1 == 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "if true");
+
+        let text = "{% if 1 != 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn multiple_conditions_and_or() {
+        let text = "{% if 1 == 1 or 2 == 2 and 3 != 3 %}if true{% else %}if false{% endif %}";
+        let tokens = compiler::tokenize(&text).unwrap();
+        let template = compiler::parse(&tokens, &options())
+            .map(interpreter::Template::new)
+            .unwrap();
+
+        let mut context = Context::new();
+        let output = template.render(&mut context).unwrap();
+        assert_eq!(output, "if true");
     }
 }
