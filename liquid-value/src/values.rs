@@ -179,7 +179,11 @@ impl Value {
                     };
                     x.get(index as usize)
                 } else {
-                    None
+                    match &*index.to_str() {
+                        "first" => x.get(0),
+                        "last" => x.get(x.len() - 1),
+                        _ => None,
+                    }
                 }
             }
             Value::Object(ref x) => x.get(index.to_str().as_ref()),
