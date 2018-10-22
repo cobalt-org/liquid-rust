@@ -31,6 +31,11 @@ impl Path {
         self
     }
 
+    /// Removes the last index from the path and returns it, or None if it is empty.
+    pub fn pop(&mut self) -> Option<Scalar> {
+        self.indexes.pop()
+    }
+
     /// Access the `Value` reference.
     pub fn iter(&self) -> ScalarIter {
         ScalarIter(self.indexes.iter())

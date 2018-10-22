@@ -44,9 +44,31 @@ impl Variable {
                     .clone();
                 Ok(s)
             }).collect();
-        let path = path?;
+        let mut path = path?;
 
-        let value = context.stack().get(&path)?.clone();
+        let value = match context.stack().get(&path) {
+            Ok(value) => value.clone(),
+
+            // If no value is found, it may still be a `.size` expression
+            Err(err) => {
+                let last = match path.pop() {
+                    Some(v) => v,
+                    None => return Err(err),
+                };
+
+                if &*last.to_str() == "size" {
+                    let value = context.stack().get(&path)?;
+
+                    match *value {
+                        Value::Array(ref x) => Value::scalar(x.len() as i32),
+                        Value::Object(ref x) => Value::scalar(x.len() as i32),
+                        _ => return Err(err),
+                    }
+                } else {
+                    return Err(err);
+                }
+            }
+        };
 
         Ok(value)
     }
