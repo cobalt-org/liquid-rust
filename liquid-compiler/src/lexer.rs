@@ -138,6 +138,7 @@ pub fn granularize(block: &str) -> Result<Vec<Token>> {
             "?" => Token::Question,
             "-" => Token::Dash,
             "=" => Token::Assignment,
+            "and" => Token::And,
             "or" => Token::Or,
 
             "==" => Token::Comparison(ComparisonOperator::Equals),
