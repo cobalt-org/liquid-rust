@@ -4,6 +4,7 @@ use std::io::Write;
 use error::{Error, Result, ResultLiquidChainExt};
 use value::Path;
 use value::Scalar;
+use value::Value;
 
 use super::Context;
 use super::Expression;
@@ -30,7 +31,7 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate(&self, context: &Context) -> Result<Path> {
+    pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let path: Result<Path> = self
             .path
             .iter()
@@ -43,7 +44,11 @@ impl Variable {
                     .clone();
                 Ok(s)
             }).collect();
-        path
+        let path = path?;
+
+        let value = context.stack().get(&path)?.clone();
+
+        Ok(value)
     }
 }
 
@@ -78,8 +83,7 @@ impl fmt::Display for Variable {
 
 impl Renderable for Variable {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let path = self.evaluate(context)?;
-        let value = context.stack().get(&path)?;
+        let value = self.evaluate(context)?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }

@@ -26,10 +26,7 @@ impl Expression {
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let val = match *self {
             Expression::Literal(ref x) => x.clone(),
-            Expression::Variable(ref x) => {
-                let path = x.evaluate(context)?;
-                context.stack().get(&path)?.clone()
-            }
+            Expression::Variable(ref x) => x.evaluate(context)?,
         };
         Ok(val)
     }
