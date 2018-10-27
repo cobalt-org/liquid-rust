@@ -149,6 +149,13 @@ impl ParserBuilder {
         ).filter(
             "date_in_tz",
             filters::date_in_tz as interpreter::FnFilterValue,
+        ).filter("push", filters::push as interpreter::FnFilterValue)
+        .filter("pop", filters::pop as interpreter::FnFilterValue)
+        .filter("unshift", filters::unshift as interpreter::FnFilterValue)
+        .filter("shift", filters::shift as interpreter::FnFilterValue)
+        .filter(
+            "array_to_sentence_string",
+            filters::array_to_sentence_string as interpreter::FnFilterValue,
         )
     }
 
