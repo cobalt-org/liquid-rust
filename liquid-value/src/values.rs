@@ -77,6 +77,14 @@ impl Value {
         }
     }
 
+    /// Extracts the scalar value if it is a scalar.
+    pub fn into_scalar(self) -> Option<Scalar> {
+        match self {
+            Value::Scalar(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Tests whether this value is a scalar
     pub fn is_scalar(&self) -> bool {
         self.as_scalar().is_some()
@@ -94,6 +102,14 @@ impl Value {
     pub fn as_array_mut(&mut self) -> Option<&mut Array> {
         match *self {
             Value::Array(ref mut s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the array value if it is an array.
+    pub fn into_array(self) -> Option<Array> {
+        match self {
+            Value::Array(s) => Some(s),
             _ => None,
         }
     }
@@ -119,9 +135,25 @@ impl Value {
         }
     }
 
+    /// Extracts the object value if it is a object.
+    pub fn into_object(self) -> Option<Object> {
+        match self {
+            Value::Object(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Tests whether this value is an object
     pub fn is_object(&self) -> bool {
         self.as_object().is_some()
+    }
+
+    /// Extracts the nil value if it is nil
+    pub fn as_nil(&self) -> Option<()> {
+        match *self {
+            Value::Nil => Some(()),
+            _ => None,
+        }
     }
 
     /// Tests whether this value is nil
