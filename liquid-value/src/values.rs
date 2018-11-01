@@ -195,12 +195,7 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn get<'i, I: Into<&'i Scalar>>(&self, index: I) -> Option<&Self> {
-        let index: &Scalar = index.into();
-        self.get_index(index)
-    }
-
-    fn get_index(&self, index: &Scalar) -> Option<&Self> {
+    pub fn get<'s>(&'s self, index: &Scalar) -> Option<&'s Self> {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
