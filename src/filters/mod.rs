@@ -1,8 +1,12 @@
+#[cfg(feature = "extra-filters")]
+mod array;
 mod date;
 mod html;
 mod math;
 mod url;
 
+#[cfg(feature = "extra-filters")]
+pub use self::array::{array_to_sentence_string, pop, push, shift, unshift};
 pub use self::date::date;
 #[cfg(feature = "extra-filters")]
 pub use self::date::date_in_tz;
