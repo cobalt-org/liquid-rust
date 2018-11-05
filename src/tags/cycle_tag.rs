@@ -4,8 +4,9 @@ use itertools;
 use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{consume_value_token, unexpected_token_error, value_token};
+use compiler::TagToken;
+use compiler::TagTokenIter;
+use compiler::TryMatchToken;
 use interpreter::Context;
 use interpreter::Expression;
 use interpreter::Renderable;
@@ -37,42 +38,47 @@ impl Renderable for Cycle {
 }
 
 /// Internal implementation of cycle, to allow easier testing.
-fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
-    let mut args = arguments.iter();
+fn parse_cycle(mut arguments: TagTokenIter, _options: &LiquidOptions) -> Result<Cycle> {
     let mut name = String::new();
     let mut values = Vec::new();
-    let first = consume_value_token(&mut args)?;
 
-    match args.next() {
-        Some(&Token::Colon) => {
-            // the first argument is the name of the cycle block
-            name = first.to_string();
+    let first = arguments.expect_next("Identifier or value expected")?;
+    let second = arguments.next();
+    match second.as_ref().map(TagToken::as_str) {
+        Some(":") => {
+            name = match first.expect_identifier() {
+                TryMatchToken::Matches(name) => name.to_string(),
+                TryMatchToken::Fails(name) => match name.expect_literal() {
+                    // This will allow non string literals such as 0 to be parsed as such.
+                    // Is this ok or should more specific functions be created?
+                    TryMatchToken::Matches(name) => name.to_str().into_owned(),
+                    TryMatchToken::Fails(name) => return Err(name.raise_error()),
+                },
+            };
         }
-        Some(&Token::Comma) | None => {
+        Some(",") | None => {
             // first argument is the first item in the cycle
-            values.push(first.to_arg()?);
+            values.push(first.expect_value().into_result()?);
         }
-        x => {
-            return Err(unexpected_token_error(
-                "string | number | boolean | identifier",
-                x,
-            ))
+        Some(_) => {
+            return Err(second
+                .expect("is some")
+                .raise_custom_error("\":\" or \",\" expected."))
         }
     }
 
     loop {
-        match args.next() {
+        match arguments.next() {
             Some(a) => {
-                let v = value_token(a.clone())?.to_arg()?;
-                values.push(v);
+                values.push(a.expect_value().into_result()?);
             }
             None => break,
         }
-
-        match args.next() {
-            Some(&Token::Comma) => {}
+        let next = arguments.next();
+        match next.as_ref().map(TagToken::as_str) {
+            Some(",") => {}
             None => break,
-            x => return Err(unexpected_token_error("`,`", x)),
+            Some(_) => return Err(next.expect("is some").raise_custom_error("\",\" expected.")),
         }
     }
 
@@ -80,12 +86,15 @@ fn parse_cycle(arguments: &[Token], _options: &LiquidOptions) -> Result<Cycle> {
         name = itertools::join(values.iter(), "-");
     }
 
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
+
     Ok(Cycle { name, values })
 }
 
 pub fn cycle_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    arguments: TagTokenIter,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
@@ -108,19 +117,8 @@ mod test {
 
     #[test]
     fn unnamed_cycle_gets_a_name() {
-        let tokens = vec![
-            Token::Identifier("this".to_owned()),
-            Token::Comma,
-            Token::StringLiteral("cycle".to_owned()),
-            Token::Comma,
-            Token::Identifier("has".to_owned()),
-            Token::Comma,
-            Token::Identifier("no".to_owned()),
-            Token::Comma,
-            Token::Identifier("name".to_owned()),
-        ];
-        let options = LiquidOptions::default();
-        let cycle = parse_cycle(&tokens[..], &options).unwrap();
+        let tag = compiler::Tag::new("{% cycle this, cycle, has, no, name %}").unwrap();
+        let cycle = parse_cycle(tag.into_tokens(), &options()).unwrap();
         assert!(!cycle.name.is_empty());
     }
 
@@ -131,9 +129,8 @@ mod test {
             "{% cycle 'a': 'one', 'two', 'three' %}\n",
             "{% cycle 'b': 'one', 'two', 'three' %}\n",
             "{% cycle 'b': 'one', 'two', 'three' %}\n"
-        ).to_owned();
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        );
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -150,9 +147,8 @@ mod test {
             "{% cycle 'one', 'two', 'three' %}\n",
             "{% cycle 'one', 'two', 'three' %}\n",
             "{% cycle 'one', 'two', 'three' %}\n"
-        ).to_owned();
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        );
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -169,9 +165,8 @@ mod test {
             "{% cycle alpha, beta, gamma %}\n",
             "{% cycle alpha, beta, gamma %}\n",
             "{% cycle alpha, beta, gamma %}\n"
-        ).to_owned();
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        );
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -189,11 +184,9 @@ mod test {
     fn bad_cycle_indices_dont_crash() {
         // note the pair of cycle tags with the same name but a differing
         // number of elements
-        let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n").to_owned();
+        let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n");
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
         let output = template.render(&mut Default::default());

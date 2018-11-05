@@ -2,9 +2,8 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidChainExt};
 
-use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
-use compiler::Token;
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
 use value::Value;
@@ -34,14 +33,17 @@ impl Renderable for Increment {
 
 pub fn increment_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     _options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
-    let id = match args.next() {
-        Some(&Token::Identifier(ref id)) => id.clone(),
-        x => return Err(unexpected_token_error("identifier", x)),
-    };
+    let id = arguments
+        .expect_next("Identifier expected.")?
+        .expect_identifier()
+        .into_result()?
+        .to_string();
+
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
     Ok(Box::new(Increment { id }))
 }
@@ -71,14 +73,17 @@ impl Renderable for Decrement {
 
 pub fn decrement_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     _options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
-    let id = match args.next() {
-        Some(&Token::Identifier(ref id)) => id.clone(),
-        x => return Err(unexpected_token_error("identifier", x)),
-    };
+    let id = arguments
+        .expect_next("Identifier expected.")?
+        .expect_identifier()
+        .into_result()?
+        .to_string();
+
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
     Ok(Box::new(Decrement { id }))
 }
@@ -107,9 +112,7 @@ mod test {
     #[test]
     fn increment() {
         let text = "{% increment val %}{{ val }}";
-        let tokens = compiler::tokenize(text).unwrap();
-        let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -121,9 +124,7 @@ mod test {
     #[test]
     fn decrement() {
         let text = "{% decrement val %}{{ val }}";
-        let tokens = compiler::tokenize(text).unwrap();
-        let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -135,9 +136,7 @@ mod test {
     #[test]
     fn increment_and_decrement() {
         let text = "{% increment val %}{% increment val %}{% decrement val %}{% decrement val %}";
-        let tokens = compiler::tokenize(text).unwrap();
-        let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -149,9 +148,7 @@ mod test {
     #[test]
     fn assign_and_increment() {
         let text = "{%- assign val = 9 -%}{% increment val %}{% increment val %}{{ val }}";
-        let tokens = compiler::tokenize(text).unwrap();
-        let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

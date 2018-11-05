@@ -2,10 +2,10 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidExt};
 
-use compiler::tokenize;
+use compiler::parse;
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{parse, unexpected_token_error};
+use compiler::TagTokenIter;
+use compiler::TryMatchToken;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -29,30 +29,31 @@ impl Renderable for Include {
 fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
     let content = options.include_source.include(name)?;
 
-    let tokens = tokenize(&content)?;
-    parse(&tokens, options).map(Template::new)
+    parse(&content, options).map(Template::new)
 }
 
 pub fn include_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
+    let name = arguments.expect_next("Identifier or literal expected.")?;
 
-    let name = match args.next() {
-        Some(&Token::StringLiteral(ref name)) => name,
-        Some(&Token::Identifier(ref s)) => s,
-        arg => return Err(unexpected_token_error("string", arg)),
+    // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.
+    // Those inputs would fail anyway by there being not a path with those names so they are not a big concern.
+    let name = match name.expect_literal() {
+        // Using `to_str()` on literals ensures `Strings` will have their quotes trimmed.
+        TryMatchToken::Matches(name) => name.to_str().to_string(),
+        TryMatchToken::Fails(name) => name.as_str().to_string(),
     };
 
-    let partial =
-        parse_partial(name, options).trace_with(|| format!("{{% include {} %}}", name))?;
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
-    Ok(Box::new(Include {
-        name: name.to_owned(),
-        partial,
-    }))
+    let partial =
+        parse_partial(&name, options).trace_with(|| format!("{{% include {} %}}", name))?;
+
+    Ok(Box::new(Include { name, partial }))
 }
 
 #[cfg(test)]
@@ -92,8 +93,7 @@ mod test {
     #[test]
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -115,8 +115,7 @@ mod test {
     #[test]
     fn include_non_string() {
         let text = "{% include example.txt %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -138,8 +137,7 @@ mod test {
     #[test]
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options()).map(interpreter::Template::new);
+        let template = compiler::parse(text, &options()).map(interpreter::Template::new);
 
         assert!(template.is_err());
         if let Err(val) = template {
