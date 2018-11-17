@@ -1,3 +1,23 @@
+<a name="0.17.1"></a>
+## 0.17.1 (2018-11-17)
+
+
+#### Bug Fixes
+
+*   Deeply nested array indexes ([51c3a853](https://github.com/cobalt-org/liquid-rust/commit/51c3a853a74d0b933983e95a2c6f38d1fdf6512d), closes [#230](https://github.com/cobalt-org/liquid-rust/issues/230))
+* **error:**  Improve error reporting ([e372470d](https://github.com/cobalt-org/liquid-rust/commit/e372470d2ed030a4294b7781ce8e80b8041ce673))
+
+#### Features
+
+* **array:** 
+  * indexing with `.first` and `.last` ([36d79cf2](https://github.com/cobalt-org/liquid-rust/commit/36d79cf2f5855b2f5428d8a2d173af8d26dd98bf))
+  * array manipulation filters ([94e66600](https://github.com/cobalt-org/liquid-rust/commit/94e6660040d5b021e0ee6aac86ef51e25dd2c725))
+* **blocks:** 
+  * support multiple if conditions with `and` and `or` ([fb16a066](https://github.com/cobalt-org/liquid-rust/commit/fb16a066eeb7fd226883fdae64ec34660d8e539d))
+  * add tablerow object for its tag ([6b95cca5](https://github.com/cobalt-org/liquid-rust/commit/6b95cca5486e2b351bda5b8ffd9e23df98a478d1))
+
+
+
 <a name="0.17.0"></a>
 ## 0.17.0 (2018-10-18)
 
