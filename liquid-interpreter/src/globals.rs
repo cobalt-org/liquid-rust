@@ -13,6 +13,6 @@ pub trait Globals: fmt::Debug {
 impl Globals for Object {
     fn get<'a>(&'a self, name: &str) -> Result<&'a Value> {
         self.get(name)
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", name.to_owned()))
+            .ok_or_else(|| Error::with_msg("Unknown variable").context("variable", name.to_owned()))
     }
 }

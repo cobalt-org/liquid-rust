@@ -176,9 +176,6 @@ const ERROR_DESCRIPTION: &str = "liquid";
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "{}: {}", ERROR_DESCRIPTION, self.inner.msg)?;
-        if let Some(ref cause) = self.inner.cause {
-            writeln!(f, "cause: {}", cause)?;
-        }
         for trace in &self.inner.user_backtrace {
             if let Some(trace) = trace.get_trace() {
                 writeln!(f, "from: {}", trace)?;

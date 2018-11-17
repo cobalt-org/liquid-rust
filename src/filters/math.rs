@@ -12,7 +12,7 @@ pub fn abs(input: &Value, args: &[Value]) -> FilterResult {
             .to_integer()
             .map(|i| Value::scalar(i.abs()))
             .or_else(|| s.to_float().map(|i| Value::scalar(i.abs())))
-            .ok_or_else(|| invalid_input("Numeric value expected")),
+            .ok_or_else(|| invalid_input("Numeric expected")),
         _ => Err(invalid_input("Number expected")),
     }
 }

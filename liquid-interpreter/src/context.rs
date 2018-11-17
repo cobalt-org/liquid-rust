@@ -169,7 +169,7 @@ impl<'g> Stack<'g> {
         let mut indexes = path.iter();
         let key = indexes
             .next()
-            .ok_or_else(|| Error::with_msg("No index provided"))?;
+            .ok_or_else(|| Error::with_msg("No variable provided"))?;
         let key = key.to_str();
         let value = self.get_root(key.as_ref())?;
 
@@ -177,7 +177,9 @@ impl<'g> Stack<'g> {
             let value = value?;
             let child = value.get(index);
             let child = child.ok_or_else(|| {
-                Error::with_msg("Invalid index").context("index", key.as_ref().to_owned())
+                Error::with_msg("Unknown index")
+                    .context("variable", format!("{}", path))
+                    .context("index", format!("{}", index))
             })?;
             Ok(child)
         })
@@ -190,7 +192,7 @@ impl<'g> Stack<'g> {
             }
         }
         self.globals
-            .ok_or_else(|| Error::with_msg("Invalid index").context("index", name.to_owned()))
+            .ok_or_else(|| Error::with_msg("Unknown variable").context("variable", name.to_owned()))
             .and_then(|g| g.get(name))
             .or_else(|err| self.get_index(name).ok_or_else(|| err))
     }
