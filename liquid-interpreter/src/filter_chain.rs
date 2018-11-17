@@ -71,6 +71,7 @@ impl FilterChain {
             entry = f
                 .filter(&entry, &*arguments)
                 .chain("Filter error")
+                .context_with(|| ("filter".to_owned(), format!("{}", self)))
                 .context_with(|| ("input".to_owned(), format!("{}", &entry)))
                 .context_with(|| ("args".to_owned(), itertools::join(&arguments, ", ")))?;
         }
