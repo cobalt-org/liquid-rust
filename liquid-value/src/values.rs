@@ -195,15 +195,30 @@ impl Value {
     }
 
     /// Access a contained `Value`.
+    pub fn contains_key(&self, index: &Scalar) -> bool {
+        match *self {
+            Value::Array(ref x) => {
+                if let Some(index) = index.to_integer() {
+                    let index = convert_index(index, x.len());
+                    index < x.len()
+                } else {
+                    match &*index.to_str() {
+                        "first" | "last" => true,
+                        _ => false,
+                    }
+                }
+            }
+            Value::Object(ref x) => x.contains_key(index.to_str().as_ref()),
+            _ => false,
+        }
+    }
+
+    /// Access a contained `Value`.
     pub fn get<'s>(&'s self, index: &Scalar) -> Option<&'s Self> {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
-                    let index = if 0 <= index {
-                        index as isize
-                    } else {
-                        (x.len() as isize) + (index as isize)
-                    };
+                    let index = convert_index(index, x.len());
                     x.get(index as usize)
                 } else {
                     match &*index.to_str() {
@@ -217,6 +232,17 @@ impl Value {
             _ => None,
         }
     }
+}
+
+fn convert_index(index: i32, max_size: usize) -> usize {
+    let index = index as isize;
+    let max_size = max_size as isize;
+    let index = if 0 <= index {
+        index
+    } else {
+        max_size + index
+    };
+    index as usize
 }
 
 impl Default for Value {
