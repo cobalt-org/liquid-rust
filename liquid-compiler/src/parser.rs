@@ -57,11 +57,14 @@ pub fn unexpected_token_error_string(expected: &str, actual: Option<String>) -> 
 // creates an expression, which wraps everything that gets rendered
 fn parse_expression(tokens: &[Token], options: &LiquidOptions) -> Result<Box<Renderable>> {
     match tokens.get(0) {
-        Some(&Token::Identifier(ref x))
+        Some(&Token::Identifier(_))
             if tokens.len() > 1 && (tokens[1] == Token::Dot || tokens[1] == Token::OpenSquare) =>
         {
+            let mut result = tokens[0]
+                .to_arg()?
+                .into_variable()
+                .expect("identifiers must be variables");
             let indexes = parse_indexes(&tokens[1..])?;
-            let mut result = Variable::with_literal(x.clone());
             result.extend(indexes);
             Ok(Box::new(result))
         }
@@ -344,6 +347,7 @@ mod test_parse_expression {
     use super::*;
 
     use liquid_interpreter::Context;
+    use liquid_value::Array;
     use liquid_value::Object;
     use liquid_value::Value;
 
@@ -396,6 +400,32 @@ mod test_parse_expression {
         context
             .stack_mut()
             .set_global("foo", Value::scalar("number"));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn array_index_access() {
+        let tokens = granularize("post[0]").unwrap();
+        let mut context = Context::new();
+        let mut post = Array::new();
+        post.push(Value::scalar(42i32));
+        context.stack_mut().set_global("post", Value::Array(post));
+
+        let result = parse_expression(&tokens, &null_options()).unwrap();
+        let result = result.render(&mut context).unwrap();
+        assert_eq!("42", result);
+    }
+
+    #[test]
+    fn mixed_access() {
+        let tokens = granularize("post.child[0]").unwrap();
+        let mut context = Context::new();
+        let mut post = Object::new();
+        post.insert("child".into(), Value::Array(vec![Value::scalar(42i32)]));
+        context.stack_mut().set_global("post", Value::Object(post));
 
         let result = parse_expression(&tokens, &null_options()).unwrap();
         let result = result.render(&mut context).unwrap();

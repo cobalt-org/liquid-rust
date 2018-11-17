@@ -22,6 +22,22 @@ impl Expression {
         Expression::Literal(Value::scalar(literal))
     }
 
+    /// Convert into a literal if possible.
+    pub fn into_literal(self) -> Option<Value> {
+        match self {
+            Expression::Literal(x) => Some(x),
+            Expression::Variable(_) => None,
+        }
+    }
+
+    /// Convert into a variable, if possible.
+    pub fn into_variable(self) -> Option<Variable> {
+        match self {
+            Expression::Literal(_) => None,
+            Expression::Variable(x) => Some(x),
+        }
+    }
+
     /// Convert to a `Value`.
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let val = match *self {
