@@ -171,30 +171,36 @@ impl<'g> Stack<'g> {
             .next()
             .ok_or_else(|| Error::with_msg("No variable provided"))?;
         let key = key.to_str();
-        let value = self.get_root(key.as_ref())?;
+        let frame = self.find_frame(key.as_ref()).ok_or_else(|| {
+            let key = key.into_owned();
+            Error::with_msg("Unknown variable").context("variable", key)
+        })?;
 
-        indexes.fold(Ok(value), |value, index| {
-            let value = value?;
-            let child = value.get(index);
-            let child = child.ok_or_else(|| {
-                Error::with_msg("Unknown index")
-                    .context("variable", format!("{}", path))
-                    .context("index", format!("{}", index))
-            })?;
-            Ok(child)
+        frame.get_variable(path).ok_or_else(|| {
+            Error::with_msg("Unknown index").context("variable", format!("{}", path))
         })
     }
 
-    fn get_root<'a>(&'a self, name: &str) -> Result<&'a Value> {
+    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a Globals> {
         for frame in self.stack.iter().rev() {
-            if let Some(rval) = frame.get(name) {
-                return Ok(rval);
+            if frame.contains_global(name) {
+                return Some(frame);
             }
         }
-        self.globals
-            .ok_or_else(|| Error::with_msg("Unknown variable").context("variable", name.to_owned()))
-            .and_then(|g| g.get(name))
-            .or_else(|err| self.get_index(name).ok_or_else(|| err))
+
+        if self
+            .globals
+            .map(|g| g.contains_global(name))
+            .unwrap_or(false)
+        {
+            return self.globals;
+        }
+
+        if self.indexes.contains_global(name) {
+            return Some(&self.indexes);
+        }
+
+        return None;
     }
 
     /// Used by increment and decrement tags
