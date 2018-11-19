@@ -220,7 +220,7 @@ impl Value {
             Value::Array(ref x) => {
                 let start: i32 = 0;
                 let end = x.len() as i32;
-                let mut keys: Vec<_> = (start..end).map(|i| Scalar::new(i)).collect();
+                let mut keys: Vec<_> = (start..end).map(Scalar::new).collect();
                 keys.push(Scalar::new("first"));
                 keys.push(Scalar::new("last"));
                 keys

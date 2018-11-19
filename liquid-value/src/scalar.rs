@@ -183,7 +183,7 @@ impl<'s> From<String> for ScalarCow<'s> {
 impl<'s> From<&'s String> for ScalarCow<'s> {
     fn from(s: &'s String) -> ScalarCow<'s> {
         ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
+            0: ScalarCowEnum::Str(s.as_str().into()),
         }
     }
 }

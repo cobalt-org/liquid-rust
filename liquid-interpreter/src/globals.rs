@@ -65,9 +65,9 @@ impl Globals for Object {
                     let requested = &path[subpath_end];
                     let available = itertools::join(parent.keys(), ", ");
                     return Err(Error::with_msg("Unknown index")
-                        .context("variable", format!("{}", subpath))
+                        .context("variable", subpath)
                         .context("requested index", format!("{}", requested))
-                        .context("available indexes", format!("{}", available)));
+                        .context("available indexes", available));
                 }
             }
 

@@ -182,7 +182,7 @@ impl<'g> Stack<'g> {
             let key = path
                 .iter()
                 .next()
-                .map(|k| k.clone())
+                .cloned()
                 .unwrap_or_else(|| Scalar::new("nil"));
             let globals = itertools::join(self.globals().iter(), ", ");
             Error::with_msg("Unknown variable")
@@ -228,7 +228,7 @@ impl<'g> Stack<'g> {
             return Some(&self.indexes);
         }
 
-        return None;
+        None
     }
 
     /// Used by increment and decrement tags

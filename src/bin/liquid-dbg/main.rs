@@ -1,11 +1,5 @@
-#![doc(html_root_url = "https://cobalt-org.github.io/liquid-rust/")]
-// Deny warnings, except in dev mode
-#![deny(warnings)]
-// #![deny(missing_docs)]
-#![cfg_attr(feature = "dev", warn(warnings))]
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
-#![allow(zero_ptr)]
 
 #[macro_use]
 extern crate clap;
