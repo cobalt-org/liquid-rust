@@ -4,7 +4,7 @@ use std::sync;
 
 use error::{Error, Result};
 use itertools;
-use value::{Object, Path, Value, Scalar};
+use value::{Object, PathRef, Value, Scalar};
 
 use super::Expression;
 use super::Globals;
@@ -166,14 +166,14 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn try_get(&self, path: &Path) -> Option<&Value> {
+    pub fn try_get(&self, path: PathRef) -> Option<&Value> {
         let frame = self.find_path_frame(path)?;
 
         frame.try_get_variable(path)
     }
 
     /// Recursively index into the stack.
-    pub fn get(&self, path: &Path) -> Result<&Value> {
+    pub fn get(&self, path: PathRef) -> Result<&Value> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path.iter().next().map(|k| k.clone()).unwrap_or_else(|| Scalar::new("nil"));
             let globals = itertools::join(self.globals().iter(), ", ");
@@ -195,7 +195,7 @@ impl<'g> Stack<'g> {
         globals
     }
 
-    fn find_path_frame<'a>(&'a self, path: &Path) -> Option<&'a Globals> {
+    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a Globals> {
         let key = path.iter().next()?;
         let key = key.to_str();
         self.find_frame(key.as_ref())
@@ -440,20 +440,14 @@ mod test {
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
         ctx.stack_mut().set_global("post", Value::Object(post));
-        let indexes = vec![Scalar::new("post"), Scalar::new("number")]
-            .into_iter()
-            .collect();
+        let indexes = [Scalar::new("post"), Scalar::new("number")];
         assert_eq!(ctx.stack().get(&indexes).unwrap(), &Value::scalar(42f64));
     }
 
     #[test]
     fn scoped_variables() {
-        let test_path = vec![Scalar::new("test")]
-            .into_iter()
-            .collect();
-        let global_path = vec![Scalar::new("global")]
-            .into_iter()
-            .collect();
+        let test_path = [Scalar::new("test")];
+        let global_path = [Scalar::new("global")];
 
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("test", Value::scalar(42f64));

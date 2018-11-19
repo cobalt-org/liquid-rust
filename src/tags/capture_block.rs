@@ -96,7 +96,7 @@ mod test {
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
             ctx.stack()
-                .get(&vec![Scalar::new("attribute_name")].into_iter().collect())
+                .get(&[Scalar::new("attribute_name")])
                 .unwrap(),
             &Value::scalar("potato-42-color")
         );

@@ -1,8 +1,9 @@
 use std::fmt;
 
 use error::{Error, Result};
+use itertools;
 use value::Object;
-use value::Path;
+use value::PathRef;
 use value::Value;
 
 /// Immutable view into a template's global variables.
@@ -18,21 +19,21 @@ pub trait Globals: fmt::Debug {
     /// Notes to implementers:
     /// - Don't forget to reverse-index on negative array indexes
     /// - Don't forget about arr.first, arr.last.
-    fn contains_variable(&self, path: &Path) -> bool;
+    fn contains_variable(&self, path: PathRef) -> bool;
 
     /// Access a variable.
     ///
     /// Notes to implementers:
     /// - Don't forget to reverse-index on negative array indexes
     /// - Don't forget about arr.first, arr.last.
-    fn try_get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value>;
+    fn try_get_variable<'a>(&'a self, path: PathRef) -> Option<&'a Value>;
 
     /// Access a variable.
     ///
     /// Notes to implementers:
     /// - Don't forget to reverse-index on negative array indexes
     /// - Don't forget about arr.first, arr.last.
-    fn get_variable<'a>(&'a self, path: &Path) -> Result<&'a Value>;
+    fn get_variable<'a>(&'a self, path: PathRef) -> Result<&'a Value>;
 }
 
 impl Globals for Object {
@@ -44,22 +45,23 @@ impl Globals for Object {
         self.keys().map(|s| s.as_ref()).collect()
     }
 
-    fn contains_variable(&self, path: &Path) -> bool {
+    fn contains_variable(&self, path: PathRef) -> bool {
         get_variable_option(self, path).is_some()
     }
 
-    fn try_get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value> {
+    fn try_get_variable<'a>(&'a self, path: PathRef) -> Option<&'a Value> {
         get_variable_option(self, path)
     }
 
-    fn get_variable<'a>(&'a self, path: &Path) -> Result<&'a Value> {
+    fn get_variable<'a>(&'a self, path: PathRef) -> Result<&'a Value> {
         self.try_get_variable(path).ok_or_else(|| {
+            let path = itertools::join(path.iter(), ".");
             Error::with_msg("Unknown index").context("variable", format!("{}", path))
         })
     }
 }
 
-fn get_variable_option<'o>(obj: &'o Object, path: &Path) -> Option<&'o Value> {
+fn get_variable_option<'o>(obj: &'o Object, path: PathRef) -> Option<&'o Value> {
     let mut indexes = path.iter();
     let key = indexes.next()?;
     let key = key.to_str();

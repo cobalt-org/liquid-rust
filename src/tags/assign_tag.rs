@@ -167,7 +167,7 @@ mod test {
             assert_eq!(
                 context
                     .stack()
-                    .get(&vec![Scalar::new("freestyle")].into_iter().collect())
+                    .get(&[Scalar::new("freestyle")])
                     .unwrap(),
                 &Value::scalar(false)
             );
@@ -191,7 +191,7 @@ mod test {
             assert_eq!(
                 context
                     .stack()
-                    .get(&vec![Scalar::new("freestyle")].into_iter().collect())
+                    .get(&[Scalar::new("freestyle")])
                     .unwrap(),
                 &Value::scalar(true)
             );
