@@ -225,12 +225,12 @@ impl Value {
                 keys.push(Scalar::new("last"));
                 keys
             }
-            Value::Object(ref x) => x.keys().map(|s| {
-                match *s {
+            Value::Object(ref x) => x
+                .keys()
+                .map(|s| match *s {
                     borrow::Cow::Borrowed(s) => Scalar::new(s),
                     borrow::Cow::Owned(ref s) => Scalar::new(s.to_owned()),
-                }
-            }).collect(),
+                }).collect(),
             _ => vec![],
         };
         Keys(v.into_iter())
@@ -290,11 +290,7 @@ impl ExactSizeIterator for Keys {
 fn convert_index(index: i32, max_size: usize) -> usize {
     let index = index as isize;
     let max_size = max_size as isize;
-    let index = if 0 <= index {
-        index
-    } else {
-        max_size + index
-    };
+    let index = if 0 <= index { index } else { max_size + index };
     index as usize
 }
 

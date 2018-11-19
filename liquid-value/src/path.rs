@@ -54,7 +54,7 @@ impl<'s> ::std::ops::Deref for Path<'s> {
     type Target = [ScalarCow<'s>];
 
     #[inline]
-    fn deref( &self ) -> &Self::Target {
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -103,7 +103,7 @@ impl<'i, 's: 'i> Iterator for PathIter<'i, 's> {
     }
 }
 
-impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's>{
+impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
     #[inline]
     fn len(&self) -> usize {
         self.0.len()

@@ -71,7 +71,11 @@ impl Globals for Object {
                 }
             }
 
-            let requested = path.get(0).expect("`Path` guarantees at least one element").to_str().into_owned();
+            let requested = path
+                .get(0)
+                .expect("`Path` guarantees at least one element")
+                .to_str()
+                .into_owned();
             let available = itertools::join(self.keys(), ", ");
             return Err(Error::with_msg("Unknown variable")
                 .context("requested variable", requested)

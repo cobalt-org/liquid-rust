@@ -112,12 +112,12 @@ fn contains_check(a: &Value, b: &Value) -> Result<bool> {
         Value::Scalar(ref val) => {
             let b = b.to_str();
             Ok(val.to_str().contains(b.as_ref()))
-        },
+        }
         Value::Object(_) => {
             let b = b.as_scalar();
             let check = b.map(|b| a.contains_key(b)).unwrap_or(false);
             Ok(check)
-        },
+        }
         Value::Array(ref arr) => {
             for elem in arr {
                 if elem == b {

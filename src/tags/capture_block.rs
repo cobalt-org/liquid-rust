@@ -95,9 +95,7 @@ mod test {
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
-            ctx.stack()
-                .get(&[Scalar::new("attribute_name")])
-                .unwrap(),
+            ctx.stack().get(&[Scalar::new("attribute_name")]).unwrap(),
             &Value::scalar("potato-42-color")
         );
         assert_eq!(output, "");

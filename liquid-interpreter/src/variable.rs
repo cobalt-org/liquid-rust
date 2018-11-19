@@ -19,7 +19,10 @@ pub struct Variable {
 impl Variable {
     /// Create a `Value` reference.
     pub fn with_literal<S: Into<Scalar>>(value: S) -> Self {
-        Self { variable: value.into(), indexes: Default::default() }
+        Self {
+            variable: value.into(),
+            indexes: Default::default(),
+        }
     }
 
     /// Append a literal.
@@ -46,7 +49,8 @@ impl Variable {
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.evaluate(context)?;
-            let s = v.as_scalar()
+            let s = v
+                .as_scalar()
                 .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v)))?
                 .as_ref();
             path.push(s);

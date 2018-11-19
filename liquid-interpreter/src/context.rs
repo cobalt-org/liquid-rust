@@ -4,7 +4,7 @@ use std::sync;
 
 use error::{Error, Result};
 use itertools;
-use value::{Object, PathRef, Value, Scalar};
+use value::{Object, PathRef, Scalar, Value};
 
 use super::Expression;
 use super::Globals;
@@ -84,7 +84,11 @@ where
 
 impl<'a, 'g> CycleState<'a, 'g> {
     /// See `cycle` tag.
-    pub fn cycle_element<'c>(&'c mut self, name: &str, values: &'c [Expression]) -> Result<&'c Value> {
+    pub fn cycle_element<'c>(
+        &'c mut self,
+        name: &str,
+        values: &'c [Expression],
+    ) -> Result<&'c Value> {
         let index = self.context.cycles.cycle_index(name, values.len());
         if index >= values.len() {
             return Err(Error::with_msg(
@@ -175,7 +179,11 @@ impl<'g> Stack<'g> {
     /// Recursively index into the stack.
     pub fn get(&self, path: PathRef) -> Result<&Value> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
-            let key = path.iter().next().map(|k| k.clone()).unwrap_or_else(|| Scalar::new("nil"));
+            let key = path
+                .iter()
+                .next()
+                .map(|k| k.clone())
+                .unwrap_or_else(|| Scalar::new("nil"));
             let globals = itertools::join(self.globals().iter(), ", ");
             Error::with_msg("Unknown variable")
                 .context("requested variable", key.to_str().into_owned())
@@ -420,9 +428,7 @@ mod test {
     fn stack_find_frame() {
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("number", Value::scalar(42f64));
-        assert!(
-            ctx.stack().find_frame("number").is_some(),
-        );
+        assert!(ctx.stack().find_frame("number").is_some(),);
     }
 
     #[test]

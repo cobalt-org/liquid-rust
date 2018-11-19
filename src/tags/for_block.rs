@@ -156,9 +156,8 @@ fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
         Value::Object(x) => {
             let x = x
                 .iter()
-                .map(|(k, v)| {
-                    Value::Array(vec![Value::scalar(k.clone()), v.to_owned()])
-                }).collect();
+                .map(|(k, v)| Value::Array(vec![Value::scalar(k.clone()), v.to_owned()]))
+                .collect();
             Ok(x)
         }
         x => Err(unexpected_value_error("array", Some(x.type_name()))),

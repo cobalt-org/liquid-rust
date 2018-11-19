@@ -165,10 +165,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context
-                    .stack()
-                    .get(&[Scalar::new("freestyle")])
-                    .unwrap(),
+                context.stack().get(&[Scalar::new("freestyle")]).unwrap(),
                 &Value::scalar(false)
             );
             assert_eq!(output, "");
@@ -189,10 +186,7 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context
-                    .stack()
-                    .get(&[Scalar::new("freestyle")])
-                    .unwrap(),
+                context.stack().get(&[Scalar::new("freestyle")]).unwrap(),
                 &Value::scalar(true)
             );
             assert_eq!(output, "<p>Freestyle!</p>");

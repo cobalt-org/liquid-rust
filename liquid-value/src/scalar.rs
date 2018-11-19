@@ -227,8 +227,12 @@ impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (&self.0, &other.0) {
             (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
-            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)).partial_cmp(&y),
-            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&(f64::from(y))),
+            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => {
+                (f64::from(x)).partial_cmp(&y)
+            }
+            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => {
+                x.partial_cmp(&(f64::from(y)))
+            }
             (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
             (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
             (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
