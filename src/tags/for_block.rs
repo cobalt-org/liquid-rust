@@ -157,7 +157,7 @@ fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
             let x = x
                 .iter()
                 .map(|(k, v)| {
-                    Value::Array(vec![Value::scalar(k.as_ref().to_owned()), v.to_owned()])
+                    Value::Array(vec![Value::scalar(k.clone()), v.to_owned()])
                 }).collect();
             Ok(x)
         }
