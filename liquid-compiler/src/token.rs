@@ -3,6 +3,7 @@ use std::fmt;
 use liquid_interpreter::Expression;
 use liquid_interpreter::Variable;
 use liquid_value::Value;
+use liquid_value::Scalar;
 
 use super::error::Result;
 use super::parser::unexpected_token_error;
@@ -79,11 +80,9 @@ impl Token {
             Token::StringLiteral(ref s) => Ok(Expression::with_literal(s.to_owned())),
             Token::BooleanLiteral(b) => Ok(Expression::with_literal(b)),
             Token::Identifier(ref id) => {
-                let mut var = Variable::default();
-                var.extend(
-                    id.split('.')
-                        .map(|s| Expression::with_literal(s.to_owned())),
-                );
+                let mut path = id.split('.').map(|s| Scalar::new(s.to_owned()));
+                let mut var = Variable::with_literal(path.next().expect("there should always be at least one"));
+                var.extend(path);
                 Ok(Expression::Variable(var))
             }
             ref x => Err(unexpected_token_error(

@@ -62,18 +62,19 @@ impl Globals for Object {
                 let subpath = &path[0..subpath_end];
                 if let Some(parent) = self.try_get_variable(subpath) {
                     let subpath = itertools::join(subpath.iter(), ".");
-                    let index = &path[subpath_end];
+                    let requested = &path[subpath_end];
                     let available = itertools::join(parent.keys(), ", ");
                     return Err(Error::with_msg("Unknown index")
                         .context("variable", format!("{}", subpath))
-                        .context("requested index", format!("{}", index))
+                        .context("requested index", format!("{}", requested))
                         .context("available indexes", format!("{}", available)));
                 }
             }
 
+            let requested = path.get(0).expect("`Path` guarantees at least one element").to_str().into_owned();
             let available = itertools::join(self.keys(), ", ");
             return Err(Error::with_msg("Unknown variable")
-                .context("requested variable", path[0].to_str().into_owned())
+                .context("requested variable", requested)
                 .context("available variables", available));
         }
     }
