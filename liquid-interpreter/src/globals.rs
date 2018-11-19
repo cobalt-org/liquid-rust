@@ -1,5 +1,6 @@
 use std::fmt;
 
+use error::{Error, Result};
 use value::Object;
 use value::Path;
 use value::Value;
@@ -9,8 +10,8 @@ pub trait Globals: fmt::Debug {
     /// Check if global variable exists.
     fn contains_global(&self, name: &str) -> bool;
 
-    /// Access a global variable.
-    fn get_global<'a>(&'a self, name: &str) -> Option<&'a Value>;
+    /// Enumerate all globals
+    fn globals(&self) -> Vec<&str>;
 
     /// Check if variable exists.
     ///
@@ -24,7 +25,14 @@ pub trait Globals: fmt::Debug {
     /// Notes to implementers:
     /// - Don't forget to reverse-index on negative array indexes
     /// - Don't forget about arr.first, arr.last.
-    fn get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value>;
+    fn try_get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value>;
+
+    /// Access a variable.
+    ///
+    /// Notes to implementers:
+    /// - Don't forget to reverse-index on negative array indexes
+    /// - Don't forget about arr.first, arr.last.
+    fn get_variable<'a>(&'a self, path: &Path) -> Result<&'a Value>;
 }
 
 impl Globals for Object {
@@ -32,16 +40,22 @@ impl Globals for Object {
         self.contains_key(name)
     }
 
-    fn get_global<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        self.get(name)
+    fn globals(&self) -> Vec<&str> {
+        self.keys().map(|s| s.as_ref()).collect()
     }
 
     fn contains_variable(&self, path: &Path) -> bool {
         get_variable_option(self, path).is_some()
     }
 
-    fn get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value> {
+    fn try_get_variable<'a>(&'a self, path: &Path) -> Option<&'a Value> {
         get_variable_option(self, path)
+    }
+
+    fn get_variable<'a>(&'a self, path: &Path) -> Result<&'a Value> {
+        self.try_get_variable(path).ok_or_else(|| {
+            Error::with_msg("Unknown index").context("variable", format!("{}", path))
+        })
     }
 }
 

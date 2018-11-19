@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use std::sync;
 
 use error::{Error, Result};
-use value::{Object, Path, Value};
+use itertools;
+use value::{Object, Path, Value, Scalar};
 
 use super::Expression;
 use super::Globals;
@@ -156,29 +157,41 @@ impl<'g> Stack<'g> {
     ///
     /// This method will panic if popping the topmost frame results in an
     /// empty stack. Given that a context is created with a top-level stack
-    /// frame already in place, empyting the stack should never happen in a
+    /// frame already in place, emptying the stack should never happen in a
     /// well-formed program.
     fn pop_frame(&mut self) {
         if self.stack.pop().is_none() {
-            panic!("Pop leaves empty stack")
+            panic!("Unbalanced push/pop, leaving the stack empty.")
         };
     }
 
     /// Recursively index into the stack.
     pub fn get(&self, path: &Path) -> Result<&Value> {
-        let mut indexes = path.iter();
-        let key = indexes
-            .next()
-            .ok_or_else(|| Error::with_msg("No variable provided"))?;
-        let key = key.to_str();
-        let frame = self.find_frame(key.as_ref()).ok_or_else(|| {
-            let key = key.into_owned();
-            Error::with_msg("Unknown variable").context("variable", key)
+        let frame = self.find_path_frame(path).ok_or_else(|| {
+            let key = path.iter().next().map(|k| k.clone()).unwrap_or_else(|| Scalar::new("nil"));
+            let globals = itertools::join(self.globals().iter(), ", ");
+            Error::with_msg("Unknown variable")
+                .context("requested variable", key.to_str().into_owned())
+                .context("available variables", globals)
         })?;
 
-        frame.get_variable(path).ok_or_else(|| {
-            Error::with_msg("Unknown index").context("variable", format!("{}", path))
-        })
+        frame.get_variable(path)
+    }
+
+    fn globals(&self) -> Vec<&str> {
+        let mut globals = self.globals.map(|g| g.globals()).unwrap_or_default();
+        for frame in self.stack.iter() {
+            globals.extend(frame.globals());
+        }
+        globals.sort();
+        globals.dedup();
+        globals
+    }
+
+    fn find_path_frame<'a>(&'a self, path: &Path) -> Option<&'a Globals> {
+        let key = path.iter().next()?;
+        let key = key.to_str();
+        self.find_frame(key.as_ref())
     }
 
     fn find_frame<'a>(&'a self, name: &str) -> Option<&'a Globals> {
@@ -397,22 +410,21 @@ mod test {
     use value::Scalar;
 
     #[test]
-    fn stack_get_root() {
+    fn stack_find_frame() {
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("number", Value::scalar(42f64));
-        assert_eq!(
-            ctx.stack().get_root("number").unwrap(),
-            &Value::scalar(42f64)
+        assert!(
+            ctx.stack().find_frame("number").is_some(),
         );
     }
 
     #[test]
-    fn stack_get_root_failure() {
+    fn stack_find_frame_failure() {
         let mut ctx = Context::new();
         let mut post = Object::new();
         post.insert("number".into(), Value::scalar(42f64));
         ctx.stack_mut().set_global("post", Value::Object(post));
-        assert!(ctx.stack().get_root("post.number").is_err());
+        assert!(ctx.stack().find_frame("post.number").is_none());
     }
 
     #[test]
@@ -429,21 +441,28 @@ mod test {
 
     #[test]
     fn scoped_variables() {
+        let test_path = vec![Scalar::new("test")]
+            .into_iter()
+            .collect();
+        let global_path = vec![Scalar::new("global")]
+            .into_iter()
+            .collect();
+
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("test", Value::scalar(42f64));
-        assert_eq!(ctx.stack().get_root("test").unwrap(), &Value::scalar(42f64));
+        assert_eq!(ctx.stack().get(&test_path).unwrap(), &Value::scalar(42f64));
 
         ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(
-                new_scope.stack().get_root("test").unwrap(),
+                new_scope.stack().get(&test_path).unwrap(),
                 &Value::scalar(42f64)
             );
 
             // set a new local value, and assert that it overrides the previous value
             new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
-                new_scope.stack().get_root("test").unwrap(),
+                new_scope.stack().get(&test_path).unwrap(),
                 &Value::scalar(3.14f64)
             );
 
@@ -454,9 +473,9 @@ mod test {
         });
 
         // assert that the value has reverted to the old one
-        assert_eq!(ctx.stack().get_root("test").unwrap(), &Value::scalar(42f64));
+        assert_eq!(ctx.stack().get(&test_path).unwrap(), &Value::scalar(42f64));
         assert_eq!(
-            ctx.stack().get_root("global").unwrap(),
+            ctx.stack().get(&global_path).unwrap(),
             &Value::scalar("some value")
         );
     }
