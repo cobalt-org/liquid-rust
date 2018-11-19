@@ -213,9 +213,9 @@ impl Value {
         }
     }
 
-    /// All keys
-    pub fn keys(&self) -> Vec<Scalar> {
-        match *self {
+    /// Keys available for lookup.
+    pub fn keys(&self) -> Keys {
+        let v = match *self {
             Value::Array(ref x) => {
                 let start: i32 = 0;
                 let end = x.len() as i32;
@@ -231,7 +231,8 @@ impl Value {
                 }
             }).collect(),
             _ => vec![],
-        }
+        };
+        Keys(v.into_iter())
     }
 
     /// Access a contained `Value`.
@@ -252,6 +253,36 @@ impl Value {
             Value::Object(ref x) => x.get(index.to_str().as_ref()),
             _ => None,
         }
+    }
+}
+
+/// Iterator over a `Value`s keys.
+#[derive(Debug)]
+pub struct Keys(::std::vec::IntoIter<Scalar>);
+
+impl Iterator for Keys {
+    type Item = Scalar;
+
+    #[inline]
+    fn next(&mut self) -> Option<Scalar> {
+        self.0.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.0.count()
+    }
+}
+
+impl ExactSizeIterator for Keys {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
