@@ -174,6 +174,14 @@ impl From<&'static str> for Scalar {
     }
 }
 
+impl From<borrow::Cow<'static, str>> for Scalar {
+    fn from(s: borrow::Cow<'static, str>) -> Self {
+        Scalar {
+            0: ScalarEnum::Str(s),
+        }
+    }
+}
+
 impl PartialEq<Scalar> for Scalar {
     fn eq(&self, other: &Self) -> bool {
         match (&self.0, &other.0) {

@@ -54,10 +54,28 @@ impl Globals for Object {
     }
 
     fn get_variable<'a>(&'a self, path: PathRef) -> Result<&'a Value> {
-        self.try_get_variable(path).ok_or_else(|| {
-            let path = itertools::join(path.iter(), ".");
-            Error::with_msg("Unknown index").context("variable", format!("{}", path))
-        })
+        if let Some(res) = self.try_get_variable(path) {
+            return Ok(res);
+        } else {
+            for cur_idx in 1..path.len() {
+                let subpath_end = path.len() - cur_idx;
+                let subpath = &path[0..subpath_end];
+                if let Some(parent) = self.try_get_variable(subpath) {
+                    let subpath = itertools::join(subpath.iter(), ".");
+                    let index = &path[subpath_end];
+                    let available = itertools::join(parent.keys(), ", ");
+                    return Err(Error::with_msg("Unknown index")
+                        .context("variable", format!("{}", subpath))
+                        .context("requested index", format!("{}", index))
+                        .context("available indexes", format!("{}", available)));
+                }
+            }
+
+            let available = itertools::join(self.keys(), ", ");
+            return Err(Error::with_msg("Unknown variable")
+                .context("requested variable", path[0].to_str().into_owned())
+                .context("available variables", available));
+        }
     }
 }
 

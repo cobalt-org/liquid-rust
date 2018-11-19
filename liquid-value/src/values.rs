@@ -213,6 +213,27 @@ impl Value {
         }
     }
 
+    /// All keys
+    pub fn keys(&self) -> Vec<Scalar> {
+        match *self {
+            Value::Array(ref x) => {
+                let start: i32 = 0;
+                let end = x.len() as i32;
+                let mut keys: Vec<_> = (start..end).map(|i| Scalar::new(i)).collect();
+                keys.push(Scalar::new("first"));
+                keys.push(Scalar::new("last"));
+                keys
+            }
+            Value::Object(ref x) => x.keys().map(|s| {
+                match *s {
+                    borrow::Cow::Borrowed(s) => Scalar::new(s),
+                    borrow::Cow::Owned(ref s) => Scalar::new(s.to_owned()),
+                }
+            }).collect(),
+            _ => vec![],
+        }
+    }
+
     /// Access a contained `Value`.
     pub fn get<'s>(&'s self, index: &Scalar) -> Option<&'s Self> {
         match *self {
