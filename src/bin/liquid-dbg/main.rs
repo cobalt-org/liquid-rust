@@ -89,7 +89,7 @@ fn run() -> Result<()> {
         .author(crate_authors!())
         .arg(option("input", "LIQUID").required(true))
         .arg(option("output", "TXT"))
-        .arg(option("context", "TOML"))
+        .arg(option("context", "YAML"))
         .arg(option("include-root", "PATH"))
         .get_matches_safe()?;
 
