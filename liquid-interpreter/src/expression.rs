@@ -39,6 +39,18 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
+    pub fn try_evaluate(&self, context: &Context) -> Option<Value> {
+        let val = match *self {
+            Expression::Literal(ref x) => x.clone(),
+            Expression::Variable(ref x) => {
+                let path = x.try_evaluate(context)?;
+                context.stack().try_get(&path)?.clone()
+            }
+        };
+        Some(val)
+    }
+
+    /// Convert to a `Value`.
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         let val = match *self {
             Expression::Literal(ref x) => x.clone(),

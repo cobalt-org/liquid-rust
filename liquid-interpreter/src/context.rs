@@ -166,6 +166,13 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
+    pub fn try_get(&self, path: &Path) -> Option<&Value> {
+        let frame = self.find_path_frame(path)?;
+
+        frame.try_get_variable(path)
+    }
+
+    /// Recursively index into the stack.
     pub fn get(&self, path: &Path) -> Result<&Value> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path.iter().next().map(|k| k.clone()).unwrap_or_else(|| Scalar::new("nil"));

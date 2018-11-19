@@ -30,6 +30,19 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
+    pub fn try_evaluate(&self, context: &Context) -> Option<Path> {
+        let path: Option<Path> = self
+            .path
+            .iter()
+            .map(|e| e.try_evaluate(context))
+            .map(|v| {
+                let v = v?;
+                v.into_scalar()
+            }).collect();
+        path
+    }
+
+    /// Convert to a `Path`.
     pub fn evaluate(&self, context: &Context) -> Result<Path> {
         let path: Result<Path> = self
             .path
