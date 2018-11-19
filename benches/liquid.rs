@@ -30,10 +30,10 @@ static VARIABLE_ONLY: &'static str = "{{product.name}}";
 static VARIABLE_ONLY_OBJECT: &'static str = "
 username: bob
 product:
-  - name: Moto G
-  - manufacturer: Motorola
-  - summary: A phone
-  - price: 100
+  name: Moto G
+  manufacturer: Motorola
+  summary: A phone
+  price: 100
 ";
 
 #[bench]
@@ -67,7 +67,7 @@ static ITERATE: &'static str = "<html>
       <li class=\"champion\">
       <b>{{team.name}}</b>: {{team.score}}
       </li>
-    {{/each}}
+    {% endfor %}
     </ul>
   </body>
 </html>";
