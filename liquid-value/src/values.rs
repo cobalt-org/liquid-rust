@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 use super::Scalar;
+use super::ScalarCow;
 
 #[cfg(feature = "object_sorted")]
 type MapImpl<K, V> = BTreeMap<K, V>;
@@ -236,7 +237,7 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn get<'s>(&'s self, index: &Scalar) -> Option<&'s Self> {
+    pub fn get<'s>(&'s self, index: &ScalarCow) -> Option<&'s Self> {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {

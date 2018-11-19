@@ -3,23 +3,23 @@ use std::slice;
 
 use itertools;
 
-use super::Scalar;
+use super::ScalarCow;
 
 /// Path to a value in an `Object`.
 ///
 /// There is guaranteed always at least one element.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Path(Vec<Scalar>);
+pub struct Path<'s>(Vec<ScalarCow<'s>>);
 
-impl Path {
+impl<'s> Path<'s> {
     /// Create a `Value` reference.
-    pub fn with_index<I: Into<Scalar>>(value: I) -> Self {
+    pub fn with_index<I: Into<ScalarCow<'s>>>(value: I) -> Self {
         let indexes = vec![value.into()];
         Path(indexes)
     }
 
     /// Append an index.
-    pub fn push<I: Into<Scalar>>(&mut self, value: I) {
+    pub fn push<I: Into<ScalarCow<'s>>>(&mut self, value: I) {
         self.0.push(value.into());
     }
 
@@ -39,19 +39,19 @@ impl Path {
 
     /// Extracts a slice containing the entire vector.
     #[inline]
-    pub fn as_slice(&self) -> &[Scalar] {
+    pub fn as_slice(&self) -> &[ScalarCow<'s>] {
         self.0.as_slice()
     }
 }
 
-impl Extend<Scalar> for Path {
-    fn extend<T: IntoIterator<Item = Scalar>>(&mut self, iter: T) {
+impl<'s> Extend<ScalarCow<'s>> for Path<'s> {
+    fn extend<T: IntoIterator<Item = ScalarCow<'s>>>(&mut self, iter: T) {
         self.0.extend(iter);
     }
 }
 
-impl ::std::ops::Deref for Path {
-    type Target = [Scalar];
+impl<'s> ::std::ops::Deref for Path<'s> {
+    type Target = [ScalarCow<'s>];
 
     #[inline]
     fn deref( &self ) -> &Self::Target {
@@ -59,21 +59,21 @@ impl ::std::ops::Deref for Path {
     }
 }
 
-impl ::std::borrow::Borrow<[Scalar]> for Path {
+impl<'s> ::std::borrow::Borrow<[ScalarCow<'s>]> for Path<'s> {
     #[inline]
-    fn borrow(&self) -> &[Scalar] {
+    fn borrow(&self) -> &[ScalarCow<'s>] {
         self
     }
 }
 
-impl AsRef<[Scalar]> for Path {
+impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
     #[inline]
-    fn as_ref(&self) -> &[Scalar] {
+    fn as_ref(&self) -> &[ScalarCow<'s>] {
         self
     }
 }
 
-impl fmt::Display for Path {
+impl<'s> fmt::Display for Path<'s> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let data = itertools::join(self.iter(), ".");
         write!(f, "{}", data)
@@ -82,13 +82,13 @@ impl fmt::Display for Path {
 
 /// Iterate over indexes in a `Value`'s `Path`.
 #[derive(Debug)]
-pub struct PathIter<'i>(slice::Iter<'i, Scalar>);
+pub struct PathIter<'i, 's: 'i>(slice::Iter<'i, ScalarCow<'s>>);
 
-impl<'i> Iterator for PathIter<'i> {
-    type Item = &'i Scalar;
+impl<'i, 's: 'i> Iterator for PathIter<'i, 's> {
+    type Item = &'i ScalarCow<'s>;
 
     #[inline]
-    fn next(&mut self) -> Option<&'i Scalar> {
+    fn next(&mut self) -> Option<&'i ScalarCow<'s>> {
         self.0.next()
     }
 
@@ -103,7 +103,7 @@ impl<'i> Iterator for PathIter<'i> {
     }
 }
 
-impl<'i> ExactSizeIterator for PathIter<'i>{
+impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's>{
     #[inline]
     fn len(&self) -> usize {
         self.0.len()
@@ -111,4 +111,4 @@ impl<'i> ExactSizeIterator for PathIter<'i>{
 }
 
 /// Path to a value in an `Object`.
-pub type PathRef<'s> = &'s [Scalar];
+pub type PathRef<'p, 's> = &'p [ScalarCow<'s>];

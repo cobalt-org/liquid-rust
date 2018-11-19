@@ -27,7 +27,7 @@ impl CaseOption {
     fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(context)?;
-            if v == *value {
+            if *v == *value {
                 return Ok(true);
             }
         }
@@ -54,7 +54,7 @@ impl Case {
 
 impl Renderable for Case {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = self.target.evaluate(context)?;
+        let value = self.target.evaluate(context)?.to_owned();
         for case in &self.cases {
             if case.evaluate(&value, context)? {
                 return case

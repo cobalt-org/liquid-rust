@@ -54,7 +54,7 @@ impl FilterChain {
     /// Process `Value` expression within `context`'s stack.
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(context)?;
+        let mut entry = self.entry.evaluate(context)?.to_owned();
 
         // apply all specified filters
         for filter in &self.filters {
@@ -65,7 +65,7 @@ impl FilterChain {
             let arguments: Result<Vec<Value>> = filter
                 .arguments
                 .iter()
-                .map(|a| a.evaluate(context))
+                .map(|a| Ok(a.evaluate(context)?.to_owned()))
                 .collect();
             let arguments = arguments?;
             entry = f

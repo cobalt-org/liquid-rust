@@ -29,26 +29,26 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn try_evaluate(&self, context: &Context) -> Option<Path> {
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<Path<'c>> {
         let mut path = Path::with_index(self.variable.clone());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.try_evaluate(context)?;
-            let s = v.into_scalar()?;
+            let s = v.as_scalar()?.as_ref();
             path.push(s);
         }
         Some(path)
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate(&self, context: &Context) -> Result<Path> {
-        let mut path = Path::with_index(self.variable.clone());
+    pub fn evaluate<'c>(&'c self, context: &'c Context) -> Result<Path<'c>> {
+        let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.evaluate(context)?;
             let s = v.as_scalar()
                 .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v)))?
-                .to_owned();
+                .as_ref();
             path.push(s);
         }
         Ok(path)

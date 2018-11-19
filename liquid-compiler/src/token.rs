@@ -131,7 +131,7 @@ mod test {
         let ctx = Context::new();
         let t = Token::StringLiteral("hello".to_owned());
         assert_eq!(
-            t.to_arg().unwrap().evaluate(&ctx).unwrap(),
+            *t.to_arg().unwrap().evaluate(&ctx).unwrap(),
             Value::scalar("hello")
         );
     }
@@ -140,7 +140,7 @@ mod test {
     fn evaluate_handles_number_literals() {
         let ctx = Context::new();
         assert_eq!(
-            Token::FloatLiteral(42f64)
+            *Token::FloatLiteral(42f64)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -150,7 +150,7 @@ mod test {
 
         let ctx = Context::new();
         assert_eq!(
-            Token::IntegerLiteral(42i32)
+            *Token::IntegerLiteral(42i32)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -163,7 +163,7 @@ mod test {
     fn evaluate_handles_boolean_literals() {
         let ctx = Context::new();
         assert_eq!(
-            Token::BooleanLiteral(true)
+            *Token::BooleanLiteral(true)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -172,7 +172,7 @@ mod test {
         );
 
         assert_eq!(
-            Token::BooleanLiteral(false)
+            *Token::BooleanLiteral(false)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -186,7 +186,7 @@ mod test {
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("var0", Value::scalar(42f64));
         assert_eq!(
-            Token::Identifier("var0".to_owned())
+            *Token::Identifier("var0".to_owned())
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)

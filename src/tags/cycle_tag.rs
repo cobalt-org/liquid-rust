@@ -27,8 +27,8 @@ impl Cycle {
 
 impl Renderable for Cycle {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = context
-            .cycles()
+        let mut cycles = context.cycles();
+        let value = cycles
             .cycle_element(&self.name, &self.values)
             .trace_with(|| self.trace())?;
         write!(writer, "{}", value).chain("Failed to render")?;

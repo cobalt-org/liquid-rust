@@ -53,7 +53,7 @@ struct ExistenceCondition {
 
 impl ExistenceCondition {
     pub fn evaluate(&self, context: &Context) -> Result<bool> {
-        let a = self.lh.try_evaluate(context).unwrap_or_default();
+        let a = self.lh.try_evaluate(context).cloned().unwrap_or_default();
         Ok(a.is_truthy())
     }
 }

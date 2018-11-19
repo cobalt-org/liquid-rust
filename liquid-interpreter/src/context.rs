@@ -84,7 +84,7 @@ where
 
 impl<'a, 'g> CycleState<'a, 'g> {
     /// See `cycle` tag.
-    pub fn cycle_element(&mut self, name: &str, values: &[Expression]) -> Result<Value> {
+    pub fn cycle_element<'c>(&'c mut self, name: &str, values: &'c [Expression]) -> Result<&'c Value> {
         let index = self.context.cycles.cycle_index(name, values.len());
         if index >= values.len() {
             return Err(Error::with_msg(
