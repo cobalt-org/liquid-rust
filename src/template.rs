@@ -14,9 +14,11 @@ pub struct Template {
 impl Template {
     /// Renders an instance of the Template, using the given globals.
     pub fn render(&self, globals: &interpreter::Globals) -> Result<String> {
-        let mut data = Vec::new();
+        const BEST_GUESS: usize = 10_000;
+        let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
-        Ok(String::from_utf8(data).expect("render only writes UTF-8"))
+
+        Ok(convert_buffer(data))
     }
 
     /// Renders an instance of the Template, using the given globals.
@@ -27,4 +29,15 @@ impl Template {
             .build();
         self.template.render_to(writer, &mut data)
     }
+}
+
+#[cfg(debug_assertions)]
+fn convert_buffer(buffer: Vec<u8>) -> String {
+    String::from_utf8(buffer)
+        .expect("render can only write UTF-8 because all inputs and processing preserve utf-8")
+}
+
+#[cfg(not(debug_assertions))]
+fn convert_buffer(buffer: Vec<u8>) -> String {
+    unsafe { String::from_utf8_unchecked(buffer) }
 }

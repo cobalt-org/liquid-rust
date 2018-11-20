@@ -75,28 +75,24 @@ fn parse_range(args: &mut Iter<Token>) -> Result<Range> {
     }
 }
 
-fn iter_slice(
-    range: &mut [Value],
+fn iter_array(
+    mut range: Vec<Value>,
     limit: Option<usize>,
     offset: usize,
     reversed: bool,
-) -> &[Value] {
-    let end = match limit {
-        Some(n) => offset + n,
-        None => range.len(),
-    };
-
-    let slice = if end > range.len() {
-        &mut range[offset..]
-    } else {
-        &mut range[offset..end]
-    };
+) -> Vec<Value> {
+    let offset = ::std::cmp::min(offset, range.len());
+    let limit = limit
+        .map(|l| ::std::cmp::min(l, range.len()))
+        .unwrap_or_else(|| range.len() - offset);
+    range.drain(0..offset);
+    range.resize(limit, Value::Nil);
 
     if reversed {
-        slice.reverse();
+        range.reverse();
     };
 
-    slice
+    range
 }
 
 /// Extracts an integer value or an identifier from the token stream
@@ -178,10 +174,10 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
+        let range = self.range.evaluate(context).trace_with(|| self.trace())?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
-        let range = iter_slice(&mut range, limit, offset, self.reversed);
+        let range = iter_array(range, limit, offset, self.reversed);
 
         match range.len() {
             0 => {
@@ -197,7 +193,7 @@ impl Renderable for For {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".into(), Value::scalar(range_len as i32));
 
-                    for (i, v) in range.iter().enumerate() {
+                    for (i, v) in range.into_iter().enumerate() {
                         helper_vars.insert("index0".into(), Value::scalar(i as i32));
                         helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
                         helper_vars
@@ -209,11 +205,10 @@ impl Renderable for For {
                         scope
                             .stack_mut()
                             .set("forloop", Value::Object(helper_vars.clone()));
-                        scope.stack_mut().set(self.var_name.to_owned(), v.clone());
+                        scope.stack_mut().set(self.var_name.to_owned(), v);
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace())
-                            .context_with(|| (self.var_name.clone(), v.to_string()))
                             .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                         // given that we're at the end of the loop body
@@ -378,34 +373,33 @@ fn trace_tablerow_tag(
 
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut range = self.range.evaluate(context).trace_with(|| self.trace())?;
+        let range = self.range.evaluate(context).trace_with(|| self.trace())?;
         let cols = evaluate_attr(&self.cols, context)?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
-        let range = iter_slice(&mut range, limit, offset, false);
+        let range = iter_array(range, limit, offset, false);
 
         context.run_in_scope(|mut scope| {
             let mut helper_vars = Object::new();
-            helper_vars.insert("length".into(), Value::scalar(range.len() as i32));
 
-            for (i, v) in range.iter().enumerate() {
+            let range_len = range.len();
+            helper_vars.insert("length".into(), Value::scalar(range_len as i32));
+
+            for (i, v) in range.into_iter().enumerate() {
                 let (col_index, row_index) = match cols {
                     Some(cols) => (i % cols, i / cols),
                     None => (i, 0),
                 };
 
                 let first = i == 0;
-                let last = i == (range.len() - 1);
+                let last = i == (range_len - 1);
                 let col_first = col_index == 0;
                 let col_last = cols.filter(|&cols| col_index + 1 == cols).is_some() || last;
 
                 helper_vars.insert("index0".into(), Value::scalar(i as i32));
                 helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
-                helper_vars.insert(
-                    "rindex0".into(),
-                    Value::scalar((range.len() - i - 1) as i32),
-                );
-                helper_vars.insert("rindex".into(), Value::scalar((range.len() - i) as i32));
+                helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i32));
+                helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i32));
                 helper_vars.insert("first".into(), Value::scalar(first));
                 helper_vars.insert("last".into(), Value::scalar(last));
                 helper_vars.insert("col0".into(), Value::scalar(col_index as i32));
@@ -422,11 +416,10 @@ impl Renderable for TableRow {
                 }
                 write!(writer, "<td class=\"col{}\">", col_index + 1).chain("Failed to render")?;
 
-                scope.stack_mut().set(self.var_name.to_owned(), v.clone());
+                scope.stack_mut().set(self.var_name.to_owned(), v);
                 self.item_template
                     .render_to(writer, &mut scope)
                     .trace_with(|| self.trace())
-                    .context_with(|| (self.var_name.clone(), v.to_string()))
                     .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
 
                 write!(writer, "</td>").chain("Failed to render")?;

@@ -33,7 +33,7 @@ impl Variable {
 
     /// Convert to a `Path`.
     pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<Path<'c>> {
-        let mut path = Path::with_index(self.variable.clone());
+        let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.try_evaluate(context)?;
