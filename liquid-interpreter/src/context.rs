@@ -361,11 +361,18 @@ impl<'g> Context<'g> {
     }
 
     /// Grab a `FilterValue`.
-    pub fn get_filter<'b>(&'b self, name: &str) -> Option<&'b FilterValue> {
-        self.filters.get(name).map(|f| {
-            let f: &FilterValue = f;
-            f
-        })
+    pub fn get_filter<'b>(&'b self, name: &str) -> Result<&'b FilterValue> {
+        self.filters
+            .get(name)
+            .map(|f| {
+                let f: &FilterValue = f;
+                f
+            }).ok_or_else(|| {
+                let available = itertools::join(self.filters.keys(), ", ");
+                Error::with_msg("Unknown filter")
+                    .context("requested filter", name.to_owned())
+                    .context("available filters", available)
+            })
     }
 
     /// Access the block's `InterruptState`.
