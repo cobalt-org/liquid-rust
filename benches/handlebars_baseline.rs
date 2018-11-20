@@ -92,14 +92,12 @@ fn large_loop_helper(b: &mut test::Bencher) {
         .into_iter()
         .map(|i| DataWrapper {
             v: format!("n={}", i),
-        })
-        .collect();
+        }).collect();
     let dummy: Vec<DataWrapper> = (1..1000)
         .into_iter()
         .map(|i| DataWrapper {
             v: format!("n={}", i),
-        })
-        .collect();
+        }).collect();
     let rows = RowWrapper { real, dummy };
     b.iter(|| handlebars.render("test", &rows).ok().unwrap());
 }

@@ -22,7 +22,8 @@ pub fn big_table(b: &mut test::Bencher) {
     }
 
     let mut tera = Tera::default();
-    tera.add_raw_templates(vec![("big-table.html", BIG_TABLE_TEMPLATE)]).unwrap();
+    tera.add_raw_templates(vec![("big-table.html", BIG_TABLE_TEMPLATE)])
+        .unwrap();
     let mut ctx = Context::new();
     ctx.insert("table", &table);
 
@@ -44,16 +45,29 @@ struct Team {
 #[bench]
 pub fn teams(b: &mut test::Bencher) {
     let mut tera = Tera::default();
-    tera.add_raw_templates(vec![("teams.html", TEAMS_TEMPLATE)]).unwrap();
+    tera.add_raw_templates(vec![("teams.html", TEAMS_TEMPLATE)])
+        .unwrap();
     let mut ctx = Context::new();
     ctx.insert("year", &2015);
     ctx.insert(
         "teams",
         &vec![
-            Team { name: "Jiangsu".into(), score: 43 },
-            Team { name: "Beijing".into(), score: 27 },
-            Team { name: "Guangzhou".into(), score: 22 },
-            Team { name: "Shandong".into(), score: 12 },
+            Team {
+                name: "Jiangsu".into(),
+                score: 43,
+            },
+            Team {
+                name: "Beijing".into(),
+                score: 27,
+            },
+            Team {
+                name: "Guangzhou".into(),
+                score: 22,
+            },
+            Team {
+                name: "Shandong".into(),
+                score: 12,
+            },
         ],
     );
 

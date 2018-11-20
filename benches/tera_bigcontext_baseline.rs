@@ -69,8 +69,7 @@ fn bench_big_loop_big_object(b: &mut test::Bencher) {
 {%- endif -%}
 {%- endfor -%}
 ",
-    )])
-    .unwrap();
+    )]).unwrap();
     let mut context = Context::new();
     context.insert("objects", &objects);
     let rendering = tera.render("big_loop.html", &context).expect("Good render");
@@ -89,9 +88,11 @@ fn bench_macro_big_object(b: &mut test::Bencher) {
 {%- import \"macros.html\" as macros -%}
 {%- for i in iterations -%}{{ macros::get_first(bo=big_object) }}{% endfor %}",
         ),
-        ("macros.html", "{%- macro get_first(bo) -%}{{ bo.field_a.i }}{% endmacro get_first %}"),
-    ])
-    .unwrap();
+        (
+            "macros.html",
+            "{%- macro get_first(bo) -%}{{ bo.field_a.i }}{% endmacro get_first %}",
+        ),
+    ]).unwrap();
     let mut context = Context::new();
     context.insert("big_object", &big_object);
     context.insert("iterations", &(0..500).collect::<Vec<usize>>());
@@ -112,8 +113,7 @@ fn bench_macro_big_object_no_loop_with_set(b: &mut test::Bencher) {
 {{ many_fields.b }}
 {{ many_fields.c }}
 ",
-    )])
-    .unwrap();
+    )]).unwrap();
     let mut context = Context::new();
     context.insert("two_fields", &TwoFields::new());
     let context = to_value(context).unwrap();
@@ -139,8 +139,7 @@ fn bench_macro_big_object_no_loop_macro_call(b: &mut test::Bencher) {
             "{%- import \"macros.html\" as macros -%}
 {{ macros::show_a(many_fields=two_fields.a) }}",
         ),
-    ])
-    .unwrap();
+    ]).unwrap();
     let mut context = Context::new();
     context.insert("two_fields", &TwoFields::new());
     let context = to_value(context).unwrap();
@@ -169,7 +168,13 @@ impl ManyFields {
             e.push(format!("This is String({})", i));
         }
 
-        ManyFields { a: "A".into(), b: "B".into(), c: "C".into(), d, e }
+        ManyFields {
+            a: "A".into(),
+            b: "B".into(),
+            c: "C".into(),
+            d,
+            e,
+        }
     }
 }
 
@@ -181,6 +186,9 @@ struct TwoFields {
 
 impl TwoFields {
     fn new() -> TwoFields {
-        TwoFields { a: ManyFields::new(), b: "B".into() }
+        TwoFields {
+            a: ManyFields::new(),
+            b: "B".into(),
+        }
     }
 }
