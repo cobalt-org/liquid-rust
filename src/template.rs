@@ -14,7 +14,8 @@ pub struct Template {
 impl Template {
     /// Renders an instance of the Template, using the given globals.
     pub fn render(&self, globals: &interpreter::Globals) -> Result<String> {
-        let mut data = Vec::new();
+        const BEST_GUESS: usize = 10_000;
+        let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
         Ok(String::from_utf8(data).expect("render only writes UTF-8"))
     }
