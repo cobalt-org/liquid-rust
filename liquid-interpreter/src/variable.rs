@@ -10,67 +10,74 @@ use super::Expression;
 use super::Renderable;
 
 /// A `Value` reference.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Variable {
-    path: Vec<Expression>,
+    variable: Scalar,
+    indexes: Vec<Expression>,
 }
 
 impl Variable {
     /// Create a `Value` reference.
     pub fn with_literal<S: Into<Scalar>>(value: S) -> Self {
-        let expr = Expression::with_literal(value);
-        let path = vec![expr];
-        Self { path }
+        Self {
+            variable: value.into(),
+            indexes: Default::default(),
+        }
     }
 
     /// Append a literal.
     pub fn push_literal<S: Into<Scalar>>(mut self, value: S) -> Self {
-        self.path.push(Expression::with_literal(value));
+        self.indexes.push(Expression::with_literal(value));
         self
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate(&self, context: &Context) -> Result<Path> {
-        let path: Result<Path> = self
-            .path
-            .iter()
-            .map(|e| e.evaluate(context))
-            .map(|v| {
-                let v = v?;
-                let s = v
-                    .as_scalar()
-                    .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v)))?
-                    .clone();
-                Ok(s)
-            }).collect();
-        path
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<Path<'c>> {
+        let mut path = Path::with_index(self.variable.clone());
+        path.reserve(self.indexes.len());
+        for expr in &self.indexes {
+            let v = expr.try_evaluate(context)?;
+            let s = v.as_scalar()?.as_ref();
+            path.push(s);
+        }
+        Some(path)
+    }
+
+    /// Convert to a `Path`.
+    pub fn evaluate<'c>(&'c self, context: &'c Context) -> Result<Path<'c>> {
+        let mut path = Path::with_index(self.variable.as_ref());
+        path.reserve(self.indexes.len());
+        for expr in &self.indexes {
+            let v = expr.evaluate(context)?;
+            let s = v
+                .as_scalar()
+                .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v)))?
+                .as_ref();
+            path.push(s);
+        }
+        Ok(path)
     }
 }
 
 impl Extend<Scalar> for Variable {
     fn extend<T: IntoIterator<Item = Scalar>>(&mut self, iter: T) {
         let path = iter.into_iter().map(Expression::with_literal);
-        self.path.extend(path);
+        self.indexes.extend(path);
     }
 }
 
 impl Extend<Expression> for Variable {
     fn extend<T: IntoIterator<Item = Expression>>(&mut self, iter: T) {
         let path = iter.into_iter();
-        self.path.extend(path);
+        self.indexes.extend(path);
     }
 }
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut iter = self.path.iter();
-        let head = iter.next();
-        match head {
-            Some(head) => write!(f, "{}", head)?,
-            None => return Ok(()),
-        }
-        for index in iter {
-            write!(f, "[\"{}\"]", index)?;
+        write!(f, "{}", self.variable)?;
+        for index in self.indexes.iter() {
+            write!(f, "[{}]", index)?;
         }
         Ok(())
     }

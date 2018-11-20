@@ -2,6 +2,7 @@ use std::fmt;
 
 use liquid_interpreter::Expression;
 use liquid_interpreter::Variable;
+use liquid_value::Scalar;
 use liquid_value::Value;
 
 use super::error::Result;
@@ -79,11 +80,11 @@ impl Token {
             Token::StringLiteral(ref s) => Ok(Expression::with_literal(s.to_owned())),
             Token::BooleanLiteral(b) => Ok(Expression::with_literal(b)),
             Token::Identifier(ref id) => {
-                let mut var = Variable::default();
-                var.extend(
-                    id.split('.')
-                        .map(|s| Expression::with_literal(s.to_owned())),
+                let mut path = id.split('.').map(|s| Scalar::new(s.to_owned()));
+                let mut var = Variable::with_literal(
+                    path.next().expect("there should always be at least one"),
                 );
+                var.extend(path);
                 Ok(Expression::Variable(var))
             }
             ref x => Err(unexpected_token_error(
@@ -132,7 +133,7 @@ mod test {
         let ctx = Context::new();
         let t = Token::StringLiteral("hello".to_owned());
         assert_eq!(
-            t.to_arg().unwrap().evaluate(&ctx).unwrap(),
+            *t.to_arg().unwrap().evaluate(&ctx).unwrap(),
             Value::scalar("hello")
         );
     }
@@ -141,7 +142,7 @@ mod test {
     fn evaluate_handles_number_literals() {
         let ctx = Context::new();
         assert_eq!(
-            Token::FloatLiteral(42f64)
+            *Token::FloatLiteral(42f64)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -151,7 +152,7 @@ mod test {
 
         let ctx = Context::new();
         assert_eq!(
-            Token::IntegerLiteral(42i32)
+            *Token::IntegerLiteral(42i32)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -164,7 +165,7 @@ mod test {
     fn evaluate_handles_boolean_literals() {
         let ctx = Context::new();
         assert_eq!(
-            Token::BooleanLiteral(true)
+            *Token::BooleanLiteral(true)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -173,7 +174,7 @@ mod test {
         );
 
         assert_eq!(
-            Token::BooleanLiteral(false)
+            *Token::BooleanLiteral(false)
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)
@@ -187,7 +188,7 @@ mod test {
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("var0", Value::scalar(42f64));
         assert_eq!(
-            Token::Identifier("var0".to_owned())
+            *Token::Identifier("var0".to_owned())
                 .to_arg()
                 .unwrap()
                 .evaluate(&ctx)

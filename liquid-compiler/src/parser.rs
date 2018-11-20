@@ -4,7 +4,6 @@
 //! but should be ignored for simple usage.
 
 use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::slice::Iter;
 
 use liquid_interpreter::Expression;
@@ -308,7 +307,7 @@ pub fn split_block<'a>(
 ) -> (&'a [Element], Option<BlockSplit<'a>>) {
     // construct a fast-lookup cache of the delimiters, as we're going to be
     // consulting the delimiter list a *lot*.
-    let delims: HashSet<&str> = HashSet::from_iter(delimiters.iter().map(|x| *x));
+    let delims: HashSet<&str> = delimiters.iter().cloned().collect();
     let mut stack: Vec<String> = Vec::new();
 
     for (i, t) in tokens.iter().enumerate() {

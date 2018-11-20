@@ -9,53 +9,75 @@ pub type Date = chrono::DateTime<chrono::FixedOffset>;
 
 /// A Liquid scalar value
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Scalar(ScalarEnum);
+pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
+
+/// A Liquid scalar value
+pub type Scalar = ScalarCow<'static>;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-enum ScalarEnum {
+enum ScalarCowEnum<'s> {
     Integer(i32),
     Float(f64),
     Bool(bool),
     #[serde(with = "friendly_date")]
     Date(Date),
-    Str(borrow::Cow<'static, str>),
+    Str(borrow::Cow<'s, str>),
 }
 
-impl Scalar {
-    /// Convert a value into a `Scalar`.
+impl<'s> ScalarCow<'s> {
+    /// Convert a value into a `ScalarCow`.
     pub fn new<T: Into<Self>>(value: T) -> Self {
         value.into()
+    }
+
+    /// Create an owned version of the value.
+    pub fn into_owned(self) -> Self {
+        match self.0 {
+            ScalarCowEnum::Str(x) => Scalar::new(x.into_owned()),
+            _ => self,
+        }
+    }
+
+    /// Create a reference to the value.
+    pub fn as_ref<'r: 's>(&'r self) -> ScalarCow<'r> {
+        match self.0 {
+            ScalarCowEnum::Integer(x) => Scalar::new(x),
+            ScalarCowEnum::Float(x) => Scalar::new(x),
+            ScalarCowEnum::Bool(x) => Scalar::new(x),
+            ScalarCowEnum::Date(x) => Scalar::new(x),
+            ScalarCowEnum::Str(ref x) => Scalar::new(x.as_ref()),
+        }
     }
 
     /// Interpret as a string.
     pub fn to_str(&self) -> borrow::Cow<str> {
         match self.0 {
-            ScalarEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarEnum::Bool(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarEnum::Date(ref x) => borrow::Cow::Owned(x.format(DATE_FORMAT).to_string()),
-            ScalarEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
+            ScalarCowEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
+            ScalarCowEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
+            ScalarCowEnum::Bool(ref x) => borrow::Cow::Owned(x.to_string()),
+            ScalarCowEnum::Date(ref x) => borrow::Cow::Owned(x.format(DATE_FORMAT).to_string()),
+            ScalarCowEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
         }
     }
 
     /// Convert to a string.
     pub fn into_string(self) -> String {
         match self.0 {
-            ScalarEnum::Integer(x) => x.to_string(),
-            ScalarEnum::Float(x) => x.to_string(),
-            ScalarEnum::Bool(x) => x.to_string(),
-            ScalarEnum::Date(x) => x.to_string(),
-            ScalarEnum::Str(x) => x.into_owned(),
+            ScalarCowEnum::Integer(x) => x.to_string(),
+            ScalarCowEnum::Float(x) => x.to_string(),
+            ScalarCowEnum::Bool(x) => x.to_string(),
+            ScalarCowEnum::Date(x) => x.to_string(),
+            ScalarCowEnum::Str(x) => x.into_owned(),
         }
     }
 
     /// Interpret as an integer, if possible
     pub fn to_integer(&self) -> Option<i32> {
         match self.0 {
-            ScalarEnum::Integer(ref x) => Some(*x),
-            ScalarEnum::Str(ref x) => x.parse::<i32>().ok(),
+            ScalarCowEnum::Integer(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => x.parse::<i32>().ok(),
             _ => None,
         }
     }
@@ -63,9 +85,9 @@ impl Scalar {
     /// Interpret as a float, if possible
     pub fn to_float(&self) -> Option<f64> {
         match self.0 {
-            ScalarEnum::Integer(ref x) => Some(f64::from(*x)),
-            ScalarEnum::Float(ref x) => Some(*x),
-            ScalarEnum::Str(ref x) => x.parse::<f64>().ok(),
+            ScalarCowEnum::Integer(ref x) => Some(f64::from(*x)),
+            ScalarCowEnum::Float(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
             _ => None,
         }
     }
@@ -73,7 +95,7 @@ impl Scalar {
     /// Interpret as a bool, if possible
     pub fn to_bool(&self) -> Option<bool> {
         match self.0 {
-            ScalarEnum::Bool(ref x) => Some(*x),
+            ScalarCowEnum::Bool(ref x) => Some(*x),
             _ => None,
         }
     }
@@ -81,8 +103,8 @@ impl Scalar {
     /// Interpret as a date, if possible
     pub fn to_date(&self) -> Option<Date> {
         match self.0 {
-            ScalarEnum::Date(ref x) => Some(*x),
-            ScalarEnum::Str(ref x) => parse_date(x.as_ref()),
+            ScalarCowEnum::Date(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => parse_date(x.as_ref()),
             _ => None,
         }
     }
@@ -91,7 +113,7 @@ impl Scalar {
     pub fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self.0 {
-            ScalarEnum::Bool(ref x) => *x,
+            ScalarCowEnum::Bool(ref x) => *x,
             _ => true,
         }
     }
@@ -100,8 +122,8 @@ impl Scalar {
     pub fn is_default(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self.0 {
-            ScalarEnum::Bool(ref x) => !*x,
-            ScalarEnum::Str(ref x) => x.is_empty(),
+            ScalarCowEnum::Bool(ref x) => !*x,
+            ScalarCowEnum::Str(ref x) => x.is_empty(),
             _ => false,
         }
     }
@@ -109,106 +131,118 @@ impl Scalar {
     /// Report the data type (generally for error reporting).
     pub fn type_name(&self) -> &'static str {
         match self.0 {
-            ScalarEnum::Integer(_) => "whole number",
-            ScalarEnum::Float(_) => "fractional number",
-            ScalarEnum::Bool(_) => "boolean",
-            ScalarEnum::Date(_) => "date",
-            ScalarEnum::Str(_) => "string",
+            ScalarCowEnum::Integer(_) => "whole number",
+            ScalarCowEnum::Float(_) => "fractional number",
+            ScalarCowEnum::Bool(_) => "boolean",
+            ScalarCowEnum::Date(_) => "date",
+            ScalarCowEnum::Str(_) => "string",
         }
     }
 }
 
-impl From<i32> for Scalar {
+impl<'s> From<i32> for ScalarCow<'s> {
     fn from(s: i32) -> Self {
-        Scalar {
-            0: ScalarEnum::Integer(s),
+        ScalarCow {
+            0: ScalarCowEnum::Integer(s),
         }
     }
 }
 
-impl From<f64> for Scalar {
+impl<'s> From<f64> for ScalarCow<'s> {
     fn from(s: f64) -> Self {
-        Scalar {
-            0: ScalarEnum::Float(s),
+        ScalarCow {
+            0: ScalarCowEnum::Float(s),
         }
     }
 }
 
-impl From<bool> for Scalar {
+impl<'s> From<bool> for ScalarCow<'s> {
     fn from(s: bool) -> Self {
-        Scalar {
-            0: ScalarEnum::Bool(s),
+        ScalarCow {
+            0: ScalarCowEnum::Bool(s),
         }
     }
 }
 
-impl From<Date> for Scalar {
+impl<'s> From<Date> for ScalarCow<'s> {
     fn from(s: Date) -> Self {
-        Scalar {
-            0: ScalarEnum::Date(s),
+        ScalarCow {
+            0: ScalarCowEnum::Date(s),
         }
     }
 }
 
-impl From<String> for Scalar {
+impl<'s> From<String> for ScalarCow<'s> {
     fn from(s: String) -> Self {
-        Scalar {
-            0: ScalarEnum::Str(s.into()),
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'a> From<&'a String> for Scalar {
-    fn from(s: &String) -> Self {
-        Scalar {
-            0: ScalarEnum::Str(s.to_owned().into()),
+impl<'s> From<&'s String> for ScalarCow<'s> {
+    fn from(s: &'s String) -> ScalarCow<'s> {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.as_str().into()),
         }
     }
 }
 
-impl From<&'static str> for Scalar {
-    fn from(s: &'static str) -> Self {
-        Scalar {
-            0: ScalarEnum::Str(s.into()),
+impl<'s> From<&'s str> for ScalarCow<'s> {
+    fn from(s: &'s str) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl PartialEq<Scalar> for Scalar {
+impl<'s> From<borrow::Cow<'s, str>> for ScalarCow<'s> {
+    fn from(s: borrow::Cow<'s, str>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s),
+        }
+    }
+}
+
+impl<'s> PartialEq<ScalarCow<'s>> for ScalarCow<'s> {
     fn eq(&self, other: &Self) -> bool {
         match (&self.0, &other.0) {
-            (&ScalarEnum::Integer(x), &ScalarEnum::Integer(y)) => x == y,
-            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (f64::from(x)) == y,
-            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x == (f64::from(y)),
-            (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x == y,
-            (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x == y,
-            (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x == y,
-            (&ScalarEnum::Str(ref x), &ScalarEnum::Str(ref y)) => x == y,
+            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
+            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)) == y,
+            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (f64::from(y)),
+            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x == y,
+            (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
+            (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
+            (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
             // encode Ruby truthiness: all values except false and nil are true
-            (_, &ScalarEnum::Bool(b)) | (&ScalarEnum::Bool(b), _) => b,
+            (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
             _ => false,
         }
     }
 }
 
-impl Eq for Scalar {}
+impl<'s> Eq for ScalarCow<'s> {}
 
-impl PartialOrd<Scalar> for Scalar {
+impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (&self.0, &other.0) {
-            (&ScalarEnum::Integer(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&y),
-            (&ScalarEnum::Integer(x), &ScalarEnum::Float(y)) => (f64::from(x)).partial_cmp(&y),
-            (&ScalarEnum::Float(x), &ScalarEnum::Integer(y)) => x.partial_cmp(&(f64::from(y))),
-            (&ScalarEnum::Float(x), &ScalarEnum::Float(y)) => x.partial_cmp(&y),
-            (&ScalarEnum::Bool(x), &ScalarEnum::Bool(y)) => x.partial_cmp(&y),
-            (&ScalarEnum::Date(x), &ScalarEnum::Date(y)) => x.partial_cmp(&y),
-            (&ScalarEnum::Str(ref x), &ScalarEnum::Str(ref y)) => x.partial_cmp(y),
+            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
+            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => {
+                (f64::from(x)).partial_cmp(&y)
+            }
+            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => {
+                x.partial_cmp(&(f64::from(y)))
+            }
+            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
+            (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
+            (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
+            (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
             _ => None,
         }
     }
 }
 
-impl fmt::Display for Scalar {
+impl<'s> fmt::Display for ScalarCow<'s> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let data = self.to_str();
         write!(f, "{}", data)
@@ -260,8 +294,8 @@ fn parse_date(s: &str) -> Option<Date> {
 mod test {
     use super::*;
 
-    static TRUE: Scalar = Scalar(ScalarEnum::Bool(true));
-    static FALSE: Scalar = Scalar(ScalarEnum::Bool(false));
+    static TRUE: ScalarCow = ScalarCow(ScalarCowEnum::Bool(true));
+    static FALSE: ScalarCow = ScalarCow(ScalarCowEnum::Bool(false));
 
     #[test]
     fn test_to_str_bool() {
@@ -270,22 +304,22 @@ mod test {
 
     #[test]
     fn test_to_str_integer() {
-        let val: Scalar = 42i32.into();
+        let val: ScalarCow = 42i32.into();
         assert_eq!(val.to_str(), "42");
     }
 
     #[test]
     fn test_to_str_float() {
-        let val: Scalar = 42f64.into();
+        let val: ScalarCow = 42f64.into();
         assert_eq!(val.to_str(), "42");
 
-        let val: Scalar = 42.34.into();
+        let val: ScalarCow = 42.34.into();
         assert_eq!(val.to_str(), "42.34");
     }
 
     #[test]
     fn test_to_str_str() {
-        let val: Scalar = "foobar".into();
+        let val: ScalarCow = "foobar".into();
         assert_eq!(val.to_str(), "foobar");
     }
 
@@ -296,28 +330,28 @@ mod test {
 
     #[test]
     fn test_to_integer_integer() {
-        let val: Scalar = 42i32.into();
+        let val: ScalarCow = 42i32.into();
         assert_eq!(val.to_integer(), Some(42i32));
     }
 
     #[test]
     fn test_to_integer_float() {
-        let val: Scalar = 42f64.into();
+        let val: ScalarCow = 42f64.into();
         assert_eq!(val.to_integer(), None);
 
-        let val: Scalar = 42.34.into();
+        let val: ScalarCow = 42.34.into();
         assert_eq!(val.to_integer(), None);
     }
 
     #[test]
     fn test_to_integer_str() {
-        let val: Scalar = "foobar".into();
+        let val: ScalarCow = "foobar".into();
         assert_eq!(val.to_integer(), None);
 
-        let val: Scalar = "42.34".into();
+        let val: ScalarCow = "42.34".into();
         assert_eq!(val.to_integer(), None);
 
-        let val: Scalar = "42".into();
+        let val: ScalarCow = "42".into();
         assert_eq!(val.to_integer(), Some(42));
     }
 
@@ -328,28 +362,28 @@ mod test {
 
     #[test]
     fn test_to_float_integer() {
-        let val: Scalar = 42i32.into();
+        let val: ScalarCow = 42i32.into();
         assert_eq!(val.to_float(), Some(42f64));
     }
 
     #[test]
     fn test_to_float_float() {
-        let val: Scalar = 42f64.into();
+        let val: ScalarCow = 42f64.into();
         assert_eq!(val.to_float(), Some(42f64));
 
-        let val: Scalar = 42.34.into();
+        let val: ScalarCow = 42.34.into();
         assert_eq!(val.to_float(), Some(42.34));
     }
 
     #[test]
     fn test_to_float_str() {
-        let val: Scalar = "foobar".into();
+        let val: ScalarCow = "foobar".into();
         assert_eq!(val.to_float(), None);
 
-        let val: Scalar = "42.34".into();
+        let val: ScalarCow = "42.34".into();
         assert_eq!(val.to_float(), Some(42.34));
 
-        let val: Scalar = "42".into();
+        let val: ScalarCow = "42".into();
         assert_eq!(val.to_float(), Some(42f64));
     }
 
@@ -360,35 +394,35 @@ mod test {
 
     #[test]
     fn test_to_bool_integer() {
-        let val: Scalar = 42i32.into();
+        let val: ScalarCow = 42i32.into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn test_to_bool_float() {
-        let val: Scalar = 42f64.into();
+        let val: ScalarCow = 42f64.into();
         assert_eq!(val.to_bool(), None);
 
-        let val: Scalar = 42.34.into();
+        let val: ScalarCow = 42.34.into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn test_to_bool_str() {
-        let val: Scalar = "foobar".into();
+        let val: ScalarCow = "foobar".into();
         assert_eq!(val.to_bool(), None);
 
-        let val: Scalar = "true".into();
+        let val: ScalarCow = "true".into();
         assert_eq!(val.to_bool(), None);
 
-        let val: Scalar = "false".into();
+        let val: ScalarCow = "false".into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn integer_equality() {
-        let val: Scalar = 42i32.into();
-        let zero: Scalar = 0i32.into();
+        let val: ScalarCow = 42i32.into();
+        let zero: ScalarCow = 0i32.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -397,8 +431,8 @@ mod test {
 
     #[test]
     fn integers_have_ruby_truthiness() {
-        let val: Scalar = 42i32.into();
-        let zero: Scalar = 0i32.into();
+        let val: ScalarCow = 42i32.into();
+        let zero: ScalarCow = 0i32.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.is_truthy());
@@ -410,8 +444,8 @@ mod test {
 
     #[test]
     fn float_equality() {
-        let val: Scalar = 42f64.into();
-        let zero: Scalar = 0f64.into();
+        let val: ScalarCow = 42f64.into();
+        let zero: ScalarCow = 0f64.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -420,8 +454,8 @@ mod test {
 
     #[test]
     fn floats_have_ruby_truthiness() {
-        let val: Scalar = 42f64.into();
-        let zero: Scalar = 0f64.into();
+        let val: ScalarCow = 42f64.into();
+        let zero: ScalarCow = 0f64.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.is_truthy());
@@ -447,9 +481,9 @@ mod test {
 
     #[test]
     fn string_equality() {
-        let alpha: Scalar = "alpha".into();
-        let beta: Scalar = "beta".into();
-        let empty: Scalar = "".into();
+        let alpha: ScalarCow = "alpha".into();
+        let beta: ScalarCow = "beta".into();
+        let empty: ScalarCow = "".into();
         assert_eq!(alpha, alpha);
         assert_eq!(empty, empty);
         assert!(alpha != beta);
@@ -459,8 +493,8 @@ mod test {
     #[test]
     fn strings_have_ruby_truthiness() {
         // all strings in ruby are true
-        let alpha: Scalar = "alpha".into();
-        let empty: Scalar = "".into();
+        let alpha: ScalarCow = "alpha".into();
+        let empty: ScalarCow = "".into();
         assert_eq!(TRUE, alpha);
         assert_eq!(alpha, TRUE);
         assert!(alpha.is_truthy());

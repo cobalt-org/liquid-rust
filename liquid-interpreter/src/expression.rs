@@ -39,12 +39,24 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn evaluate(&self, context: &Context) -> Result<Value> {
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<&'c Value> {
         let val = match *self {
-            Expression::Literal(ref x) => x.clone(),
+            Expression::Literal(ref x) => &x,
+            Expression::Variable(ref x) => {
+                let path = x.try_evaluate(context)?;
+                context.stack().try_get(&path)?
+            }
+        };
+        Some(val)
+    }
+
+    /// Convert to a `Value`.
+    pub fn evaluate<'c>(&'c self, context: &'c Context) -> Result<&'c Value> {
+        let val = match *self {
+            Expression::Literal(ref x) => x,
             Expression::Variable(ref x) => {
                 let path = x.evaluate(context)?;
-                context.stack().get(&path)?.clone()
+                context.stack().get(&path)?
             }
         };
         Ok(val)

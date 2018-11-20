@@ -53,7 +53,7 @@ struct ExistenceCondition {
 
 impl ExistenceCondition {
     pub fn evaluate(&self, context: &Context) -> Result<bool> {
-        let a = self.lh.evaluate(context).unwrap_or_default();
+        let a = self.lh.try_evaluate(context).cloned().unwrap_or_default();
         Ok(a.is_truthy())
     }
 }
@@ -108,14 +108,18 @@ struct Conditional {
 }
 
 fn contains_check(a: &Value, b: &Value) -> Result<bool> {
-    let b = b.to_str();
-
     match *a {
-        Value::Scalar(ref val) => Ok(val.to_str().contains(b.as_ref())),
-        Value::Object(ref obj) => Ok(obj.contains_key(b.as_ref())),
+        Value::Scalar(ref val) => {
+            let b = b.to_str();
+            Ok(val.to_str().contains(b.as_ref()))
+        }
+        Value::Object(_) => {
+            let b = b.as_scalar();
+            let check = b.map(|b| a.contains_key(b)).unwrap_or(false);
+            Ok(check)
+        }
         Value::Array(ref arr) => {
             for elem in arr {
-                let elem = elem.to_str();
                 if elem == b {
                     return Ok(true);
                 }

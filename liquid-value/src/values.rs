@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 use super::Scalar;
+use super::ScalarCow;
 
 #[cfg(feature = "object_sorted")]
 type MapImpl<K, V> = BTreeMap<K, V>;
@@ -77,6 +78,14 @@ impl Value {
         }
     }
 
+    /// Extracts the scalar value if it is a scalar.
+    pub fn into_scalar(self) -> Option<Scalar> {
+        match self {
+            Value::Scalar(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Tests whether this value is a scalar
     pub fn is_scalar(&self) -> bool {
         self.as_scalar().is_some()
@@ -94,6 +103,14 @@ impl Value {
     pub fn as_array_mut(&mut self) -> Option<&mut Array> {
         match *self {
             Value::Array(ref mut s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the array value if it is an array.
+    pub fn into_array(self) -> Option<Array> {
+        match self {
+            Value::Array(s) => Some(s),
             _ => None,
         }
     }
@@ -119,9 +136,25 @@ impl Value {
         }
     }
 
+    /// Extracts the object value if it is a object.
+    pub fn into_object(self) -> Option<Object> {
+        match self {
+            Value::Object(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Tests whether this value is an object
     pub fn is_object(&self) -> bool {
         self.as_object().is_some()
+    }
+
+    /// Extracts the nil value if it is nil
+    pub fn as_nil(&self) -> Option<()> {
+        match *self {
+            Value::Nil => Some(()),
+            _ => None,
+        }
     }
 
     /// Tests whether this value is nil
@@ -163,20 +196,52 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn get<'i, I: Into<&'i Scalar>>(&self, index: I) -> Option<&Self> {
-        let index: &Scalar = index.into();
-        self.get_index(index)
-    }
-
-    fn get_index(&self, index: &Scalar) -> Option<&Self> {
+    pub fn contains_key(&self, index: &Scalar) -> bool {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
-                    let index = if 0 <= index {
-                        index as isize
-                    } else {
-                        (x.len() as isize) + (index as isize)
-                    };
+                    let index = convert_index(index, x.len());
+                    index < x.len()
+                } else {
+                    match &*index.to_str() {
+                        "first" | "last" => true,
+                        _ => false,
+                    }
+                }
+            }
+            Value::Object(ref x) => x.contains_key(index.to_str().as_ref()),
+            _ => false,
+        }
+    }
+
+    /// Keys available for lookup.
+    pub fn keys(&self) -> Keys {
+        let v = match *self {
+            Value::Array(ref x) => {
+                let start: i32 = 0;
+                let end = x.len() as i32;
+                let mut keys: Vec<_> = (start..end).map(Scalar::new).collect();
+                keys.push(Scalar::new("first"));
+                keys.push(Scalar::new("last"));
+                keys
+            }
+            Value::Object(ref x) => x
+                .keys()
+                .map(|s| match *s {
+                    borrow::Cow::Borrowed(s) => Scalar::new(s),
+                    borrow::Cow::Owned(ref s) => Scalar::new(s.to_owned()),
+                }).collect(),
+            _ => vec![],
+        };
+        Keys(v.into_iter())
+    }
+
+    /// Access a contained `Value`.
+    pub fn get<'s>(&'s self, index: &ScalarCow) -> Option<&'s Self> {
+        match *self {
+            Value::Array(ref x) => {
+                if let Some(index) = index.to_integer() {
+                    let index = convert_index(index, x.len());
                     x.get(index as usize)
                 } else {
                     match &*index.to_str() {
@@ -190,6 +255,43 @@ impl Value {
             _ => None,
         }
     }
+}
+
+/// Iterator over a `Value`s keys.
+#[derive(Debug)]
+pub struct Keys(::std::vec::IntoIter<Scalar>);
+
+impl Iterator for Keys {
+    type Item = Scalar;
+
+    #[inline]
+    fn next(&mut self) -> Option<Scalar> {
+        self.0.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.0.count()
+    }
+}
+
+impl ExactSizeIterator for Keys {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+fn convert_index(index: i32, max_size: usize) -> usize {
+    let index = index as isize;
+    let max_size = max_size as isize;
+    let index = if 0 <= index { index } else { max_size + index };
+    index as usize
 }
 
 impl Default for Value {

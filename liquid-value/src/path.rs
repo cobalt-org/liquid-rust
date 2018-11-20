@@ -1,59 +1,79 @@
 use std::fmt;
-use std::iter;
 use std::slice;
 
 use itertools;
 
-use super::Scalar;
+use super::ScalarCow;
 
 /// Path to a value in an `Object`.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Path {
-    indexes: Vec<Scalar>,
-}
+///
+/// There is guaranteed always at least one element.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Path<'s>(Vec<ScalarCow<'s>>);
 
-impl Path {
-    /// Create a `Path` from iterator of `Scalar`s
-    pub fn new<T: IntoIterator<Item = Scalar>>(indexes: T) -> Self {
-        let indexes = indexes.into_iter().collect();
-        Self { indexes }
-    }
-
+impl<'s> Path<'s> {
     /// Create a `Value` reference.
-    pub fn with_index<I: Into<Scalar>>(value: I) -> Self {
+    pub fn with_index<I: Into<ScalarCow<'s>>>(value: I) -> Self {
         let indexes = vec![value.into()];
-        Self { indexes }
+        Path(indexes)
     }
 
     /// Append an index.
-    pub fn push<I: Into<Scalar>>(mut self, value: I) -> Self {
-        self.indexes.push(value.into());
-        self
+    pub fn push<I: Into<ScalarCow<'s>>>(&mut self, value: I) {
+        self.0.push(value.into());
+    }
+
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the given `Path`. The `Path` may reserve more space to avoid
+    /// frequent reallocations. After calling `reserve`, capacity will be
+    /// greater than or equal to `self.len() + additional`. Does nothing if
+    /// capacity is already sufficient.
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
     }
 
     /// Access the `Value` reference.
-    pub fn iter(&self) -> ScalarIter {
-        ScalarIter(self.indexes.iter())
+    pub fn iter(&self) -> PathIter {
+        PathIter(self.0.iter())
+    }
+
+    /// Extracts a slice containing the entire vector.
+    #[inline]
+    pub fn as_slice(&self) -> &[ScalarCow<'s>] {
+        self.0.as_slice()
     }
 }
 
-impl Extend<Scalar> for Path {
-    fn extend<T: IntoIterator<Item = Scalar>>(&mut self, iter: T) {
-        self.indexes.extend(iter);
+impl<'s> Extend<ScalarCow<'s>> for Path<'s> {
+    fn extend<T: IntoIterator<Item = ScalarCow<'s>>>(&mut self, iter: T) {
+        self.0.extend(iter);
     }
 }
 
-impl iter::FromIterator<Scalar> for Path {
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = Scalar>,
-    {
-        let indexes = iter.into_iter().collect();
-        Self { indexes }
+impl<'s> ::std::ops::Deref for Path<'s> {
+    type Target = [ScalarCow<'s>];
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl fmt::Display for Path {
+impl<'s> ::std::borrow::Borrow<[ScalarCow<'s>]> for Path<'s> {
+    #[inline]
+    fn borrow(&self) -> &[ScalarCow<'s>] {
+        self
+    }
+}
+
+impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
+    #[inline]
+    fn as_ref(&self) -> &[ScalarCow<'s>] {
+        self
+    }
+}
+
+impl<'s> fmt::Display for Path<'s> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let data = itertools::join(self.iter(), ".");
         write!(f, "{}", data)
@@ -62,13 +82,13 @@ impl fmt::Display for Path {
 
 /// Iterate over indexes in a `Value`'s `Path`.
 #[derive(Debug)]
-pub struct ScalarIter<'i>(slice::Iter<'i, Scalar>);
+pub struct PathIter<'i, 's: 'i>(slice::Iter<'i, ScalarCow<'s>>);
 
-impl<'i> Iterator for ScalarIter<'i> {
-    type Item = &'i Scalar;
+impl<'i, 's: 'i> Iterator for PathIter<'i, 's> {
+    type Item = &'i ScalarCow<'s>;
 
     #[inline]
-    fn next(&mut self) -> Option<&'i Scalar> {
+    fn next(&mut self) -> Option<&'i ScalarCow<'s>> {
         self.0.next()
     }
 
@@ -82,3 +102,13 @@ impl<'i> Iterator for ScalarIter<'i> {
         self.0.count()
     }
 }
+
+impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+/// Path to a value in an `Object`.
+pub type PathRef<'p, 's> = &'p [ScalarCow<'s>];
