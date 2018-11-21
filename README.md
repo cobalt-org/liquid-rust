@@ -9,6 +9,24 @@ liquid-rust
 [![Coverage Status](https://coveralls.io/repos/github/cobalt-org/liquid-rust/badge.svg?branch=master)](https://coveralls.io/github/cobalt-org/liquid-rust?branch=master)
 [![Dependency Status](https://dependencyci.com/github/cobalt-org/liquid-rust/badge)](https://dependencyci.com/github/cobalt-org/liquid-rust)
 
+Goals:
+1. Conformant. Incompatibilities with [strict shopify/liquid][shopify-liquid] are [bugs to be fixed][shopify-compat].
+2. Flexible. Liquid embraces [variants][liquid-variants] for different domains and we want to follow in that spirit.
+3. Performant. Do the best we can within what is conformant.
+
+[shopify-liquid]: https://github.com/Shopify/liquid
+[shopify-compat]: https://github.com/cobalt-org/liquid-rust/labels/shopify-compatibility
+[liquid-variants]: https://shopify.github.io/liquid/basics/variations/
+
+Example applications using liquid-rust:
+- [cobalt]: static site generator.
+- [cargo-tarball]: crate bin packaging tool.
+- [cargo-generate]: crate generator from templates.
+
+[cobalt]: https://cobalt-org.github.io/
+[cargo-tarball]: https://github.com/crate-ci/cargo-tarball
+[cargo-generate]: https://github.com/ashleygwilliams/cargo-generate
+
 Usage
 ----------
 
@@ -43,8 +61,13 @@ assert_eq!(output, "Liquid! 2".to_string());
 
 You can find a reference on Liquid syntax [here](https://github.com/Shopify/liquid/wiki/Liquid-for-Designers).
 
-Extending Liquid
---------
+Customizing Liquid
+------------------
+
+### Language Variants
+
+By default, `liquid-rust` has no filters, tags, or blocks.  You can enable the
+default set or pick and choose which to add to suite your application.
 
 ### Create your own filters
 
