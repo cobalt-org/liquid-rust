@@ -1,29 +1,28 @@
-require 'test_helper'
+use test_helper::*;
 
-class TrimModeTest < Minitest::Test
-  include Liquid
-
-  # Make sure the trim isn't applied to standard output
-  def test_standard_output
-    text = <<-END_TEMPLATE
+// Make sure the trim isn't applied to standard output
+#[test]
+fn test_standard_output() {
+    let text = r#"
       <div>
         <p>
           {{ 'John' }}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           John
         </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_variable_output_with_multiple_blank_lines
-    text = <<-END_TEMPLATE
+#[test]
+fn test_variable_output_with_multiple_blank_lines() {
+    let text = r#"
       <div>
         <p>
 
@@ -33,17 +32,18 @@ class TrimModeTest < Minitest::Test
 
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>John</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_tag_output_with_multiple_blank_lines
-    text = <<-END_TEMPLATE
+#[test]
+fn test_tag_output_with_multiple_blank_lines() {
+    let text = r#"
       <div>
         <p>
 
@@ -55,19 +55,19 @@ class TrimModeTest < Minitest::Test
 
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>yes</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  # Make sure the trim isn't applied to standard tags
-  def test_standard_tags
-    whitespace = '          '
-    text = <<-END_TEMPLATE
+// Make sure the trim isn't applied to standard tags
+#[test]
+fn test_standard_tags() {
+    let text = r#"
       <div>
         <p>
           {% if true %}
@@ -75,19 +75,19 @@ class TrimModeTest < Minitest::Test
           {% endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
-      <div>
-        <p>
-#{whitespace}
-          yes
-#{whitespace}
-        </p>
-      </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    let expected = r#"
+......<div>
+........<p>
+..........
+..........yes
+..........
+........</p>
+......</div>
+...."#.replace(".", " ");
+    assert_template_result(&expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {% if false %}
@@ -95,94 +95,102 @@ class TrimModeTest < Minitest::Test
           {% endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
-      <div>
-        <p>
-#{whitespace}
-        </p>
-      </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    let expected = r#"
+......<div>
+........<p>
+..........
+........</p>
+......</div>
+...."#.replace(".", " ");
+    assert_template_result(&expected, text, v!({}));
+}
 
-  # Make sure the trim isn't too agressive
-  def test_no_trim_output
-    text = '<p>{{- \'John\' -}}</p>'
-    expected = '<p>John</p>'
-    assert_template_result(expected, text)
-  end
+// Make sure the trim isn't too aggressive
+#[test]
+fn test_no_trim_output() {
+    let text = r#"<p>{{- 'John' -}}</p>"#;
+    let expected = "<p>John</p>";
+    assert_template_result(expected, text, v!({}));
+}
 
-  # Make sure the trim isn't too agressive
-  def test_no_trim_tags
-    text = '<p>{%- if true -%}yes{%- endif -%}</p>'
-    expected = '<p>yes</p>'
-    assert_template_result(expected, text)
+// Make sure the trim isn't too aggressive
+#[test]
+fn test_no_trim_tags() {
+    let text = r#"<p>{%- if true -%}yes{%- endif -%}</p>"#;
+    let expected = r#"<p>yes</p>"#;
+    assert_template_result(expected, text, v!({}));
 
-    text = '<p>{%- if false -%}no{%- endif -%}</p>'
-    expected = '<p></p>'
-    assert_template_result(expected, text)
-  end
+    let text = r#"<p>{%- if false -%}no{%- endif -%}</p>"#;
+    let expected = r#"<p></p>"#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_single_line_outer_tag
-    text = '<p> {%- if true %} yes {% endif -%} </p>'
-    expected = '<p> yes </p>'
-    assert_template_result(expected, text)
+#[test]
+fn test_single_line_outer_tag() {
+    let text = r#"<p> {%- if true %} yes {% endif -%} </p>"#;
+    let expected = r#"<p> yes </p>"#;
+    assert_template_result(expected, text, v!({}));
 
-    text = '<p> {%- if false %} no {% endif -%} </p>'
-    expected = '<p></p>'
-    assert_template_result(expected, text)
-  end
+    let text = r#"<p> {%- if false %} no {% endif -%} </p>"#;
+    let expected = r#"<p></p>"#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_single_line_inner_tag
-    text = '<p> {% if true -%} yes {%- endif %} </p>'
-    expected = '<p> yes </p>'
-    assert_template_result(expected, text)
+#[test]
+fn test_single_line_inner_tag() {
+    let text = r#"<p> {% if true -%} yes {%- endif %} </p>"#;
+    let expected = r#"<p> yes </p>"#;
+    assert_template_result(expected, text, v!({}));
 
-    text = '<p> {% if false -%} no {%- endif %} </p>'
-    expected = '<p>  </p>'
-    assert_template_result(expected, text)
-  end
+    let text = r#"<p> {% if false -%} no {%- endif %} </p>"#;
+    let expected = r#"<p>  </p>"#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_single_line_post_tag
-    text = '<p> {% if true -%} yes {% endif -%} </p>'
-    expected = '<p> yes </p>'
-    assert_template_result(expected, text)
+#[test]
+fn test_single_line_post_tag() {
+    let text = r#"<p> {% if true -%} yes {% endif -%} </p>"#;
+    let expected = r#"<p> yes </p>"#;
+    assert_template_result(expected, text, v!({}));
 
-    text = '<p> {% if false -%} no {% endif -%} </p>'
-    expected = '<p> </p>'
-    assert_template_result(expected, text)
-  end
+    let text = r#"<p> {% if false -%} no {% endif -%} </p>"#;
+    let expected = r#"<p> </p>"#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_single_line_pre_tag
-    text = '<p> {%- if true %} yes {%- endif %} </p>'
-    expected = '<p> yes </p>'
-    assert_template_result(expected, text)
+#[test]
+fn test_single_line_pre_tag() {
+    let text = r#"<p> {%- if true %} yes {%- endif %} </p>"#;
+    let expected = r#"<p> yes </p>"#;
+    assert_template_result(expected, text, v!({}));
 
-    text = '<p> {%- if false %} no {%- endif %} </p>'
-    expected = '<p> </p>'
-    assert_template_result(expected, text)
-  end
+    let text = r#"<p> {%- if false %} no {%- endif %} </p>"#;
+    let expected = r#"<p> </p>"#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_pre_trim_output
-    text = <<-END_TEMPLATE
+#[test]
+fn test_pre_trim_output() {
+    let text = r#"
       <div>
         <p>
           {{- 'John' }}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>John
         </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_pre_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_pre_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {%- if true %}
@@ -190,17 +198,17 @@ class TrimModeTest < Minitest::Test
           {%- endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           yes
         </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {%- if false %}
@@ -208,35 +216,37 @@ class TrimModeTest < Minitest::Test
           {%- endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
         </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_post_trim_output
-    text = <<-END_TEMPLATE
+#[test]
+fn test_post_trim_output() {
+    let text = r#"
       <div>
         <p>
           {{ 'John' -}}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           John</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_post_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_post_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {% if true -%}
@@ -244,17 +254,17 @@ class TrimModeTest < Minitest::Test
           {% endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           yes
           </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {% if false -%}
@@ -262,18 +272,19 @@ class TrimModeTest < Minitest::Test
           {% endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_pre_and_post_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_pre_and_post_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {%- if true %}
@@ -281,17 +292,17 @@ class TrimModeTest < Minitest::Test
           {% endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           yes
           </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {%- if false %}
@@ -299,17 +310,18 @@ class TrimModeTest < Minitest::Test
           {% endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p></p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_post_and_pre_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_post_and_pre_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {% if true -%}
@@ -317,18 +329,17 @@ class TrimModeTest < Minitest::Test
           {%- endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>
           yes
         </p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    whitespace = '          '
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {% if false -%}
@@ -336,35 +347,37 @@ class TrimModeTest < Minitest::Test
           {%- endif %}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
-      <div>
-        <p>
-#{whitespace}
-        </p>
-      </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    let expected = r#"
+......<div>
+........<p>
+..........
+........</p>
+......</div>
+...."#.replace(".", " ");
+    assert_template_result(&expected, text, v!({}));
+}
 
-  def test_trim_output
-    text = <<-END_TEMPLATE
+#[test]
+fn test_trim_output() {
+    let text = r#"
       <div>
         <p>
           {{- 'John' -}}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>John</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {%- if true -%}
@@ -372,15 +385,15 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>yes</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {%- if false -%}
@@ -388,34 +401,36 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p></p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_whitespace_trim_output
-    text = <<-END_TEMPLATE
+#[test]
+fn test_whitespace_trim_output() {
+    let text = r#"
       <div>
         <p>
           {{- 'John' -}},
           {{- '30' -}}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>John,30</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_whitespace_trim_tags
-    text = <<-END_TEMPLATE
+#[test]
+fn test_whitespace_trim_tags() {
+    let text = r#"
       <div>
         <p>
           {%- if true -%}
@@ -423,15 +438,15 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>yes</p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
+    "#;
+    assert_template_result(expected, text, v!({}));
 
-    text = <<-END_TEMPLATE
+    let text = r#"
       <div>
         <p>
           {%- if false -%}
@@ -439,17 +454,18 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         </p>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p></p>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_complex_trim_output
-    text = <<-END_TEMPLATE
+#[test]
+fn test_complex_trim_output() {
+    let text = r#"
       <div>
         <p>
           {{- 'John' -}}
@@ -464,8 +480,8 @@ class TrimModeTest < Minitest::Test
           {{ '30' -}}
         </i>
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div>
         <p>John30</p>
         <b>
@@ -474,12 +490,13 @@ class TrimModeTest < Minitest::Test
         <i>John
           30</i>
       </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_complex_trim
-    text = <<-END_TEMPLATE
+#[test]
+fn test_complex_trim() {
+    let text = r#"
       <div>
         {%- if true -%}
           {%- if true -%}
@@ -489,20 +506,21 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         {%- endif -%}
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
+    "#;
+    let expected = r#"
       <div><p>John</p></div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
+    "#;
+    assert_template_result(expected, text, v!({}));
+}
 
-  def test_right_trim_followed_by_tag
-    assert_template_result('ab c', '{{ "a" -}}{{ "b" }} c')
-  end
+#[test]
+fn test_right_trim_followed_by_tag() {
+    assert_template_result(r#"ab c"#, r#"{{ "a" -}}{{ "b" }} c"#, v!({}));
+}
 
-  def test_raw_output
-    whitespace = '        '
-    text = <<-END_TEMPLATE
+#[test]
+fn test_raw_output() {
+    let text = r#"
       <div>
         {% raw %}
           {%- if true -%}
@@ -512,18 +530,17 @@ class TrimModeTest < Minitest::Test
           {%- endif -%}
         {% endraw %}
       </div>
-    END_TEMPLATE
-    expected = <<-END_EXPECTED
-      <div>
-#{whitespace}
-          {%- if true -%}
-            <p>
-              {{- 'John' -}}
-            </p>
-          {%- endif -%}
-#{whitespace}
-      </div>
-    END_EXPECTED
-    assert_template_result(expected, text)
-  end
-end # TrimModeTest
+    "#;
+    let expected = r#"
+......<div>
+........
+..........{%-.if.true.-%}
+............<p>
+..............{{-.'John'.-}}
+............</p>
+..........{%-.endif.-%}
+........
+......</div>
+...."#.replace(".", " ");
+    assert_template_result(&expected, text, v!({}));
+}

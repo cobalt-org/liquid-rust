@@ -1,698 +1,739 @@
-# encoding: utf-8
+use liquid;
 
-require 'test_helper'
+use test_helper::*;
 
-class Filters
-  include Liquid::StandardFilters
-end
+#[test]
+fn test_size() {
+    assert_eq!(v!(3), filters!(size, v!([1, 2, 3])));
+    assert_eq!(v!(0), filters!(size, v!([])));
+    assert_eq!(v!(0), filters!(size, v!(nil)));
+}
 
-class TestThing
-  attr_reader :foo
+#[test]
+fn test_downcase() {
+    assert_eq!(v!("testing"), filters!(downcase, v!("Testing")));
+    assert_eq!(v!(""), filters!(downcase, Nil));
+}
 
-  def initialize
-    @foo = 0
-  end
+#[test]
+fn test_upcase() {
+    assert_eq!(v!("TESTING"), filters!(upcase, v!("Testing")));
+    assert_eq!(v!(""), filters!(upcase, Nil));
+}
 
-  def to_s
-    "woot: #{@foo}"
-  end
+#[test]
+#[ignore]
+fn test_slice() {
+    assert_eq!(v!("oob"), filters!(slice, v!("foobar"), v!(1), v!(3)));
+    assert_eq!(v!("oobar"), filters!(slice, v!("foobar"), v!(1), v!(1000)));
+    assert_eq!(v!(""), filters!(slice, v!("foobar"), v!(1), v!(0)));
+    assert_eq!(v!("o"), filters!(slice, v!("foobar"), v!(1), v!(1)));
+    assert_eq!(v!("bar"), filters!(slice, v!("foobar"), v!(3), v!(3)));
+    assert_eq!(v!("ar"), filters!(slice, v!("foobar"), v!(-2), v!(2)));
+    assert_eq!(v!("ar"), filters!(slice, v!("foobar"), v!(-2), v!(1000)));
+    assert_eq!(v!("r"), filters!(slice, v!("foobar"), v!(-1)));
+    assert_eq!(v!(""), filters!(slice, Nil, v!(0)));
+    assert_eq!(v!(""), filters!(slice, v!("foobar"), v!(100), v!(10)));
+    assert_eq!(v!(""), filters!(slice, v!("foobar"), v!(-100), v!(10)));
+    assert_eq!(v!("oob"), filters!(slice, v!("foobar"), v!("1"), v!("3")));
+    filters_fail!(slice, v!("foobar"), Nil);
+    filters_fail!(slice, v!("foobar"), v!(0), v!(""));
+}
 
-  def [](whatever)
-    to_s
-  end
+#[test]
+#[ignore]
+fn test_slice_on_arrays() {
+    let input = v!(["f", "o", "o", "b", "a", "r"]);
+    assert_eq!(v!(["o", "o", "b"]), filters!(slice, input, v!(1), v!(3)));
+    assert_eq!(v!(["o", "o", "b", "a", "r"]), filters!(slice, input, v!(1), v!(1000)));
+    assert_eq!(v!([]), filters!(slice, input, v!(1), v!(0)));
+    assert_eq!(v!(["o"]), filters!(slice, input, v!(1), v!(1)));
+    assert_eq!(v!(["b", "a", "r"]), filters!(slice, input, v!(3), v!(3)));
+    assert_eq!(v!(["a", "r"]), filters!(slice, input, v!(-2), v!(2)));
+    assert_eq!(v!(["a", "r"]), filters!(slice, input, v!(-2), v!(1000)));
+    assert_eq!(v!(["r"]), filters!(slice, input, v!(-1)));
+    assert_eq!(v!([]), filters!(slice, input, v!(100), v!(10)));
+    assert_eq!(v!([]), filters!(slice, input, v!(-100), v!(10)));
+}
 
-  def to_liquid
-    @foo += 1
-    self
-  end
-end
+#[test]
+#[ignore]
+fn test_truncate() {
+    assert_eq!(v!("1234..."), filters!(truncate, v!("1234567890"), v!(7)));
+    assert_eq!(v!("1234567890"), filters!(truncate, v!("1234567890"), v!(20)));
+    assert_eq!(v!("..."), filters!(truncate, v!("1234567890"), v!(0)));
+    assert_eq!(v!("1234567890"), filters!(truncate, v!("1234567890")));
+    assert_eq!(v!("测试..."), filters!(truncate, v!("测试测试测试测试"), v!(5)));
+    assert_eq!(v!("12341"), filters!(truncate, v!("1234567890"), v!(5), v!(1)));
+}
 
-class TestDrop < Liquid::Drop
-  def test
-    "testfoo"
-  end
-end
+#[test]
+#[ignore]
+fn test_split() {
+    assert_eq!(v!(["12", "34"]), filters!(split, v!("12~34"), v!("~")));
+    assert_eq!(v!(["A? ", " ,Z"]), filters!(split, v!("A? ~ ~ ~ ,Z"), v!("~ ~ ~")));
+    assert_eq!(v!(["A?Z"]), filters!(split, v!("A?Z"), v!("~")));
+    assert_eq!(v!([]), filters!(split, Nil, v!(" ")));
+    assert_eq!(v!(["A", "Z"]), filters!(split, v!("A1Z"), v!(1)));
+}
 
-class TestEnumerable < Liquid::Drop
-  include Enumerable
+#[test]
+#[ignore]
+fn test_escape() {
+    assert_eq!(v!("&lt;strong&gt;"), filters!(escape, v!("<strong>")));
+    assert_eq!(v!("1"), filters!(escape, v!(1)));
+    assert_eq!(v!("2001-02-03"), filters!(escape, date(2001, 2, 3)));
+    assert_eq!(Nil, filters!(escape, Nil));
+}
 
-  def each(&block)
-    [ { "foo" => 1, "bar" => 2 }, { "foo" => 2, "bar" => 1 }, { "foo" => 3, "bar" => 3 } ].each(&block)
-  end
-end
+#[test]
+#[ignore]
+fn test_h() {
+    /*
+    assert_eq!(v!("&lt;strong&gt;"), filters!(h, v!("<strong>")));
+    assert_eq!(v!("1"), filters!(h, 1));
+    assert_eq!(v!("2001-02-03"), filters!(h, date(2001, 2, 3)));
+    assert_eq!(Nil, filters!(h, Nil));
+    */
+}
 
-class NumberLikeThing < Liquid::Drop
-  def initialize(amount)
-    @amount = amount
-  end
+#[test]
+fn test_escape_once() {
+    assert_eq!(v!("&lt;strong&gt;Hulk&lt;/strong&gt;"), filters!(escape_once, v!("&lt;strong&gt;Hulk</strong>")));
+}
 
-  def to_number
-    @amount
-  end
-end
+#[test]
+#[ignore]
+fn test_url_encode() {
+    assert_eq!(v!("foo%2B1%40example.com"), filters!(url_encode, v!("foo+1@example.com")));
+    assert_eq!(v!("1"), filters!(url_encode, v!(1)));
+    assert_eq!(v!("2001-02-03"), filters!(url_encode, date(2001, 2, 3)));
+    assert_eq!(Nil, filters!(url_encode, Nil));
+}
 
-class StandardFiltersTest < Minitest::Test
-  include Liquid
+#[test]
+#[ignore]
+fn test_url_decode() {
+    assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo+bar")));
+    assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo%20bar")));
+    assert_eq!(v!("foo+1@example.com"), filters!(url_decode, v!("foo%2B1%40example.com")));
+    assert_eq!(v!("1"), filters!(url_decode, v!(1)));
+    assert_eq!(v!("2001-02-03"), filters!(url_decode, date(2001, 2, 3)));
+    assert_eq!(Nil, filters!(url_decode, Nil));
+}
 
-  def setup
-    @filters = Filters.new
-  end
+#[test]
+fn test_truncatewords() {
+    assert_eq!(v!("one two three"), filters!(truncatewords, v!("one two three"), v!(4)));
+    assert_eq!(v!("one two..."), filters!(truncatewords, v!("one two three"), v!(2)));
+    assert_eq!(v!("one two three"), filters!(truncatewords, v!("one two three")));
+    assert_eq!(v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221;..."), filters!(truncatewords, v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221; x 16&#8221; x 10.5&#8221; high) with cover."), v!(15)));
+    assert_eq!(v!("测试测试测试测试"), filters!(truncatewords, v!("测试测试测试测试"), v!(5)));
+    assert_eq!(v!("one two1"), filters!(truncatewords, v!("one two three"), v!(2), v!(1)));
+}
 
-  def test_size
-    assert_equal 3, @filters.size([1, 2, 3])
-    assert_equal 0, @filters.size([])
-    assert_equal 0, @filters.size(nil)
-  end
+#[test]
+fn test_strip_html() {
+    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div>test</div>"#)));
+    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div id="test">test</div>"#)));
+    assert_eq!(v!(""), filters!(strip_html, v!(r#"<script type="text/javascript">document.write"some stuff";</script>"#)));
+    assert_eq!(v!(""), filters!(strip_html, v!(r#"<style type="text/css">foo bar</style>"#)));
+    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div\nclass="multiline">test</div>"#)));
+    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<!-- foo bar \n test -->test"#)));
+    assert_eq!(v!(""), filters!(strip_html, Nil));
+}
 
-  def test_downcase
-    assert_equal 'testing', @filters.downcase("Testing")
-    assert_equal '', @filters.downcase(nil)
-  end
+#[test]
+fn test_join() {
+    assert_eq!(v!("1 2 3 4"), filters!(join, v!([1, 2, 3, 4])));
+    assert_eq!(v!("1 - 2 - 3 - 4"), filters!(join, v!([1, 2, 3, 4]), v!(" - ")));
+    assert_eq!(v!("1121314"), filters!(join, v!([1, 2, 3, 4]), v!(1)));
+}
 
-  def test_upcase
-    assert_equal 'TESTING', @filters.upcase("Testing")
-    assert_equal '', @filters.upcase(nil)
-  end
+#[test]
+#[ignore]
+fn test_sort() {
+    assert_eq!(v!([1, 2, 3, 4]), filters!(sort, v!([4, 3, 2, 1])));
+    assert_eq!(v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]), filters!(sort, v!([{ "a": 4 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]), v!("a")));
+}
 
-  def test_slice
-    assert_equal 'oob', @filters.slice('foobar', 1, 3)
-    assert_equal 'oobar', @filters.slice('foobar', 1, 1000)
-    assert_equal '', @filters.slice('foobar', 1, 0)
-    assert_equal 'o', @filters.slice('foobar', 1, 1)
-    assert_equal 'bar', @filters.slice('foobar', 3, 3)
-    assert_equal 'ar', @filters.slice('foobar', -2, 2)
-    assert_equal 'ar', @filters.slice('foobar', -2, 1000)
-    assert_equal 'r', @filters.slice('foobar', -1)
-    assert_equal '', @filters.slice(nil, 0)
-    assert_equal '', @filters.slice('foobar', 100, 10)
-    assert_equal '', @filters.slice('foobar', -100, 10)
-    assert_equal 'oob', @filters.slice('foobar', '1', '3')
-    assert_raises(Liquid::ArgumentError) do
-      @filters.slice('foobar', nil)
-    end
-    assert_raises(Liquid::ArgumentError) do
-      @filters.slice('foobar', 0, "")
-    end
-  end
+#[test]
+#[ignore]
+fn test_sort_with_nils() {
+    assert_eq!(v!([1, 2, 3, 4, nil]), filters!(sort, v!([nil, 4, 3, 2, 1])));
+    assert_eq!(v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }, {}]), filters!(sort, v!([{ "a": 4 }, { "a": 3 }, {}, { "a": 1 }, { "a": 2 }]), v!("a")));
+}
 
-  def test_slice_on_arrays
-    input = 'foobar'.split(//)
-    assert_equal %w(o o b), @filters.slice(input, 1, 3)
-    assert_equal %w(o o b a r), @filters.slice(input, 1, 1000)
-    assert_equal %w(), @filters.slice(input, 1, 0)
-    assert_equal %w(o), @filters.slice(input, 1, 1)
-    assert_equal %w(b a r), @filters.slice(input, 3, 3)
-    assert_equal %w(a r), @filters.slice(input, -2, 2)
-    assert_equal %w(a r), @filters.slice(input, -2, 1000)
-    assert_equal %w(r), @filters.slice(input, -1)
-    assert_equal %w(), @filters.slice(input, 100, 10)
-    assert_equal %w(), @filters.slice(input, -100, 10)
-  end
+#[test]
+#[ignore]
+fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
+    let input = v!([
+      { "price": 4, "handle": "alpha" },
+      { "handle": "beta" },
+      { "price": 1, "handle": "gamma" },
+      { "handle": "delta" },
+      { "price": 2, "handle": "epsilon" }
+    ]);
+    let expectation = v!([
+      { "price": 1, "handle": "gamma" },
+      { "price": 2, "handle": "epsilon" },
+      { "price": 4, "handle": "alpha" },
+      { "handle": "delta" },
+      { "handle": "beta" }
+    ]);
+    assert_eq!(expectation, filters!(sort, input, v!("price")));
+}
 
-  def test_truncate
-    assert_equal '1234...', @filters.truncate('1234567890', 7)
-    assert_equal '1234567890', @filters.truncate('1234567890', 20)
-    assert_equal '...', @filters.truncate('1234567890', 0)
-    assert_equal '1234567890', @filters.truncate('1234567890')
-    assert_equal "测试...", @filters.truncate("测试测试测试测试", 5)
-    assert_equal '12341', @filters.truncate("1234567890", 5, 1)
-  end
+#[test]
+#[ignore]
+fn test_sort_natural() {
+    assert_eq!(v!(["a", "B", "c", "D"]), filters!(sort_natural, v!(["c", "D", "a", "B"])));
+    assert_eq!(v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }]), filters!(sort_natural, v!([{ "a": "D" }, { "a": "c" }, { "a": "a" }, { "a": "B" }]), v!("a")));
+}
 
-  def test_split
-    assert_equal ['12', '34'], @filters.split('12~34', '~')
-    assert_equal ['A? ', ' ,Z'], @filters.split('A? ~ ~ ~ ,Z', '~ ~ ~')
-    assert_equal ['A?Z'], @filters.split('A?Z', '~')
-    assert_equal [], @filters.split(nil, ' ')
-    assert_equal ['A', 'Z'], @filters.split('A1Z', 1)
-  end
+#[test]
+#[ignore]
+fn test_sort_natural_with_nils() {
+    assert_eq!(v!(["a", "B", "c", "D", nil]), filters!(sort_natural, v!([nil, "c", "D", "a", "B"])));
+    assert_eq!(v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }, {}]), filters!(sort_natural, v!([{ "a": "D" }, { "a": "c" }, {}, { "a": "a" }, { "a": "B" }]), v!("a")));
+}
 
-  def test_escape
-    assert_equal '&lt;strong&gt;', @filters.escape('<strong>')
-    assert_equal '1', @filters.escape(1)
-    assert_equal '2001-02-03', @filters.escape(Date.new(2001, 2, 3))
-    assert_nil @filters.escape(nil)
-  end
+#[test]
+#[ignore]
+fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
+    let input = v!([
+      { "price": "4", "handle": "alpha" },
+      { "handle": "beta" },
+      { "price": "1", "handle": "gamma" },
+      { "handle": "delta" },
+      { "price": 2, "handle": "epsilon" }
+    ]);
+    let expectation = v!([
+      { "price": "1", "handle": "gamma" },
+      { "price": 2, "handle": "epsilon" },
+      { "price": "4", "handle": "alpha" },
+      { "handle": "delta" },
+      { "handle": "beta" }
+    ]);
+    assert_eq!(expectation, filters!(sort_natural, input, v!("price")));
+}
 
-  def test_h
-    assert_equal '&lt;strong&gt;', @filters.h('<strong>')
-    assert_equal '1', @filters.h(1)
-    assert_equal '2001-02-03', @filters.h(Date.new(2001, 2, 3))
-    assert_nil @filters.h(nil)
-  end
+#[test]
+#[ignore]
+fn test_sort_natural_case_check() {
+    let input = v!([
+      { "key": "X" },
+      { "key": "Y" },
+      { "key": "Z" },
+      { "fake": "t" },
+      { "key": "a" },
+      { "key": "b" },
+      { "key": "c" }
+    ]);
+    let expectation = v!([
+      { "key": "a" },
+      { "key": "b" },
+      { "key": "c" },
+      { "key": "X" },
+      { "key": "Y" },
+      { "key": "Z" },
+      { "fake": "t" }
+    ]);
+    assert_eq!(expectation, filters!(sort_natural, input, v!("key")));
+    assert_eq!(v!(["a", "b", "c", "X", "Y", "Z"]), filters!(sort_natural, v!(["X", "Y", "Z", "a", "b", "c"])));
+}
 
-  def test_escape_once
-    assert_equal '&lt;strong&gt;Hulk&lt;/strong&gt;', @filters.escape_once('&lt;strong&gt;Hulk</strong>')
-  end
+#[test]
+#[ignore]
+fn test_sort_empty_array() {
+    assert_eq!(v!([]), filters!(sort, v!([]), v!("a")));
+}
 
-  def test_url_encode
-    assert_equal 'foo%2B1%40example.com', @filters.url_encode('foo+1@example.com')
-    assert_equal '1', @filters.url_encode(1)
-    assert_equal '2001-02-03', @filters.url_encode(Date.new(2001, 2, 3))
-    assert_nil @filters.url_encode(nil)
-  end
+#[test]
+#[ignore]
+fn test_sort_natural_empty_array() {
+    assert_eq!(v!([]), filters!(sort_natural, v!([]), v!("a")));
+}
 
-  def test_url_decode
-    assert_equal 'foo bar', @filters.url_decode('foo+bar')
-    assert_equal 'foo bar', @filters.url_decode('foo%20bar')
-    assert_equal 'foo+1@example.com', @filters.url_decode('foo%2B1%40example.com')
-    assert_equal '1', @filters.url_decode(1)
-    assert_equal '2001-02-03', @filters.url_decode(Date.new(2001, 2, 3))
-    assert_nil @filters.url_decode(nil)
-  end
+#[test]
+#[ignore]
+fn test_legacy_sort_hash() {
+    assert_eq!(v!([{ "a": 1, "b": 2 }]), filters!(sort, v!({ "a": 1, "b": 2 })));
+}
 
-  def test_truncatewords
-    assert_equal 'one two three', @filters.truncatewords('one two three', 4)
-    assert_equal 'one two...', @filters.truncatewords('one two three', 2)
-    assert_equal 'one two three', @filters.truncatewords('one two three')
-    assert_equal 'Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221;...', @filters.truncatewords('Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221; x 16&#8221; x 10.5&#8221; high) with cover.', 15)
-    assert_equal "测试测试测试测试", @filters.truncatewords('测试测试测试测试', 5)
-    assert_equal 'one two1', @filters.truncatewords("one two three", 2, 1)
-  end
+#[test]
+#[ignore]
+fn test_numerical_vs_lexicographical_sort() {
+    assert_eq!(v!([2, 10]), filters!(sort, v!([10, 2])));
+    assert_eq!(v!([{ "a": 2 }, { "a": 10 }]), filters!(sort, v!([{ "a": 10 }, { "a": 2 }]), v!("a")));
+    assert_eq!(v!(["10", "2"]), filters!(sort, v!(["10", "2"])));
+    assert_eq!(v!([{ "a": "10" }, { "a": "2" }]), filters!(sort, v!([{ "a": "10" }, { "a": "2" }]), v!("a")));
+}
 
-  def test_strip_html
-    assert_equal 'test', @filters.strip_html("<div>test</div>")
-    assert_equal 'test', @filters.strip_html("<div id='test'>test</div>")
-    assert_equal '', @filters.strip_html("<script type='text/javascript'>document.write('some stuff');</script>")
-    assert_equal '', @filters.strip_html("<style type='text/css'>foo bar</style>")
-    assert_equal 'test', @filters.strip_html("<div\nclass='multiline'>test</div>")
-    assert_equal 'test', @filters.strip_html("<!-- foo bar \n test -->test")
-    assert_equal '', @filters.strip_html(nil)
-  end
+#[test]
+#[ignore]
+fn test_uniq() {
+    assert_eq!(v!(["foo"]), filters!(uniq, v!("foo")));
+    assert_eq!(v!([1, 3, 2, 4]), filters!(uniq, v!([1, 1, 3, 2, 3, 1, 4, 3, 2, 1])));
+    assert_eq!(v!([{ "a": 1 }, { "a": 3 }, { "a": 2 }]), filters!(uniq, v!([{ "a": 1 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]), v!("a")));
+    //testdrop: Implementation specific: Drops
+}
 
-  def test_join
-    assert_equal '1 2 3 4', @filters.join([1, 2, 3, 4])
-    assert_equal '1 - 2 - 3 - 4', @filters.join([1, 2, 3, 4], ' - ')
-    assert_equal '1121314', @filters.join([1, 2, 3, 4], 1)
-  end
+#[test]
+#[ignore]
+fn test_uniq_empty_array() {
+    assert_eq!(v!([]), filters!(uniq, v!([]), v!("a")));
+}
 
-  def test_sort
-    assert_equal [1, 2, 3, 4], @filters.sort([4, 3, 2, 1])
-    assert_equal [{ "a" => 1 }, { "a" => 2 }, { "a" => 3 }, { "a" => 4 }], @filters.sort([{ "a" => 4 }, { "a" => 3 }, { "a" => 1 }, { "a" => 2 }], "a")
-  end
+#[test]
+fn test_compact_empty_array() {
+    assert_eq!(v!([]), filters!(compact, v!([]), v!("a")));
+}
 
-  def test_sort_with_nils
-    assert_equal [1, 2, 3, 4, nil], @filters.sort([nil, 4, 3, 2, 1])
-    assert_equal [{ "a" => 1 }, { "a" => 2 }, { "a" => 3 }, { "a" => 4 }, {}], @filters.sort([{ "a" => 4 }, { "a" => 3 }, {}, { "a" => 1 }, { "a" => 2 }], "a")
-  end
+#[test]
+fn test_reverse() {
+    assert_eq!(v!([4, 3, 2, 1]), filters!(reverse, v!([1, 2, 3, 4])));
+}
 
-  def test_sort_when_property_is_sometimes_missing_puts_nils_last
+#[test]
+#[ignore]
+fn test_legacy_reverse_hash() {
+    assert_eq!(v!([{ "a": 1, "b": 2 }]), filters!(reverse, v!({"a": 1, "b": 2})));
+}
+
+#[test]
+#[ignore]
+fn test_map() {
+    assert_eq!(v!([1, 2, 3, 4]), filters!(map, v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]), v!("a")));
+    assert_template_result("abc", r#"{{ ary | map:"foo" | map:"bar" }}"#,
+      v!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}));
+}
+
+#[test]
+#[should_panic]
+fn test_map_doesnt_call_arbitrary_stuff() {
+    panic!("Implementation specific: filters can't access arbitrary variables");
+}
+
+#[test]
+#[should_panic]
+fn test_map_calls_to_liquid() {
+    panic!("Implementation specific: to_liquid");
+}
+
+#[test]
+#[ignore]
+fn test_map_on_hashes() {
+    assert_template_result("4217", r#"{{ thing | map: "foo" | map: "bar" }}"#,
+      v!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}));
+}
+
+#[test]
+#[ignore]
+fn test_legacy_map_on_hashes_with_dynamic_key() {
+    let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
+    let hash = v!({ "foo": { "bar": 42 } });
+    assert_template_result("42", template, v!({"thing": hash}));
+}
+
+#[test]
+#[should_panic]
+fn test_sort_calls_to_liquid() {
+    panic!("Implementation specific: to_liquid");
+}
+
+#[test]
+#[should_panic]
+fn test_map_over_proc() {
+    panic!("Implementation specific: proc");
+}
+
+#[test]
+#[should_panic]
+fn test_map_over_drops_returning_procs() {
+    panic!("Implementation specific: proc / drops");
+}
+
+#[test]
+#[should_panic]
+fn test_map_works_on_enumerables() {
+    panic!("Implementation specific: drops");
+}
+
+#[test]
+#[should_panic]
+fn test_sort_works_on_enumerables() {
+    panic!("Implementation specific: drops");
+}
+
+#[test]
+#[should_panic]
+fn test_first_and_last_call_to_liquid() {
+    panic!("Implementation specific: to_liquid");
+}
+
+#[test]
+#[should_panic]
+fn test_truncate_calls_to_liquid() {
+    panic!("Implementation specific: to_liquid");
+}
+
+#[test]
+#[ignore]
+fn test_date() {
+    assert_eq!(v!("May"), filters!(date, with_time("2006-05-05 10:00:00"), v!("%B")));
+    assert_eq!(v!("June"), filters!(date, with_time("2006-06-05 10:00:00"), v!("%B")));
+    assert_eq!(v!("July"), filters!(date, with_time("2006-07-05 10:00:00"), v!("%B")));
+
+    assert_eq!(v!("May"), filters!(date, v!("2006-05-05 10:00:00"), v!("%B")));
+    assert_eq!(v!("June"), filters!(date, v!("2006-06-05 10:00:00"), v!("%B")));
+    assert_eq!(v!("July"), filters!(date, v!("2006-07-05 10:00:00"), v!("%B")));
+
+    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
+    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
+    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
+    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), Nil));
+
+    assert_eq!(v!("07/05/2006"), filters!(date, v!("2006-07-05 10:00:00"), v!("%m/%d/%Y")));
+
+    assert_eq!(v!("07/16/2004"), filters!(date, v!("Fri Jul 16 01:00:00 2004"), v!("%m/%d/%Y")));
+    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("now"), v!("%Y")));
+    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("today"), v!("%Y")));
+    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("Today"), v!("%Y")));
+
+    assert_eq!(Nil, filters!(date, Nil, v!("%B")));
+
+    assert_eq!(v!(""), filters!(date, v!(""), v!("%B")));
+
+    // Limited in value because we can't change the timezone
+    assert_eq!(v!("07/05/2006"), filters!(date, v!(1152098955), v!("%m/%d/%Y")));
+    assert_eq!(v!("07/05/2006"), filters!(date, v!("1152098955"), v!("%m/%d/%Y")));
+}
+
+#[test]
+#[ignore]
+fn test_first_last() {
+    assert_eq!(v!(1), filters!(first, v!([1, 2, 3])));
+    assert_eq!(v!(3), filters!(last, v!([1, 2, 3])));
+    assert_eq!(Nil, filters!(first, v!([])));
+    assert_eq!(Nil, filters!(last, v!([])));
+}
+
+#[test]
+fn test_replace() {
+    assert_eq!(v!("2 2 2 2"), filters!(replace, v!("1 1 1 1"), v!("1"), v!(2)));
+    assert_eq!(v!("2 2 2 2"), filters!(replace, v!("1 1 1 1"), v!(1), v!(2)));
+    assert_eq!(v!("2 1 1 1"), filters!(replace_first, v!("1 1 1 1"), v!("1"), v!(2)));
+    assert_eq!(v!("2 1 1 1"), filters!(replace_first, v!("1 1 1 1"), v!(1), v!(2)));
+    assert_template_result("2 1 1 1", r#"{{ "1 1 1 1" | replace_first: "1", 2 }}"#, v!({}));
+}
+
+
+#[test]
+fn test_remove() {
+    assert_eq!(v!("   "), filters!(remove, v!("a a a a"), v!("a")));
+    assert_eq!(v!("   "), filters!(remove, v!("1 1 1 1"), v!(1)));
+    assert_eq!(v!("a a a"), filters!(remove_first, v!("a a a a"), v!("a ")));
+    assert_eq!(v!(" 1 1 1"), filters!(remove_first, v!("1 1 1 1"), v!(1)));
+    assert_template_result("a a a", r#"{{ "a a a a" | remove_first: "a " }}"#, v!({}));
+}
+
+#[test]
+fn test_pipes_in_string_arguments() {
+    assert_template_result("foobar", r#"{{ "foo|bar" | remove: "|" }}"#, v!({}));
+}
+
+#[test]
+fn test_strip() {
+    assert_template_result("ab c", "{{ source | strip }}", v!({"source": " ab c  "}));
+    assert_template_result("ab c", "{{ source | strip }}", v!({"source": " \tab c  \n \t"}));
+}
+
+#[test]
+fn test_lstrip() {
+    assert_template_result("ab c  ", "{{ source | lstrip }}", v!({"source": " ab c  "}));
+    assert_template_result("ab c  \n \t", "{{ source | lstrip }}", v!({"source": " \tab c  \n \t"}));
+}
+
+#[test]
+fn test_rstrip() {
+    assert_template_result(" ab c", "{{ source | rstrip }}", v!({"source": " ab c  "}));
+    assert_template_result(" \tab c", "{{ source | rstrip }}", v!({"source": " \tab c  \n \t"}));
+}
+
+#[test]
+fn test_strip_newlines() {
+    assert_template_result("abc", "{{ source | strip_newlines }}", v!({"source": "a\nb\nc"}));
+    assert_template_result("abc", "{{ source | strip_newlines }}", v!({"source": "a\r\nb\nc"}));
+}
+
+#[test]
+#[ignore]
+fn test_newlines_to_br() {
+    assert_template_result("a<br />\nb<br />\nc", "{{ source | newline_to_br }}", v!({"source": "a\nb\nc"}));
+}
+
+#[test]
+#[ignore]
+fn test_plus() {
+    assert_template_result("2", r#"{{ 1 | plus:1 }}"#, v!({}));
+    assert_template_result("2.0", r#"{{ "1" | plus:"1.0" }}"#, v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_minus() {
+    assert_template_result("4", r#"{{ input | minus:operand }}"#, v!({"input": 5, "operand": 1}));
+    assert_template_result("2.3", r#"{{ "4.3" | minus:"2" }}"#, v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_abs() {
+    assert_template_result("17", r#"{{ 17 | abs }}"#, v!({}));
+    assert_template_result("17", r#"{{ -17 | abs }}"#, v!({}));
+    assert_template_result("17", r#"{{ "17" | abs }}"#, v!({}));
+    assert_template_result("17", r#"{{ "-17" | abs }}"#, v!({}));
+    assert_template_result("0", r#"{{ 0 | abs }}"#, v!({}));
+    assert_template_result("0", r#"{{ "0" | abs }}"#, v!({}));
+    assert_template_result("17.42", r#"{{ 17.42 | abs }}"#, v!({}));
+    assert_template_result("17.42", r#"{{ -17.42 | abs }}"#, v!({}));
+    assert_template_result("17.42", r#"{{ "17.42" | abs }}"#, v!({}));
+    assert_template_result("17.42", r#"{{ "-17.42" | abs }}"#, v!({}));
+}
+
+#[test]
+#[ignore]
+fn test_times() {
+    assert_template_result("12", r#"{{ 3 | times:4 }}"#, v!({}));
+    assert_template_result("0", r#"{{ "foo" | times:4 }}"#, v!({}));
+    assert_template_result("6", r#"{{ "2.1" | times:3 | replace: ".","-" | plus:0}}"#, v!({}));
+    assert_template_result("7.25", r#"{{ 0.0725 | times:100 }}"#, v!({}));
+    assert_template_result("-7.25", r#"{{ "-0.0725" | times:100 }}"#, v!({}));
+    assert_template_result("7.25", r#"{{ "-0.0725" | times: -100 }}"#, v!({}));
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_divided_by() {
+    assert_template_result("4", r#"{{ 12 | divided_by:3 }}"#, v!({}));
+    assert_template_result("4", r#"{{ 14 | divided_by:3 }}"#, v!({}));
+
+    assert_template_result("5", r#"{{ 15 | divided_by:3 }}"#, v!({}));
+    assert_render_error("{{ 5 | divided_by:0 }}", v!({}));
+
+    assert_template_result("0.5", r#"{{ 2.0 | divided_by:4 }}"#, v!({}));
+    assert_render_error("{{ 1 | modulo:0 }}", v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_modulo() {
+    assert_template_result("1", r#"{{ 3 | modulo:2 }}"#, v!({}));
+    assert_render_error("{{ 1 | modulo:0 }}", v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_round() {
+    assert_template_result("5", r#"{{ input | round }}"#, v!({"input": 4.6}));
+    assert_template_result("4", r#"{{ "4.3" | round }}"#, v!({}));
+    assert_template_result("4.56", r#"{{ input | round: 2 }}"#, v!({"input": 4.5612}));
+    assert_render_error("{{ 1.0 | divided_by: 0.0 | round }}", v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_ceil() {
+    assert_template_result("5", r#"{{ input | ceil }}"#, v!({"input": 4.6}));
+    assert_template_result("5", r#"{{ "4.3" | ceil }}"#, v!({}));
+    assert_render_error("{{ 1.0 | divided_by: 0.0 | ceil }}", v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+#[ignore]
+fn test_floor() {
+    assert_template_result("4", r#"{{ input | floor }}"#, v!({"input": 4.6}));
+    assert_template_result("4", r#"{{ "4.3" | floor }}"#, v!({}));
+    assert_render_error("{{ 1.0 | divided_by: 0.0 | floor }}", v!({}));
+
+    // Implementation specific: use of drops
+}
+
+#[test]
+fn test_at_most() {
+    assert_template_result("4", r#"{{ 5 | at_most:4 }}"#, v!({}));
+    assert_template_result("5", r#"{{ 5 | at_most:5 }}"#, v!({}));
+    assert_template_result("5", r#"{{ 5 | at_most:6 }}"#, v!({}));
+
+    assert_template_result("4.5", r#"{{ 4.5 | at_most:5 }}"#, v!({}));
+    // Implementation specific: use of drops
+}
+
+#[test]
+fn test_at_least() {
+    assert_template_result("5", r#"{{ 5 | at_least:4 }}"#, v!({}));
+    assert_template_result("5", r#"{{ 5 | at_least:5 }}"#, v!({}));
+    assert_template_result("6", r#"{{ 5 | at_least:6 }}"#, v!({}));
+
+    assert_template_result("5", r#"{{ 4.5 | at_least:5 }}"#, v!({}));
+    // Implementation specific: use of drops
+}
+
+#[test]
+fn test_append() {
+    let assigns = v!({ "a": "bc", "b": "d" });
+    assert_template_result("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
+    assert_template_result("bcd", r#"{{ a | append: b}}"#, assigns);
+}
+
+#[test]
+fn test_concat() {
+    assert_eq!(v!([1, 2, 3, 4]), filters!(concat, v!([1, 2]), v!([3, 4])));
+    assert_eq!(v!([1, 2, "a"]),  filters!(concat, v!([1, 2]), v!(["a"])));
+    assert_eq!(v!([1, 2, 10]),   filters!(concat, v!([1, 2]), v!([10])));
+
+    filters_fail!(concat, v!([1, 2]), v!(10));
+}
+
+#[test]
+fn test_prepend() {
+    let assigns = v!({ "a": "bc", "b": "a" });
+    assert_template_result("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
+    assert_template_result("abc", r#"{{ a | prepend: b}}"#, assigns);
+}
+
+#[test]
+fn test_default() {
+    assert_eq!(v!("foo"), filters!(default, v!("foo"), v!("bar")));
+    assert_eq!(v!("bar"), filters!(default, Nil, v!("bar")));
+    assert_eq!(v!("bar"), filters!(default, v!(""), v!("bar")));
+    assert_eq!(v!("bar"), filters!(default, v!(false), v!("bar")));
+    assert_eq!(v!("bar"), filters!(default, v!([]), v!("bar")));
+    assert_eq!(v!("bar"), filters!(default, v!({}), v!("bar")));
+}
+
+#[test]
+#[should_panic]
+fn test_cannot_access_private_methods() {
+    panic!("Implementation specific: filters can't access arbitrary variables");
+}
+
+#[test]
+fn test_date_raises_nothing() {
+    assert_template_result("", r#"{{ "" | date: "%D" }}"#, v!({}));
+    assert_template_result("abc", r#"{{ "abc" | date: "%D" }}"#, v!({}));
+}
+
+#[test]
+#[ignore]
+fn test_where() {
+    /*
+    let input = v!([
+      { "handle": "alpha", "ok": true },
+      { "handle": "beta", "ok": false },
+      { "handle": "gamma", "ok": false },
+      { "handle": "delta", "ok": true }
+    ]);
+
+    let expectation = v!([
+      { "handle": "alpha", "ok": true },
+      { "handle": "delta", "ok": true }
+    ]);
+
+    assert_eq!(expectation, filters!(where, input, v!("ok"), true));
+    assert_eq!(expectation, filters!(where, input, v!("ok")));
+    */
+}
+
+#[test]
+#[ignore]
+fn test_where_no_key_set() {
+    /*
     input = [
-      { "price" => 4, "handle" => "alpha" },
-      { "handle" => "beta" },
-      { "price" => 1, "handle" => "gamma" },
-      { "handle" => "delta" },
-      { "price" => 2, "handle" => "epsilon" }
+      { v!("handle"): v!("alpha"), v!("ok"): true },
+      { v!("handle"): v!("beta") },
+      { v!("handle"): v!("gamma") },
+      { v!("handle"): v!("delta"), v!("ok"): true }
     ]
+
     expectation = [
-      { "price" => 1, "handle" => "gamma" },
-      { "price" => 2, "handle" => "epsilon" },
-      { "price" => 4, "handle" => "alpha" },
-      { "handle" => "delta" },
-      { "handle" => "beta" }
+      { v!("handle"): v!("alpha"), v!("ok"): true },
+      { v!("handle"): v!("delta"), v!("ok"): true }
     ]
-    assert_equal expectation, @filters.sort(input, "price")
-  end
 
-  def test_sort_natural
-    assert_equal ["a", "B", "c", "D"], @filters.sort_natural(["c", "D", "a", "B"])
-    assert_equal [{ "a" => "a" }, { "a" => "B" }, { "a" => "c" }, { "a" => "D" }], @filters.sort_natural([{ "a" => "D" }, { "a" => "c" }, { "a" => "a" }, { "a" => "B" }], "a")
-  end
+    assert_eq!(expectation, filters!(where, input, v!("ok"), true));
+    assert_eq!(expectation, filters!(where, input, v!("ok")));
+    */
+}
 
-  def test_sort_natural_with_nils
-    assert_equal ["a", "B", "c", "D", nil], @filters.sort_natural([nil, "c", "D", "a", "B"])
-    assert_equal [{ "a" => "a" }, { "a" => "B" }, { "a" => "c" }, { "a" => "D" }, {}], @filters.sort_natural([{ "a" => "D" }, { "a" => "c" }, {}, { "a" => "a" }, { "a" => "B" }], "a")
-  end
+#[test]
+#[ignore]
+fn test_where_non_array_map_input() {
+    /*
+    assert_eq!([{ v!("a"): v!("ok") }], filters!(where, { v!("a"): v!("ok") }, "a", r#"ok")#, v!({}));
+    assert_eq!([], filters!(where, { v!("a"): v!("not ok") }, "a", r#"ok")#, v!({}));
+    */
+}
 
-  def test_sort_natural_when_property_is_sometimes_missing_puts_nils_last
+#[test]
+#[ignore]
+fn test_where_indexable_but_non_map_value() {
+    /*
+    assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok"), true) }
+    assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok")) }
+    */
+}
+
+#[test]
+#[ignore]
+fn test_where_non_boolean_value() {
+    /*
     input = [
-      { "price" => "4", "handle" => "alpha" },
-      { "handle" => "beta" },
-      { "price" => "1", "handle" => "gamma" },
-      { "handle" => "delta" },
-      { "price" => 2, "handle" => "epsilon" }
+      { v!("message"): v!("Bonjour!"), v!("language"): v!("French") },
+      { v!("message"): v!("Hello!"), v!("language"): v!("English") },
+      { v!("message"): v!("Hallo!"), v!("language"): v!("German") }
     ]
-    expectation = [
-      { "price" => "1", "handle" => "gamma" },
-      { "price" => 2, "handle" => "epsilon" },
-      { "price" => "4", "handle" => "alpha" },
-      { "handle" => "delta" },
-      { "handle" => "beta" }
-    ]
-    assert_equal expectation, @filters.sort_natural(input, "price")
-  end
 
-  def test_sort_natural_case_check
+    assert_eq!([{ v!("message"): v!("Bonjour!"), v!("language"): v!("French") }], filters!(where, input, "language", r#"French")#, v!({}));
+    assert_eq!([{ v!("message"): v!("Hallo!"), v!("language"): v!("German") }], filters!(where, input, "language", r#"German")#, v!({}));
+    assert_eq!([{ v!("message"): v!("Hello!"), v!("language"): v!("English") }], filters!(where, input, "language", r#"English")#, v!({}));
+    */
+}
+
+#[test]
+#[ignore]
+fn test_where_array_of_only_unindexable_values() {
+    /*
+    assert_eq!(Nil, filters!(where, [Nil], v!("ok"), true));
+    assert_eq!(Nil, filters!(where, [Nil], v!("ok")));
+    */
+}
+
+#[test]
+#[ignore]
+fn test_where_no_target_value() {
+    /*
     input = [
-      { "key" => "X" },
-      { "key" => "Y" },
-      { "key" => "Z" },
-      { "fake" => "t" },
-      { "key" => "a" },
-      { "key" => "b" },
-      { "key" => "c" }
-    ]
-    expectation = [
-      { "key" => "a" },
-      { "key" => "b" },
-      { "key" => "c" },
-      { "key" => "X" },
-      { "key" => "Y" },
-      { "key" => "Z" },
-      { "fake" => "t" }
-    ]
-    assert_equal expectation, @filters.sort_natural(input, "key")
-    assert_equal ["a", "b", "c", "X", "Y", "Z"], @filters.sort_natural(["X", "Y", "Z", "a", "b", "c"])
-  end
-
-  def test_sort_empty_array
-    assert_equal [], @filters.sort([], "a")
-  end
-
-  def test_sort_natural_empty_array
-    assert_equal [], @filters.sort_natural([], "a")
-  end
-
-  def test_legacy_sort_hash
-    assert_equal [{ a: 1, b: 2 }], @filters.sort({ a: 1, b: 2 })
-  end
-
-  def test_numerical_vs_lexicographical_sort
-    assert_equal [2, 10], @filters.sort([10, 2])
-    assert_equal [{ "a" => 2 }, { "a" => 10 }], @filters.sort([{ "a" => 10 }, { "a" => 2 }], "a")
-    assert_equal ["10", "2"], @filters.sort(["10", "2"])
-    assert_equal [{ "a" => "10" }, { "a" => "2" }], @filters.sort([{ "a" => "10" }, { "a" => "2" }], "a")
-  end
-
-  def test_uniq
-    assert_equal ["foo"], @filters.uniq("foo")
-    assert_equal [1, 3, 2, 4], @filters.uniq([1, 1, 3, 2, 3, 1, 4, 3, 2, 1])
-    assert_equal [{ "a" => 1 }, { "a" => 3 }, { "a" => 2 }], @filters.uniq([{ "a" => 1 }, { "a" => 3 }, { "a" => 1 }, { "a" => 2 }], "a")
-    testdrop = TestDrop.new
-    assert_equal [testdrop], @filters.uniq([testdrop, TestDrop.new], 'test')
-  end
-
-  def test_uniq_empty_array
-    assert_equal [], @filters.uniq([], "a")
-  end
-
-  def test_compact_empty_array
-    assert_equal [], @filters.compact([], "a")
-  end
-
-  def test_reverse
-    assert_equal [4, 3, 2, 1], @filters.reverse([1, 2, 3, 4])
-  end
-
-  def test_legacy_reverse_hash
-    assert_equal [{ a: 1, b: 2 }], @filters.reverse(a: 1, b: 2)
-  end
-
-  def test_map
-    assert_equal [1, 2, 3, 4], @filters.map([{ "a" => 1 }, { "a" => 2 }, { "a" => 3 }, { "a" => 4 }], 'a')
-    assert_template_result 'abc', "{{ ary | map:'foo' | map:'bar' }}",
-      'ary' => [{ 'foo' => { 'bar' => 'a' } }, { 'foo' => { 'bar' => 'b' } }, { 'foo' => { 'bar' => 'c' } }]
-  end
-
-  def test_map_doesnt_call_arbitrary_stuff
-    assert_template_result "", '{{ "foo" | map: "__id__" }}'
-    assert_template_result "", '{{ "foo" | map: "inspect" }}'
-  end
-
-  def test_map_calls_to_liquid
-    t = TestThing.new
-    assert_template_result "woot: 1", '{{ foo | map: "whatever" }}', "foo" => [t]
-  end
-
-  def test_map_on_hashes
-    assert_template_result "4217", '{{ thing | map: "foo" | map: "bar" }}',
-      "thing" => { "foo" => [ { "bar" => 42 }, { "bar" => 17 } ] }
-  end
-
-  def test_legacy_map_on_hashes_with_dynamic_key
-    template = "{% assign key = 'foo' %}{{ thing | map: key | map: 'bar' }}"
-    hash = { "foo" => { "bar" => 42 } }
-    assert_template_result "42", template, "thing" => hash
-  end
-
-  def test_sort_calls_to_liquid
-    t = TestThing.new
-    Liquid::Template.parse('{{ foo | sort: "whatever" }}').render("foo" => [t])
-    assert t.foo > 0
-  end
-
-  def test_map_over_proc
-    drop = TestDrop.new
-    p = proc{ drop }
-    templ = '{{ procs | map: "test" }}'
-    assert_template_result "testfoo", templ, "procs" => [p]
-  end
-
-  def test_map_over_drops_returning_procs
-    drops = [
-      {
-        "proc" => ->{ "foo" },
-      },
-      {
-        "proc" => ->{ "bar" },
-      },
-    ]
-    templ = '{{ drops | map: "proc" }}'
-    assert_template_result "foobar", templ, "drops" => drops
-  end
-
-  def test_map_works_on_enumerables
-    assert_template_result "123", '{{ foo | map: "foo" }}', "foo" => TestEnumerable.new
-  end
-
-  def test_sort_works_on_enumerables
-    assert_template_result "213", '{{ foo | sort: "bar" | map: "foo" }}', "foo" => TestEnumerable.new
-  end
-
-  def test_first_and_last_call_to_liquid
-    assert_template_result 'foobar', '{{ foo | first }}', 'foo' => [ThingWithToLiquid.new]
-    assert_template_result 'foobar', '{{ foo | last }}', 'foo' => [ThingWithToLiquid.new]
-  end
-
-  def test_truncate_calls_to_liquid
-    assert_template_result "wo...", '{{ foo | truncate: 5 }}', "foo" => TestThing.new
-  end
-
-  def test_date
-    assert_equal 'May', @filters.date(Time.parse("2006-05-05 10:00:00"), "%B")
-    assert_equal 'June', @filters.date(Time.parse("2006-06-05 10:00:00"), "%B")
-    assert_equal 'July', @filters.date(Time.parse("2006-07-05 10:00:00"), "%B")
-
-    assert_equal 'May', @filters.date("2006-05-05 10:00:00", "%B")
-    assert_equal 'June', @filters.date("2006-06-05 10:00:00", "%B")
-    assert_equal 'July', @filters.date("2006-07-05 10:00:00", "%B")
-
-    assert_equal '2006-07-05 10:00:00', @filters.date("2006-07-05 10:00:00", "")
-    assert_equal '2006-07-05 10:00:00', @filters.date("2006-07-05 10:00:00", "")
-    assert_equal '2006-07-05 10:00:00', @filters.date("2006-07-05 10:00:00", "")
-    assert_equal '2006-07-05 10:00:00', @filters.date("2006-07-05 10:00:00", nil)
-
-    assert_equal '07/05/2006', @filters.date("2006-07-05 10:00:00", "%m/%d/%Y")
-
-    assert_equal "07/16/2004", @filters.date("Fri Jul 16 01:00:00 2004", "%m/%d/%Y")
-    assert_equal "#{Date.today.year}", @filters.date('now', '%Y')
-    assert_equal "#{Date.today.year}", @filters.date('today', '%Y')
-    assert_equal "#{Date.today.year}", @filters.date('Today', '%Y')
-
-    assert_nil @filters.date(nil, "%B")
-
-    assert_equal '', @filters.date('', "%B")
-
-    with_timezone("UTC") do
-      assert_equal "07/05/2006", @filters.date(1152098955, "%m/%d/%Y")
-      assert_equal "07/05/2006", @filters.date("1152098955", "%m/%d/%Y")
-    end
-  end
-
-  def test_first_last
-    assert_equal 1, @filters.first([1, 2, 3])
-    assert_equal 3, @filters.last([1, 2, 3])
-    assert_nil @filters.first([])
-    assert_nil @filters.last([])
-  end
-
-  def test_replace
-    assert_equal '2 2 2 2', @filters.replace('1 1 1 1', '1', 2)
-    assert_equal '2 2 2 2', @filters.replace('1 1 1 1', 1, 2)
-    assert_equal '2 1 1 1', @filters.replace_first('1 1 1 1', '1', 2)
-    assert_equal '2 1 1 1', @filters.replace_first('1 1 1 1', 1, 2)
-    assert_template_result '2 1 1 1', "{{ '1 1 1 1' | replace_first: '1', 2 }}"
-  end
-
-  def test_remove
-    assert_equal '   ', @filters.remove("a a a a", 'a')
-    assert_equal '   ', @filters.remove("1 1 1 1", 1)
-    assert_equal 'a a a', @filters.remove_first("a a a a", 'a ')
-    assert_equal ' 1 1 1', @filters.remove_first("1 1 1 1", 1)
-    assert_template_result 'a a a', "{{ 'a a a a' | remove_first: 'a ' }}"
-  end
-
-  def test_pipes_in_string_arguments
-    assert_template_result 'foobar', "{{ 'foo|bar' | remove: '|' }}"
-  end
-
-  def test_strip
-    assert_template_result 'ab c', "{{ source | strip }}", 'source' => " ab c  "
-    assert_template_result 'ab c', "{{ source | strip }}", 'source' => " \tab c  \n \t"
-  end
-
-  def test_lstrip
-    assert_template_result 'ab c  ', "{{ source | lstrip }}", 'source' => " ab c  "
-    assert_template_result "ab c  \n \t", "{{ source | lstrip }}", 'source' => " \tab c  \n \t"
-  end
-
-  def test_rstrip
-    assert_template_result " ab c", "{{ source | rstrip }}", 'source' => " ab c  "
-    assert_template_result " \tab c", "{{ source | rstrip }}", 'source' => " \tab c  \n \t"
-  end
-
-  def test_strip_newlines
-    assert_template_result 'abc', "{{ source | strip_newlines }}", 'source' => "a\nb\nc"
-    assert_template_result 'abc', "{{ source | strip_newlines }}", 'source' => "a\r\nb\nc"
-  end
-
-  def test_newlines_to_br
-    assert_template_result "a<br />\nb<br />\nc", "{{ source | newline_to_br }}", 'source' => "a\nb\nc"
-  end
-
-  def test_plus
-    assert_template_result "2", "{{ 1 | plus:1 }}"
-    assert_template_result "2.0", "{{ '1' | plus:'1.0' }}"
-
-    assert_template_result "5", "{{ price | plus:'2' }}", 'price' => NumberLikeThing.new(3)
-  end
-
-  def test_minus
-    assert_template_result "4", "{{ input | minus:operand }}", 'input' => 5, 'operand' => 1
-    assert_template_result "2.3", "{{ '4.3' | minus:'2' }}"
-
-    assert_template_result "5", "{{ price | minus:'2' }}", 'price' => NumberLikeThing.new(7)
-  end
-
-  def test_abs
-    assert_template_result "17", "{{ 17 | abs }}"
-    assert_template_result "17", "{{ -17 | abs }}"
-    assert_template_result "17", "{{ '17' | abs }}"
-    assert_template_result "17", "{{ '-17' | abs }}"
-    assert_template_result "0", "{{ 0 | abs }}"
-    assert_template_result "0", "{{ '0' | abs }}"
-    assert_template_result "17.42", "{{ 17.42 | abs }}"
-    assert_template_result "17.42", "{{ -17.42 | abs }}"
-    assert_template_result "17.42", "{{ '17.42' | abs }}"
-    assert_template_result "17.42", "{{ '-17.42' | abs }}"
-  end
-
-  def test_times
-    assert_template_result "12", "{{ 3 | times:4 }}"
-    assert_template_result "0", "{{ 'foo' | times:4 }}"
-    assert_template_result "6", "{{ '2.1' | times:3 | replace: '.','-' | plus:0}}"
-    assert_template_result "7.25", "{{ 0.0725 | times:100 }}"
-    assert_template_result "-7.25", '{{ "-0.0725" | times:100 }}'
-    assert_template_result "7.25", '{{ "-0.0725" | times: -100 }}'
-    assert_template_result "4", "{{ price | times:2 }}", 'price' => NumberLikeThing.new(2)
-  end
-
-  def test_divided_by
-    assert_template_result "4", "{{ 12 | divided_by:3 }}"
-    assert_template_result "4", "{{ 14 | divided_by:3 }}"
-
-    assert_template_result "5", "{{ 15 | divided_by:3 }}"
-    assert_equal "Liquid error: divided by 0", Template.parse("{{ 5 | divided_by:0 }}").render
-
-    assert_template_result "0.5", "{{ 2.0 | divided_by:4 }}"
-    assert_raises(Liquid::ZeroDivisionError) do
-      assert_template_result "4", "{{ 1 | modulo: 0 }}"
-    end
-
-    assert_template_result "5", "{{ price | divided_by:2 }}", 'price' => NumberLikeThing.new(10)
-  end
-
-  def test_modulo
-    assert_template_result "1", "{{ 3 | modulo:2 }}"
-    assert_raises(Liquid::ZeroDivisionError) do
-      assert_template_result "4", "{{ 1 | modulo: 0 }}"
-    end
-
-    assert_template_result "1", "{{ price | modulo:2 }}", 'price' => NumberLikeThing.new(3)
-  end
-
-  def test_round
-    assert_template_result "5", "{{ input | round }}", 'input' => 4.6
-    assert_template_result "4", "{{ '4.3' | round }}"
-    assert_template_result "4.56", "{{ input | round: 2 }}", 'input' => 4.5612
-    assert_raises(Liquid::FloatDomainError) do
-      assert_template_result "4", "{{ 1.0 | divided_by: 0.0 | round }}"
-    end
-
-    assert_template_result "5", "{{ price | round }}", 'price' => NumberLikeThing.new(4.6)
-    assert_template_result "4", "{{ price | round }}", 'price' => NumberLikeThing.new(4.3)
-  end
-
-  def test_ceil
-    assert_template_result "5", "{{ input | ceil }}", 'input' => 4.6
-    assert_template_result "5", "{{ '4.3' | ceil }}"
-    assert_raises(Liquid::FloatDomainError) do
-      assert_template_result "4", "{{ 1.0 | divided_by: 0.0 | ceil }}"
-    end
-
-    assert_template_result "5", "{{ price | ceil }}", 'price' => NumberLikeThing.new(4.6)
-  end
-
-  def test_floor
-    assert_template_result "4", "{{ input | floor }}", 'input' => 4.6
-    assert_template_result "4", "{{ '4.3' | floor }}"
-    assert_raises(Liquid::FloatDomainError) do
-      assert_template_result "4", "{{ 1.0 | divided_by: 0.0 | floor }}"
-    end
-
-    assert_template_result "5", "{{ price | floor }}", 'price' => NumberLikeThing.new(5.4)
-  end
-
-  def test_at_most
-    assert_template_result "4", "{{ 5 | at_most:4 }}"
-    assert_template_result "5", "{{ 5 | at_most:5 }}"
-    assert_template_result "5", "{{ 5 | at_most:6 }}"
-
-    assert_template_result "4.5", "{{ 4.5 | at_most:5 }}"
-    assert_template_result "5", "{{ width | at_most:5 }}", 'width' => NumberLikeThing.new(6)
-    assert_template_result "4", "{{ width | at_most:5 }}", 'width' => NumberLikeThing.new(4)
-    assert_template_result "4", "{{ 5 | at_most: width }}", 'width' => NumberLikeThing.new(4)
-  end
-
-  def test_at_least
-    assert_template_result "5", "{{ 5 | at_least:4 }}"
-    assert_template_result "5", "{{ 5 | at_least:5 }}"
-    assert_template_result "6", "{{ 5 | at_least:6 }}"
-
-    assert_template_result "5", "{{ 4.5 | at_least:5 }}"
-    assert_template_result "6", "{{ width | at_least:5 }}", 'width' => NumberLikeThing.new(6)
-    assert_template_result "5", "{{ width | at_least:5 }}", 'width' => NumberLikeThing.new(4)
-    assert_template_result "6", "{{ 5 | at_least: width }}", 'width' => NumberLikeThing.new(6)
-  end
-
-  def test_append
-    assigns = { 'a' => 'bc', 'b' => 'd' }
-    assert_template_result('bcd', "{{ a | append: 'd'}}", assigns)
-    assert_template_result('bcd', "{{ a | append: b}}", assigns)
-  end
-
-  def test_concat
-    assert_equal [1, 2, 3, 4], @filters.concat([1, 2], [3, 4])
-    assert_equal [1, 2, 'a'],  @filters.concat([1, 2], ['a'])
-    assert_equal [1, 2, 10],   @filters.concat([1, 2], [10])
-
-    assert_raises(Liquid::ArgumentError, "concat filter requires an array argument") do
-      @filters.concat([1, 2], 10)
-    end
-  end
-
-  def test_prepend
-    assigns = { 'a' => 'bc', 'b' => 'a' }
-    assert_template_result('abc', "{{ a | prepend: 'a'}}", assigns)
-    assert_template_result('abc', "{{ a | prepend: b}}", assigns)
-  end
-
-  def test_default
-    assert_equal "foo", @filters.default("foo", "bar")
-    assert_equal "bar", @filters.default(nil, "bar")
-    assert_equal "bar", @filters.default("", "bar")
-    assert_equal "bar", @filters.default(false, "bar")
-    assert_equal "bar", @filters.default([], "bar")
-    assert_equal "bar", @filters.default({}, "bar")
-  end
-
-  def test_cannot_access_private_methods
-    assert_template_result('a', "{{ 'a' | to_number }}")
-  end
-
-  def test_date_raises_nothing
-    assert_template_result('', "{{ '' | date: '%D' }}")
-    assert_template_result('abc', "{{ 'abc' | date: '%D' }}")
-  end
-
-  def test_where
-    input = [
-      { "handle" => "alpha", "ok" => true },
-      { "handle" => "beta", "ok" => false },
-      { "handle" => "gamma", "ok" => false },
-      { "handle" => "delta", "ok" => true }
+      { v!("foo"): false },
+      { v!("foo"): true },
+      { v!("foo"): v!("for sure") },
+      { v!("bar"): true }
     ]
 
-    expectation = [
-      { "handle" => "alpha", "ok" => true },
-      { "handle" => "delta", "ok" => true }
-    ]
-
-    assert_equal expectation, @filters.where(input, "ok", true)
-    assert_equal expectation, @filters.where(input, "ok")
-  end
-
-  def test_where_no_key_set
-    input = [
-      { "handle" => "alpha", "ok" => true },
-      { "handle" => "beta" },
-      { "handle" => "gamma" },
-      { "handle" => "delta", "ok" => true }
-    ]
-
-    expectation = [
-      { "handle" => "alpha", "ok" => true },
-      { "handle" => "delta", "ok" => true }
-    ]
-
-    assert_equal expectation, @filters.where(input, "ok", true)
-    assert_equal expectation, @filters.where(input, "ok")
-  end
-
-  def test_where_non_array_map_input
-    assert_equal [{ "a" => "ok" }], @filters.where({ "a" => "ok" }, "a", "ok")
-    assert_equal [], @filters.where({ "a" => "not ok" }, "a", "ok")
-  end
-
-  def test_where_indexable_but_non_map_value
-    assert_raises(Liquid::ArgumentError) { @filters.where(1, "ok", true) }
-    assert_raises(Liquid::ArgumentError) { @filters.where(1, "ok") }
-  end
-
-  def test_where_non_boolean_value
-    input = [
-      { "message" => "Bonjour!", "language" => "French" },
-      { "message" => "Hello!", "language" => "English" },
-      { "message" => "Hallo!", "language" => "German" }
-    ]
-
-    assert_equal [{ "message" => "Bonjour!", "language" => "French" }], @filters.where(input, "language", "French")
-    assert_equal [{ "message" => "Hallo!", "language" => "German" }], @filters.where(input, "language", "German")
-    assert_equal [{ "message" => "Hello!", "language" => "English" }], @filters.where(input, "language", "English")
-  end
-
-  def test_where_array_of_only_unindexable_values
-    assert_nil @filters.where([nil], "ok", true)
-    assert_nil @filters.where([nil], "ok")
-  end
-
-  def test_where_no_target_value
-    input = [
-      { "foo" => false },
-      { "foo" => true },
-      { "foo" => "for sure" },
-      { "bar" => true }
-    ]
-
-    assert_equal [{ "foo" => true }, { "foo" => "for sure" }], @filters.where(input, "foo")
-  end
-
-  private
-
-  def with_timezone(tz)
-    old_tz = ENV['TZ']
-    ENV['TZ'] = tz
-    yield
-  ensure
-    ENV['TZ'] = old_tz
-  end
-end # StandardFiltersTest
+    assert_eq!([{ v!("foo"): true }, { v!("foo"): v!("for sure") }], filters!(where, input, v!("foo")));
+    */
+}

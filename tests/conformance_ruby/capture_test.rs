@@ -1,24 +1,34 @@
-require 'test_helper'
+use liquid;
 
-class CaptureTest < Minitest::Test
-  include Liquid
+use test_helper::*;
 
-  def test_captures_block_content_in_variable
-    assert_template_result("test string", "{% capture 'var' %}test string{% endcapture %}{{var}}", {})
-  end
+#[test]
+#[ignore]
+fn test_captures_block_content_in_variable() {
+    assert_template_result(
+        r#"test string"#,
+        r#"{% capture 'var' %}test string{% endcapture %}{{var}}"#,
+        v!({}));
+}
 
-  def test_capture_with_hyphen_in_variable_name
-    template_source = <<-END_TEMPLATE
+#[test]
+fn test_capture_with_hyphen_in_variable_name() {
+    let template_source = r#"
     {% capture this-thing %}Print this-thing{% endcapture %}
     {{ this-thing }}
-    END_TEMPLATE
-    template = Template.parse(template_source)
-    rendered = template.render!
-    assert_equal "Print this-thing", rendered.strip
-  end
+"#;
+    let template = liquid::ParserBuilder::with_liquid()
+        .build()
+        .parse(template_source)
+        .unwrap();
+    let rendered = template.render(&liquid::value::Object::default()).unwrap();
 
-  def test_capture_to_variable_from_outer_scope_if_existing
-    template_source = <<-END_TEMPLATE
+    assert_eq!("Print this-thing", rendered.trim());
+}
+
+#[test]
+fn test_capture_to_variable_from_outer_scope_if_existing() {
+    let template_source = r#"
     {% assign var = '' %}
     {% if true %}
     {% capture var %}first-block-string{% endcapture %}
@@ -27,14 +37,19 @@ class CaptureTest < Minitest::Test
     {% capture var %}test-string{% endcapture %}
     {% endif %}
     {{var}}
-    END_TEMPLATE
-    template = Template.parse(template_source)
-    rendered = template.render!
-    assert_equal "test-string", rendered.gsub(/\s/, '')
-  end
+"#;
+    let template = liquid::ParserBuilder::with_liquid()
+        .build()
+        .parse(template_source)
+        .unwrap();
+    let rendered = template.render(&liquid::value::Object::default()).unwrap();
 
-  def test_assigning_from_capture
-    template_source = <<-END_TEMPLATE
+    assert_eq!("test-string", rendered.trim());
+}
+
+#[test]
+fn test_assigning_from_capture() {
+    let template_source = r#"
     {% assign first = '' %}
     {% assign second = '' %}
     {% for number in (1..3) %}
@@ -42,9 +57,12 @@ class CaptureTest < Minitest::Test
     {% assign second = first %}
     {% endfor %}
     {{ first }}-{{ second }}
-    END_TEMPLATE
-    template = Template.parse(template_source)
-    rendered = template.render!
-    assert_equal "3-3", rendered.gsub(/\s/, '')
-  end
-end # CaptureTest
+"#;
+    let template = liquid::ParserBuilder::with_liquid()
+        .build()
+        .parse(template_source)
+        .unwrap();
+    let rendered = template.render(&liquid::value::Object::default()).unwrap();
+
+    assert_eq!("3-3", rendered.trim());
+}

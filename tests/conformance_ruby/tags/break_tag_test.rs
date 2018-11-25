@@ -1,15 +1,12 @@
-require 'test_helper'
+use test_helper::*;
 
-class BreakTagTest < Minitest::Test
-  include Liquid
+// tests that no weird errors are raised if break is called outside of a
+// block
+#[test]
+fn test_break_with_no_block() {
+    let assigns = v!({ "i": 1 });
+    let markup = "{% break %}";
+    let expected = "";
 
-  # tests that no weird errors are raised if break is called outside of a
-  # block
-  def test_break_with_no_block
-    assigns = { 'i' => 1 }
-    markup = '{% break %}'
-    expected = ''
-
-    assert_template_result(expected, markup, assigns)
-  end
-end
+    assert_template_result(expected, markup, assigns);
+}

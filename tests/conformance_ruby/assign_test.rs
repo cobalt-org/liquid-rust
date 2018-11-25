@@ -1,48 +1,49 @@
-require 'test_helper'
+use liquid;
 
-class AssignTest < Minitest::Test
-  include Liquid
+use test_helper::*;
 
-  def test_assign_with_hyphen_in_variable_name
-    template_source = <<-END_TEMPLATE
+#[test]
+fn test_assign_with_hyphen_in_variable_name() {
+    let template_source = r#"
     {% assign this-thing = 'Print this-thing' %}
     {{ this-thing }}
-    END_TEMPLATE
-    template = Template.parse(template_source)
-    rendered = template.render!
-    assert_equal "Print this-thing", rendered.strip
-  end
+"#;
+    let template = liquid::ParserBuilder::with_liquid()
+        .build()
+        .parse(template_source)
+        .unwrap();
+    let rendered = template.render(&liquid::value::Object::default()).unwrap();
 
-  def test_assigned_variable
-    assert_template_result('.foo.',
-      '{% assign foo = values %}.{{ foo[0] }}.',
-      'values' => %w(foo bar baz))
+    assert_eq!("Print this-thing", rendered.trim());
+}
 
-    assert_template_result('.bar.',
-      '{% assign foo = values %}.{{ foo[1] }}.',
-      'values' => %w(foo bar baz))
-  end
+#[test]
+fn test_assigned_variable() {
+    assert_template_result(
+        r#".foo."#,
+        r#"{% assign foo = values %}.{{ foo[0] }}."#,
+        v!({"values": ["foo", "bar", "baz"]}));
 
-  def test_assign_with_filter
-    assert_template_result('.bar.',
-      '{% assign foo = values | split: "," %}.{{ foo[1] }}.',
-      'values' => "foo,bar,baz")
-  end
+    assert_template_result(
+        r#".bar."#,
+        r#"{% assign foo = values %}.{{ foo[1] }}."#,
+        v!({"values": ["foo", "bar", "baz"]}));
+}
 
-  def test_assign_syntax_error
-    assert_match_syntax_error(/assign/,
-      '{% assign foo not values %}.',
-      'values' => "foo,bar,baz")
-  end
+#[test]
+fn test_assign_with_filter() {
+    assert_template_result(
+        r#".bar."#,
+        r#"{% assign foo = values | split: "," %}.{{ foo[1] }}."#,
+        v!({"values": "foo,bar,baz"}));
+}
 
-  def test_assign_uses_error_mode
-    with_error_mode(:strict) do
-      assert_raises(SyntaxError) do
-        Template.parse("{% assign foo = ('X' | downcase) %}")
-      end
-    end
-    with_error_mode(:lax) do
-      assert Template.parse("{% assign foo = ('X' | downcase) %}")
-    end
-  end
-end # AssignTest
+#[test]
+fn test_assign_syntax_error() {
+    assert_parse_error(r#"{% assign foo not values %}."#);
+}
+
+#[test]
+fn test_assign_uses_error_mode() {
+    assert_parse_error(r#"{% assign foo = ('X' | downcase) %}"#);
+}
