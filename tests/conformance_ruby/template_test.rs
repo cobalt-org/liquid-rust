@@ -148,12 +148,15 @@ fn test_undefined_variables() {
 
 #[test]
 fn test_nil_value_does_not_raise() {
-    assert_template_result("something", "some{{x}}thing", v!({"x": nil}));
+    assert_template_result("something", "some{{x}}thing", v!({ "x": nil }));
 }
 
 #[test]
 fn test_undefined_variables_raise() {
-    assert_render_error("{{x}} {{y}} {{z.a}} {{z.b}} {{z.c.d}}", v!({ "x": 33, "z": { "a": 32, "c": { "e": 31 } } }));
+    assert_render_error(
+        "{{x}} {{y}} {{z.a}} {{z.b}} {{z.c.d}}",
+        v!({ "x": 33, "z": { "a": 32, "c": { "e": 31 } } }),
+    );
 }
 
 #[test]
@@ -187,13 +190,17 @@ fn test_using_range_literal_works_as_expected() {
         .build()
         .parse("{% assign foo = (x..y) %}{{ foo }}")
         .unwrap();
-    let rendered = template.render(v!({"x": 1, "y": 5}).as_object().unwrap()).unwrap();
+    let rendered = template
+        .render(v!({"x": 1, "y": 5}).as_object().unwrap())
+        .unwrap();
     assert_eq!("1..5", rendered);
 
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse("{% assign nums = (x..y) %}{% for num in nums %}{{ num }}{% endfor %}")
         .unwrap();
-    let rendered = template.render(v!({"x": 1, "y": 5}).as_object().unwrap()).unwrap();
+    let rendered = template
+        .render(v!({"x": 1, "y": 5}).as_object().unwrap())
+        .unwrap();
     assert_eq!("12345", rendered);
 }

@@ -64,13 +64,15 @@ fn test_parsing_warn_with_line_numbers_adds_numbers_to_lexer_errors() {
 #[test]
 #[ignore]
 fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
-    let err = assert_parse_error(r#"
+    let err = assert_parse_error(
+        r#"
           foobar
 
           {% if 1 =! 2 %}ok{% endif %}
 
           bla
-    "#);
+    "#,
+    );
     let err = err.to_string();
 
     let expected = regex::Regex::new(r#"\bline 4\b"#).unwrap();
@@ -81,7 +83,8 @@ fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
 #[test]
 #[ignore]
 fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
-    let err = assert_parse_error(r#"
+    let err = assert_parse_error(
+        r#"
           foobar
 
           {% if 1 != 2 %}
@@ -89,7 +92,8 @@ fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
           {% endif %}
 
           bla
-    "#);
+    "#,
+    );
     let err = err.to_string();
 
     let expected = regex::Regex::new(r#"\bline 5\b"#).unwrap();

@@ -11,7 +11,8 @@ fn test_table_row() {
     assert_template_result(
         "<tr class=\"row1\">\n</tr>\n",
         "{% tablerow n in numbers cols:3%} {{n}} {% endtablerow %}",
-        v!({"numbers": []}));
+        v!({"numbers": []}),
+    );
 }
 
 #[test]
@@ -65,5 +66,6 @@ fn test_blank_string_not_iterable() {
     // Implementation specific: adapted from a lax case.
     assert_render_error(
         "{% tablerow char in characters cols:3 %}I WILL NOT BE OUTPUT{% endtablerow %}",
-        v!({"characters": ""}));
+        v!({"characters": ""}),
+    );
 }

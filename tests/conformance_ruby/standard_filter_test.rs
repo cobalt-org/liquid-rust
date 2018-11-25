@@ -45,7 +45,10 @@ fn test_slice() {
 fn test_slice_on_arrays() {
     let input = v!(["f", "o", "o", "b", "a", "r"]);
     assert_eq!(v!(["o", "o", "b"]), filters!(slice, input, v!(1), v!(3)));
-    assert_eq!(v!(["o", "o", "b", "a", "r"]), filters!(slice, input, v!(1), v!(1000)));
+    assert_eq!(
+        v!(["o", "o", "b", "a", "r"]),
+        filters!(slice, input, v!(1), v!(1000))
+    );
     assert_eq!(v!([]), filters!(slice, input, v!(1), v!(0)));
     assert_eq!(v!(["o"]), filters!(slice, input, v!(1), v!(1)));
     assert_eq!(v!(["b", "a", "r"]), filters!(slice, input, v!(3), v!(3)));
@@ -60,18 +63,30 @@ fn test_slice_on_arrays() {
 #[ignore]
 fn test_truncate() {
     assert_eq!(v!("1234..."), filters!(truncate, v!("1234567890"), v!(7)));
-    assert_eq!(v!("1234567890"), filters!(truncate, v!("1234567890"), v!(20)));
+    assert_eq!(
+        v!("1234567890"),
+        filters!(truncate, v!("1234567890"), v!(20))
+    );
     assert_eq!(v!("..."), filters!(truncate, v!("1234567890"), v!(0)));
     assert_eq!(v!("1234567890"), filters!(truncate, v!("1234567890")));
-    assert_eq!(v!("测试..."), filters!(truncate, v!("测试测试测试测试"), v!(5)));
-    assert_eq!(v!("12341"), filters!(truncate, v!("1234567890"), v!(5), v!(1)));
+    assert_eq!(
+        v!("测试..."),
+        filters!(truncate, v!("测试测试测试测试"), v!(5))
+    );
+    assert_eq!(
+        v!("12341"),
+        filters!(truncate, v!("1234567890"), v!(5), v!(1))
+    );
 }
 
 #[test]
 #[ignore]
 fn test_split() {
     assert_eq!(v!(["12", "34"]), filters!(split, v!("12~34"), v!("~")));
-    assert_eq!(v!(["A? ", " ,Z"]), filters!(split, v!("A? ~ ~ ~ ,Z"), v!("~ ~ ~")));
+    assert_eq!(
+        v!(["A? ", " ,Z"]),
+        filters!(split, v!("A? ~ ~ ~ ,Z"), v!("~ ~ ~"))
+    );
     assert_eq!(v!(["A?Z"]), filters!(split, v!("A?Z"), v!("~")));
     assert_eq!(v!([]), filters!(split, Nil, v!(" ")));
     assert_eq!(v!(["A", "Z"]), filters!(split, v!("A1Z"), v!(1)));
@@ -99,13 +114,19 @@ fn test_h() {
 
 #[test]
 fn test_escape_once() {
-    assert_eq!(v!("&lt;strong&gt;Hulk&lt;/strong&gt;"), filters!(escape_once, v!("&lt;strong&gt;Hulk</strong>")));
+    assert_eq!(
+        v!("&lt;strong&gt;Hulk&lt;/strong&gt;"),
+        filters!(escape_once, v!("&lt;strong&gt;Hulk</strong>"))
+    );
 }
 
 #[test]
 #[ignore]
 fn test_url_encode() {
-    assert_eq!(v!("foo%2B1%40example.com"), filters!(url_encode, v!("foo+1@example.com")));
+    assert_eq!(
+        v!("foo%2B1%40example.com"),
+        filters!(url_encode, v!("foo+1@example.com"))
+    );
     assert_eq!(v!("1"), filters!(url_encode, v!(1)));
     assert_eq!(v!("2001-02-03"), filters!(url_encode, date(2001, 2, 3)));
     assert_eq!(Nil, filters!(url_encode, Nil));
@@ -116,7 +137,10 @@ fn test_url_encode() {
 fn test_url_decode() {
     assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo+bar")));
     assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo%20bar")));
-    assert_eq!(v!("foo+1@example.com"), filters!(url_decode, v!("foo%2B1%40example.com")));
+    assert_eq!(
+        v!("foo+1@example.com"),
+        filters!(url_decode, v!("foo%2B1%40example.com"))
+    );
     assert_eq!(v!("1"), filters!(url_decode, v!(1)));
     assert_eq!(v!("2001-02-03"), filters!(url_decode, date(2001, 2, 3)));
     assert_eq!(Nil, filters!(url_decode, Nil));
@@ -124,29 +148,65 @@ fn test_url_decode() {
 
 #[test]
 fn test_truncatewords() {
-    assert_eq!(v!("one two three"), filters!(truncatewords, v!("one two three"), v!(4)));
-    assert_eq!(v!("one two..."), filters!(truncatewords, v!("one two three"), v!(2)));
-    assert_eq!(v!("one two three"), filters!(truncatewords, v!("one two three")));
+    assert_eq!(
+        v!("one two three"),
+        filters!(truncatewords, v!("one two three"), v!(4))
+    );
+    assert_eq!(
+        v!("one two..."),
+        filters!(truncatewords, v!("one two three"), v!(2))
+    );
+    assert_eq!(
+        v!("one two three"),
+        filters!(truncatewords, v!("one two three"))
+    );
     assert_eq!(v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221;..."), filters!(truncatewords, v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221; x 16&#8221; x 10.5&#8221; high) with cover."), v!(15)));
-    assert_eq!(v!("测试测试测试测试"), filters!(truncatewords, v!("测试测试测试测试"), v!(5)));
-    assert_eq!(v!("one two1"), filters!(truncatewords, v!("one two three"), v!(2), v!(1)));
+    assert_eq!(
+        v!("测试测试测试测试"),
+        filters!(truncatewords, v!("测试测试测试测试"), v!(5))
+    );
+    assert_eq!(
+        v!("one two1"),
+        filters!(truncatewords, v!("one two three"), v!(2), v!(1))
+    );
 }
 
 #[test]
 fn test_strip_html() {
     assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div>test</div>"#)));
-    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div id="test">test</div>"#)));
-    assert_eq!(v!(""), filters!(strip_html, v!(r#"<script type="text/javascript">document.write"some stuff";</script>"#)));
-    assert_eq!(v!(""), filters!(strip_html, v!(r#"<style type="text/css">foo bar</style>"#)));
-    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<div\nclass="multiline">test</div>"#)));
-    assert_eq!(v!("test"), filters!(strip_html, v!(r#"<!-- foo bar \n test -->test"#)));
+    assert_eq!(
+        v!("test"),
+        filters!(strip_html, v!(r#"<div id="test">test</div>"#))
+    );
+    assert_eq!(
+        v!(""),
+        filters!(
+            strip_html,
+            v!(r#"<script type="text/javascript">document.write"some stuff";</script>"#)
+        )
+    );
+    assert_eq!(
+        v!(""),
+        filters!(strip_html, v!(r#"<style type="text/css">foo bar</style>"#))
+    );
+    assert_eq!(
+        v!("test"),
+        filters!(strip_html, v!(r#"<div\nclass="multiline">test</div>"#))
+    );
+    assert_eq!(
+        v!("test"),
+        filters!(strip_html, v!(r#"<!-- foo bar \n test -->test"#))
+    );
     assert_eq!(v!(""), filters!(strip_html, Nil));
 }
 
 #[test]
 fn test_join() {
     assert_eq!(v!("1 2 3 4"), filters!(join, v!([1, 2, 3, 4])));
-    assert_eq!(v!("1 - 2 - 3 - 4"), filters!(join, v!([1, 2, 3, 4]), v!(" - ")));
+    assert_eq!(
+        v!("1 - 2 - 3 - 4"),
+        filters!(join, v!([1, 2, 3, 4]), v!(" - "))
+    );
     assert_eq!(v!("1121314"), filters!(join, v!([1, 2, 3, 4]), v!(1)));
 }
 
@@ -154,14 +214,28 @@ fn test_join() {
 #[ignore]
 fn test_sort() {
     assert_eq!(v!([1, 2, 3, 4]), filters!(sort, v!([4, 3, 2, 1])));
-    assert_eq!(v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]), filters!(sort, v!([{ "a": 4 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]), v!("a")));
+    assert_eq!(
+        v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]),
+        filters!(
+            sort,
+            v!([{ "a": 4 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]),
+            v!("a")
+        )
+    );
 }
 
 #[test]
 #[ignore]
 fn test_sort_with_nils() {
     assert_eq!(v!([1, 2, 3, 4, nil]), filters!(sort, v!([nil, 4, 3, 2, 1])));
-    assert_eq!(v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }, {}]), filters!(sort, v!([{ "a": 4 }, { "a": 3 }, {}, { "a": 1 }, { "a": 2 }]), v!("a")));
+    assert_eq!(
+        v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }, {}]),
+        filters!(
+            sort,
+            v!([{ "a": 4 }, { "a": 3 }, {}, { "a": 1 }, { "a": 2 }]),
+            v!("a")
+        )
+    );
 }
 
 #[test]
@@ -187,15 +261,35 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
 #[test]
 #[ignore]
 fn test_sort_natural() {
-    assert_eq!(v!(["a", "B", "c", "D"]), filters!(sort_natural, v!(["c", "D", "a", "B"])));
-    assert_eq!(v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }]), filters!(sort_natural, v!([{ "a": "D" }, { "a": "c" }, { "a": "a" }, { "a": "B" }]), v!("a")));
+    assert_eq!(
+        v!(["a", "B", "c", "D"]),
+        filters!(sort_natural, v!(["c", "D", "a", "B"]))
+    );
+    assert_eq!(
+        v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }]),
+        filters!(
+            sort_natural,
+            v!([{ "a": "D" }, { "a": "c" }, { "a": "a" }, { "a": "B" }]),
+            v!("a")
+        )
+    );
 }
 
 #[test]
 #[ignore]
 fn test_sort_natural_with_nils() {
-    assert_eq!(v!(["a", "B", "c", "D", nil]), filters!(sort_natural, v!([nil, "c", "D", "a", "B"])));
-    assert_eq!(v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }, {}]), filters!(sort_natural, v!([{ "a": "D" }, { "a": "c" }, {}, { "a": "a" }, { "a": "B" }]), v!("a")));
+    assert_eq!(
+        v!(["a", "B", "c", "D", nil]),
+        filters!(sort_natural, v!([nil, "c", "D", "a", "B"]))
+    );
+    assert_eq!(
+        v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }, {}]),
+        filters!(
+            sort_natural,
+            v!([{ "a": "D" }, { "a": "c" }, {}, { "a": "a" }, { "a": "B" }]),
+            v!("a")
+        )
+    );
 }
 
 #[test]
@@ -240,7 +334,10 @@ fn test_sort_natural_case_check() {
       { "fake": "t" }
     ]);
     assert_eq!(expectation, filters!(sort_natural, input, v!("key")));
-    assert_eq!(v!(["a", "b", "c", "X", "Y", "Z"]), filters!(sort_natural, v!(["X", "Y", "Z", "a", "b", "c"])));
+    assert_eq!(
+        v!(["a", "b", "c", "X", "Y", "Z"]),
+        filters!(sort_natural, v!(["X", "Y", "Z", "a", "b", "c"]))
+    );
 }
 
 #[test]
@@ -258,24 +355,43 @@ fn test_sort_natural_empty_array() {
 #[test]
 #[ignore]
 fn test_legacy_sort_hash() {
-    assert_eq!(v!([{ "a": 1, "b": 2 }]), filters!(sort, v!({ "a": 1, "b": 2 })));
+    assert_eq!(
+        v!([{ "a": 1, "b": 2 }]),
+        filters!(sort, v!({ "a": 1, "b": 2 }))
+    );
 }
 
 #[test]
 #[ignore]
 fn test_numerical_vs_lexicographical_sort() {
     assert_eq!(v!([2, 10]), filters!(sort, v!([10, 2])));
-    assert_eq!(v!([{ "a": 2 }, { "a": 10 }]), filters!(sort, v!([{ "a": 10 }, { "a": 2 }]), v!("a")));
+    assert_eq!(
+        v!([{ "a": 2 }, { "a": 10 }]),
+        filters!(sort, v!([{ "a": 10 }, { "a": 2 }]), v!("a"))
+    );
     assert_eq!(v!(["10", "2"]), filters!(sort, v!(["10", "2"])));
-    assert_eq!(v!([{ "a": "10" }, { "a": "2" }]), filters!(sort, v!([{ "a": "10" }, { "a": "2" }]), v!("a")));
+    assert_eq!(
+        v!([{ "a": "10" }, { "a": "2" }]),
+        filters!(sort, v!([{ "a": "10" }, { "a": "2" }]), v!("a"))
+    );
 }
 
 #[test]
 #[ignore]
 fn test_uniq() {
     assert_eq!(v!(["foo"]), filters!(uniq, v!("foo")));
-    assert_eq!(v!([1, 3, 2, 4]), filters!(uniq, v!([1, 1, 3, 2, 3, 1, 4, 3, 2, 1])));
-    assert_eq!(v!([{ "a": 1 }, { "a": 3 }, { "a": 2 }]), filters!(uniq, v!([{ "a": 1 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]), v!("a")));
+    assert_eq!(
+        v!([1, 3, 2, 4]),
+        filters!(uniq, v!([1, 1, 3, 2, 3, 1, 4, 3, 2, 1]))
+    );
+    assert_eq!(
+        v!([{ "a": 1 }, { "a": 3 }, { "a": 2 }]),
+        filters!(
+            uniq,
+            v!([{ "a": 1 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]),
+            v!("a")
+        )
+    );
     //testdrop: Implementation specific: Drops
 }
 
@@ -298,15 +414,28 @@ fn test_reverse() {
 #[test]
 #[ignore]
 fn test_legacy_reverse_hash() {
-    assert_eq!(v!([{ "a": 1, "b": 2 }]), filters!(reverse, v!({"a": 1, "b": 2})));
+    assert_eq!(
+        v!([{ "a": 1, "b": 2 }]),
+        filters!(reverse, v!({"a": 1, "b": 2}))
+    );
 }
 
 #[test]
 #[ignore]
 fn test_map() {
-    assert_eq!(v!([1, 2, 3, 4]), filters!(map, v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]), v!("a")));
-    assert_template_result("abc", r#"{{ ary | map:"foo" | map:"bar" }}"#,
-      v!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}));
+    assert_eq!(
+        v!([1, 2, 3, 4]),
+        filters!(
+            map,
+            v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]),
+            v!("a")
+        )
+    );
+    assert_template_result(
+        "abc",
+        r#"{{ ary | map:"foo" | map:"bar" }}"#,
+        v!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}),
+    );
 }
 
 #[test]
@@ -324,8 +453,11 @@ fn test_map_calls_to_liquid() {
 #[test]
 #[ignore]
 fn test_map_on_hashes() {
-    assert_template_result("4217", r#"{{ thing | map: "foo" | map: "bar" }}"#,
-      v!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}));
+    assert_template_result(
+        "4217",
+        r#"{{ thing | map: "foo" | map: "bar" }}"#,
+        v!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}),
+    );
 }
 
 #[test]
@@ -333,7 +465,7 @@ fn test_map_on_hashes() {
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
     let hash = v!({ "foo": { "bar": 42 } });
-    assert_template_result("42", template, v!({"thing": hash}));
+    assert_template_result("42", template, v!({ "thing": hash }));
 }
 
 #[test]
@@ -381,33 +513,84 @@ fn test_truncate_calls_to_liquid() {
 #[test]
 #[ignore]
 fn test_date() {
-    assert_eq!(v!("May"), filters!(date, with_time("2006-05-05 10:00:00"), v!("%B")));
-    assert_eq!(v!("June"), filters!(date, with_time("2006-06-05 10:00:00"), v!("%B")));
-    assert_eq!(v!("July"), filters!(date, with_time("2006-07-05 10:00:00"), v!("%B")));
+    assert_eq!(
+        v!("May"),
+        filters!(date, with_time("2006-05-05 10:00:00"), v!("%B"))
+    );
+    assert_eq!(
+        v!("June"),
+        filters!(date, with_time("2006-06-05 10:00:00"), v!("%B"))
+    );
+    assert_eq!(
+        v!("July"),
+        filters!(date, with_time("2006-07-05 10:00:00"), v!("%B"))
+    );
 
-    assert_eq!(v!("May"), filters!(date, v!("2006-05-05 10:00:00"), v!("%B")));
-    assert_eq!(v!("June"), filters!(date, v!("2006-06-05 10:00:00"), v!("%B")));
-    assert_eq!(v!("July"), filters!(date, v!("2006-07-05 10:00:00"), v!("%B")));
+    assert_eq!(
+        v!("May"),
+        filters!(date, v!("2006-05-05 10:00:00"), v!("%B"))
+    );
+    assert_eq!(
+        v!("June"),
+        filters!(date, v!("2006-06-05 10:00:00"), v!("%B"))
+    );
+    assert_eq!(
+        v!("July"),
+        filters!(date, v!("2006-07-05 10:00:00"), v!("%B"))
+    );
 
-    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
-    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
-    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), v!("")));
-    assert_eq!(v!("2006-07-05 10:00:00"), filters!(date, v!("2006-07-05 10:00:00"), Nil));
+    assert_eq!(
+        v!("2006-07-05 10:00:00"),
+        filters!(date, v!("2006-07-05 10:00:00"), v!(""))
+    );
+    assert_eq!(
+        v!("2006-07-05 10:00:00"),
+        filters!(date, v!("2006-07-05 10:00:00"), v!(""))
+    );
+    assert_eq!(
+        v!("2006-07-05 10:00:00"),
+        filters!(date, v!("2006-07-05 10:00:00"), v!(""))
+    );
+    assert_eq!(
+        v!("2006-07-05 10:00:00"),
+        filters!(date, v!("2006-07-05 10:00:00"), Nil)
+    );
 
-    assert_eq!(v!("07/05/2006"), filters!(date, v!("2006-07-05 10:00:00"), v!("%m/%d/%Y")));
+    assert_eq!(
+        v!("07/05/2006"),
+        filters!(date, v!("2006-07-05 10:00:00"), v!("%m/%d/%Y"))
+    );
 
-    assert_eq!(v!("07/16/2004"), filters!(date, v!("Fri Jul 16 01:00:00 2004"), v!("%m/%d/%Y")));
-    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("now"), v!("%Y")));
-    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("today"), v!("%Y")));
-    assert_eq!(v!("#{Date.today.year}"), filters!(date, v!("Today"), v!("%Y")));
+    assert_eq!(
+        v!("07/16/2004"),
+        filters!(date, v!("Fri Jul 16 01:00:00 2004"), v!("%m/%d/%Y"))
+    );
+    assert_eq!(
+        v!("#{Date.today.year}"),
+        filters!(date, v!("now"), v!("%Y"))
+    );
+    assert_eq!(
+        v!("#{Date.today.year}"),
+        filters!(date, v!("today"), v!("%Y"))
+    );
+    assert_eq!(
+        v!("#{Date.today.year}"),
+        filters!(date, v!("Today"), v!("%Y"))
+    );
 
     assert_eq!(Nil, filters!(date, Nil, v!("%B")));
 
     assert_eq!(v!(""), filters!(date, v!(""), v!("%B")));
 
     // Limited in value because we can't change the timezone
-    assert_eq!(v!("07/05/2006"), filters!(date, v!(1152098955), v!("%m/%d/%Y")));
-    assert_eq!(v!("07/05/2006"), filters!(date, v!("1152098955"), v!("%m/%d/%Y")));
+    assert_eq!(
+        v!("07/05/2006"),
+        filters!(date, v!(1152098955), v!("%m/%d/%Y"))
+    );
+    assert_eq!(
+        v!("07/05/2006"),
+        filters!(date, v!("1152098955"), v!("%m/%d/%Y"))
+    );
 }
 
 #[test]
@@ -421,13 +604,28 @@ fn test_first_last() {
 
 #[test]
 fn test_replace() {
-    assert_eq!(v!("2 2 2 2"), filters!(replace, v!("1 1 1 1"), v!("1"), v!(2)));
-    assert_eq!(v!("2 2 2 2"), filters!(replace, v!("1 1 1 1"), v!(1), v!(2)));
-    assert_eq!(v!("2 1 1 1"), filters!(replace_first, v!("1 1 1 1"), v!("1"), v!(2)));
-    assert_eq!(v!("2 1 1 1"), filters!(replace_first, v!("1 1 1 1"), v!(1), v!(2)));
-    assert_template_result("2 1 1 1", r#"{{ "1 1 1 1" | replace_first: "1", 2 }}"#, v!({}));
+    assert_eq!(
+        v!("2 2 2 2"),
+        filters!(replace, v!("1 1 1 1"), v!("1"), v!(2))
+    );
+    assert_eq!(
+        v!("2 2 2 2"),
+        filters!(replace, v!("1 1 1 1"), v!(1), v!(2))
+    );
+    assert_eq!(
+        v!("2 1 1 1"),
+        filters!(replace_first, v!("1 1 1 1"), v!("1"), v!(2))
+    );
+    assert_eq!(
+        v!("2 1 1 1"),
+        filters!(replace_first, v!("1 1 1 1"), v!(1), v!(2))
+    );
+    assert_template_result(
+        "2 1 1 1",
+        r#"{{ "1 1 1 1" | replace_first: "1", 2 }}"#,
+        v!({}),
+    );
 }
-
 
 #[test]
 fn test_remove() {
@@ -446,31 +644,55 @@ fn test_pipes_in_string_arguments() {
 #[test]
 fn test_strip() {
     assert_template_result("ab c", "{{ source | strip }}", v!({"source": " ab c  "}));
-    assert_template_result("ab c", "{{ source | strip }}", v!({"source": " \tab c  \n \t"}));
+    assert_template_result(
+        "ab c",
+        "{{ source | strip }}",
+        v!({"source": " \tab c  \n \t"}),
+    );
 }
 
 #[test]
 fn test_lstrip() {
     assert_template_result("ab c  ", "{{ source | lstrip }}", v!({"source": " ab c  "}));
-    assert_template_result("ab c  \n \t", "{{ source | lstrip }}", v!({"source": " \tab c  \n \t"}));
+    assert_template_result(
+        "ab c  \n \t",
+        "{{ source | lstrip }}",
+        v!({"source": " \tab c  \n \t"}),
+    );
 }
 
 #[test]
 fn test_rstrip() {
     assert_template_result(" ab c", "{{ source | rstrip }}", v!({"source": " ab c  "}));
-    assert_template_result(" \tab c", "{{ source | rstrip }}", v!({"source": " \tab c  \n \t"}));
+    assert_template_result(
+        " \tab c",
+        "{{ source | rstrip }}",
+        v!({"source": " \tab c  \n \t"}),
+    );
 }
 
 #[test]
 fn test_strip_newlines() {
-    assert_template_result("abc", "{{ source | strip_newlines }}", v!({"source": "a\nb\nc"}));
-    assert_template_result("abc", "{{ source | strip_newlines }}", v!({"source": "a\r\nb\nc"}));
+    assert_template_result(
+        "abc",
+        "{{ source | strip_newlines }}",
+        v!({"source": "a\nb\nc"}),
+    );
+    assert_template_result(
+        "abc",
+        "{{ source | strip_newlines }}",
+        v!({"source": "a\r\nb\nc"}),
+    );
 }
 
 #[test]
 #[ignore]
 fn test_newlines_to_br() {
-    assert_template_result("a<br />\nb<br />\nc", "{{ source | newline_to_br }}", v!({"source": "a\nb\nc"}));
+    assert_template_result(
+        "a<br />\nb<br />\nc",
+        "{{ source | newline_to_br }}",
+        v!({"source": "a\nb\nc"}),
+    );
 }
 
 #[test]
@@ -485,7 +707,11 @@ fn test_plus() {
 #[test]
 #[ignore]
 fn test_minus() {
-    assert_template_result("4", r#"{{ input | minus:operand }}"#, v!({"input": 5, "operand": 1}));
+    assert_template_result(
+        "4",
+        r#"{{ input | minus:operand }}"#,
+        v!({"input": 5, "operand": 1}),
+    );
     assert_template_result("2.3", r#"{{ "4.3" | minus:"2" }}"#, v!({}));
 
     // Implementation specific: use of drops
@@ -511,7 +737,11 @@ fn test_abs() {
 fn test_times() {
     assert_template_result("12", r#"{{ 3 | times:4 }}"#, v!({}));
     assert_template_result("0", r#"{{ "foo" | times:4 }}"#, v!({}));
-    assert_template_result("6", r#"{{ "2.1" | times:3 | replace: ".","-" | plus:0}}"#, v!({}));
+    assert_template_result(
+        "6",
+        r#"{{ "2.1" | times:3 | replace: ".","-" | plus:0}}"#,
+        v!({}),
+    );
     assert_template_result("7.25", r#"{{ 0.0725 | times:100 }}"#, v!({}));
     assert_template_result("-7.25", r#"{{ "-0.0725" | times:100 }}"#, v!({}));
     assert_template_result("7.25", r#"{{ "-0.0725" | times: -100 }}"#, v!({}));
@@ -603,8 +833,8 @@ fn test_append() {
 #[test]
 fn test_concat() {
     assert_eq!(v!([1, 2, 3, 4]), filters!(concat, v!([1, 2]), v!([3, 4])));
-    assert_eq!(v!([1, 2, "a"]),  filters!(concat, v!([1, 2]), v!(["a"])));
-    assert_eq!(v!([1, 2, 10]),   filters!(concat, v!([1, 2]), v!([10])));
+    assert_eq!(v!([1, 2, "a"]), filters!(concat, v!([1, 2]), v!(["a"])));
+    assert_eq!(v!([1, 2, 10]), filters!(concat, v!([1, 2]), v!([10])));
 
     filters_fail!(concat, v!([1, 2]), v!(10));
 }

@@ -34,7 +34,9 @@ fn test_error_on_empty_filter() {
 
 #[test]
 fn test_meaningless_parens_error() {
-    assert_parse_error("{% if a == 'foo' or (b == 'bar' and c == 'baz') or false %} YES {% endif %}");
+    assert_parse_error(
+        "{% if a == 'foo' or (b == 'bar' and c == 'baz') or false %} YES {% endif %}",
+    );
 }
 
 #[test]
@@ -86,5 +88,9 @@ fn test_extra_dots_in_ranges() {
 
 #[test]
 fn test_contains_in_id() {
-    assert_template_result(" YES ", "{% if containsallshipments == true %} YES {% endif %}", v!({"containsallshipments": true}));
+    assert_template_result(
+        " YES ",
+        "{% if containsallshipments == true %} YES {% endif %}",
+        v!({"containsallshipments": true}),
+    );
 }
