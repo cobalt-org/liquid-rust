@@ -431,7 +431,7 @@ fn test_map() {
             v!("a")
         )
     );
-    assert_template_result(
+    assert_template_result!(
         "abc",
         r#"{{ ary | map:"foo" | map:"bar" }}"#,
         v!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}),
@@ -453,7 +453,7 @@ fn test_map_calls_to_liquid() {
 #[test]
 #[ignore]
 fn test_map_on_hashes() {
-    assert_template_result(
+    assert_template_result!(
         "4217",
         r#"{{ thing | map: "foo" | map: "bar" }}"#,
         v!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}),
@@ -465,7 +465,7 @@ fn test_map_on_hashes() {
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
     let hash = v!({ "foo": { "bar": 42 } });
-    assert_template_result("42", template, v!({ "thing": hash }));
+    assert_template_result!("42", template, v!({ "thing": hash }));
 }
 
 #[test]
@@ -620,7 +620,7 @@ fn test_replace() {
         v!("2 1 1 1"),
         filters!(replace_first, v!("1 1 1 1"), v!(1), v!(2))
     );
-    assert_template_result(
+    assert_template_result!(
         "2 1 1 1",
         r#"{{ "1 1 1 1" | replace_first: "1", 2 }}"#,
         v!({}),
@@ -633,18 +633,18 @@ fn test_remove() {
     assert_eq!(v!("   "), filters!(remove, v!("1 1 1 1"), v!(1)));
     assert_eq!(v!("a a a"), filters!(remove_first, v!("a a a a"), v!("a ")));
     assert_eq!(v!(" 1 1 1"), filters!(remove_first, v!("1 1 1 1"), v!(1)));
-    assert_template_result("a a a", r#"{{ "a a a a" | remove_first: "a " }}"#, v!({}));
+    assert_template_result!("a a a", r#"{{ "a a a a" | remove_first: "a " }}"#);
 }
 
 #[test]
 fn test_pipes_in_string_arguments() {
-    assert_template_result("foobar", r#"{{ "foo|bar" | remove: "|" }}"#, v!({}));
+    assert_template_result!("foobar", r#"{{ "foo|bar" | remove: "|" }}"#);
 }
 
 #[test]
 fn test_strip() {
-    assert_template_result("ab c", "{{ source | strip }}", v!({"source": " ab c  "}));
-    assert_template_result(
+    assert_template_result!("ab c", "{{ source | strip }}", v!({"source": " ab c  "}));
+    assert_template_result!(
         "ab c",
         "{{ source | strip }}",
         v!({"source": " \tab c  \n \t"}),
@@ -653,8 +653,8 @@ fn test_strip() {
 
 #[test]
 fn test_lstrip() {
-    assert_template_result("ab c  ", "{{ source | lstrip }}", v!({"source": " ab c  "}));
-    assert_template_result(
+    assert_template_result!("ab c  ", "{{ source | lstrip }}", v!({"source": " ab c  "}));
+    assert_template_result!(
         "ab c  \n \t",
         "{{ source | lstrip }}",
         v!({"source": " \tab c  \n \t"}),
@@ -663,8 +663,8 @@ fn test_lstrip() {
 
 #[test]
 fn test_rstrip() {
-    assert_template_result(" ab c", "{{ source | rstrip }}", v!({"source": " ab c  "}));
-    assert_template_result(
+    assert_template_result!(" ab c", "{{ source | rstrip }}", v!({"source": " ab c  "}));
+    assert_template_result!(
         " \tab c",
         "{{ source | rstrip }}",
         v!({"source": " \tab c  \n \t"}),
@@ -673,12 +673,12 @@ fn test_rstrip() {
 
 #[test]
 fn test_strip_newlines() {
-    assert_template_result(
+    assert_template_result!(
         "abc",
         "{{ source | strip_newlines }}",
         v!({"source": "a\nb\nc"}),
     );
-    assert_template_result(
+    assert_template_result!(
         "abc",
         "{{ source | strip_newlines }}",
         v!({"source": "a\r\nb\nc"}),
@@ -688,7 +688,7 @@ fn test_strip_newlines() {
 #[test]
 #[ignore]
 fn test_newlines_to_br() {
-    assert_template_result(
+    assert_template_result!(
         "a<br />\nb<br />\nc",
         "{{ source | newline_to_br }}",
         v!({"source": "a\nb\nc"}),
@@ -698,8 +698,8 @@ fn test_newlines_to_br() {
 #[test]
 #[ignore]
 fn test_plus() {
-    assert_template_result("2", r#"{{ 1 | plus:1 }}"#, v!({}));
-    assert_template_result("2.0", r#"{{ "1" | plus:"1.0" }}"#, v!({}));
+    assert_template_result!("2", r#"{{ 1 | plus:1 }}"#);
+    assert_template_result!("2.0", r#"{{ "1" | plus:"1.0" }}"#);
 
     // Implementation specific: use of drops
 }
@@ -707,12 +707,12 @@ fn test_plus() {
 #[test]
 #[ignore]
 fn test_minus() {
-    assert_template_result(
+    assert_template_result!(
         "4",
         r#"{{ input | minus:operand }}"#,
         v!({"input": 5, "operand": 1}),
     );
-    assert_template_result("2.3", r#"{{ "4.3" | minus:"2" }}"#, v!({}));
+    assert_template_result!("2.3", r#"{{ "4.3" | minus:"2" }}"#);
 
     // Implementation specific: use of drops
 }
@@ -720,45 +720,45 @@ fn test_minus() {
 #[test]
 #[ignore]
 fn test_abs() {
-    assert_template_result("17", r#"{{ 17 | abs }}"#, v!({}));
-    assert_template_result("17", r#"{{ -17 | abs }}"#, v!({}));
-    assert_template_result("17", r#"{{ "17" | abs }}"#, v!({}));
-    assert_template_result("17", r#"{{ "-17" | abs }}"#, v!({}));
-    assert_template_result("0", r#"{{ 0 | abs }}"#, v!({}));
-    assert_template_result("0", r#"{{ "0" | abs }}"#, v!({}));
-    assert_template_result("17.42", r#"{{ 17.42 | abs }}"#, v!({}));
-    assert_template_result("17.42", r#"{{ -17.42 | abs }}"#, v!({}));
-    assert_template_result("17.42", r#"{{ "17.42" | abs }}"#, v!({}));
-    assert_template_result("17.42", r#"{{ "-17.42" | abs }}"#, v!({}));
+    assert_template_result!("17", r#"{{ 17 | abs }}"#);
+    assert_template_result!("17", r#"{{ -17 | abs }}"#);
+    assert_template_result!("17", r#"{{ "17" | abs }}"#);
+    assert_template_result!("17", r#"{{ "-17" | abs }}"#);
+    assert_template_result!("0", r#"{{ 0 | abs }}"#);
+    assert_template_result!("0", r#"{{ "0" | abs }}"#);
+    assert_template_result!("17.42", r#"{{ 17.42 | abs }}"#);
+    assert_template_result!("17.42", r#"{{ -17.42 | abs }}"#);
+    assert_template_result!("17.42", r#"{{ "17.42" | abs }}"#);
+    assert_template_result!("17.42", r#"{{ "-17.42" | abs }}"#);
 }
 
 #[test]
 #[ignore]
 fn test_times() {
-    assert_template_result("12", r#"{{ 3 | times:4 }}"#, v!({}));
-    assert_template_result("0", r#"{{ "foo" | times:4 }}"#, v!({}));
-    assert_template_result(
+    assert_template_result!("12", r#"{{ 3 | times:4 }}"#);
+    assert_template_result!("0", r#"{{ "foo" | times:4 }}"#);
+    assert_template_result!(
         "6",
         r#"{{ "2.1" | times:3 | replace: ".","-" | plus:0}}"#,
         v!({}),
     );
-    assert_template_result("7.25", r#"{{ 0.0725 | times:100 }}"#, v!({}));
-    assert_template_result("-7.25", r#"{{ "-0.0725" | times:100 }}"#, v!({}));
-    assert_template_result("7.25", r#"{{ "-0.0725" | times: -100 }}"#, v!({}));
+    assert_template_result!("7.25", r#"{{ 0.0725 | times:100 }}"#);
+    assert_template_result!("-7.25", r#"{{ "-0.0725" | times:100 }}"#);
+    assert_template_result!("7.25", r#"{{ "-0.0725" | times: -100 }}"#);
     // Implementation specific: use of drops
 }
 
 #[test]
 #[ignore]
 fn test_divided_by() {
-    assert_template_result("4", r#"{{ 12 | divided_by:3 }}"#, v!({}));
-    assert_template_result("4", r#"{{ 14 | divided_by:3 }}"#, v!({}));
+    assert_template_result!("4", r#"{{ 12 | divided_by:3 }}"#);
+    assert_template_result!("4", r#"{{ 14 | divided_by:3 }}"#);
 
-    assert_template_result("5", r#"{{ 15 | divided_by:3 }}"#, v!({}));
-    assert_render_error("{{ 5 | divided_by:0 }}", v!({}));
+    assert_template_result!("5", r#"{{ 15 | divided_by:3 }}"#);
+    assert_render_error!("{{ 5 | divided_by:0 }}");
 
-    assert_template_result("0.5", r#"{{ 2.0 | divided_by:4 }}"#, v!({}));
-    assert_render_error("{{ 1 | modulo:0 }}", v!({}));
+    assert_template_result!("0.5", r#"{{ 2.0 | divided_by:4 }}"#);
+    assert_render_error!("{{ 1 | modulo:0 }}");
 
     // Implementation specific: use of drops
 }
@@ -766,8 +766,8 @@ fn test_divided_by() {
 #[test]
 #[ignore]
 fn test_modulo() {
-    assert_template_result("1", r#"{{ 3 | modulo:2 }}"#, v!({}));
-    assert_render_error("{{ 1 | modulo:0 }}", v!({}));
+    assert_template_result!("1", r#"{{ 3 | modulo:2 }}"#);
+    assert_render_error!("{{ 1 | modulo:0 }}");
 
     // Implementation specific: use of drops
 }
@@ -775,10 +775,10 @@ fn test_modulo() {
 #[test]
 #[ignore]
 fn test_round() {
-    assert_template_result("5", r#"{{ input | round }}"#, v!({"input": 4.6}));
-    assert_template_result("4", r#"{{ "4.3" | round }}"#, v!({}));
-    assert_template_result("4.56", r#"{{ input | round: 2 }}"#, v!({"input": 4.5612}));
-    assert_render_error("{{ 1.0 | divided_by: 0.0 | round }}", v!({}));
+    assert_template_result!("5", r#"{{ input | round }}"#, v!({"input": 4.6}));
+    assert_template_result!("4", r#"{{ "4.3" | round }}"#);
+    assert_template_result!("4.56", r#"{{ input | round: 2 }}"#, v!({"input": 4.5612}));
+    assert_render_error!("{{ 1.0 | divided_by: 0.0 | round }}");
 
     // Implementation specific: use of drops
 }
@@ -786,9 +786,9 @@ fn test_round() {
 #[test]
 #[ignore]
 fn test_ceil() {
-    assert_template_result("5", r#"{{ input | ceil }}"#, v!({"input": 4.6}));
-    assert_template_result("5", r#"{{ "4.3" | ceil }}"#, v!({}));
-    assert_render_error("{{ 1.0 | divided_by: 0.0 | ceil }}", v!({}));
+    assert_template_result!("5", r#"{{ input | ceil }}"#, v!({"input": 4.6}));
+    assert_template_result!("5", r#"{{ "4.3" | ceil }}"#);
+    assert_render_error!("{{ 1.0 | divided_by: 0.0 | ceil }}");
 
     // Implementation specific: use of drops
 }
@@ -796,38 +796,38 @@ fn test_ceil() {
 #[test]
 #[ignore]
 fn test_floor() {
-    assert_template_result("4", r#"{{ input | floor }}"#, v!({"input": 4.6}));
-    assert_template_result("4", r#"{{ "4.3" | floor }}"#, v!({}));
-    assert_render_error("{{ 1.0 | divided_by: 0.0 | floor }}", v!({}));
+    assert_template_result!("4", r#"{{ input | floor }}"#, v!({"input": 4.6}));
+    assert_template_result!("4", r#"{{ "4.3" | floor }}"#);
+    assert_render_error!("{{ 1.0 | divided_by: 0.0 | floor }}");
 
     // Implementation specific: use of drops
 }
 
 #[test]
 fn test_at_most() {
-    assert_template_result("4", r#"{{ 5 | at_most:4 }}"#, v!({}));
-    assert_template_result("5", r#"{{ 5 | at_most:5 }}"#, v!({}));
-    assert_template_result("5", r#"{{ 5 | at_most:6 }}"#, v!({}));
+    assert_template_result!("4", r#"{{ 5 | at_most:4 }}"#);
+    assert_template_result!("5", r#"{{ 5 | at_most:5 }}"#);
+    assert_template_result!("5", r#"{{ 5 | at_most:6 }}"#);
 
-    assert_template_result("4.5", r#"{{ 4.5 | at_most:5 }}"#, v!({}));
+    assert_template_result!("4.5", r#"{{ 4.5 | at_most:5 }}"#);
     // Implementation specific: use of drops
 }
 
 #[test]
 fn test_at_least() {
-    assert_template_result("5", r#"{{ 5 | at_least:4 }}"#, v!({}));
-    assert_template_result("5", r#"{{ 5 | at_least:5 }}"#, v!({}));
-    assert_template_result("6", r#"{{ 5 | at_least:6 }}"#, v!({}));
+    assert_template_result!("5", r#"{{ 5 | at_least:4 }}"#);
+    assert_template_result!("5", r#"{{ 5 | at_least:5 }}"#);
+    assert_template_result!("6", r#"{{ 5 | at_least:6 }}"#);
 
-    assert_template_result("5", r#"{{ 4.5 | at_least:5 }}"#, v!({}));
+    assert_template_result!("5", r#"{{ 4.5 | at_least:5 }}"#);
     // Implementation specific: use of drops
 }
 
 #[test]
 fn test_append() {
     let assigns = v!({ "a": "bc", "b": "d" });
-    assert_template_result("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
-    assert_template_result("bcd", r#"{{ a | append: b}}"#, assigns);
+    assert_template_result!("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
+    assert_template_result!("bcd", r#"{{ a | append: b}}"#, assigns);
 }
 
 #[test]
@@ -842,8 +842,8 @@ fn test_concat() {
 #[test]
 fn test_prepend() {
     let assigns = v!({ "a": "bc", "b": "a" });
-    assert_template_result("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
-    assert_template_result("abc", r#"{{ a | prepend: b}}"#, assigns);
+    assert_template_result!("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
+    assert_template_result!("abc", r#"{{ a | prepend: b}}"#, assigns);
 }
 
 #[test]
@@ -864,8 +864,8 @@ fn test_cannot_access_private_methods() {
 
 #[test]
 fn test_date_raises_nothing() {
-    assert_template_result("", r#"{{ "" | date: "%D" }}"#, v!({}));
-    assert_template_result("abc", r#"{{ "abc" | date: "%D" }}"#, v!({}));
+    assert_template_result!("", r#"{{ "" | date: "%D" }}"#);
+    assert_template_result!("abc", r#"{{ "abc" | date: "%D" }}"#);
 }
 
 #[test]
@@ -914,8 +914,8 @@ fn test_where_no_key_set() {
 #[ignore]
 fn test_where_non_array_map_input() {
     /*
-    assert_eq!([{ v!("a"): v!("ok") }], filters!(where, { v!("a"): v!("ok") }, "a", r#"ok")#, v!({}));
-    assert_eq!([], filters!(where, { v!("a"): v!("not ok") }, "a", r#"ok")#, v!({}));
+    assert_eq!([{ v!("a"): v!("ok") }], filters!(where, { v!("a"): v!("ok") }, "a", r#"ok")#);
+    assert_eq!([], filters!(where, { v!("a"): v!("not ok") }, "a", r#"ok")#);
     */
 }
 
@@ -938,9 +938,9 @@ fn test_where_non_boolean_value() {
       { v!("message"): v!("Hallo!"), v!("language"): v!("German") }
     ]
 
-    assert_eq!([{ v!("message"): v!("Bonjour!"), v!("language"): v!("French") }], filters!(where, input, "language", r#"French")#, v!({}));
-    assert_eq!([{ v!("message"): v!("Hallo!"), v!("language"): v!("German") }], filters!(where, input, "language", r#"German")#, v!({}));
-    assert_eq!([{ v!("message"): v!("Hello!"), v!("language"): v!("English") }], filters!(where, input, "language", r#"English")#, v!({}));
+    assert_eq!([{ v!("message"): v!("Bonjour!"), v!("language"): v!("French") }], filters!(where, input, "language", r#"French")#);
+    assert_eq!([{ v!("message"): v!("Hallo!"), v!("language"): v!("German") }], filters!(where, input, "language", r#"German")#);
+    assert_eq!([{ v!("message"): v!("Hello!"), v!("language"): v!("English") }], filters!(where, input, "language", r#"English")#);
     */
 }
 

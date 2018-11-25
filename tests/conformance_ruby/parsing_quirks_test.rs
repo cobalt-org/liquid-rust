@@ -3,46 +3,46 @@ use test_helper::*;
 #[test]
 fn test_parsing_css() {
     let text = " div { font-weight: bold; } ";
-    assert_template_result(text, text, v!({}));
+    assert_template_result!(text, text);
 }
 
 #[test]
 #[ignore]
 fn test_raise_on_single_close_bracet() {
-    assert_parse_error("text {{method} oh nos!");
+    assert_parse_error!("text {{method} oh nos!");
 }
 
 #[test]
 #[ignore]
 fn test_raise_on_label_and_no_close_bracets() {
-    assert_parse_error("TEST {{ ");
+    assert_parse_error!("TEST {{ ");
 }
 
 #[test]
 #[ignore]
 fn test_raise_on_label_and_no_close_bracets_percent() {
-    assert_parse_error("TEST {% ");
+    assert_parse_error!("TEST {% ");
 }
 
 #[test]
 fn test_error_on_empty_filter() {
     // Implementation specific: lax parser
 
-    assert_parse_error("{{|test}}");
-    assert_parse_error("{{test |a|b|}}");
+    assert_parse_error!("{{|test}}");
+    assert_parse_error!("{{test |a|b|}}");
 }
 
 #[test]
 fn test_meaningless_parens_error() {
-    assert_parse_error(
+    assert_parse_error!(
         "{% if a == 'foo' or (b == 'bar' and c == 'baz') or false %} YES {% endif %}",
     );
 }
 
 #[test]
 fn test_unexpected_characters_syntax_error() {
-    assert_parse_error("{% if true && false %} YES {% endif %}");
-    assert_parse_error("{% if false || true %} YES {% endif %}");
+    assert_parse_error!("{% if true && false %} YES {% endif %}");
+    assert_parse_error!("{% if false || true %} YES {% endif %}");
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn test_unexpected_characters_silently_eat_logic_lax() {
 
 #[test]
 fn test_raise_on_invalid_tag_delimiter() {
-    assert_parse_error("{% end %}");
+    assert_parse_error!("{% end %}");
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn test_extra_dots_in_ranges() {
 
 #[test]
 fn test_contains_in_id() {
-    assert_template_result(
+    assert_template_result!(
         " YES ",
         "{% if containsallshipments == true %} YES {% endif %}",
         v!({"containsallshipments": true}),

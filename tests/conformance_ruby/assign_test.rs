@@ -19,13 +19,13 @@ fn test_assign_with_hyphen_in_variable_name() {
 
 #[test]
 fn test_assigned_variable() {
-    assert_template_result(
+    assert_template_result!(
         r#".foo."#,
         r#"{% assign foo = values %}.{{ foo[0] }}."#,
         v!({"values": ["foo", "bar", "baz"]}),
     );
 
-    assert_template_result(
+    assert_template_result!(
         r#".bar."#,
         r#"{% assign foo = values %}.{{ foo[1] }}."#,
         v!({"values": ["foo", "bar", "baz"]}),
@@ -34,7 +34,7 @@ fn test_assigned_variable() {
 
 #[test]
 fn test_assign_with_filter() {
-    assert_template_result(
+    assert_template_result!(
         r#".bar."#,
         r#"{% assign foo = values | split: "," %}.{{ foo[1] }}."#,
         v!({"values": "foo,bar,baz"}),
@@ -43,10 +43,10 @@ fn test_assign_with_filter() {
 
 #[test]
 fn test_assign_syntax_error() {
-    assert_parse_error(r#"{% assign foo not values %}."#);
+    assert_parse_error!(r#"{% assign foo not values %}."#);
 }
 
 #[test]
 fn test_assign_uses_error_mode() {
-    assert_parse_error(r#"{% assign foo = ('X' | downcase) %}"#);
+    assert_parse_error!(r#"{% assign foo = ('X' | downcase) %}"#);
 }

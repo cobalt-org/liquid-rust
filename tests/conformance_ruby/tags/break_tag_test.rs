@@ -8,5 +8,5 @@ fn test_break_with_no_block() {
     let markup = "{% break %}";
     let expected = "";
 
-    assert_template_result(expected, markup, assigns);
+    assert_template_result!(expected, markup, assigns);
 }

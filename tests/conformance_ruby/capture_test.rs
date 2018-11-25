@@ -5,10 +5,9 @@ use test_helper::*;
 #[test]
 #[ignore]
 fn test_captures_block_content_in_variable() {
-    assert_template_result(
+    assert_template_result!(
         r#"test string"#,
         r#"{% capture 'var' %}test string{% endcapture %}{{var}}"#,
-        v!({}),
     );
 }
 

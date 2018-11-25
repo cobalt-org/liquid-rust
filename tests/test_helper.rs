@@ -5,56 +5,91 @@ extern crate regex;
 pub use liquid::value::Value::Nil;
 
 #[allow(dead_code)]
-pub fn assert_template_result(
-    expected: &str,
-    template: &str,
-    assigns: liquid::value::Value,
-) -> String {
+pub fn render_template<S: AsRef<str>>(
+    template: S,
+    assigns: &liquid::value::Object,
+) -> Result<String, liquid::Error> {
     let template = liquid::ParserBuilder::with_liquid()
         .build()
-        .parse(template)
+        .parse(template.as_ref())
         .unwrap();
-    let rendered = template.render(assigns.as_object().unwrap()).unwrap();
-
-    assert_eq!(expected, rendered);
-    rendered
+    template.render(assigns)
 }
 
-#[allow(dead_code)]
-pub fn assert_template_matches(
-    expected: &str,
-    template: &str,
-    assigns: liquid::value::Value,
-) -> String {
-    let template = liquid::ParserBuilder::with_liquid()
-        .build()
-        .parse(template)
-        .unwrap();
-    let rendered = template.render(assigns.as_object().unwrap()).unwrap();
-
-    let expected = regex::Regex::new(expected).unwrap();
-    println!("rendered={}", rendered);
-    assert!(expected.is_match(&rendered));
-
-    rendered
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! assert_template_result {
+    ($expected:expr, $template:expr, ) => {
+        assert_template_result!($expected, $template);
+    };
+    ($expected:expr, $template:expr) => {
+        let assigns = ::liquid::value::Value::Object(Default::default());
+        assert_template_result!($expected, $template, assigns);
+    };
+    ($expected:expr, $template:expr, $assigns: expr, ) => {
+        assert_template_result!($expected, $template, $assigns);
+    };
+    ($expected:expr, $template:expr, $assigns: expr) => {
+        let rendered = render_template($template, $assigns.as_object().unwrap()).unwrap();
+        assert_eq!($expected, rendered);
+    };
 }
 
-#[allow(dead_code)]
-pub fn assert_parse_error(template: &str) -> liquid::Error {
-    liquid::ParserBuilder::with_liquid()
-        .build()
-        .parse(template)
-        .err()
-        .unwrap()
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! assert_template_matches {
+    ($expected:expr, $template:expr, ) => {
+        assert_template_matches!($expected, $template);
+    };
+    ($expected:expr, $template:expr) => {
+        let assigns = liquid::value::Value::default();
+        assert_template_matches!($expected, $template, assigns);
+    };
+    ($expected:expr, $template:expr, $assigns: expr, ) => {
+        assert_template_matches!($expected, $template, $assigns);
+    };
+    ($expected:expr, $template:expr, $assigns: expr) => {
+        let rendered = render_template($template, $assigns.as_object().unwrap()).unwrap();
+
+        let expected = $expected;
+        println!("pattern={}", expected);
+        let expected = regex::Regex::new(expected).unwrap();
+        println!("rendered={}", rendered);
+        assert!(expected.is_match(&rendered));
+    };
 }
 
-#[allow(dead_code)]
-pub fn assert_render_error(template: &str, assigns: liquid::value::Value) -> liquid::Error {
-    let template = liquid::ParserBuilder::with_liquid()
-        .build()
-        .parse(template)
-        .unwrap();
-    template.render(assigns.as_object().unwrap()).unwrap_err()
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! assert_parse_error {
+    ($template:expr, ) => {
+        assert_parse_error!($template);
+    };
+    ($template:expr) => {
+        ::liquid::ParserBuilder::with_liquid()
+            .build()
+            .parse($template)
+            .err()
+            .unwrap();
+    };
+}
+
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! assert_render_error {
+    ($template:expr, ) => {
+        assert_render_error!($template);
+    };
+    ($template:expr) => {
+        let assigns = ::liquid::value::Value::default();
+        assert_render_error!($template, assigns);
+    };
+    ($template:expr, $assigns: expr, ) => {
+        assert_render_error!($template, $assigns);
+    };
+    ($template:expr, $assigns: expr) => {
+        render_template($template, $assigns.as_object().unwrap()).unwrap_err();
+    };
 }
 
 #[allow(dead_code)]

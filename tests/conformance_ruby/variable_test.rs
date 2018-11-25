@@ -4,9 +4,9 @@ use test_helper::*;
 
 #[test]
 fn test_simple_variable() {
-    assert_template_result(r#"worked"#, r#"{{test}}"#, v!({"test": "worked"}));
+    assert_template_result!(r#"worked"#, r#"{{test}}"#, v!({"test": "worked"}));
 
-    assert_template_result(
+    assert_template_result!(
         r#"worked wonderfully"#,
         r#"{{test}}"#,
         v!({"test": "worked wonderfully"}),
@@ -21,9 +21,9 @@ fn test_variable_render_calls_to_liquid() {
 
 #[test]
 fn test_simple_with_whitespaces() {
-    assert_template_result(r#"  worked  "#, r#"  {{ test }}  "#, v!({"test": "worked"}));
+    assert_template_result!(r#"  worked  "#, r#"  {{ test }}  "#, v!({"test": "worked"}));
 
-    assert_template_result(
+    assert_template_result!(
         r#"  worked wonderfully  "#,
         r#"  {{ test }}  "#,
         v!({"test": "worked wonderfully"}),
@@ -33,25 +33,25 @@ fn test_simple_with_whitespaces() {
 #[test]
 #[should_panic]
 fn test_ignore_unknown() {
-    assert_template_result(r#""#, r#"{{ test }}"#, v!({}));
+    assert_template_result!(r#""#, r#"{{ test }}"#);
     panic!("Requires `strict_variables: false`");
 }
 
 #[test]
 #[ignore]
 fn test_using_blank_as_variable_name() {
-    assert_template_result(r#""#, r#"{% assign foo = blank %}{{ foo }}"#, v!({}));
+    assert_template_result!(r#""#, r#"{% assign foo = blank %}{{ foo }}"#);
 }
 
 #[test]
 #[ignore]
 fn test_using_empty_as_variable_name() {
-    assert_template_result(r#""#, r#"{% assign foo = empty %}{{ foo }}"#, v!({}));
+    assert_template_result!(r#""#, r#"{% assign foo = empty %}{{ foo }}"#);
 }
 
 #[test]
 fn test_hash_scoping() {
-    assert_template_result(
+    assert_template_result!(
         r#"worked"#,
         r#"{{ test.test }}"#,
         v!({"test": {"test": "worked"}}),
@@ -60,17 +60,17 @@ fn test_hash_scoping() {
 
 #[test]
 fn test_false_renders_as_false() {
-    assert_template_result(r#"false"#, r#"{{ foo }}"#, v!({"foo": false}));
+    assert_template_result!(r#"false"#, r#"{{ foo }}"#, v!({"foo": false}));
 
-    assert_template_result(r#"false"#, r#"{{ false }}"#, v!({}));
+    assert_template_result!(r#"false"#, r#"{{ false }}"#);
 }
 
 #[test]
 #[ignore]
 fn test_nil_renders_as_empty_string() {
-    assert_template_result(r#""#, r#"{{ nil }}"#, v!({}));
+    assert_template_result!(r#""#, r#"{{ nil }}"#);
 
-    assert_template_result(r#"cat"#, r#"{{ nil | append: 'cat' }}"#, v!({}));
+    assert_template_result!(r#"cat"#, r#"{{ nil | append: 'cat' }}"#);
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn test_hash_with_default_proc() {
 #[test]
 #[ignore]
 fn test_multiline_variable() {
-    assert_template_result(r#"worked"#, "{{\ntest\n}}", v!({"test": "worked"}));
+    assert_template_result!(r#"worked"#, "{{\ntest\n}}", v!({"test": "worked"}));
 }
 
 #[test]

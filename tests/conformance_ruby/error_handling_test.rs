@@ -1,7 +1,5 @@
 use regex;
 
-use test_helper::*;
-
 #[test]
 #[should_panic]
 fn test_templates_parsed_with_line_numbers_renders_them_in_errors() {
@@ -29,12 +27,12 @@ fn test_argument() {
 #[test]
 #[ignore]
 fn test_missing_endtag_parse_time_error() {
-    assert_parse_error(" {% for a in b %} ... ");
+    assert_parse_error!(" {% for a in b %} ... ");
 }
 
 #[test]
 fn test_unrecognized_operator() {
-    assert_parse_error(" {% if 1 =! 2 %}ok{% endif %} ");
+    assert_parse_error!(" {% if 1 =! 2 %}ok{% endif %} ");
 }
 
 #[test]
@@ -64,7 +62,7 @@ fn test_parsing_warn_with_line_numbers_adds_numbers_to_lexer_errors() {
 #[test]
 #[ignore]
 fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
-    let err = assert_parse_error(
+    let err = assert_parse_error!(
         r#"
           foobar
 
@@ -83,7 +81,7 @@ fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
 #[test]
 #[ignore]
 fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
-    let err = assert_parse_error(
+    let err = assert_parse_error!(
         r#"
           foobar
 

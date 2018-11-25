@@ -17,7 +17,7 @@ fn test_standard_output() {
         </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn test_variable_output_with_multiple_blank_lines() {
         <p>John</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn test_tag_output_with_multiple_blank_lines() {
         <p>yes</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 // Make sure the trim isn't applied to standard tags
@@ -86,7 +86,7 @@ fn test_standard_tags() {
 ......</div>
 ...."#
         .replace(".", " ");
-    assert_template_result(&expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -105,7 +105,7 @@ fn test_standard_tags() {
 ......</div>
 ...."#
         .replace(".", " ");
-    assert_template_result(&expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 // Make sure the trim isn't too aggressive
@@ -113,7 +113,7 @@ fn test_standard_tags() {
 fn test_no_trim_output() {
     let text = r#"<p>{{- 'John' -}}</p>"#;
     let expected = "<p>John</p>";
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 // Make sure the trim isn't too aggressive
@@ -121,55 +121,55 @@ fn test_no_trim_output() {
 fn test_no_trim_tags() {
     let text = r#"<p>{%- if true -%}yes{%- endif -%}</p>"#;
     let expected = r#"<p>yes</p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"<p>{%- if false -%}no{%- endif -%}</p>"#;
     let expected = r#"<p></p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
 fn test_single_line_outer_tag() {
     let text = r#"<p> {%- if true %} yes {% endif -%} </p>"#;
     let expected = r#"<p> yes </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"<p> {%- if false %} no {% endif -%} </p>"#;
     let expected = r#"<p></p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
 fn test_single_line_inner_tag() {
     let text = r#"<p> {% if true -%} yes {%- endif %} </p>"#;
     let expected = r#"<p> yes </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"<p> {% if false -%} no {%- endif %} </p>"#;
     let expected = r#"<p>  </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
 fn test_single_line_post_tag() {
     let text = r#"<p> {% if true -%} yes {% endif -%} </p>"#;
     let expected = r#"<p> yes </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"<p> {% if false -%} no {% endif -%} </p>"#;
     let expected = r#"<p> </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
 fn test_single_line_pre_tag() {
     let text = r#"<p> {%- if true %} yes {%- endif %} </p>"#;
     let expected = r#"<p> yes </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"<p> {%- if false %} no {%- endif %} </p>"#;
     let expected = r#"<p> </p>"#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn test_pre_trim_output() {
         </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -208,7 +208,7 @@ fn test_pre_trim_tags() {
         </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -225,7 +225,7 @@ fn test_pre_trim_tags() {
         </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -243,7 +243,7 @@ fn test_post_trim_output() {
           John</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn test_post_trim_tags() {
           </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -281,7 +281,7 @@ fn test_post_trim_tags() {
           </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -302,7 +302,7 @@ fn test_pre_and_post_trim_tags() {
           </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -318,7 +318,7 @@ fn test_pre_and_post_trim_tags() {
         <p></p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -339,7 +339,7 @@ fn test_post_and_pre_trim_tags() {
         </p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -358,7 +358,7 @@ fn test_post_and_pre_trim_tags() {
 ......</div>
 ...."#
         .replace(".", " ");
-    assert_template_result(&expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -375,7 +375,7 @@ fn test_trim_output() {
         <p>John</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -394,7 +394,7 @@ fn test_trim_tags() {
         <p>yes</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -410,7 +410,7 @@ fn test_trim_tags() {
         <p></p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -428,7 +428,7 @@ fn test_whitespace_trim_output() {
         <p>John,30</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -447,7 +447,7 @@ fn test_whitespace_trim_tags() {
         <p>yes</p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 
     let text = r#"
       <div>
@@ -463,7 +463,7 @@ fn test_whitespace_trim_tags() {
         <p></p>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -494,7 +494,7 @@ fn test_complex_trim_output() {
           30</i>
       </div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
@@ -513,12 +513,12 @@ fn test_complex_trim() {
     let expected = r#"
       <div><p>John</p></div>
     "#;
-    assert_template_result(expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
 
 #[test]
 fn test_right_trim_followed_by_tag() {
-    assert_template_result(r#"ab c"#, r#"{{ "a" -}}{{ "b" }} c"#, v!({}));
+    assert_template_result!(r#"ab c"#, r#"{{ "a" -}}{{ "b" }} c"#);
 }
 
 #[test]
@@ -546,5 +546,5 @@ fn test_raw_output() {
 ......</div>
 ...."#
         .replace(".", " ");
-    assert_template_result(&expected, text, v!({}));
+    assert_template_result!(expected, text);
 }
