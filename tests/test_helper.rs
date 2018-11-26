@@ -66,11 +66,13 @@ macro_rules! assert_parse_error {
         assert_parse_error!($template);
     };
     ($template:expr) => {
-        ::liquid::ParserBuilder::with_liquid()
-            .build()
-            .parse($template)
-            .err()
-            .unwrap();
+        {
+            let template = ::liquid::ParserBuilder::with_liquid()
+                .build()
+                .parse($template);
+            assert!(template.is_err());
+            template.err().unwrap()
+        }
     };
 }
 
