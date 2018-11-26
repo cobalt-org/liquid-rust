@@ -14,7 +14,7 @@ static ITERATE: &'static str = "<html>
     <h1>CSL {{year}}</h1>
     <ul>
     {% for team in teams %}
-      <li class=\"{% if forloop.index0 == 0 %}champion{{% endif %}\">
+      <li class=\"{% if forloop.index0 == 0 %}champion{% endif %}\">
       <b>{{team.name}}</b>: {{team.score}}
       </li>
     {% endfor %}
