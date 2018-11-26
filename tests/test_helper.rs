@@ -65,15 +65,13 @@ macro_rules! assert_parse_error {
     ($template:expr, ) => {
         assert_parse_error!($template);
     };
-    ($template:expr) => {
-        {
-            let template = ::liquid::ParserBuilder::with_liquid()
-                .build()
-                .parse($template);
-            assert!(template.is_err());
-            template.err().unwrap()
-        }
-    };
+    ($template:expr) => {{
+        let template = ::liquid::ParserBuilder::with_liquid()
+            .build()
+            .parse($template);
+        assert!(template.is_err());
+        template.err().unwrap()
+    }};
 }
 
 #[allow(unused_macros)]
