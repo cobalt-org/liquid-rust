@@ -1,2 +1,2 @@
-*.txt		lf
-*.rs		lf
+*.txt		text eol=lf
+*.rs		text eol=lf
