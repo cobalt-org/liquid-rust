@@ -1,5 +1,3 @@
-use test_helper::*;
-
 #[test]
 fn test_inc() {
     assert_template_result!("0", "{%increment port %}", v!({}));

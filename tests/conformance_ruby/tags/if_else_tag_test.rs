@@ -1,5 +1,3 @@
-use test_helper::*;
-
 #[test]
 fn test_if() {
     assert_template_result!(

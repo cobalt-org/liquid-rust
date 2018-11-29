@@ -1,7 +1,5 @@
 use liquid;
 
-use test_helper::*;
-
 #[test]
 #[should_panic]
 fn test_instance_assigns_persist_on_same_template_object_between_parses() {

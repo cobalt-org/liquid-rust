@@ -1,7 +1,5 @@
 use liquid;
 
-use test_helper::*;
-
 #[test]
 #[ignore]
 fn test_captures_block_content_in_variable() {

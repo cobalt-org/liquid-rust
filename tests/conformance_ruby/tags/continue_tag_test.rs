@@ -1,5 +1,3 @@
-use test_helper::*;
-
 // tests that no weird errors are raised if continue is called outside of a
 // block
 #[test]

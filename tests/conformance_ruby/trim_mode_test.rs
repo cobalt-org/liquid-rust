@@ -1,5 +1,3 @@
-use test_helper::*;
-
 // Make sure the trim isn't applied to standard output
 #[test]
 fn test_standard_output() {
