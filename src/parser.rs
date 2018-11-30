@@ -239,8 +239,7 @@ impl Parser {
     /// ```
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
-        let tokens = compiler::tokenize(text)?;
-        let template = compiler::parse(&tokens, &self.options).map(interpreter::Template::new)?;
+        let template = compiler::parse(text, &self.options).map(interpreter::Template::new)?;
         let filters = sync::Arc::clone(&self.filters);
         Ok(Template { template, filters })
     }

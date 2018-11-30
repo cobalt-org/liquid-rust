@@ -4,8 +4,7 @@ use liquid_error::Result;
 use liquid_error::ResultLiquidExt;
 
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{expect, parse_output, unexpected_token_error};
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::FilterChain;
 use interpreter::Renderable;
@@ -32,18 +31,27 @@ impl Renderable for Assign {
 
 pub fn assign_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     _options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
-    let dst = match args.next() {
-        Some(&Token::Identifier(ref id)) => id.clone(),
-        x => return Err(unexpected_token_error("identifier", x)),
-    };
+    let dst = arguments
+        .expect_next("Identifier expected.")?
+        .expect_identifier()
+        .into_result()?
+        .to_string();
 
-    expect(&mut args, &Token::Assignment)?;
+    arguments
+        .expect_next("Assignment operator \"=\" expected.")?
+        .expect_str("=")
+        .into_result_custom_msg("Assignment operator \"=\" expected.")?;
 
-    let src = parse_output(&arguments[2..])?;
+    let src = arguments
+        .expect_next("FilterChain expected.")?
+        .expect_filter_chain()
+        .into_result()?;
+
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
     Ok(Box::new(Assign { dst, src }))
 }
@@ -73,14 +81,13 @@ mod test {
 
     #[test]
     fn assign() {
-        let text = concat!("{% assign freestyle = false %}", "{{ freestyle }}");
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse("{% assign freestyle = false %}{{ freestyle }}", &options)
             .map(interpreter::Template::new)
             .unwrap();
 
         let mut context = Context::new();
+
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "false");
     }
@@ -88,9 +95,8 @@ mod test {
     #[test]
     fn assign_array_indexing() {
         let text = concat!("{% assign freestyle = tags[1] %}", "{{ freestyle }}");
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -114,9 +120,8 @@ mod test {
             r#"{% assign freestyle = tags["greek"] %}"#,
             "{{ freestyle }}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -145,9 +150,9 @@ mod test {
             "<p>Freestyle!</p>",
             "{% endif %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
+
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

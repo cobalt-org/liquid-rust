@@ -1,0 +1,67 @@
+WHITESPACE = _{" "}
+LINE_OR_SPACE = _{ NEWLINE | WHITESPACE }
+NON_WHITESPACE_CONTROL_HYPHEN = _{ !"-}}" ~ !"-%}" ~ "-" }
+LiquidFile = ${ SOI ~ Element* ~ EOI }
+
+// Element-level parsing
+Element = _{ Expression | Tag | Raw } 
+
+TagStart = _{ (LINE_OR_SPACE* ~ "{%-") | "{%" }
+TagEnd =   _{ ("-%}" ~ LINE_OR_SPACE*) | "%}" }
+TagInner = !{Identifier ~ TagToken*}
+ExpressionStart = _{ (LINE_OR_SPACE* ~ "{{-") | "{{" }
+ExpressionEnd =   _{ ("-}}" ~ LINE_OR_SPACE*) | "}}" }
+ExpressionInner = !{FilterChain}
+
+Tag = { TagStart ~ WHITESPACE* ~ TagInner ~ WHITESPACE* ~ TagEnd }
+Expression = { ExpressionStart ~ WHITESPACE* ~ ExpressionInner ~ WHITESPACE* ~ ExpressionEnd }
+// Not allowing Tag/Expression Start/End might become a problem 
+// for {% raw %}, {% comment %} and other blocks that don't parse
+// the elements inside with liquid: unclosed delimiters won't be accepted
+Raw = @{ (!(TagStart | ExpressionStart | TagEnd | ExpressionEnd) ~ ANY)+ }              
+
+
+// Inner parsing        
+Identifier = @{ (ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN) ~ (ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN)* }
+
+Variable = ${ Identifier 
+            ~ ( ("." ~ Identifier)
+              | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
+              )* 
+            }
+Value = { Literal | Variable }
+Filter = { Identifier ~ (":" ~ Value ~ ("," ~ Value)*)? } 
+FilterChain = { Value ~ ("|" ~ Filter)* }
+
+
+// Literals 
+StringLiteral = @{ ("'" ~ (!"'" ~ ANY)* ~ "'")
+		        		 | ("\"" ~ (!"\"" ~ ANY)* ~ "\"") }
+                 
+IntegerLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+FloatLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+
+BooleanLiteral = @{ "true" | "false" }
+
+Literal = { StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
+
+Range = { "(" ~ Value ~ ".." ~ Value ~ ")" }
+
+TagToken = _{ Range | FilterChain | DoubleCharSymbol | SingleCharSymbol } 
+
+// DoubleCharSymbol must be tried first, otherwise it could be parsed as two SingleCharSymbol instead
+SingleCharSymbol = _{ GreaterThan | LesserThan | Assign | Comma | Colon }
+DoubleCharSymbol = _{ Equals | NotEquals | LesserThanGreaterThan | GreaterThanEquals | LesserThanEquals }
+
+// Symbols - Names must be given for better error messages
+GreaterThan = { ">" }
+LesserThan = { "<" }
+Assign = { "=" }
+Comma = { "," }
+Colon = { ":" }
+
+Equals = { "==" }
+NotEquals = { "!=" }
+LesserThanGreaterThan = { "<>" }
+GreaterThanEquals = { ">=" }
+LesserThanEquals = { "<=" }

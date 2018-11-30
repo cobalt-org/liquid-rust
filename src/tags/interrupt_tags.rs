@@ -2,9 +2,8 @@ use std::io::Write;
 
 use liquid_error::Result;
 
-use compiler::unexpected_token_error;
 use compiler::LiquidOptions;
-use compiler::Token;
+use compiler::TagTokenIter;
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
 
@@ -20,13 +19,11 @@ impl Renderable for Break {
 
 pub fn break_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     _options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
-    if !arguments.is_empty() {
-        return Err(unexpected_token_error("`%}`", arguments.first()));
-    }
+    arguments.expect_nothing()?;
     Ok(Box::new(Break))
 }
 
@@ -42,13 +39,11 @@ impl Renderable for Continue {
 
 pub fn continue_tag(
     _tag_name: &str,
-    arguments: &[Token],
+    mut arguments: TagTokenIter,
     _options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
-    if !arguments.is_empty() {
-        return Err(unexpected_token_error("`%}`", arguments.first()));
-    }
+    arguments.expect_nothing()?;
     Ok(Box::new(Continue))
 }
 
@@ -85,8 +80,7 @@ mod test {
             "exit-{{i}}\n",
             "{% endfor %}"
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -111,8 +105,7 @@ mod test {
             "exit-{{outer}}\n",
             "{% endfor %}"
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -138,8 +131,7 @@ mod test {
             "exit-{{i}}\n",
             "{% endfor %}"
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -171,8 +163,7 @@ mod test {
             "exit-{{outer}}\n",
             "{% endfor %}"
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -188,5 +179,4 @@ mod test {
             )
         );
     }
-
 }

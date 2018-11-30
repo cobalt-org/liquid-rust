@@ -1,13 +1,13 @@
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
-use compiler::Element;
+use compiler::BlockElement;
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{consume_value_token, parse, split_block, unexpected_token_error, BlockSplit};
+use compiler::TagBlock;
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Expression;
 use interpreter::Renderable;
@@ -78,102 +78,85 @@ impl Renderable for Case {
     }
 }
 
-enum Conditional {
-    Cond(Vec<Expression>),
-    Else,
-}
+fn parse_condition(arguments: &mut TagTokenIter) -> Result<Vec<Expression>> {
+    let mut values = Vec::new();
 
-fn parse_condition(element: &Element) -> Result<Conditional> {
-    if let Element::Tag(ref tokens, _) = *element {
-        match tokens[0] {
-            Token::Identifier(ref name) if name == "else" => return Ok(Conditional::Else),
+    let first_value = arguments
+        .expect_next("Value expected")?
+        .expect_value()
+        .into_result()?;
+    values.push(first_value);
 
-            Token::Identifier(ref name) if name == "when" => {
-                let mut values: Vec<Expression> = Vec::new();
-                let mut args = tokens[1..].iter();
+    while let Some(token) = arguments.next() {
+        token
+            .expect_str("or")
+            .into_result_custom_msg("\"or\" expected.")?;
 
-                values.push(consume_value_token(&mut args)?.to_arg()?);
-
-                loop {
-                    match args.next() {
-                        Some(&Token::Or) => {}
-                        Some(x) => return Err(unexpected_token_error("`or`", Some(x))),
-                        None => break,
-                    }
-
-                    values.push(consume_value_token(&mut args)?.to_arg()?);
-                }
-
-                return Ok(Conditional::Cond(values));
-            }
-
-            ref x => return Err(unexpected_token_error("`else` | `when`", Some(x))),
-        }
-    } else {
-        Err(unexpected_token_error("`else` | `when`", Some(element)))
-    }
-}
-
-const SECTION_DELIMS: &[&str] = &["when", "else"];
-
-fn parse_sections<'e>(
-    case: &mut Case,
-    children: &'e [Element],
-    options: &LiquidOptions,
-) -> Result<Option<BlockSplit<'e>>> {
-    let (leading, trailing) = split_block(&children[1..], SECTION_DELIMS, options);
-
-    match parse_condition(&children[0])? {
-        Conditional::Cond(conds) => {
-            let template = Template::new(parse(leading, options).trace_with(|| {
-                format!("{{% when {} %}}", itertools::join(conds.iter(), " or "))
-            })?);
-            case.cases.push(CaseOption::new(conds, template));
-        }
-        Conditional::Else => {
-            if case.else_block.is_none() {
-                let template = Template::new(parse(leading, options).trace("{{% else %}}")?);
-                case.else_block = Some(template)
-            } else {
-                return Err(Error::with_msg("Only one else block allowed"));
-            }
-        }
+        let value = arguments
+            .expect_next("Value expected")?
+            .expect_value()
+            .into_result()?;
+        values.push(value);
     }
 
-    Ok(trailing)
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
+    Ok(values)
 }
 
 pub fn case_block(
     _tag_name: &str,
-    arguments: &[Token],
-    tokens: &[Element],
+    mut arguments: TagTokenIter,
+    mut tokens: TagBlock,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
-    let value = consume_value_token(&mut args)?.to_arg()?;
+    let target = arguments
+        .expect_next("Value expected.")?
+        .expect_value()
+        .into_result()?;
 
-    // fast forward to the first arm of the case block,
-    let mut children = match split_block(&tokens[..], SECTION_DELIMS, options) {
-        (_, Some(split)) => split.trailing,
-        _ => return Err(Error::with_msg("Expected case | else")),
-    };
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
-    let mut result = Case {
-        target: value,
-        cases: Vec::new(),
-        else_block: None,
-    };
+    let mut cases = Vec::new();
+    let mut else_block = None;
+    let mut current_block = Vec::new();
+    let mut current_condition = None;
 
-    loop {
-        let trailing = parse_sections(&mut result, children, options)
-            .trace_with(|| format!("{{% case {} %}}", result.target))?;
-        match trailing {
-            Some(split) => children = split.trailing,
-            None => break,
+    while let Some(element) = tokens.next()? {
+        match element {
+            BlockElement::Tag(mut tag) => match tag.name() {
+                "when" => {
+                    if let Some(condition) = current_condition {
+                        cases.push(CaseOption::new(condition, Template::new(current_block)));
+                    }
+                    current_block = Vec::new();
+                    current_condition = Some(parse_condition(tag.tokens())?);
+                }
+                "else" => {
+                    // no more arguments should be supplied, trying to supply them is an error
+                    tag.tokens().expect_nothing()?;
+                    else_block = Some(tokens.parse_all(options)?);
+                    break;
+                }
+                _ => current_block.push(tag.parse(&mut tokens, options)?),
+            },
+            element => current_block.push(element.parse(&mut tokens, options)?),
         }
     }
 
-    Ok(Box::new(result))
+    if let Some(condition) = current_condition {
+        cases.push(CaseOption::new(condition, Template::new(current_block)));
+    }
+
+    let else_block = else_block.map(Template::new);
+
+    tokens.assert_empty();
+    Ok(Box::new(Case {
+        target,
+        cases,
+        else_block,
+    }))
 }
 
 #[cfg(test)]
@@ -202,9 +185,8 @@ mod test {
             "otherwise",
             "{% endcase %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -232,9 +214,8 @@ mod test {
             "three and a half",
             "{% endcase %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -255,9 +236,8 @@ mod test {
             "else # 2",
             "{% endcase %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
+        let template = compiler::parse(text, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

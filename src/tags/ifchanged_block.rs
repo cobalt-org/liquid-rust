@@ -2,10 +2,9 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 
-use compiler::parse;
-use compiler::Element;
 use compiler::LiquidOptions;
-use compiler::Token;
+use compiler::TagBlock;
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -39,11 +38,16 @@ impl Renderable for IfChanged {
 
 pub fn ifchanged_block(
     _tag_name: &str,
-    _arguments: &[Token],
-    tokens: &[Element],
+    mut arguments: TagTokenIter,
+    mut tokens: TagBlock,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let if_changed = Template::new(parse(&tokens[..], options)?);
+    // no arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
+
+    let if_changed = Template::new(tokens.parse_all(options)?);
+
+    tokens.assert_empty();
     Ok(Box::new(IfChanged { if_changed }))
 }
 
@@ -81,8 +85,7 @@ mod test {
             "{% endifchanged %}",
             "{% endfor %}",
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

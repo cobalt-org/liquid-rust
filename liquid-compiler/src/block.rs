@@ -1,9 +1,9 @@
 use liquid_interpreter::Renderable;
 
 use super::error::Result;
-use super::Element;
 use super::LiquidOptions;
-use super::Token;
+use super::TagBlock;
+use super::TagTokenIter;
 
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
@@ -17,8 +17,8 @@ pub trait ParseBlock: Send + Sync + ParseBlockClone {
     fn parse(
         &self,
         tag_name: &str,
-        arguments: &[Token],
-        tokens: &[Element],
+        arguments: TagTokenIter,
+        block: TagBlock,
         options: &LiquidOptions,
     ) -> Result<Box<Renderable>>;
 }
@@ -42,7 +42,7 @@ impl Clone for Box<ParseBlock> {
     }
 }
 
-pub type FnParseBlock = fn(&str, &[Token], &[Element], &LiquidOptions) -> Result<Box<Renderable>>;
+pub type FnParseBlock = fn(&str, TagTokenIter, TagBlock, &LiquidOptions) -> Result<Box<Renderable>>;
 
 #[derive(Clone)]
 struct FnBlockParser {
@@ -59,8 +59,8 @@ impl ParseBlock for FnBlockParser {
     fn parse(
         &self,
         tag_name: &str,
-        arguments: &[Token],
-        tokens: &[Element],
+        arguments: TagTokenIter,
+        tokens: TagBlock,
         options: &LiquidOptions,
     ) -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, tokens, options)
@@ -82,8 +82,8 @@ impl ParseBlock for BoxedBlockParser {
     fn parse(
         &self,
         tag_name: &str,
-        arguments: &[Token],
-        tokens: &[Element],
+        arguments: TagTokenIter,
+        tokens: TagBlock,
         options: &LiquidOptions,
     ) -> Result<Box<Renderable>> {
         match self.parser {

@@ -3,10 +3,9 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
-use compiler::Element;
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{parse, unexpected_token_error};
+use compiler::TagBlock;
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
@@ -40,25 +39,27 @@ impl Renderable for Capture {
 
 pub fn capture_block(
     _tag_name: &str,
-    arguments: &[Token],
-    tokens: &[Element],
+    mut arguments: TagTokenIter,
+    mut tokens: TagBlock,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
-    let mut args = arguments.iter();
-    let id = match args.next() {
-        Some(&Token::Identifier(ref x)) => x.clone(),
-        x @ Some(_) | x @ None => return Err(unexpected_token_error("identifier", x)),
-    };
+    let id = arguments
+        .expect_next("Identifier expected")?
+        .expect_identifier()
+        .into_result()?
+        .to_string();
 
-    // there should be no trailing tokens after this
-    if let t @ Some(_) = args.next() {
-        return Err(unexpected_token_error("`%}`", t));
-    };
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
 
-    let t =
-        Template::new(parse(tokens, options).trace_with(|| format!("{{% capture {} %}}", &id))?);
+    let template = Template::new(
+        tokens
+            .parse_all(options)
+            .trace_with(|| format!("{{% capture {} %}}", &id))?,
+    );
 
-    Ok(Box::new(Capture { id, template: t }))
+    tokens.assert_empty();
+    Ok(Box::new(Capture { id, template }))
 }
 
 #[cfg(test)]
@@ -83,9 +84,8 @@ mod test {
             "{{ item }}-{{ i }}-color",
             "{% endcapture %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options)
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -108,9 +108,8 @@ mod test {
             "We should never see this",
             "{% endcapture %}"
         );
-        let tokens = compiler::tokenize(text).unwrap();
         let options = options();
-        let template = compiler::parse(&tokens, &options).map(interpreter::Template::new);
+        let template = compiler::parse(text, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

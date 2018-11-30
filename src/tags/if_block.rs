@@ -4,15 +4,56 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
-use compiler::ComparisonOperator;
-use compiler::Element;
+use compiler::BlockElement;
 use compiler::LiquidOptions;
-use compiler::Token;
-use compiler::{consume_value_token, parse, split_block, unexpected_token_error};
+use compiler::TagBlock;
+use compiler::TagToken;
+use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
 use interpreter::Template;
 use interpreter::{unexpected_value_error, Expression};
+
+#[derive(Clone, Debug)]
+enum ComparisonOperator {
+    Equals,
+    NotEquals,
+    LessThan,
+    GreaterThan,
+    LessThanEquals,
+    GreaterThanEquals,
+    Contains,
+}
+
+impl fmt::Display for ComparisonOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let out = match *self {
+            ComparisonOperator::Equals => "==",
+            ComparisonOperator::NotEquals => "!=",
+            ComparisonOperator::LessThanEquals => "<=",
+            ComparisonOperator::GreaterThanEquals => ">=",
+            ComparisonOperator::LessThan => "<",
+            ComparisonOperator::GreaterThan => ">",
+            ComparisonOperator::Contains => "contains",
+        };
+        write!(f, "{}", out)
+    }
+}
+
+impl ComparisonOperator {
+    fn from_str(s: &str) -> ::std::result::Result<Self, ()> {
+        match s {
+            "==" => Ok(ComparisonOperator::Equals),
+            "!=" | "<>" => Ok(ComparisonOperator::NotEquals),
+            "<" => Ok(ComparisonOperator::LessThan),
+            ">" => Ok(ComparisonOperator::GreaterThan),
+            "<=" => Ok(ComparisonOperator::LessThanEquals),
+            ">=" => Ok(ComparisonOperator::GreaterThanEquals),
+            "contains" => Ok(ComparisonOperator::Contains),
+            _ => Err(()),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 struct BinaryCondition {
@@ -163,73 +204,109 @@ impl Renderable for Conditional {
     }
 }
 
+struct PeekableTagTokenIter<'a> {
+    iter: TagTokenIter<'a>,
+    peeked: Option<Option<TagToken<'a>>>,
+}
+
+impl<'a> Iterator for PeekableTagTokenIter<'a> {
+    type Item = TagToken<'a>;
+
+    fn next(&mut self) -> Option<TagToken<'a>> {
+        match self.peeked.take() {
+            Some(v) => v,
+            None => self.iter.next(),
+        }
+    }
+}
+
+impl<'a> PeekableTagTokenIter<'a> {
+    pub fn expect_next(&mut self, error_msg: &str) -> Result<TagToken<'a>> {
+        self.next().ok_or_else(|| self.iter.raise_error(error_msg))
+    }
+
+    fn peek(&mut self) -> Option<&TagToken<'a>> {
+        if self.peeked.is_none() {
+            self.peeked = Some(self.iter.next());
+        }
+        match self.peeked {
+            Some(Some(ref value)) => Some(value),
+            Some(None) => None,
+            None => unreachable!(),
+        }
+    }
+}
+
+fn parse_atom_condition(arguments: &mut PeekableTagTokenIter) -> Result<Condition> {
+    let lh = arguments
+        .expect_next("Value expected.")?
+        .expect_value()
+        .into_result()?;
+    let cond = match arguments
+        .peek()
+        .map(TagToken::as_str)
+        .and_then(|op| ComparisonOperator::from_str(op).ok())
+    {
+        Some(op) => {
+            arguments.next();
+            let rh = arguments
+                .expect_next("Value expected.")?
+                .expect_value()
+                .into_result()?;
+            Condition::Binary(BinaryCondition {
+                lh,
+                comparison: op,
+                rh,
+            })
+        }
+        None => Condition::Existence(ExistenceCondition { lh }),
+    };
+
+    Ok(cond)
+}
+
+fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter) -> Result<Condition> {
+    let mut lh = parse_atom_condition(arguments)?;
+
+    while let Some("and") = arguments.peek().map(TagToken::as_str) {
+        arguments.next();
+        let rh = parse_atom_condition(arguments)?;
+        lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
+    }
+
+    Ok(lh)
+}
+
 /// Common parsing for "if" and "unless" condition
-fn parse_condition(arguments: &[Token]) -> Result<Condition> {
-    // Iterator over conditions linked with `or`
-    let mut or_iter = arguments
-        .split(|t| if let Token::Or = t { true } else { false })
-        .map(|args| {
-            // Iterator over conditions linked with `and`
-            let mut and_iter = args
-                .split(|t| if let Token::And = t { true } else { false })
-                .map(|args| {
-                    // Iterator over tokens that form a condition
-                    let mut args = args.iter();
+fn parse_condition(arguments: TagTokenIter) -> Result<Condition> {
+    let mut arguments = PeekableTagTokenIter {
+        iter: arguments,
+        peeked: None,
+    };
+    let mut lh = parse_conjunction_chain(&mut arguments)?;
 
-                    let lh = consume_value_token(&mut args)?.to_arg()?;
+    while let Some(token) = arguments.next() {
+        token
+            .expect_str("or")
+            .into_result_custom_msg("\"and\" or \"or\" expected.")?;
 
-                    let cond = match args.next() {
-                        Some(&Token::Comparison(x)) => {
-                            let rh = consume_value_token(&mut args)?.to_arg()?;
-                            Condition::Binary(BinaryCondition {
-                                lh,
-                                comparison: x,
-                                rh,
-                            })
-                        }
-                        None => Condition::Existence(ExistenceCondition { lh }),
-                        x @ Some(_) => return Err(unexpected_token_error("comparison operator", x)),
-                    };
-
-                    // There shouldn't exist any more tokens before next `and` or `or`
-                    match args.next() {
-                        None => Ok(cond),
-                        x @ Some(_) => Err(unexpected_token_error("logic operator", x)),
-                    }
-                });
-            let mut lh = and_iter
-                .next()
-                .expect("There will be always at least one condition.")?;
-            for rh in and_iter {
-                let rh = match rh {
-                    Ok(rh) => rh,
-                    err @ Err(_) => return err,
-                };
-                lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
-            }
-            Ok(lh)
-        });
-    let mut lh = or_iter
-        .next()
-        .expect("There will be always at least one condition.")?;
-    for rh in or_iter {
-        let rh = match rh {
-            Ok(rh) => rh,
-            err @ Err(_) => return err,
-        };
+        let rh = parse_conjunction_chain(&mut arguments)?;
         lh = Condition::Disjunction(Box::new(lh), Box::new(rh));
     }
+
     Ok(lh)
 }
 
 pub fn unless_block(
     _tag_name: &str,
-    arguments: &[Token],
-    tokens: &[Element],
+    arguments: TagTokenIter,
+    mut tokens: TagBlock,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
-    let if_true = Template::new(parse(&tokens[..], options)?);
+    let if_true = Template::new(tokens.parse_all(options)?);
+
+    tokens.assert_empty();
     Ok(Box::new(Conditional {
         tag_name: "unless",
         condition,
@@ -239,46 +316,56 @@ pub fn unless_block(
     }))
 }
 
-pub fn if_block(
-    _tag_name: &str,
-    arguments: &[Token],
-    tokens: &[Element],
+fn parse_if(
+    tag_name: &'static str,
+    arguments: TagTokenIter,
+    tokens: &mut TagBlock,
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
 
-    let (leading_tokens, trailing_tokens) = split_block(&tokens[..], &["else", "elsif"], options);
+    let mut if_true = Vec::new();
+    let mut if_false = None;
 
-    let if_true =
-        parse(leading_tokens, options).trace_with(|| format!("{{% if {} %}}", condition))?;
-    let if_true = Template::new(if_true);
-
-    let if_false = match trailing_tokens {
-        None => Ok(None),
-
-        Some(ref split) if split.delimiter == "else" => parse(&split.trailing[1..], options)
-            .map(Some)
-            .trace("{{% else %}}"),
-
-        Some(ref split) if split.delimiter == "elsif" => {
-            let child_tokens: Vec<Element> = split.trailing.iter().skip(1).cloned().collect();
-            if_block("elseif", &split.args[1..], &child_tokens, options)
-                .map(|block| Some(vec![block]))
+    while let Some(element) = tokens.next()? {
+        match element {
+            BlockElement::Tag(mut tag) => match tag.name() {
+                "else" => {
+                    if_false = Some(tokens.parse_all(options)?);
+                    break;
+                }
+                "elsif" => {
+                    if_false = Some(vec![parse_if("elsif", tag.into_tokens(), tokens, options)?]);
+                    break;
+                }
+                _ => if_true.push(tag.parse(tokens, options)?),
+            },
+            element => if_true.push(element.parse(tokens, options)?),
         }
+    }
 
-        Some(split) => panic!("Unexpected delimiter: {:?}", split.delimiter),
-    };
-    let if_false = if_false
-        .trace_with(|| format!("{{% if {} %}}", condition))?
-        .map(Template::new);
+    let if_true = Template::new(if_true);
+    let if_false = if_false.map(Template::new);
 
     Ok(Box::new(Conditional {
-        tag_name: "if",
+        tag_name,
         condition,
         mode: true,
         if_true,
         if_false,
     }))
+}
+
+pub fn if_block(
+    _tag_name: &str,
+    arguments: TagTokenIter,
+    mut tokens: TagBlock,
+    options: &LiquidOptions,
+) -> Result<Box<Renderable>> {
+    let conditional = parse_if("if", arguments, &mut tokens, options)?;
+
+    tokens.assert_empty();
+    Ok(conditional)
 }
 
 #[cfg(test)]
@@ -303,8 +390,7 @@ mod test {
     #[test]
     fn number_comparison() {
         let text = "{% if 6 < 7  %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -313,8 +399,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -326,8 +411,7 @@ mod test {
     #[test]
     fn string_comparison() {
         let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -336,8 +420,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -356,8 +439,7 @@ mod test {
             "{% endif %}"
         );
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -397,8 +479,7 @@ mod test {
             "{% endunless %}"
         );
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -408,11 +489,6 @@ mod test {
             .set_global("some_value", Value::scalar(1f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "");
-
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
 
         let mut context = Context::new();
         context
@@ -436,8 +512,7 @@ mod test {
             "nope",
             "{% endif %}"
         );
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -466,8 +541,7 @@ mod test {
             "{% endif %}"
         );
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -476,30 +550,15 @@ mod test {
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "first");
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
         let mut context = Context::new();
         context.stack_mut().set_global("a", Value::scalar(2f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "second");
 
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
-
         let mut context = Context::new();
         context.stack_mut().set_global("a", Value::scalar(3f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "third");
-
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
-            .map(interpreter::Template::new)
-            .unwrap();
 
         let mut context = Context::new();
         context.stack_mut().set_global("a", Value::scalar("else"));
@@ -510,8 +569,7 @@ mod test {
     #[test]
     fn string_contains_with_literals() {
         let text = "{% if \"Star Wars\" contains \"Star\" %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -520,8 +578,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -533,8 +590,7 @@ mod test {
     #[test]
     fn string_contains_with_variables() {
         let text = "{% if movie contains \"Star\"  %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -546,8 +602,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -562,8 +617,7 @@ mod test {
     #[test]
     fn contains_with_object_and_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -578,8 +632,7 @@ mod test {
     #[test]
     fn contains_with_object_and_missing_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -593,8 +646,7 @@ mod test {
     #[test]
     fn contains_with_array_and_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -612,8 +664,7 @@ mod test {
     #[test]
     fn contains_with_array_and_no_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -627,8 +678,7 @@ mod test {
     #[test]
     fn multiple_conditions_and() {
         let text = "{% if 1 == 1 and 2 == 2 %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -637,8 +687,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 1 == 1 and 2 != 2 %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -650,8 +699,7 @@ mod test {
     #[test]
     fn multiple_conditions_or() {
         let text = "{% if 1 == 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -660,8 +708,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 1 != 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -673,8 +720,7 @@ mod test {
     #[test]
     fn multiple_conditions_and_or() {
         let text = "{% if 1 == 1 or 2 == 2 and 3 != 3 %}if true{% else %}if false{% endif %}";
-        let tokens = compiler::tokenize(&text).unwrap();
-        let template = compiler::parse(&tokens, &options())
+        let template = compiler::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
