@@ -2,8 +2,10 @@ use liquid;
 
 #[test]
 fn test_no_transform() {
-    assert_template_result!("this text should come out of the template without change...",
-      "this text should come out of the template without change...");
+    assert_template_result!(
+        "this text should come out of the template without change...",
+        "this text should come out of the template without change..."
+    );
 
     assert_template_result!("blah", "blah");
     assert_template_result!("<blah>", "<blah>");
@@ -18,8 +20,10 @@ fn test_no_transform() {
 #[test]
 #[ignore]
 fn test_has_a_block_which_does_nothing() {
-    assert_template_result!("the comment block should be removed  .. right?",
-      "the comment block should be removed {%comment%} be gone.. {%endcomment%} .. right?");
+    assert_template_result!(
+        "the comment block should be removed  .. right?",
+        "the comment block should be removed {%comment%} be gone.. {%endcomment%} .. right?"
+    );
 
     assert_template_result!("", "{%comment%}{%endcomment%}");
     assert_template_result!("", "{%comment%}{% endcomment %}");
@@ -27,7 +31,10 @@ fn test_has_a_block_which_does_nothing() {
     assert_template_result!("", "{% comment %}{% endcomment %}");
     assert_template_result!("", "{%comment%}comment{%endcomment%}");
     assert_template_result!("", "{% comment %}comment{% endcomment %}");
-    assert_template_result!("", "{% comment %} 1 {% comment %} 2 {% endcomment %} 3 {% endcomment %}");
+    assert_template_result!(
+        "",
+        "{% comment %} 1 {% comment %} 2 {% endcomment %} 3 {% endcomment %}"
+    );
 
     assert_template_result!("", "{%comment%}{%blabla%}{%endcomment%}");
     assert_template_result!("", "{% comment %}{% blabla %}{% endcomment %}");
@@ -44,137 +51,209 @@ fn test_has_a_block_which_does_nothing() {
     assert_template_result!("foo  bar", "foo {%comment%}comment{%endcomment%} bar");
     assert_template_result!("foo  bar", "foo {%comment%} comment {%endcomment%} bar");
 
-    assert_template_result!("foobar", r#"foo{%comment%}
-                                     {%endcomment%}bar"#);
+    assert_template_result!(
+        "foobar",
+        r#"foo{%comment%}
+                                     {%endcomment%}bar"#
+    );
 }
 
 #[test]
 fn test_hyphenated_assign() {
     let assigns = v!({ "a-b": "1" });
-    assert_template_result!("a-b:1 a-b:2", "a-b:{{a-b}} {%assign a-b = 2 %}a-b:{{a-b}}", assigns);
+    assert_template_result!(
+        "a-b:1 a-b:2",
+        "a-b:{{a-b}} {%assign a-b = 2 %}a-b:{{a-b}}",
+        assigns
+    );
 }
 
 #[test]
 fn test_assign_with_colon_and_spaces() {
     let assigns = v!({ "var": { "a:b c": { "paged": "1" } } });
-    assert_template_result!("var2: 1", r#"{%assign var2 = var["a:b c"].paged %}var2: {{var2}}"#, assigns);
+    assert_template_result!(
+        "var2: 1",
+        r#"{%assign var2 = var["a:b c"].paged %}var2: {{var2}}"#,
+        assigns
+    );
 }
 
 #[test]
 fn test_capture() {
     // Implementation specific: strict_variables is enabled, testing that instead.
     let assigns = v!({ "var": "content" });
-    assert_template_result!("content foo content foo ",
-      "{% capture var2 %}{{ var }} foo {% endcapture %}{{ var2 }}{{ var2 }}",
-      assigns);
+    assert_template_result!(
+        "content foo content foo ",
+        "{% capture var2 %}{{ var }} foo {% endcapture %}{{ var2 }}{{ var2 }}",
+        assigns
+    );
 }
 
 #[test]
 fn test_capture_detects_bad_syntax() {
     // Implementation specific: strict_variables is enabled, testing that instead.
-      assert_parse_error!(
-        "{% capture %}{{ var }} foo {% endcapture %}{{ var2 }}{{ var2 }}");
+    assert_parse_error!("{% capture %}{{ var }} foo {% endcapture %}{{ var2 }}{{ var2 }}");
 }
 
 #[test]
 fn test_case() {
     let assigns = v!({ "condition": 2 });
-    assert_template_result!(" its 2 ",
-      "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
-      assigns);
+    assert_template_result!(
+        " its 2 ",
+        "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
+        assigns
+    );
 
     let assigns = v!({ "condition": 1 });
-    assert_template_result!(" its 1 ",
-      "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
-      assigns);
+    assert_template_result!(
+        " its 1 ",
+        "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
+        assigns
+    );
 
     let assigns = v!({ "condition": 3 });
-    assert_template_result!("",
-      "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
-      assigns);
+    assert_template_result!(
+        "",
+        "{% case condition %}{% when 1 %} its 1 {% when 2 %} its 2 {% endcase %}",
+        assigns
+    );
 
     let assigns = v!({ "condition": "string here" });
-    assert_template_result!(" hit ",
-      r#"{% case condition %}{% when "string here" %} hit {% endcase %}"#,
-      assigns);
+    assert_template_result!(
+        " hit ",
+        r#"{% case condition %}{% when "string here" %} hit {% endcase %}"#,
+        assigns
+    );
 
     let assigns = v!({ "condition": "bad string here" });
-    assert_template_result!("",
-      r#"{% case condition %}{% when "string here" %} hit {% endcase %}"#,
-      assigns);
+    assert_template_result!(
+        "",
+        r#"{% case condition %}{% when "string here" %} hit {% endcase %}"#,
+        assigns
+    );
 }
 
 #[test]
 fn test_case_with_else() {
     let assigns = v!({ "condition": 5 });
-    assert_template_result!(" hit ",
-      "{% case condition %}{% when 5 %} hit {% else %} else {% endcase %}",
-      assigns);
+    assert_template_result!(
+        " hit ",
+        "{% case condition %}{% when 5 %} hit {% else %} else {% endcase %}",
+        assigns
+    );
 
     let assigns = v!({ "condition": 6 });
-    assert_template_result!(" else ",
-      "{% case condition %}{% when 5 %} hit {% else %} else {% endcase %}",
-      assigns);
+    assert_template_result!(
+        " else ",
+        "{% case condition %}{% when 5 %} hit {% else %} else {% endcase %}",
+        assigns
+    );
 
     let assigns = v!({ "condition": 6 });
-    assert_template_result!(" else ",
-      "{% case condition %} {% when 5 %} hit {% else %} else {% endcase %}",
-      assigns);
+    assert_template_result!(
+        " else ",
+        "{% case condition %} {% when 5 %} hit {% else %} else {% endcase %}",
+        assigns
+    );
 }
 
 #[test]
 #[ignore]
 fn test_case_on_size() {
-    assert_template_result!("",  "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": []}));
-    assert_template_result!("1", "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": [1]}));
-    assert_template_result!("2", "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": [1, 1]}));
-    assert_template_result!("",  "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": [1, 1, 1]}));
-    assert_template_result!("",  "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": [1, 1, 1, 1]}));
-    assert_template_result!("",  "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}", v!({"a": [1, 1, 1, 1, 1]}));
+    assert_template_result!(
+        "",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": []})
+    );
+    assert_template_result!(
+        "1",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": [1]})
+    );
+    assert_template_result!(
+        "2",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": [1, 1]})
+    );
+    assert_template_result!(
+        "",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": [1, 1, 1]})
+    );
+    assert_template_result!(
+        "",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": [1, 1, 1, 1]})
+    );
+    assert_template_result!(
+        "",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% endcase %}",
+        v!({"a": [1, 1, 1, 1, 1]})
+    );
 }
 
 #[test]
 #[ignore]
 fn test_case_on_size_with_else() {
-    assert_template_result!("else",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": []}));
+    assert_template_result!(
+        "else",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": []})
+    );
 
-    assert_template_result!("1",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": [1]}));
+    assert_template_result!(
+        "1",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": [1]})
+    );
 
-    assert_template_result!("2",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": [1, 1]}));
+    assert_template_result!(
+        "2",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": [1, 1]})
+    );
 
-    assert_template_result!("else",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": [1, 1, 1]}));
+    assert_template_result!(
+        "else",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": [1, 1, 1]})
+    );
 
-    assert_template_result!("else",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": [1, 1, 1, 1]}));
+    assert_template_result!(
+        "else",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": [1, 1, 1, 1]})
+    );
 
-    assert_template_result!("else",
-      "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
-      v!({"a": [1, 1, 1, 1, 1]}));
+    assert_template_result!(
+        "else",
+        "{% case a.size %}{% when 1 %}1{% when 2 %}2{% else %}else{% endcase %}",
+        v!({"a": [1, 1, 1, 1, 1]})
+    );
 }
 
 #[test]
 #[ignore]
 fn test_case_on_length_with_else() {
-    assert_template_result!("else",
-      "{% case a.empty? %}{% when true %}true{% when false %}false{% else %}else{% endcase %}");
+    assert_template_result!(
+        "else",
+        "{% case a.empty? %}{% when true %}true{% when false %}false{% else %}else{% endcase %}"
+    );
 
-    assert_template_result!("false",
-      "{% case false %}{% when true %}true{% when false %}false{% else %}else{% endcase %}");
+    assert_template_result!(
+        "false",
+        "{% case false %}{% when true %}true{% when false %}false{% else %}else{% endcase %}"
+    );
 
-    assert_template_result!("true",
-      "{% case true %}{% when true %}true{% when false %}false{% else %}else{% endcase %}");
+    assert_template_result!(
+        "true",
+        "{% case true %}{% when true %}true{% when false %}false{% else %}else{% endcase %}"
+    );
 
-    assert_template_result!("else",
-      "{% case NULL %}{% when true %}true{% when false %}false{% else %}else{% endcase %}");
+    assert_template_result!(
+        "else",
+        "{% case NULL %}{% when true %}true{% when false %}false{% else %}else{% endcase %}"
+    );
 }
 
 #[test]
@@ -186,11 +265,42 @@ fn test_assign_from_case() {
         .parse(code)
         .unwrap();
 
-    assert_eq!("menswear",   template.render(v!({"collection": { "handle": "menswear-jackets" }}).as_object().unwrap()).unwrap());
-    assert_eq!("menswear",   template.render(v!({"collection": { "handle": "menswear-t-shirts" }}).as_object().unwrap()).unwrap());
-    assert_eq!("womenswear", template.render(v!({"collection": { "handle": "x" }}).as_object().unwrap()).unwrap());
-    assert_eq!("womenswear", template.render(v!({"collection": { "handle": "y" }}).as_object().unwrap()).unwrap());
-    assert_eq!("womenswear", template.render(v!({"collection": { "handle": "z" }}).as_object().unwrap()).unwrap());
+    assert_eq!(
+        "menswear",
+        template
+            .render(
+                v!({"collection": { "handle": "menswear-jackets" }})
+                    .as_object()
+                    .unwrap()
+            ).unwrap()
+    );
+    assert_eq!(
+        "menswear",
+        template
+            .render(
+                v!({"collection": { "handle": "menswear-t-shirts" }})
+                    .as_object()
+                    .unwrap()
+            ).unwrap()
+    );
+    assert_eq!(
+        "womenswear",
+        template
+            .render(v!({"collection": { "handle": "x" }}).as_object().unwrap())
+            .unwrap()
+    );
+    assert_eq!(
+        "womenswear",
+        template
+            .render(v!({"collection": { "handle": "y" }}).as_object().unwrap())
+            .unwrap()
+    );
+    assert_eq!(
+        "womenswear",
+        template
+            .render(v!({"collection": { "handle": "z" }}).as_object().unwrap())
+            .unwrap()
+    );
 }
 
 #[test]
@@ -213,7 +323,8 @@ fn test_case_when_or() {
 #[test]
 #[ignore]
 fn test_case_when_comma() {
-    let code = "{% case condition %}{% when 1, 2, 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
+    let code =
+        "{% case condition %}{% when 1, 2, 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
     assert_template_result!(" its 1 or 2 or 3 ", code, v!({ "condition": 1 }));
     assert_template_result!(" its 1 or 2 or 3 ", code, v!({ "condition": 2 }));
     assert_template_result!(" its 1 or 2 or 3 ", code, v!({ "condition": 3 }));
@@ -246,7 +357,10 @@ fn test_assign_an_empty_string() {
 
 #[test]
 fn test_assign_is_global() {
-    assert_template_result!("variable", r#"{%for i in (1..2) %}{% assign a = "variable"%}{% endfor %}{{a}}"#);
+    assert_template_result!(
+        "variable",
+        r#"{%for i in (1..2) %}{% assign a = "variable"%}{% endfor %}{{a}}"#
+    );
 }
 
 #[test]
@@ -259,10 +373,16 @@ fn test_case_detects_bad_syntax() {
 #[test]
 fn test_cycle() {
     assert_template_result!("one", r#"{%cycle "one", "two"%}"#);
-    assert_template_result!("one two", r#"{%cycle "one", "two"%} {%cycle "one", "two"%}"#);
+    assert_template_result!(
+        "one two",
+        r#"{%cycle "one", "two"%} {%cycle "one", "two"%}"#
+    );
     assert_template_result!(" two", r#"{%cycle "", "two"%} {%cycle "", "two"%}"#);
 
-    assert_template_result!("one two one", r#"{%cycle "one", "two"%} {%cycle "one", "two"%} {%cycle "one", "two"%}"#);
+    assert_template_result!(
+        "one two one",
+        r#"{%cycle "one", "two"%} {%cycle "one", "two"%} {%cycle "one", "two"%}"#
+    );
 
     assert_template_result!("text-align: left text-align: right",
       r#"{%cycle "text-align: left", "text-align: right" %} {%cycle "text-align: left", "text-align: right"%}"#);
@@ -291,14 +411,22 @@ fn test_multiple_named_cycles_with_names_from_context() {
 #[ignore]
 fn test_size_of_array() {
     let assigns = v!({ "array": [1, 2, 3, 4] });
-    assert_template_result!("array has 4 elements", "array has {{ array.size }} elements", assigns);
+    assert_template_result!(
+        "array has 4 elements",
+        "array has {{ array.size }} elements",
+        assigns
+    );
 }
 
 #[test]
 #[ignore]
 fn test_size_of_hash() {
     let assigns = v!({ "hash": { "a": 1, "b": 2, "c": 3, "d": 4 } });
-    assert_template_result!("hash has 4 elements", "hash has {{ hash.size }} elements", assigns);
+    assert_template_result!(
+        "hash has 4 elements",
+        "hash has {{ hash.size }} elements",
+        assigns
+    );
 }
 
 #[test]
@@ -313,14 +441,25 @@ fn test_illegal_symbols() {
 #[test]
 fn test_ifchanged() {
     let assigns = v!({ "array": [ 1, 1, 2, 2, 3, 3] });
-    assert_template_result!("123", "{%for item in array%}{%ifchanged%}{{item}}{% endifchanged %}{%endfor%}", assigns);
+    assert_template_result!(
+        "123",
+        "{%for item in array%}{%ifchanged%}{{item}}{% endifchanged %}{%endfor%}",
+        assigns
+    );
 
     let assigns = v!({ "array": [ 1, 1, 1, 1] });
-    assert_template_result!("1", "{%for item in array%}{%ifchanged%}{{item}}{% endifchanged %}{%endfor%}", assigns);
+    assert_template_result!(
+        "1",
+        "{%for item in array%}{%ifchanged%}{{item}}{% endifchanged %}{%endfor%}",
+        assigns
+    );
 }
 
 #[test]
 #[ignore]
 fn test_multiline_tag() {
-    assert_template_result!("0 1 2 3", "0{%\nfor i in (1..3)\n%} {{\ni\n}}{%\nendfor\n%}");
+    assert_template_result!(
+        "0 1 2 3",
+        "0{%\nfor i in (1..3)\n%} {{\ni\n}}{%\nendfor\n%}"
+    );
 }

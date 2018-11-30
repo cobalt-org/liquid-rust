@@ -1,6 +1,6 @@
 use liquid;
-use liquid::value::Value;
 use liquid::interpreter::FilterResult;
+use liquid::value::Value;
 
 fn make_funny(_input: &Value, _args: &[Value]) -> FilterResult {
     Ok(Value::scalar("LOL"))
@@ -11,14 +11,26 @@ fn cite_funny(input: &Value, _args: &[Value]) -> FilterResult {
 }
 
 fn add_smiley(input: &Value, args: &[Value]) -> FilterResult {
-    let smiley = args.get(0).map(|s| s.to_string()).unwrap_or_else(|| ":-)".to_owned());
+    let smiley = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| ":-)".to_owned());
     Ok(Value::scalar(format!("{} {}", input, smiley)))
 }
 
 fn add_tag(input: &Value, args: &[Value]) -> FilterResult {
-    let tag = args.get(0).map(|s| s.to_string()).unwrap_or_else(|| "p".to_owned());
-    let id = args.get(1).map(|s| s.to_string()).unwrap_or_else(|| "foo".to_owned());
-    Ok(Value::scalar(format!(r#"<{} id="{}">{}</{}>"#, tag, id, input, tag)))
+    let tag = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "p".to_owned());
+    let id = args
+        .get(1)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "foo".to_owned());
+    Ok(Value::scalar(format!(
+        r#"<{} id="{}">{}</{}>"#,
+        tag, id, input, tag
+    )))
 }
 
 fn paragraph(input: &Value, _args: &[Value]) -> FilterResult {
@@ -27,16 +39,25 @@ fn paragraph(input: &Value, _args: &[Value]) -> FilterResult {
 
 fn link_to(input: &Value, args: &[Value]) -> FilterResult {
     let name = input;
-    let url = args.get(0).map(|s| s.to_string()).unwrap_or_else(|| ":-)".to_owned());
+    let url = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| ":-)".to_owned());
     Ok(Value::scalar(format!(r#"<a href="{}">{}</a>"#, url, name)))
 }
 
 fn liquid() -> liquid::Parser {
     liquid::ParserBuilder::new()
-        .filter("make_funny", make_funny as liquid::interpreter::FnFilterValue)
-        .filter("cite_funny", cite_funny as liquid::interpreter::FnFilterValue)
-        .filter("add_smiley", add_smiley as liquid::interpreter::FnFilterValue)
-        .filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
+        .filter(
+            "make_funny",
+            make_funny as liquid::interpreter::FnFilterValue,
+        ).filter(
+            "cite_funny",
+            cite_funny as liquid::interpreter::FnFilterValue,
+        ).filter(
+            "add_smiley",
+            add_smiley as liquid::interpreter::FnFilterValue,
+        ).filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
         .filter("paragraph", paragraph as liquid::interpreter::FnFilterValue)
         .filter("link_to", link_to as liquid::interpreter::FnFilterValue)
         .build()
@@ -61,10 +82,14 @@ fn test_variable() {
 #[ignore]
 fn test_variable_traversing_with_two_brackets() {
     let text = "{{ site.data.menu[include.menu][include.locale] }}";
-    assert_template_result!("it works", text, v!({
+    assert_template_result!(
+        "it works",
+        text,
+        v!({
       "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },
       "include": { "menu": "foo", "locale": "bar" }
-    }));
+    })
+    );
 }
 
 #[test]

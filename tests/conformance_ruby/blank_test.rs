@@ -139,11 +139,28 @@ fn test_raw_is_not_blank() {
 #[test]
 #[ignore]
 fn test_include_is_blank() {
-    let liquid = liquid::ParserBuilder::with_liquid().include_source(Box::new(BlankTestFilesystem)).build();
+    let liquid = liquid::ParserBuilder::with_liquid()
+        .include_source(Box::new(BlankTestFilesystem))
+        .build();
 
-    assert_template_result!(repeat("foobar", N + 1), wrap("{% include 'foobar' %}"), v!({}), liquid);
-    assert_template_result!(repeat(" foobar ", N + 1), wrap("{% include ' foobar ' %}"), v!({}), liquid);
-    assert_template_result!(repeat("   ", N + 1), wrap(" {% include ' ' %} "), v!({}), liquid);
+    assert_template_result!(
+        repeat("foobar", N + 1),
+        wrap("{% include 'foobar' %}"),
+        v!({}),
+        liquid
+    );
+    assert_template_result!(
+        repeat(" foobar ", N + 1),
+        wrap("{% include ' foobar ' %}"),
+        v!({}),
+        liquid
+    );
+    assert_template_result!(
+        repeat("   ", N + 1),
+        wrap(" {% include ' ' %} "),
+        v!({}),
+        liquid
+    );
 }
 
 #[test]

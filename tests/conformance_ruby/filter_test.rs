@@ -1,6 +1,6 @@
 use liquid;
-use liquid::value::Value;
 use liquid::interpreter::FilterResult;
+use liquid::value::Value;
 
 fn money(input: &Value, _args: &[Value]) -> FilterResult {
     Ok(Value::scalar(format!(" {}$ ", input)))
@@ -13,18 +13,25 @@ fn money_with_underscore(input: &Value, _args: &[Value]) -> FilterResult {
 fn liquid_money() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
         .filter("money", money as liquid::interpreter::FnFilterValue)
-        .filter("money_with_underscore", money_with_underscore as liquid::interpreter::FnFilterValue)
-        .build()
+        .filter(
+            "money_with_underscore",
+            money_with_underscore as liquid::interpreter::FnFilterValue,
+        ).build()
 }
 
 fn substitute(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!("No keyword argument support: {}", input)))
+    Ok(Value::scalar(format!(
+        "No keyword argument support: {}",
+        input
+    )))
 }
 
 fn liquid_sub() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter("substitute", substitute as liquid::interpreter::FnFilterValue)
-        .build()
+        .filter(
+            "substitute",
+            substitute as liquid::interpreter::FnFilterValue,
+        ).build()
 }
 
 #[test]
@@ -38,7 +45,12 @@ fn test_local_filter() {
 fn test_underscore_in_filter_name() {
     let assigns = v!({"var": 1000});
 
-    assert_template_result!(" 1000$ ", "{{var | money_with_underscore}}", assigns, liquid_money());
+    assert_template_result!(
+        " 1000$ ",
+        "{{var | money_with_underscore}}",
+        assigns,
+        liquid_money()
+    );
 }
 
 #[test]
@@ -76,7 +88,11 @@ fn test_sort() {
     assert_template_result!("alphabetic as expected", "{{words | sort | join}}", assigns);
     assert_template_result!("3", "{{value | sort}}", assigns);
     assert_template_result!("are flower", "{{arrays | sort | join}}", assigns);
-    assert_template_result!("Expected case sensitive", "{{case_sensitive | sort | join}}", assigns);
+    assert_template_result!(
+        "Expected case sensitive",
+        "{{case_sensitive | sort | join}}",
+        assigns
+    );
 }
 
 #[test]
@@ -88,10 +104,18 @@ fn test_sort_natural() {
     });
 
     // Test strings
-    assert_template_result!("Assert case Insensitive", "{{words | sort_natural | join}}", assigns);
+    assert_template_result!(
+        "Assert case Insensitive",
+        "{{words | sort_natural | join}}",
+        assigns
+    );
 
     // Test hashes
-    assert_template_result!("A b C", "{{hashes | sort_natural: 'a' | map: 'a' | join}}", assigns);
+    assert_template_result!(
+        "A b C",
+        "{{hashes | sort_natural: 'a' | map: 'a' | join}}",
+        assigns
+    );
 
     // Test objects
     // Implementation specific: API support objects for variables.
@@ -109,7 +133,11 @@ fn test_compact() {
     assert_template_result!("a b c", "{{words | compact | join}}", assigns);
 
     // Test hashes
-    assert_template_result!("A C", "{{hashes | compact: 'a' | map: 'a' | join}}", assigns);
+    assert_template_result!(
+        "A C",
+        "{{hashes | compact: 'a' | map: 'a' | join}}",
+        assigns
+    );
 
     // Test objects
     // Implementation specific: API support objects for variables.
@@ -149,7 +177,12 @@ fn test_filter_with_keyword_arguments() {
         "surname": "john",
         "input": "hello %{first_name}, %{last_name}",
     });
-    assert_template_result!("hello john, doe", "{{ input | substitute: first_name: surname, last_name: 'doe' }}", assigns, liquid_sub());
+    assert_template_result!(
+        "hello john, doe",
+        "{{ input | substitute: first_name: surname, last_name: 'doe' }}",
+        assigns,
+        liquid_sub()
+    );
 }
 
 #[test]

@@ -113,10 +113,10 @@ fn test_is_not_collection_empty() {
 #[ignore]
 fn test_nil() {
     let text = " {% if var == nil %} true {% else %} false {% endif %} ";
-    assert_template_result!("  true  ", text, v!({"var": nil}));
+    assert_template_result!("  true  ", text, v!({ "var": nil }));
 
     let text = " {% if var == null %} true {% else %} false {% endif %} ";
-    assert_template_result!("  true  ", text, v!({"var": nil}));
+    assert_template_result!("  true  ", text, v!({ "var": nil }));
 }
 
 #[test]
