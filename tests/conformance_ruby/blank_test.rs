@@ -1,3 +1,5 @@
+use liquid;
+
 const N: usize = 10;
 
 fn wrap_in_for<S: AsRef<str>>(body: S) -> String {
@@ -26,6 +28,15 @@ fn wrap<S: AsRef<str>>(body: S) -> String {
 fn repeat<S: AsRef<str>>(content: S, count: usize) -> String {
     let content = content.as_ref();
     (0..count).map(|_| content).collect::<String>()
+}
+
+#[derive(Clone)]
+struct BlankTestFilesystem;
+
+impl liquid::compiler::Include for BlankTestFilesystem {
+    fn include(&self, relative_path: &str) -> Result<String, liquid::Error> {
+        Ok(relative_path.to_owned())
+    }
 }
 
 #[test]
@@ -128,12 +139,11 @@ fn test_raw_is_not_blank() {
 #[test]
 #[ignore]
 fn test_include_is_blank() {
-    /* Too lazy to implement atm
-    Liquid::Template.file_system = BlankTestFileSystem.new
-    assert_template_result! "foobar" * (N + 1), wrap("{% include 'foobar' %}")
-    assert_template_result! " foobar " * (N + 1), wrap("{% include ' foobar ' %}")
-    assert_template_result! "   " * (N + 1), wrap(" {% include ' ' %} ")
-    */
+    let liquid = liquid::ParserBuilder::with_liquid().include_source(Box::new(BlankTestFilesystem)).build();
+
+    assert_template_result!(repeat("foobar", N + 1), wrap("{% include 'foobar' %}"), v!({}), liquid);
+    assert_template_result!(repeat(" foobar ", N + 1), wrap("{% include ' foobar ' %}"), v!({}), liquid);
+    assert_template_result!(repeat("   ", N + 1), wrap(" {% include ' ' %} "), v!({}), liquid);
 }
 
 #[test]
