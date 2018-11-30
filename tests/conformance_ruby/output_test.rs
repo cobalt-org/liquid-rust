@@ -1,123 +1,173 @@
-require 'test_helper'
+use liquid;
+use liquid::interpreter::FilterResult;
+use liquid::value::Value;
 
-module FunnyFilter
-  def make_funny(input)
-    'LOL'
-  end
+fn make_funny(_input: &Value, _args: &[Value]) -> FilterResult {
+    Ok(Value::scalar("LOL"))
+}
 
-  def cite_funny(input)
-    "LOL: #{input}"
-  end
+fn cite_funny(input: &Value, _args: &[Value]) -> FilterResult {
+    Ok(Value::scalar(format!("LOL: {}", input)))
+}
 
-  def add_smiley(input, smiley = ":-)")
-    "#{input} #{smiley}"
-  end
+fn add_smiley(input: &Value, args: &[Value]) -> FilterResult {
+    let smiley = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| ":-)".to_owned());
+    Ok(Value::scalar(format!("{} {}", input, smiley)))
+}
 
-  def add_tag(input, tag = "p", id = "foo")
-    %(<#{tag} id="#{id}">#{input}</#{tag}>)
-  end
+fn add_tag(input: &Value, args: &[Value]) -> FilterResult {
+    let tag = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "p".to_owned());
+    let id = args
+        .get(1)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "foo".to_owned());
+    Ok(Value::scalar(format!(
+        r#"<{} id="{}">{}</{}>"#,
+        tag, id, input, tag
+    )))
+}
 
-  def paragraph(input)
-    "<p>#{input}</p>"
-  end
+fn paragraph(input: &Value, _args: &[Value]) -> FilterResult {
+    Ok(Value::scalar(format!("<p>{}</p>", input)))
+}
 
-  def link_to(name, url)
-    %(<a href="#{url}">#{name}</a>)
-  end
-end
+fn link_to(input: &Value, args: &[Value]) -> FilterResult {
+    let name = input;
+    let url = args
+        .get(0)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| ":-)".to_owned());
+    Ok(Value::scalar(format!(r#"<a href="{}">{}</a>"#, url, name)))
+}
 
-class OutputTest < Minitest::Test
-  include Liquid
+fn liquid() -> liquid::Parser {
+    liquid::ParserBuilder::new()
+        .filter(
+            "make_funny",
+            make_funny as liquid::interpreter::FnFilterValue,
+        ).filter(
+            "cite_funny",
+            cite_funny as liquid::interpreter::FnFilterValue,
+        ).filter(
+            "add_smiley",
+            add_smiley as liquid::interpreter::FnFilterValue,
+        ).filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
+        .filter("paragraph", paragraph as liquid::interpreter::FnFilterValue)
+        .filter("link_to", link_to as liquid::interpreter::FnFilterValue)
+        .build()
+}
 
-  def setup
-    @assigns = {
-      'best_cars' => 'bmw',
-      'car' => { 'bmw' => 'good', 'gm' => 'bad' }
-    }
-  end
+fn assigns() -> liquid::value::Value {
+    v!({
+      "best_cars": "bmw",
+      "car": { "bmw": "good", "gm": "bad" }
+    })
+}
 
-  def test_variable
-    text = %( {{best_cars}} )
+#[test]
+fn test_variable() {
+    let text = " {{best_cars}} ";
 
-    expected = %( bmw )
-    assert_equal expected, Template.parse(text).render!(@assigns)
-  end
+    let expected = " bmw ";
+    assert_template_result!(expected, text, assigns());
+}
 
-  def test_variable_traversing_with_two_brackets
-    text = %({{ site.data.menu[include.menu][include.locale] }})
-    assert_equal "it works!", Template.parse(text).render!(
-      "site" => { "data" => { "menu" => { "foo" => { "bar" => "it works!" } } } },
-      "include" => { "menu" => "foo", "locale" => "bar" }
-    )
-  end
+#[test]
+#[ignore]
+fn test_variable_traversing_with_two_brackets() {
+    let text = "{{ site.data.menu[include.menu][include.locale] }}";
+    assert_template_result!(
+        "it works",
+        text,
+        v!({
+      "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },
+      "include": { "menu": "foo", "locale": "bar" }
+    })
+    );
+}
 
-  def test_variable_traversing
-    text = %( {{car.bmw}} {{car.gm}} {{car.bmw}} )
+#[test]
+fn test_variable_traversing() {
+    let text = " {{car.bmw}} {{car.gm}} {{car.bmw}} ";
 
-    expected = %( good bad good )
-    assert_equal expected, Template.parse(text).render!(@assigns)
-  end
+    let expected = " good bad good ";
+    assert_template_result!(expected, text, assigns());
+}
 
-  def test_variable_piping
-    text = %( {{ car.gm | make_funny }} )
-    expected = %( LOL )
+#[test]
+fn test_variable_piping() {
+    let text = " {{ car.gm | make_funny }} ";
+    let expected = " LOL ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_variable_piping_with_input
-    text = %( {{ car.gm | cite_funny }} )
-    expected = %( LOL: bad )
+#[test]
+fn test_variable_piping_with_input() {
+    let text = " {{ car.gm | cite_funny }} ";
+    let expected = " LOL: bad ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_variable_piping_with_args
-    text = %! {{ car.gm | add_smiley : ':-(' }} !
-    expected = %| bad :-( |
+#[test]
+fn test_variable_piping_with_args() {
+    let text = r#" {{ car.gm | add_smiley : ":-(" }} "#;
+    let expected = " bad :-( ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_variable_piping_with_no_args
-    text = %( {{ car.gm | add_smiley }} )
-    expected = %| bad :-) |
+#[test]
+fn test_variable_piping_with_no_args() {
+    let text = " {{ car.gm | add_smiley }} ";
+    let expected = " bad :-) ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_multiple_variable_piping_with_args
-    text = %! {{ car.gm | add_smiley : ':-(' | add_smiley : ':-('}} !
-    expected = %| bad :-( :-( |
+#[test]
+fn test_multiple_variable_piping_with_args() {
+    let text = r#" {{ car.gm | add_smiley : ":-(" | add_smiley : ":-("}} "#;
+    let expected = " bad :-( :-( ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_variable_piping_with_multiple_args
-    text = %( {{ car.gm | add_tag : 'span', 'bar'}} )
-    expected = %( <span id="bar">bad</span> )
+#[test]
+fn test_variable_piping_with_multiple_args() {
+    let text = r#" {{ car.gm | add_tag : "span", "bar"}} "#;
+    let expected = r#" <span id="bar">bad</span> "#;
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_variable_piping_with_variable_args
-    text = %( {{ car.gm | add_tag : 'span', car.bmw}} )
-    expected = %( <span id="good">bad</span> )
+#[test]
+fn test_variable_piping_with_variable_args() {
+    let text = r#" {{ car.gm | add_tag : "span", car.bmw}} "#;
+    let expected = r#" <span id="good">bad</span> "#;
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_multiple_pipings
-    text = %( {{ best_cars | cite_funny | paragraph }} )
-    expected = %( <p>LOL: bmw</p> )
+#[test]
+fn test_multiple_pipings() {
+    let text = " {{ best_cars | cite_funny | paragraph }} ";
+    let expected = " <p>LOL: bmw</p> ";
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
+    assert_template_result!(expected, text, assigns(), liquid());
+}
 
-  def test_link_to
-    text = %( {{ 'Typo' | link_to: 'http://typo.leetsoft.com' }} )
-    expected = %( <a href="http://typo.leetsoft.com">Typo</a> )
+#[test]
+fn test_link_to() {
+    let text = r#" {{ "Typo" | link_to: "http://typo.leetsoft.com" }} "#;
+    let expected = r#" <a href="http://typo.leetsoft.com">Typo</a> "#;
 
-    assert_equal expected, Template.parse(text).render!(@assigns, filters: [FunnyFilter])
-  end
-end # OutputTest
+    assert_template_result!(expected, text, assigns(), liquid());
+}

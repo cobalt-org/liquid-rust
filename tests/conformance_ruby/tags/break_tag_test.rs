@@ -1,5 +1,3 @@
-use test_helper::*;
-
 // tests that no weird errors are raised if break is called outside of a
 // block
 #[test]

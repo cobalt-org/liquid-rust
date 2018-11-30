@@ -1,5 +1,3 @@
-use test_helper::*;
-
 #[test]
 #[ignore]
 fn test_table_row() {

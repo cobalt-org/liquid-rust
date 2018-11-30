@@ -1,7 +1,5 @@
 use liquid;
 
-use test_helper::*;
-
 #[test]
 fn test_simple_variable() {
     assert_template_result!(r#"worked"#, r#"{{test}}"#, v!({"test": "worked"}));

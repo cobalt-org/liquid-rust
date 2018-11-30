@@ -1,245 +1,273 @@
-require 'test_helper'
+use liquid;
 
-class TestFileSystem
-  def read_template_file(template_path)
-    case template_path
-    when "product"
-      "Product: {{ product.title }} "
+#[derive(Clone)]
+struct TestFileSystem;
 
-    when "locale_variables"
-      "Locale: {{echo1}} {{echo2}}"
+impl liquid::compiler::Include for TestFileSystem {
+    fn include(&self, relative_path: &str) -> Result<String, liquid::Error> {
+        let template = match relative_path {
+            "product" => "Product: {{ product.title }} ",
+            "locale_variables" => "Locale: {{echo1}} {{echo2}}",
+            "variant" => "Variant: {{ variant.title }}",
+            "nested_template" => {
+                "{% include 'header' %} {% include 'body' %} {% include 'footer' %}"
+            }
+            "body" => "body {% include 'body_detail' %}",
+            "nested_product_template" => {
+                "Product: {{ nested_product_template.title }} {%include 'details'%} "
+            }
+            "recursively_nested_template" => "-{% include 'recursively_nested_template' %}",
+            "pick_a_source" => "from TestFileSystem",
+            "assignments" => "{% assign foo = 'bar' %}",
+            _ => relative_path,
+        };
+        Ok(template.to_owned())
+    }
+}
 
-    when "variant"
-      "Variant: {{ variant.title }}"
+fn liquid() -> liquid::Parser {
+    liquid::ParserBuilder::with_liquid()
+        .include_source(Box::new(TestFileSystem))
+        .build()
+}
 
-    when "nested_template"
-      "{% include 'header' %} {% include 'body' %} {% include 'footer' %}"
+#[test]
+#[should_panic]
+fn test_include_tag_looks_for_file_system_in_registers_first() {
+    panic!("Implementation specific: exposing of registers API");
+}
 
-    when "body"
-      "body {% include 'body_detail' %}"
+#[test]
+#[ignore]
+fn test_include_tag_with() {
+    assert_template_result!(
+        "Product: Draft 151cm ",
+        "{% include 'product' with products[0] %}",
+        v!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
+        liquid()
+    );
+}
 
-    when "nested_product_template"
-      "Product: {{ nested_product_template.title }} {%include 'details'%} "
+#[test]
+fn test_include_tag_with_default_name() {
+    assert_template_result!(
+        "Product: Draft 151cm ",
+        "{% include 'product' %}",
+        v!({"product": { "title": "Draft 151cm" }}),
+        liquid()
+    );
+}
 
-    when "recursively_nested_template"
-      "-{% include 'recursively_nested_template' %}"
+#[test]
+#[ignore]
+fn test_include_tag_for() {
+    assert_template_result!(
+        "Product: Draft 151cm Product: Element 155cm ",
+        "{% include 'product' for products %}",
+        v!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
+        liquid()
+    );
+}
 
-    when "pick_a_source"
-      "from TestFileSystem"
+#[test]
+#[ignore]
+fn test_include_tag_with_local_variables() {
+    assert_template_result!(
+        "Locale: test123 ",
+        "{% include 'locale_variables' echo1: 'test123' %}",
+        v!({}),
+        liquid()
+    );
+}
 
-    when 'assignments'
-      "{% assign foo = 'bar' %}"
+#[test]
+#[ignore]
+fn test_include_tag_with_multiple_local_variables() {
+    assert_template_result!(
+        "Locale: test123 test321",
+        "{% include 'locale_variables' echo1: 'test123', echo2: 'test321' %}",
+        v!({}),
+        liquid()
+    );
+}
 
-    else
-      template_path
-    end
-  end
-end
+#[test]
+#[ignore]
+fn test_include_tag_with_multiple_local_variables_from_context() {
+    assert_template_result!(
+        "Locale: test123 test321",
+        "{% include 'locale_variables' echo1: echo1, echo2: more_echos.echo2 %}",
+        v!({"echo1": "test123", "more_echos": { "echo2": "test321" }}),
+        liquid()
+    );
+}
 
-class OtherFileSystem
-  def read_template_file(template_path)
-    'from OtherFileSystem'
-  end
-end
+#[test]
+fn test_included_templates_assigns_variables() {
+    assert_template_result!(
+        "bar",
+        "{% include 'assignments' %}{{ foo }}",
+        v!({}),
+        liquid()
+    );
+}
 
-class CountingFileSystem
-  attr_reader :count
-  def read_template_file(template_path)
-    @count ||= 0
-    @count += 1
-    'from CountingFileSystem'
-  end
-end
+#[test]
+fn test_nested_include_tag() {
+    assert_template_result!("body body_detail", "{% include 'body' %}", v!({}), liquid());
 
-class CustomInclude < Liquid::Tag
-  Syntax = /(#{Liquid::QuotedFragment}+)(\s+(?:with|for)\s+(#{Liquid::QuotedFragment}+))?/o
+    assert_template_result!(
+        "header body body_detail footer",
+        "{% include 'nested_template' %}",
+        v!({}),
+        liquid()
+    );
+}
 
-  def initialize(tag_name, markup, tokens)
-    markup =~ Syntax
-    @template_name = $1
-    super
-  end
+#[test]
+#[ignore]
+fn test_nested_include_with_variable() {
+    assert_template_result!(
+        "Product: Draft 151cm details ",
+        "{% include 'nested_product_template' with product %}",
+        v!({"product": { "title": "Draft 151cm" }}),
+        liquid()
+    );
 
-  def parse(tokens)
-  end
+    assert_template_result!(
+        "Product: Draft 151cm details Product: Element 155cm details ",
+        "{% include 'nested_product_template' for products %}",
+        v!({"products": [{ "title": "Draft 151cm" }, { "title": "Element 155cm" }]}),
+        liquid()
+    );
+}
 
-  def render(context)
-    @template_name[1..-2]
-  end
-end
+#[derive(Clone)]
+struct InfiniteFileSystem;
 
-class IncludeTagTest < Minitest::Test
-  include Liquid
+impl liquid::compiler::Include for InfiniteFileSystem {
+    fn include(&self, _relative_path: &str) -> Result<String, liquid::Error> {
+        Ok("-{% include 'loop' %}".to_owned())
+    }
+}
 
-  def setup
-    Liquid::Template.file_system = TestFileSystem.new
-  end
+#[test]
+#[ignore]
+#[should_panic]
+fn test_recursively_included_template_does_not_produce_endless_loop() {
+    panic!("We don't check recursion depth");
+    /*
+    let parser = liquid::ParserBuilder::with_liquid().include_source(Box::new(InfiniteFileSystem)).build();
+    parser.parse("{% include 'loop' %}").unwrap();
+    */
+}
 
-  def test_include_tag_looks_for_file_system_in_registers_first
-    assert_equal 'from OtherFileSystem',
-      Template.parse("{% include 'pick_a_source' %}").render!({}, registers: { file_system: OtherFileSystem.new })
-  end
+#[test]
+#[ignore]
+fn test_dynamically_choosen_template() {
+    assert_template_result!(
+        "Test123",
+        "{% include template %}",
+        v!({"template": "Test123"}),
+        liquid()
+    );
+    assert_template_result!(
+        "Test321",
+        "{% include template %}",
+        v!({"template": "Test321"}),
+        liquid()
+    );
 
-  def test_include_tag_with
-    assert_template_result "Product: Draft 151cm ",
-      "{% include 'product' with products[0] %}", "products" => [ { 'title' => 'Draft 151cm' }, { 'title' => 'Element 155cm' } ]
-  end
+    assert_template_result!(
+        "Product: Draft 151cm ",
+        "{% include template for product %}",
+        v!({"template": "product", "product": { "title": "Draft 151cm" }}),
+        liquid()
+    );
+}
 
-  def test_include_tag_with_default_name
-    assert_template_result "Product: Draft 151cm ",
-      "{% include 'product' %}", "product" => { 'title' => 'Draft 151cm' }
-  end
+#[test]
+#[should_panic]
+fn test_include_tag_caches_second_read_of_same_partial() {
+    panic!("Implementation specific: caching policies");
+}
 
-  def test_include_tag_for
-    assert_template_result "Product: Draft 151cm Product: Element 155cm ",
-      "{% include 'product' for products %}", "products" => [ { 'title' => 'Draft 151cm' }, { 'title' => 'Element 155cm' } ]
-  end
+#[test]
+#[should_panic]
+fn test_include_tag_doesnt_cache_partials_across_renders() {
+    panic!("Implementation specific: caching policies");
+}
 
-  def test_include_tag_with_local_variables
-    assert_template_result "Locale: test123 ", "{% include 'locale_variables' echo1: 'test123' %}"
-  end
+#[test]
+fn test_include_tag_within_if_statement() {
+    assert_template_result!(
+        "foo_if_true",
+        "{% if true %}{% include 'foo_if_true' %}{% endif %}",
+        v!({}),
+        liquid()
+    );
+}
 
-  def test_include_tag_with_multiple_local_variables
-    assert_template_result "Locale: test123 test321",
-      "{% include 'locale_variables' echo1: 'test123', echo2: 'test321' %}"
-  end
+#[test]
+#[should_panic]
+fn test_custom_include_tag() {
+    panic!("Implementation specific: API customization");
+}
 
-  def test_include_tag_with_multiple_local_variables_from_context
-    assert_template_result "Locale: test123 test321",
-      "{% include 'locale_variables' echo1: echo1, echo2: more_echos.echo2 %}",
-      'echo1' => 'test123', 'more_echos' => { "echo2" => 'test321' }
-  end
+#[test]
+#[should_panic]
+fn test_custom_include_tag_within_if_statement() {
+    panic!("Implementation specific: API customization");
+}
 
-  def test_included_templates_assigns_variables
-    assert_template_result "bar", "{% include 'assignments' %}{{ foo }}"
-  end
+#[test]
+fn test_does_not_add_error_in_strict_mode_for_missing_variable() {
+    let template = liquid()
+        .parse(r#" {% include "nested_template" %}"#)
+        .unwrap();
+    template.render(v!({}).as_object().unwrap()).unwrap();
+}
 
-  def test_nested_include_tag
-    assert_template_result "body body_detail", "{% include 'body' %}"
+#[test]
+#[should_panic]
+fn test_passing_options_to_included_templates() {
+    panic!("Implementation specific: API options");
+}
 
-    assert_template_result "header body body_detail footer", "{% include 'nested_template' %}"
-  end
+#[test]
+#[ignore]
+fn test_render_raise_argument_error_when_template_is_undefined() {
+    assert_parse_error!("{% include undefined_variable %}", liquid());
+    assert_parse_error!("{% include nil %}", liquid());
+}
 
-  def test_nested_include_with_variable
-    assert_template_result "Product: Draft 151cm details ",
-      "{% include 'nested_product_template' with product %}", "product" => { "title" => 'Draft 151cm' }
+#[test]
+#[ignore]
+fn test_including_via_variable_value() {
+    assert_template_result!(
+        "from TestFileSystem",
+        "{% assign page = 'pick_a_source' %}{% include page %}",
+        v!({}),
+        liquid()
+    );
 
-    assert_template_result "Product: Draft 151cm details Product: Element 155cm details ",
-      "{% include 'nested_product_template' for products %}", "products" => [{ "title" => 'Draft 151cm' }, { "title" => 'Element 155cm' }]
-  end
+    assert_template_result!(
+        "Product: Draft 151cm ",
+        "{% assign page = 'product' %}{% include page %}",
+        v!({"product": { "title": "Draft 151cm" }}),
+        liquid()
+    );
 
-  def test_recursively_included_template_does_not_produce_endless_loop
-    infinite_file_system = Class.new do
-      def read_template_file(template_path)
-        "-{% include 'loop' %}"
-      end
-    end
+    assert_template_result!(
+        "Product: Draft 151cm ",
+        "{% assign page = 'product' %}{% include page for foo %}",
+        v!({"foo": { "title": "Draft 151cm" }}),
+        liquid()
+    );
+}
 
-    Liquid::Template.file_system = infinite_file_system.new
-
-    assert_raises(Liquid::StackLevelError) do
-      Template.parse("{% include 'loop' %}").render!
-    end
-  end
-
-  def test_dynamically_choosen_template
-    assert_template_result "Test123", "{% include template %}", "template" => 'Test123'
-    assert_template_result "Test321", "{% include template %}", "template" => 'Test321'
-
-    assert_template_result "Product: Draft 151cm ", "{% include template for product %}",
-      "template" => 'product', 'product' => { 'title' => 'Draft 151cm' }
-  end
-
-  def test_include_tag_caches_second_read_of_same_partial
-    file_system = CountingFileSystem.new
-    assert_equal 'from CountingFileSystemfrom CountingFileSystem',
-      Template.parse("{% include 'pick_a_source' %}{% include 'pick_a_source' %}").render!({}, registers: { file_system: file_system })
-    assert_equal 1, file_system.count
-  end
-
-  def test_include_tag_doesnt_cache_partials_across_renders
-    file_system = CountingFileSystem.new
-    assert_equal 'from CountingFileSystem',
-      Template.parse("{% include 'pick_a_source' %}").render!({}, registers: { file_system: file_system })
-    assert_equal 1, file_system.count
-
-    assert_equal 'from CountingFileSystem',
-      Template.parse("{% include 'pick_a_source' %}").render!({}, registers: { file_system: file_system })
-    assert_equal 2, file_system.count
-  end
-
-  def test_include_tag_within_if_statement
-    assert_template_result "foo_if_true", "{% if true %}{% include 'foo_if_true' %}{% endif %}"
-  end
-
-  def test_custom_include_tag
-    original_tag = Liquid::Template.tags['include']
-    Liquid::Template.tags['include'] = CustomInclude
-    begin
-      assert_equal "custom_foo",
-        Template.parse("{% include 'custom_foo' %}").render!
-    ensure
-      Liquid::Template.tags['include'] = original_tag
-    end
-  end
-
-  def test_custom_include_tag_within_if_statement
-    original_tag = Liquid::Template.tags['include']
-    Liquid::Template.tags['include'] = CustomInclude
-    begin
-      assert_equal "custom_foo_if_true",
-        Template.parse("{% if true %}{% include 'custom_foo_if_true' %}{% endif %}").render!
-    ensure
-      Liquid::Template.tags['include'] = original_tag
-    end
-  end
-
-  def test_does_not_add_error_in_strict_mode_for_missing_variable
-    Liquid::Template.file_system = TestFileSystem.new
-
-    a = Liquid::Template.parse(' {% include "nested_template" %}')
-    a.render!
-    assert_empty a.errors
-  end
-
-  def test_passing_options_to_included_templates
-    assert_raises(Liquid::SyntaxError) do
-      Template.parse("{% include template %}", error_mode: :strict).render!("template" => '{{ "X" || downcase }}')
-    end
-    with_error_mode(:lax) do
-      assert_equal 'x', Template.parse("{% include template %}", error_mode: :strict, include_options_blacklist: true).render!("template" => '{{ "X" || downcase }}')
-    end
-    assert_raises(Liquid::SyntaxError) do
-      Template.parse("{% include template %}", error_mode: :strict, include_options_blacklist: [:locale]).render!("template" => '{{ "X" || downcase }}')
-    end
-    with_error_mode(:lax) do
-      assert_equal 'x', Template.parse("{% include template %}", error_mode: :strict, include_options_blacklist: [:error_mode]).render!("template" => '{{ "X" || downcase }}')
-    end
-  end
-
-  def test_render_raise_argument_error_when_template_is_undefined
-    assert_raises(Liquid::ArgumentError) do
-      template = Liquid::Template.parse('{% include undefined_variable %}')
-      template.render!
-    end
-    assert_raises(Liquid::ArgumentError) do
-      template = Liquid::Template.parse('{% include nil %}')
-      template.render!
-    end
-  end
-
-  def test_including_via_variable_value
-    assert_template_result "from TestFileSystem", "{% assign page = 'pick_a_source' %}{% include page %}"
-
-    assert_template_result "Product: Draft 151cm ", "{% assign page = 'product' %}{% include page %}", "product" => { 'title' => 'Draft 151cm' }
-
-    assert_template_result "Product: Draft 151cm ", "{% assign page = 'product' %}{% include page for foo %}", "foo" => { 'title' => 'Draft 151cm' }
-  end
-
-  def test_including_with_strict_variables
-    template = Liquid::Template.parse("{% include 'simple' %}", error_mode: :warn)
-    template.render(nil, strict_variables: true)
-
-    assert_equal [], template.errors
-  end
-end # IncludeTagTest
+#[test]
+fn test_including_with_strict_variables() {
+    let template = liquid().parse("{% include 'simple' %}").unwrap();
+    template.render(v!({}).as_object().unwrap()).unwrap();
+}

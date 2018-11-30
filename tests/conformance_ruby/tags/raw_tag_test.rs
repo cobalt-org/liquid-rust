@@ -1,5 +1,3 @@
-use test_helper::*;
-
 #[test]
 fn test_tag_in_raw() {
     assert_template_result!(
