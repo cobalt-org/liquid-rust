@@ -304,7 +304,25 @@ pub fn unless_block(
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
-    let if_true = Template::new(tokens.parse_all(options)?);
+
+    let mut if_true = Vec::new();
+    let mut if_false = None;
+
+    while let Some(element) = tokens.next()? {
+        match element {
+            BlockElement::Tag(mut tag) => match tag.name() {
+                "else" => {
+                    if_false = Some(tokens.parse_all(options)?);
+                    break;
+                }
+                _ => if_true.push(tag.parse(&mut tokens, options)?),
+            },
+            element => if_true.push(element.parse(&mut tokens, options)?),
+        }
+    }
+
+    let if_true = Template::new(if_true);
+    let if_false = if_false.map(Template::new);
 
     tokens.assert_empty();
     Ok(Box::new(Conditional {
@@ -312,7 +330,7 @@ pub fn unless_block(
         condition,
         mode: false,
         if_true,
-        if_false: None,
+        if_false,
     }))
 }
 

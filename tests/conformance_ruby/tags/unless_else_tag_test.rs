@@ -41,7 +41,6 @@ fn test_unless_in_loop() {
 }
 
 #[test]
-#[ignore]
 fn test_unless_else_in_loop() {
     assert_template_result!(" TRUE  2  3 ", "{% for i in choices %}{% unless i %} {{ forloop.index }} {% else %} TRUE {% endunless %}{% endfor %}", v!({"choices": [1, nil, false]}));
 }
