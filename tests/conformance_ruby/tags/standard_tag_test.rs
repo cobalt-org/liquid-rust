@@ -456,7 +456,6 @@ fn test_ifchanged() {
 }
 
 #[test]
-#[ignore]
 fn test_multiline_tag() {
     assert_template_result!(
         "0 1 2 3",
