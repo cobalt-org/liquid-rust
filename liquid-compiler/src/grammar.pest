@@ -1,16 +1,15 @@
-WHITESPACE = _{" "}
-LINE_OR_SPACE = _{ NEWLINE | WHITESPACE }
+WHITESPACE = _{" " | NEWLINE }
 NON_WHITESPACE_CONTROL_HYPHEN = _{ !"-}}" ~ !"-%}" ~ "-" }
 LiquidFile = ${ SOI ~ Element* ~ EOI }
 
 // Element-level parsing
 Element = _{ Expression | Tag | Raw } 
 
-TagStart = _{ (LINE_OR_SPACE* ~ "{%-") | "{%" }
-TagEnd =   _{ ("-%}" ~ LINE_OR_SPACE*) | "%}" }
+TagStart = _{ (WHITESPACE* ~ "{%-") | "{%" }
+TagEnd =   _{ ("-%}" ~ WHITESPACE*) | "%}" }
 TagInner = !{Identifier ~ TagToken*}
-ExpressionStart = _{ (LINE_OR_SPACE* ~ "{{-") | "{{" }
-ExpressionEnd =   _{ ("-}}" ~ LINE_OR_SPACE*) | "}}" }
+ExpressionStart = _{ (WHITESPACE* ~ "{{-") | "{{" }
+ExpressionEnd =   _{ ("-}}" ~ WHITESPACE*) | "}}" }
 ExpressionInner = !{FilterChain}
 
 Tag = { TagStart ~ WHITESPACE* ~ TagInner ~ WHITESPACE* ~ TagEnd }

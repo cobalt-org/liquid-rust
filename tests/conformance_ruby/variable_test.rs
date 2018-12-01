@@ -132,7 +132,6 @@ fn test_hash_with_default_proc() {
 }
 
 #[test]
-#[ignore]
 fn test_multiline_variable() {
     assert_template_result!(r#"worked"#, "{{\ntest\n}}", v!({"test": "worked"}));
 }
