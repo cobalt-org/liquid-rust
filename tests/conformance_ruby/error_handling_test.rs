@@ -25,7 +25,6 @@ fn test_argument() {
 }
 
 #[test]
-#[ignore]
 fn test_missing_endtag_parse_time_error() {
     assert_parse_error!(" {% for a in b %} ... ");
 }
@@ -60,7 +59,6 @@ fn test_parsing_warn_with_line_numbers_adds_numbers_to_lexer_errors() {
 }
 
 #[test]
-#[ignore]
 fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
     let err = assert_parse_error!(
         r#"
@@ -73,13 +71,13 @@ fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
     );
     let err = err.to_string();
 
-    let expected = regex::Regex::new(r#"\bline 4\b"#).unwrap();
+    let expected = regex::Regex::new(r#"4 \|"#).unwrap();
     println!("err={}", err);
     assert!(expected.is_match(&err));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#247
 fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
     let err = assert_parse_error!(
         r#"

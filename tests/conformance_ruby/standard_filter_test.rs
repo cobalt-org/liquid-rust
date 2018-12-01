@@ -22,7 +22,7 @@ fn test_upcase() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#261
 fn test_slice() {
     assert_eq!(v!("oob"), filters!(slice, v!("foobar"), v!(1), v!(3)));
     assert_eq!(v!("oobar"), filters!(slice, v!("foobar"), v!(1), v!(1000)));
@@ -41,7 +41,7 @@ fn test_slice() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#261
 fn test_slice_on_arrays() {
     let input = v!(["f", "o", "o", "b", "a", "r"]);
     assert_eq!(v!(["o", "o", "b"]), filters!(slice, input, v!(1), v!(3)));
@@ -60,7 +60,7 @@ fn test_slice_on_arrays() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#264
 fn test_truncate() {
     assert_eq!(v!("1234..."), filters!(truncate, v!("1234567890"), v!(7)));
     assert_eq!(
@@ -80,7 +80,7 @@ fn test_truncate() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#263
 fn test_split() {
     assert_eq!(v!(["12", "34"]), filters!(split, v!("12~34"), v!("~")));
     assert_eq!(
@@ -93,7 +93,7 @@ fn test_split() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#253
 fn test_escape() {
     assert_eq!(v!("&lt;strong&gt;"), filters!(escape, v!("<strong>")));
     assert_eq!(v!("1"), filters!(escape, v!(1)));
@@ -102,8 +102,9 @@ fn test_escape() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#269
 fn test_h() {
+    panic!("Implement this filter");
     /*
     assert_eq!(v!("&lt;strong&gt;"), filters!(h, v!("<strong>")));
     assert_eq!(v!("1"), filters!(h, 1));
@@ -121,7 +122,7 @@ fn test_escape_once() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#253
 fn test_url_encode() {
     assert_eq!(
         v!("foo%2B1%40example.com"),
@@ -133,7 +134,7 @@ fn test_url_encode() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#268
 fn test_url_decode() {
     assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo+bar")));
     assert_eq!(v!("foo bar"), filters!(url_decode, v!("foo%20bar")));
@@ -211,7 +212,7 @@ fn test_join() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort() {
     assert_eq!(v!([1, 2, 3, 4]), filters!(sort, v!([4, 3, 2, 1])));
     assert_eq!(
@@ -225,7 +226,7 @@ fn test_sort() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#262
 fn test_sort_with_nils() {
     assert_eq!(v!([1, 2, 3, 4, nil]), filters!(sort, v!([nil, 4, 3, 2, 1])));
     assert_eq!(
@@ -239,7 +240,7 @@ fn test_sort_with_nils() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": 4, "handle": "alpha" },
@@ -259,7 +260,7 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_natural() {
     assert_eq!(
         v!(["a", "B", "c", "D"]),
@@ -276,7 +277,7 @@ fn test_sort_natural() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#262
 fn test_sort_natural_with_nils() {
     assert_eq!(
         v!(["a", "B", "c", "D", nil]),
@@ -293,7 +294,7 @@ fn test_sort_natural_with_nils() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": "4", "handle": "alpha" },
@@ -313,7 +314,7 @@ fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_natural_case_check() {
     let input = v!([
       { "key": "X" },
@@ -341,19 +342,19 @@ fn test_sort_natural_case_check() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_empty_array() {
     assert_eq!(v!([]), filters!(sort, v!([]), v!("a")));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_sort_natural_empty_array() {
     assert_eq!(v!([]), filters!(sort_natural, v!([]), v!("a")));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_legacy_sort_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
@@ -362,7 +363,7 @@ fn test_legacy_sort_hash() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#257
 fn test_numerical_vs_lexicographical_sort() {
     assert_eq!(v!([2, 10]), filters!(sort, v!([10, 2])));
     assert_eq!(
@@ -377,7 +378,7 @@ fn test_numerical_vs_lexicographical_sort() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#266
 fn test_uniq() {
     assert_eq!(v!(["foo"]), filters!(uniq, v!("foo")));
     assert_eq!(
@@ -396,7 +397,7 @@ fn test_uniq() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#267
 fn test_uniq_empty_array() {
     assert_eq!(v!([]), filters!(uniq, v!([]), v!("a")));
 }
@@ -412,7 +413,7 @@ fn test_reverse() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#256
 fn test_legacy_reverse_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
@@ -421,7 +422,7 @@ fn test_legacy_reverse_hash() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#258
 fn test_map() {
     assert_eq!(
         v!([1, 2, 3, 4]),
@@ -451,7 +452,7 @@ fn test_map_calls_to_liquid() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#255
 fn test_map_on_hashes() {
     assert_template_result!(
         "4217",
@@ -461,7 +462,7 @@ fn test_map_on_hashes() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#255
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
     let hash = v!({ "foo": { "bar": 42 } });
@@ -511,7 +512,7 @@ fn test_truncate_calls_to_liquid() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#252
 fn test_date() {
     assert_eq!(
         v!("May"),
@@ -594,7 +595,7 @@ fn test_date() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#254
 fn test_first_last() {
     assert_eq!(v!(1), filters!(first, v!([1, 2, 3])));
     assert_eq!(v!(3), filters!(last, v!([1, 2, 3])));
@@ -695,7 +696,7 @@ fn test_newlines_to_br() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#260
 fn test_plus() {
     assert_template_result!("2", r#"{{ 1 | plus:1 }}"#);
     assert_template_result!("2.0", r#"{{ "1" | plus:"1.0" }}"#);
@@ -704,7 +705,6 @@ fn test_plus() {
 }
 
 #[test]
-#[ignore]
 fn test_minus() {
     assert_template_result!(
         "4",
@@ -717,7 +717,6 @@ fn test_minus() {
 }
 
 #[test]
-#[ignore]
 fn test_abs() {
     assert_template_result!("17", r#"{{ 17 | abs }}"#);
     assert_template_result!("17", r#"{{ -17 | abs }}"#);
@@ -732,7 +731,7 @@ fn test_abs() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#265
 fn test_times() {
     assert_template_result!("12", r#"{{ 3 | times:4 }}"#);
     assert_template_result!("0", r#"{{ "foo" | times:4 }}"#);
@@ -748,7 +747,7 @@ fn test_times() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#251
 fn test_divided_by() {
     assert_template_result!("4", r#"{{ 12 | divided_by:3 }}"#);
     assert_template_result!("4", r#"{{ 14 | divided_by:3 }}"#);
@@ -763,7 +762,7 @@ fn test_divided_by() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#251
 fn test_modulo() {
     assert_template_result!("1", r#"{{ 3 | modulo:2 }}"#);
     assert_render_error!("{{ 1 | modulo:0 }}");
@@ -772,7 +771,7 @@ fn test_modulo() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#251
 fn test_round() {
     assert_template_result!("5", r#"{{ input | round }}"#, v!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | round }}"#);
@@ -783,7 +782,7 @@ fn test_round() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#251
 fn test_ceil() {
     assert_template_result!("5", r#"{{ input | ceil }}"#, v!({"input": 4.6}));
     assert_template_result!("5", r#"{{ "4.3" | ceil }}"#);
@@ -793,7 +792,7 @@ fn test_ceil() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#251
 fn test_floor() {
     assert_template_result!("4", r#"{{ input | floor }}"#, v!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | floor }}"#);
@@ -868,8 +867,9 @@ fn test_date_raises_nothing() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where() {
+    panic!("where is unimplemented");
     /*
     let input = v!([
       { "handle": "alpha", "ok": true },
@@ -889,8 +889,9 @@ fn test_where() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_no_key_set() {
+    panic!("where is unimplemented");
     /*
     input = [
       { v!("handle"): v!("alpha"), v!("ok"): true },
@@ -910,8 +911,9 @@ fn test_where_no_key_set() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_non_array_map_input() {
+    panic!("where is unimplemented");
     /*
     assert_eq!([{ v!("a"): v!("ok") }], filters!(where, { v!("a"): v!("ok") }, "a", r#"ok")#);
     assert_eq!([], filters!(where, { v!("a"): v!("not ok") }, "a", r#"ok")#);
@@ -919,8 +921,9 @@ fn test_where_non_array_map_input() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_indexable_but_non_map_value() {
+    panic!("where is unimplemented");
     /*
     assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok"), true) }
     assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok")) }
@@ -928,8 +931,9 @@ fn test_where_indexable_but_non_map_value() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_non_boolean_value() {
+    panic!("where is unimplemented");
     /*
     input = [
       { v!("message"): v!("Bonjour!"), v!("language"): v!("French") },
@@ -944,8 +948,9 @@ fn test_where_non_boolean_value() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_array_of_only_unindexable_values() {
+    panic!("where is unimplemented");
     /*
     assert_eq!(Nil, filters!(where, [Nil], v!("ok"), true));
     assert_eq!(Nil, filters!(where, [Nil], v!("ok")));
@@ -953,8 +958,9 @@ fn test_where_array_of_only_unindexable_values() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#291
 fn test_where_no_target_value() {
+    panic!("where is unimplemented");
     /*
     input = [
       { v!("foo"): false },

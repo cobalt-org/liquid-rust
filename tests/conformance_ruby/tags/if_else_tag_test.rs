@@ -15,7 +15,7 @@ fn test_if() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_literal_comparisons() {
     assert_template_result!(
         " NO ",
@@ -253,7 +253,7 @@ fn test_nested_if() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_comparisons_on_null() {
     assert_template_result!("", "{% if null < 10 %} NO {% endif %}");
     assert_template_result!("", "{% if null <= 10 %} NO {% endif %}");
@@ -285,9 +285,10 @@ fn test_else_if() {
 }
 
 #[test]
-#[ignore]
 fn test_syntax_error_no_variable() {
-    assert_render_error!("{% if jerry == 1 %}");
+    // Modified: since missing variables are render errors, we would hit a syntax error due to no
+    // close block, preventing us from testing the real thing.
+    assert_render_error!("{% if jerry == 1 %}{% endif %}");
 }
 
 #[test]
@@ -304,6 +305,7 @@ fn test_if_with_custom_condition() {
 #[test]
 #[ignore]
 fn test_operators_are_ignored_unless_isolated() {
+    panic!("TODO: Figure out what this is testing");
     /*
     original_op = Condition.operators["contains"]
     Condition.operators["contains"] = :[]

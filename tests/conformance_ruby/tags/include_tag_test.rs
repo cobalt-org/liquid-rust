@@ -38,7 +38,7 @@ fn test_include_tag_looks_for_file_system_in_registers_first() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_include_tag_with() {
     assert_template_result!(
         "Product: Draft 151cm ",
@@ -59,7 +59,7 @@ fn test_include_tag_with_default_name() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_include_tag_for() {
     assert_template_result!(
         "Product: Draft 151cm Product: Element 155cm ",
@@ -70,7 +70,7 @@ fn test_include_tag_for() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123 ",
@@ -81,7 +81,7 @@ fn test_include_tag_with_local_variables() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_include_tag_with_multiple_local_variables() {
     assert_template_result!(
         "Locale: test123 test321",
@@ -92,7 +92,7 @@ fn test_include_tag_with_multiple_local_variables() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_include_tag_with_multiple_local_variables_from_context() {
     assert_template_result!(
         "Locale: test123 test321",
@@ -125,7 +125,7 @@ fn test_nested_include_tag() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#237
 fn test_nested_include_with_variable() {
     assert_template_result!(
         "Product: Draft 151cm details ",
@@ -152,7 +152,6 @@ impl liquid::compiler::Include for InfiniteFileSystem {
 }
 
 #[test]
-#[ignore]
 #[should_panic]
 fn test_recursively_included_template_does_not_produce_endless_loop() {
     panic!("We don't check recursion depth");
@@ -163,7 +162,7 @@ fn test_recursively_included_template_does_not_produce_endless_loop() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#275
 fn test_dynamically_choosen_template() {
     assert_template_result!(
         "Test123",
@@ -235,14 +234,14 @@ fn test_passing_options_to_included_templates() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#275
 fn test_render_raise_argument_error_when_template_is_undefined() {
     assert_parse_error!("{% include undefined_variable %}", liquid());
     assert_parse_error!("{% include nil %}", liquid());
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#275
 fn test_including_via_variable_value() {
     assert_template_result!(
         "from TestFileSystem",

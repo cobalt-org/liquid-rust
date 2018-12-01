@@ -74,7 +74,7 @@ fn test_join() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#250
 fn test_sort() {
     let assigns = v!({
         "value": 3,
@@ -96,7 +96,7 @@ fn test_sort() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#249
 fn test_sort_natural() {
     let assigns = v!({
         "words": ["case", "Assert", "Insensitive"],
@@ -122,7 +122,7 @@ fn test_sort_natural() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#246
 fn test_compact() {
     let assigns = v!({
         "words": ["a", nil, "b", nil, "c"],
@@ -171,7 +171,7 @@ fn test_nonexistent_filter_is_ignored() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#92
 fn test_filter_with_keyword_arguments() {
     let assigns = v!({
         "surname": "john",

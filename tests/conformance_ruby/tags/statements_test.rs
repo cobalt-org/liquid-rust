@@ -35,7 +35,7 @@ fn test_zero_lq_or_equal_one() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_zero_lq_or_equal_one_involving_nil() {
     let text = " {% if null <= 0 %} true {% else %} false {% endif %} ";
     assert_template_result!("  false  ", text);
@@ -96,21 +96,21 @@ fn test_var_and_long_string_are_equal_backwards() {
 */
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#222
 fn test_is_collection_empty() {
     let text = " {% if array == empty %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({"array": []}));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#222
 fn test_is_not_collection_empty() {
     let text = " {% if array == empty %} true {% else %} false {% endif %} ";
     assert_template_result!("  false  ", text, v!({"array": [1, 2, 3]}));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_nil() {
     let text = " {% if var == nil %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({ "var": nil }));
@@ -120,7 +120,7 @@ fn test_nil() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_not_nil() {
     let text = " {% if var != nil %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({"var": 1}));

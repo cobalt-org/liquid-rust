@@ -5,19 +5,16 @@ fn test_parsing_css() {
 }
 
 #[test]
-#[ignore]
 fn test_raise_on_single_close_bracet() {
     assert_parse_error!("text {{method} oh nos!");
 }
 
 #[test]
-#[ignore]
 fn test_raise_on_label_and_no_close_bracets() {
     assert_parse_error!("TEST {{ ");
 }
 
 #[test]
-#[ignore]
 fn test_raise_on_label_and_no_close_bracets_percent() {
     assert_parse_error!("TEST {% ");
 }

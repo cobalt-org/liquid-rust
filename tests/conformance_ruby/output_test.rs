@@ -79,11 +79,10 @@ fn test_variable() {
 }
 
 #[test]
-#[ignore]
 fn test_variable_traversing_with_two_brackets() {
     let text = "{{ site.data.menu[include.menu][include.locale] }}";
     assert_template_result!(
-        "it works",
+        "it works!",
         text,
         v!({
       "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },

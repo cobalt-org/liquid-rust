@@ -176,13 +176,13 @@ fn test_undefined_filters() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#284
 fn test_undefined_filters_raise() {
     assert_render_error!("{x | somefilter1 | upcase | somefilter2}", v!({"x": "foo"}));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#224
 fn test_using_range_literal_works_as_expected() {
     let template = liquid::ParserBuilder::with_liquid()
         .build()

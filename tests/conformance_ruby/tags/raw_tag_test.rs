@@ -12,7 +12,7 @@ fn test_output_in_raw() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-ignore#277
 fn test_open_tag_in_raw() {
     assert_template_result!(
         " Foobar {% invalid ",
@@ -49,7 +49,6 @@ fn test_open_tag_in_raw() {
 }
 
 #[test]
-#[ignore]
 fn test_invalid_raw() {
     assert_parse_error!("{% raw %} foo");
     assert_parse_error!("{% raw } foo {% endraw %}");
