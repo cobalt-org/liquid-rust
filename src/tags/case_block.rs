@@ -8,6 +8,7 @@ use compiler::BlockElement;
 use compiler::LiquidOptions;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
+use compiler::TryMatchToken;
 use interpreter::Context;
 use interpreter::Expression;
 use interpreter::Renderable;
@@ -88,9 +89,11 @@ fn parse_condition(arguments: &mut TagTokenIter) -> Result<Vec<Expression>> {
     values.push(first_value);
 
     while let Some(token) = arguments.next() {
-        token
-            .expect_str("or")
-            .into_result_custom_msg("\"or\" expected.")?;
+        if let TryMatchToken::Fails(token) = token.expect_str("or") {
+            token
+                .expect_str(",")
+                .into_result_custom_msg("\"or\" or \",\" expected.")?;
+        }
 
         let value = arguments
             .expect_next("Value expected")?
