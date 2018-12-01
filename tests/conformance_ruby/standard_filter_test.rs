@@ -686,7 +686,6 @@ fn test_strip_newlines() {
 }
 
 #[test]
-#[ignore]
 fn test_newlines_to_br() {
     assert_template_result!(
         "a<br />\nb<br />\nc",
