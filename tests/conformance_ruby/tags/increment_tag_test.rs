@@ -8,7 +8,7 @@ fn test_inc() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#276
 fn test_dec() {
     assert_template_result!("9", "{%decrement port %}", v!({ "port": 10 }));
     assert_template_result!("-1 -2", "{%decrement port %} {%decrement port%}", v!({}));

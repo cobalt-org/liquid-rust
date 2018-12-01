@@ -15,7 +15,6 @@ fn test_unless() {
 }
 
 #[test]
-#[ignore]
 fn test_unless_else() {
     assert_template_result!(
         " YES ",

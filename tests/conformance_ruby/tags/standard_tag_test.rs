@@ -18,7 +18,7 @@ fn test_no_transform() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#277
 fn test_has_a_block_which_does_nothing() {
     assert_template_result!(
         "the comment block should be removed  .. right?",
@@ -158,7 +158,7 @@ fn test_case_with_else() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#136
 fn test_case_on_size() {
     assert_template_result!(
         "",
@@ -193,7 +193,7 @@ fn test_case_on_size() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#136
 fn test_case_on_size_with_else() {
     assert_template_result!(
         "else",
@@ -233,7 +233,7 @@ fn test_case_on_size_with_else() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#278
 fn test_case_on_length_with_else() {
     assert_template_result!(
         "else",
@@ -304,7 +304,7 @@ fn test_assign_from_case() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#223
 fn test_case_when_or() {
     let code = "{% case condition %}{% when 1 or 2 or 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
     assert_template_result!(" its 1 or 2 or 3 ", code, v!({ "condition": 1 }));
@@ -321,7 +321,7 @@ fn test_case_when_or() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#279
 fn test_case_when_comma() {
     let code =
         "{% case condition %}{% when 1, 2, 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
@@ -408,7 +408,7 @@ fn test_multiple_named_cycles_with_names_from_context() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#136
 fn test_size_of_array() {
     let assigns = v!({ "array": [1, 2, 3, 4] });
     assert_template_result!(
@@ -419,7 +419,7 @@ fn test_size_of_array() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#136
 fn test_size_of_hash() {
     let assigns = v!({ "hash": { "a": 1, "b": 2, "c": 3, "d": 4 } });
     assert_template_result!(

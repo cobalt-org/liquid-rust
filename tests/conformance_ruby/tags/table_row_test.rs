@@ -1,5 +1,5 @@
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#282
 fn test_table_row() {
     assert_template_result!(
         "<tr class=\"row1\">\n<td class=\"col1\"> 1 </td><td class=\"col2\"> 2 </td><td class=\"col3\"> 3 </td></tr>\n<tr class=\"row2\"><td class=\"col1\"> 4 </td><td class=\"col2\"> 5 </td><td class=\"col3\"> 6 </td></tr>\n",
@@ -14,7 +14,7 @@ fn test_table_row() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#282
 fn test_table_row_with_different_cols() {
     assert_template_result!(
         "<tr class=\"row1\">\n<td class=\"col1\"> 1 </td><td class=\"col2\"> 2 </td><td class=\"col3\"> 3 </td><td class=\"col4\"> 4 </td><td class=\"col5\"> 5 </td></tr>\n<tr class=\"row2\"><td class=\"col1\"> 6 </td></tr>\n",
@@ -23,7 +23,7 @@ fn test_table_row_with_different_cols() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#282
 fn test_table_col_counter() {
     assert_template_result!(
         "<tr class=\"row1\">\n<td class=\"col1\">1</td><td class=\"col2\">2</td></tr>\n<tr class=\"row2\"><td class=\"col1\">1</td><td class=\"col2\">2</td></tr>\n<tr class=\"row3\"><td class=\"col1\">1</td><td class=\"col2\">2</td></tr>\n",
@@ -32,7 +32,7 @@ fn test_table_col_counter() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#282
 fn test_quoted_fragment() {
     assert_template_result!(
         "<tr class=\"row1\">\n<td class=\"col1\"> 1 </td><td class=\"col2\"> 2 </td><td class=\"col3\"> 3 </td></tr>\n<tr class=\"row2\"><td class=\"col1\"> 4 </td><td class=\"col2\"> 5 </td><td class=\"col3\"> 6 </td></tr>\n",
@@ -51,7 +51,7 @@ fn test_enumerable_drop() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#282
 fn test_offset_and_limit() {
     assert_template_result!(
         "<tr class=\"row1\">\n<td class=\"col1\"> 1 </td><td class=\"col2\"> 2 </td><td class=\"col3\"> 3 </td></tr>\n<tr class=\"row2\"><td class=\"col1\"> 4 </td><td class=\"col2\"> 5 </td><td class=\"col3\"> 6 </td></tr>\n",

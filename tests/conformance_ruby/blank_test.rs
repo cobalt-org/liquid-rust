@@ -49,13 +49,13 @@ fn test_new_tags_are_not_blank_by_default() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_loops_are_blank() {
     assert_template_result!("", wrap_in_for(" "));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_if_else_are_blank() {
     assert_template_result!("", "{% if true %} {% elsif false %} {% else %} {% endif %}",);
 }
@@ -74,19 +74,19 @@ fn test_mark_as_blank_only_during_parsing() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_comments_are_blank() {
     assert_template_result!("", wrap(" {% comment %} whatever {% endcomment %} "),);
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_captures_are_blank() {
     assert_template_result!("", wrap(" {% capture foo %} whatever {% endcapture %} "),);
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_nested_blocks_are_blank_but_only_if_all_children_are() {
     assert_template_result!("", &wrap(wrap(" ")));
     assert_template_result!(
@@ -99,13 +99,13 @@ fn test_nested_blocks_are_blank_but_only_if_all_children_are() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_assigns_are_blank() {
     assert_template_result!("", &wrap(r#" {% assign foo = "bar" %} "#));
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_whitespace_is_blank() {
     assert_template_result!("", wrap(" "));
     assert_template_result!("", wrap("\t"));
@@ -137,7 +137,6 @@ fn test_raw_is_not_blank() {
 }
 
 #[test]
-#[ignore]
 fn test_include_is_blank() {
     let liquid = liquid::ParserBuilder::with_liquid()
         .include_source(Box::new(BlankTestFilesystem))
@@ -164,7 +163,7 @@ fn test_include_is_blank() {
 }
 
 #[test]
-#[ignore]
+#[should_panic] // liquid-rust#244
 fn test_case_is_blank() {
     assert_template_result!("", wrap(" {% assign foo = 'bar' %} {% case foo %} {% when 'bar' %} {% when 'whatever' %} {% else %} {% endcase %} "));
     assert_template_result!("", wrap(" {% assign foo = 'else' %} {% case foo %} {% when 'bar' %} {% when 'whatever' %} {% else %} {% endcase %} "));
