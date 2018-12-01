@@ -94,7 +94,7 @@ pub fn newline_to_br(input: &Value, args: &[Value]) -> FilterResult {
 
     // TODO handle windows line endings
     let input = input.to_str();
-    Ok(Value::scalar(input.replace("\n", "<br />")))
+    Ok(Value::scalar(input.replace("\n", "<br />\n")))
 }
 
 #[cfg(test)]
@@ -200,7 +200,7 @@ mod tests {
     fn unit_newline_to_br() {
         let input = &tos!("a\nb");
         let args = &[];
-        let desired_result = tos!("a<br />b");
+        let desired_result = tos!("a<br />\nb");
         assert_eq!(unit!(newline_to_br, input, args), desired_result);
     }
 
@@ -209,7 +209,7 @@ mod tests {
         // First example from https://shopify.github.io/liquid/filters/newline_to_br/
         let input = &tos!("\nHello\nWorld\n");
         let args = &[];
-        let desired_result = tos!("<br />Hello<br />World<br />");
+        let desired_result = tos!("<br />\nHello<br />\nWorld<br />\n");
         assert_eq!(unit!(newline_to_br, input, args), desired_result);
     }
 
