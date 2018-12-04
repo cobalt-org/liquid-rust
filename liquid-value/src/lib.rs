@@ -11,6 +11,8 @@ extern crate itertools;
 extern crate liquid_error;
 extern crate num_traits;
 
+mod macros;
+
 mod path;
 mod scalar;
 mod ser;
