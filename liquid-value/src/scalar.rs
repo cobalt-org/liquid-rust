@@ -140,6 +140,13 @@ impl<'s> ScalarCow<'s> {
     }
 }
 
+impl<'s> fmt::Display for ScalarCow<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = self.to_str();
+        write!(f, "{}", data)
+    }
+}
+
 impl<'s> From<i32> for ScalarCow<'s> {
     fn from(s: i32) -> Self {
         ScalarCow {
@@ -206,18 +213,42 @@ impl<'s> From<borrow::Cow<'s, str>> for ScalarCow<'s> {
 
 impl<'s> PartialEq<ScalarCow<'s>> for ScalarCow<'s> {
     fn eq(&self, other: &Self) -> bool {
-        match (&self.0, &other.0) {
-            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
-            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)) == y,
-            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (f64::from(y)),
-            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x == y,
-            (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
-            (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
-            (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
-            // encode Ruby truthiness: all values except false and nil are true
-            (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
-            _ => false,
-        }
+        scalar_eq(self, other)
+    }
+}
+
+impl<'s> PartialEq<i32> for ScalarCow<'s> {
+    fn eq(&self, other: &i32) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<f64> for ScalarCow<'s> {
+    fn eq(&self, other: &f64) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<bool> for ScalarCow<'s> {
+    fn eq(&self, other: &bool) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<Date> for ScalarCow<'s> {
+    fn eq(&self, other: &Date) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<str> for ScalarCow<'s> {
+    fn eq(&self, other: &str) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
     }
 }
 
@@ -225,27 +256,74 @@ impl<'s> Eq for ScalarCow<'s> {}
 
 impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (&self.0, &other.0) {
-            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
-            (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => {
-                (f64::from(x)).partial_cmp(&y)
-            }
-            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => {
-                x.partial_cmp(&(f64::from(y)))
-            }
-            (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
-            (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
-            (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
-            (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
-            _ => None,
-        }
+        scalar_cmp(self, other)
     }
 }
 
-impl<'s> fmt::Display for ScalarCow<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = self.to_str();
-        write!(f, "{}", data)
+impl<'s> PartialOrd<i32> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<f64> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<bool> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &bool) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<Date> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<str> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &str) -> Option<Ordering> {
+        let other = other.into();
+        scalar_cmp(self, &other)
+    }
+}
+
+fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
+    match (&lhs.0, &rhs.0) {
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)) == y,
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (f64::from(y)),
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x == y,
+        (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
+        (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
+        // encode Ruby truthiness: all values except false and nil are true
+        (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
+        _ => false,
+    }
+}
+
+fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> {
+    match (&lhs.0, &rhs.0) {
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => {
+            (f64::from(x)).partial_cmp(&y)
+        }
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => {
+            x.partial_cmp(&(f64::from(y)))
+        }
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
+        _ => None,
     }
 }
 
