@@ -2,20 +2,9 @@ use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
 
-#[cfg(feature = "object_sorted")]
-use std::collections::BTreeMap;
-
-#[cfg(not(any(feature = "object_sorted")))]
-use std::collections::HashMap;
-
+use super::map;
 use super::Scalar;
 use super::ScalarCow;
-
-#[cfg(feature = "object_sorted")]
-type MapImpl<K, V> = BTreeMap<K, V>;
-
-#[cfg(not(any(feature = "object_sorted")))]
-type MapImpl<K, V> = HashMap<K, V>;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,7 +24,7 @@ pub enum Value {
 pub type Array = Vec<Value>;
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
-pub type Object = MapImpl<borrow::Cow<'static, str>, Value>;
+pub type Object = map::Map;
 
 impl Value {
     /// Create as a `Scalar`.

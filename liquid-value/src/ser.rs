@@ -5,8 +5,8 @@ use serde::ser::Impossible;
 use serde::{self, Serialize};
 
 use error;
-use values::Object;
-use values::Value;
+use super::Object;
+use super::Value;
 
 /// Convert a `T` into `liquid_value:Value`.
 ///
