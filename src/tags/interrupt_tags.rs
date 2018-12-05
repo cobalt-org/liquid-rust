@@ -58,16 +58,16 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .tags
-            .insert("break", (break_tag as compiler::FnParseTag).into());
+            .register("break", (break_tag as compiler::FnParseTag).into());
         options
             .tags
-            .insert("continue", (continue_tag as compiler::FnParseTag).into());
+            .register("continue", (continue_tag as compiler::FnParseTag).into());
         options
             .blocks
-            .insert("for", (tags::for_block as compiler::FnParseBlock).into());
+            .register("for", (tags::for_block as compiler::FnParseBlock).into());
         options
             .blocks
-            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
+            .register("if", (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 

@@ -69,13 +69,13 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .tags
-            .insert("assign", (assign_tag as compiler::FnParseTag).into());
+            .register("assign", (assign_tag as compiler::FnParseTag).into());
         options
             .blocks
-            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
+            .register("if", (tags::if_block as compiler::FnParseBlock).into());
         options
             .blocks
-            .insert("for", (tags::for_block as compiler::FnParseBlock).into());
+            .register("for", (tags::for_block as compiler::FnParseBlock).into());
         options
     }
 

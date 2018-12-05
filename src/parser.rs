@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
@@ -14,9 +13,9 @@ use tags;
 
 #[derive(Default, Clone)]
 pub struct ParserBuilder {
-    blocks: HashMap<&'static str, compiler::BoxedBlockParser>,
-    tags: HashMap<&'static str, compiler::BoxedTagParser>,
-    filters: HashMap<&'static str, interpreter::BoxedValueFilter>,
+    blocks: interpreter::PluginRegistry<compiler::BoxedBlockParser>,
+    tags: interpreter::PluginRegistry<compiler::BoxedTagParser>,
+    filters: interpreter::PluginRegistry<interpreter::BoxedValueFilter>,
     include_source: Option<Box<compiler::Include>>,
 }
 
@@ -165,13 +164,13 @@ impl ParserBuilder {
         name: &'static str,
         block: B,
     ) -> Self {
-        self.blocks.insert(name, block.into());
+        self.blocks.register(name, block.into());
         self
     }
 
     /// Inserts a new custom tag into the parser
     pub fn tag<T: Into<compiler::BoxedTagParser>>(mut self, name: &'static str, tag: T) -> Self {
-        self.tags.insert(name, tag.into());
+        self.tags.register(name, tag.into());
         self
     }
 
@@ -181,7 +180,7 @@ impl ParserBuilder {
         name: &'static str,
         filter: F,
     ) -> Self {
-        self.filters.insert(name, filter.into());
+        self.filters.register(name, filter.into());
         self
     }
 
@@ -215,7 +214,7 @@ impl ParserBuilder {
 #[derive(Default, Clone)]
 pub struct Parser {
     options: compiler::LiquidOptions,
-    filters: sync::Arc<HashMap<&'static str, interpreter::BoxedValueFilter>>,
+    filters: sync::Arc<interpreter::PluginRegistry<interpreter::BoxedValueFilter>>,
 }
 
 impl Parser {

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use liquid_interpreter::PluginRegistry;
 
 use super::BoxedBlockParser;
 use super::BoxedTagParser;
@@ -7,8 +7,8 @@ use super::NullInclude;
 
 #[derive(Clone)]
 pub struct LiquidOptions {
-    pub blocks: HashMap<&'static str, BoxedBlockParser>,
-    pub tags: HashMap<&'static str, BoxedTagParser>,
+    pub blocks: PluginRegistry<BoxedBlockParser>,
+    pub tags: PluginRegistry<BoxedTagParser>,
     pub include_source: Box<Include>,
 }
 

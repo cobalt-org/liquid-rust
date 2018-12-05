@@ -2,20 +2,9 @@ use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
 
-#[cfg(feature = "object_sorted")]
-use std::collections::BTreeMap;
-
-#[cfg(not(any(feature = "object_sorted")))]
-use std::collections::HashMap;
-
+use super::map;
 use super::Scalar;
 use super::ScalarCow;
-
-#[cfg(feature = "object_sorted")]
-type MapImpl<K, V> = BTreeMap<K, V>;
-
-#[cfg(not(any(feature = "object_sorted")))]
-type MapImpl<K, V> = HashMap<K, V>;
 
 /// An enum to represent different value types
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,7 +24,7 @@ pub enum Value {
 pub type Array = Vec<Value>;
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
-pub type Object = MapImpl<borrow::Cow<'static, str>, Value>;
+pub type Object = map::Map;
 
 impl Value {
     /// Create as a `Scalar`.
@@ -300,22 +289,16 @@ impl Default for Value {
     }
 }
 
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let data = self.to_str();
+        write!(f, "{}", data)
+    }
+}
+
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x == y,
-            (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
-            (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
-            (&Value::Nil, &Value::Nil) => true,
-
-            // encode Ruby truthiness: all values except false and nil are true
-            (&Value::Nil, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), &Value::Nil) => {
-                !b.to_bool().unwrap_or(true)
-            }
-            (_, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), _) => b.to_bool().unwrap_or(false),
-
-            _ => false,
-        }
+        value_eq(self, other)
     }
 }
 
@@ -323,19 +306,33 @@ impl Eq for Value {}
 
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x.partial_cmp(y),
-            (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
-            (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
-            _ => None,
-        }
+        value_cmp(self, other)
     }
 }
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = self.to_str();
-        write!(f, "{}", data)
+fn value_eq(lhs: &Value, rhs: &Value) -> bool {
+    match (lhs, rhs) {
+        (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x == y,
+        (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
+        (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
+        (&Value::Nil, &Value::Nil) => true,
+
+        // encode Ruby truthiness: all values except false and nil are true
+        (&Value::Nil, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), &Value::Nil) => {
+            !b.to_bool().unwrap_or(true)
+        }
+        (_, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), _) => b.to_bool().unwrap_or(false),
+
+        _ => false,
+    }
+}
+
+fn value_cmp(lhs: &Value, rhs: &Value) -> Option<Ordering> {
+    match (lhs, rhs) {
+        (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x.partial_cmp(y),
+        (&Value::Array(ref x), &Value::Array(ref y)) => x.iter().partial_cmp(y.iter()),
+        (&Value::Object(ref x), &Value::Object(ref y)) => x.iter().partial_cmp(y.iter()),
+        _ => None,
     }
 }
 

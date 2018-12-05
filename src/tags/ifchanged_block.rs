@@ -60,16 +60,16 @@ mod test {
 
     fn options() -> LiquidOptions {
         let mut options = LiquidOptions::default();
-        options.blocks.insert(
+        options.blocks.register(
             "ifchanged",
             (ifchanged_block as compiler::FnParseBlock).into(),
         );
         options
             .blocks
-            .insert("for", (tags::for_block as compiler::FnParseBlock).into());
+            .register("for", (tags::for_block as compiler::FnParseBlock).into());
         options
             .blocks
-            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
+            .register("if", (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 

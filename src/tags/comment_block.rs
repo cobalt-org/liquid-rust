@@ -50,7 +50,7 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("comment", (comment_block as compiler::FnParseBlock).into());
+            .register("comment", (comment_block as compiler::FnParseBlock).into());
         options
     }
 

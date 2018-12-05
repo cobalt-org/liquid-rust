@@ -398,10 +398,10 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("if", (if_block as compiler::FnParseBlock).into());
+            .register("if", (if_block as compiler::FnParseBlock).into());
         options
             .blocks
-            .insert("unless", (unless_block as compiler::FnParseBlock).into());
+            .register("unless", (unless_block as compiler::FnParseBlock).into());
         options
     }
 

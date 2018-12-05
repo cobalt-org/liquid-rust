@@ -414,11 +414,11 @@ impl<'a> Tag<'a> {
         let position = name.as_span();
         let name = name.as_str();
 
-        if options.tags.contains_key(name) {
-            options.tags[name].parse(name, tokens, options)
-        } else if options.blocks.contains_key(name) {
+        if let Some(plugin) = options.tags.get(name) {
+            plugin.parse(name, tokens, options)
+        } else if let Some(plugin) = options.blocks.get(name) {
             let block = TagBlock::new(name, next_elements);
-            let renderables = options.blocks[name].parse(name, tokens, block, options)?;
+            let renderables = plugin.parse(name, tokens, block, options)?;
             Ok(renderables)
         } else {
             let pest_error = ::pest::error::Error::new_from_span(

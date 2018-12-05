@@ -111,7 +111,7 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .tags
-            .insert("cycle", (cycle_tag as compiler::FnParseTag).into());
+            .register("cycle", (cycle_tag as compiler::FnParseTag).into());
         options
     }
 

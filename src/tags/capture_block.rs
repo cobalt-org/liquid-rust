@@ -73,7 +73,7 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("capture", (capture_block as compiler::FnParseBlock).into());
+            .register("capture", (capture_block as compiler::FnParseBlock).into());
         options
     }
 
