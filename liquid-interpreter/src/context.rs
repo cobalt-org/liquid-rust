@@ -9,6 +9,7 @@ use value::{Object, PathRef, Scalar, Value};
 use super::Expression;
 use super::Globals;
 use super::{BoxedValueFilter, FilterValue};
+use super::PluginRegistry;
 
 /// Format an error for an unexpected value.
 pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
@@ -291,7 +292,7 @@ impl<'g> Default for Stack<'g> {
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
     globals: Option<&'g Globals>,
-    filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
+    filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
 impl<'g> ContextBuilder<'g> {
@@ -312,7 +313,7 @@ impl<'g> ContextBuilder<'g> {
     /// Initialize the context with the given filters.
     pub fn set_filters(
         mut self,
-        filters: &sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
+        filters: &sync::Arc<PluginRegistry<BoxedValueFilter>>,
     ) -> Self {
         self.filters = sync::Arc::clone(filters);
         self
@@ -349,7 +350,7 @@ pub struct Context<'g> {
     cycles: CycleStateInner,
     ifchanged: IfChangedState,
 
-    filters: sync::Arc<HashMap<&'static str, BoxedValueFilter>>,
+    filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
 impl<'g> Context<'g> {
@@ -368,7 +369,7 @@ impl<'g> Context<'g> {
                 let f: &FilterValue = f;
                 f
             }).ok_or_else(|| {
-                let available = itertools::join(self.filters.keys(), ", ");
+                let available = itertools::join(self.filters.plugin_names(), ", ");
                 Error::with_msg("Unknown filter")
                     .context("requested filter", name.to_owned())
                     .context("available filters", available)

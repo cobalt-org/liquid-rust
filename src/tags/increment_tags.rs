@@ -99,13 +99,13 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .tags
-            .insert("assign", (tags::assign_tag as compiler::FnParseTag).into());
+            .register("assign", (tags::assign_tag as compiler::FnParseTag).into());
         options
             .tags
-            .insert("increment", (increment_tag as compiler::FnParseTag).into());
+            .register("increment", (increment_tag as compiler::FnParseTag).into());
         options
             .tags
-            .insert("decrement", (decrement_tag as compiler::FnParseTag).into());
+            .register("decrement", (decrement_tag as compiler::FnParseTag).into());
         options
     }
 

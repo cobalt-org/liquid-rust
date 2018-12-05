@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::Write;
 use std::sync;
 
@@ -8,7 +7,7 @@ use liquid_interpreter::Renderable;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
-    pub(crate) filters: sync::Arc<HashMap<&'static str, interpreter::BoxedValueFilter>>,
+    pub(crate) filters: sync::Arc<interpreter::PluginRegistry<interpreter::BoxedValueFilter>>,
 }
 
 impl Template {

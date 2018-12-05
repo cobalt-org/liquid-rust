@@ -172,7 +172,7 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("case", (case_block as compiler::FnParseBlock).into());
+            .register("case", (case_block as compiler::FnParseBlock).into());
         options
     }
 

@@ -58,7 +58,6 @@ pub fn include_tag(
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::path;
     use std::sync;
@@ -79,14 +78,14 @@ mod test {
         options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
         options
             .tags
-            .insert("include", (include_tag as compiler::FnParseTag).into());
-        options.blocks.insert(
+            .register("include", (include_tag as compiler::FnParseTag).into());
+        options.blocks.register(
             "comment",
             (tags::comment_block as compiler::FnParseBlock).into(),
         );
         options
             .blocks
-            .insert("if", (tags::if_block as compiler::FnParseBlock).into());
+            .register("if", (tags::if_block as compiler::FnParseBlock).into());
         options
     }
 
@@ -97,8 +96,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("size", (filters::size as interpreter::FnFilterValue).into());
+        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
+        filters.register("size", (filters::size as interpreter::FnFilterValue).into());
         let mut context = ContextBuilder::new()
             .set_filters(&sync::Arc::new(filters))
             .build();
@@ -119,8 +118,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert("size", (filters::size as interpreter::FnFilterValue).into());
+        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
+        filters.register("size", (filters::size as interpreter::FnFilterValue).into());
         let mut context = ContextBuilder::new()
             .set_filters(&sync::Arc::new(filters))
             .build();

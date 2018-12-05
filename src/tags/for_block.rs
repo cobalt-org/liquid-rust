@@ -476,7 +476,6 @@ pub fn tablerow_block(
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
     use std::sync;
 
     use compiler;
@@ -491,14 +490,14 @@ mod test {
         let mut options = LiquidOptions::default();
         options
             .blocks
-            .insert("for", (for_block as compiler::FnParseBlock).into());
-        options.blocks.insert(
+            .register("for", (for_block as compiler::FnParseBlock).into());
+        options.blocks.register(
             "tablerow",
             (tablerow_block as compiler::FnParseBlock).into(),
         );
         options
             .tags
-            .insert("assign", (tags::assign_tag as compiler::FnParseTag).into());
+            .register("assign", (tags::assign_tag as compiler::FnParseTag).into());
         options
     }
 
@@ -796,8 +795,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters: HashMap<&'static str, interpreter::BoxedValueFilter> = HashMap::new();
-        filters.insert(
+        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
+        filters.register(
             "shout",
             ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
                 as interpreter::FnFilterValue)
