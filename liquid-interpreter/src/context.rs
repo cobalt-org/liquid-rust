@@ -8,8 +8,8 @@ use value::{Object, PathRef, Scalar, Value};
 
 use super::Expression;
 use super::Globals;
-use super::{BoxedValueFilter, FilterValue};
 use super::PluginRegistry;
+use super::{BoxedValueFilter, FilterValue};
 
 /// Format an error for an unexpected value.
 pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
@@ -311,10 +311,7 @@ impl<'g> ContextBuilder<'g> {
     }
 
     /// Initialize the context with the given filters.
-    pub fn set_filters(
-        mut self,
-        filters: &sync::Arc<PluginRegistry<BoxedValueFilter>>,
-    ) -> Self {
+    pub fn set_filters(mut self, filters: &sync::Arc<PluginRegistry<BoxedValueFilter>>) -> Self {
         self.filters = sync::Arc::clone(filters);
         self
     }

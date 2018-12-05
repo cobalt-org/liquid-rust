@@ -4,9 +4,9 @@ use num_traits;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
-use error;
 use super::Object;
 use super::Value;
+use error;
 
 /// Convert a `T` into `liquid_value:Value`.
 ///

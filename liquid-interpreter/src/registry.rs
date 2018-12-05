@@ -5,7 +5,7 @@ type KeysImpl<'a, K, V> = hash_map::Keys<'a, K, V>;
 
 /// Liquid language plugin registry.
 pub struct PluginRegistry<P> {
-    plugins: MapImpl<&'static str, P>
+    plugins: MapImpl<&'static str, P>,
 }
 
 impl<P> PluginRegistry<P> {
@@ -50,7 +50,7 @@ impl<P> Default for PluginRegistry<P> {
 
 impl<P> Clone for PluginRegistry<P>
 where
-    P: Clone
+    P: Clone,
 {
     #[inline]
     fn clone(&self) -> Self {
@@ -91,7 +91,7 @@ macro_rules! delegate_iterator {
 #[derive(Debug)]
 pub struct PluginNames<'a, P>
 where
-    P: 'a
+    P: 'a,
 {
     iter: KeysImpl<'a, &'static str, P>,
 }
