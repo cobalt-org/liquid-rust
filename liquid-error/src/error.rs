@@ -3,6 +3,9 @@ use std::error;
 use std::fmt;
 use std::result;
 
+use super::ClonableError;
+use super::BoxedError;
+
 /// Convenience type alias for Liquid compiler errors
 pub type Result<T> = result::Result<T, Error>;
 
@@ -164,7 +167,7 @@ impl Error {
         self.cause_error(cause)
     }
 
-    fn cause_error(mut self, cause: Box<error::Error + Send + Sync + 'static>) -> Self {
+    fn cause_error(mut self, cause: BoxedError) -> Self {
         let cause = Some(ClonableError::new(cause));
         self.inner.cause = cause;
         self
@@ -236,40 +239,3 @@ impl Trace {
     }
 }
 
-#[derive(Debug)]
-enum ClonableError {
-    Original(BoxedError),
-    Missing,
-}
-
-type BoxedError = Box<error::Error + Send + Sync + 'static>;
-
-impl ClonableError {
-    fn new(error: BoxedError) -> Self {
-        ClonableError::Original(error)
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            ClonableError::Original(ref e) => Some(e.as_ref()),
-            _ => None,
-        }
-    }
-}
-
-impl Clone for ClonableError {
-    fn clone(&self) -> Self {
-        match *self {
-            ClonableError::Original(_) | ClonableError::Missing => ClonableError::Missing,
-        }
-    }
-}
-
-impl fmt::Display for ClonableError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ClonableError::Original(ref e) => fmt::Display::fmt(e, f),
-            ClonableError::Missing => write!(f, "Unknown error"),
-        }
-    }
-}

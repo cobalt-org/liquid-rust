@@ -4,6 +4,8 @@
 #![warn(missing_debug_implementations)]
 #![warn(unused_extern_crates)]
 
+mod clone;
 mod error;
 
 pub use error::*;
+use clone::*;
