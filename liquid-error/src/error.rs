@@ -100,7 +100,7 @@ pub struct Error {
 struct InnerError {
     msg: borrow::Cow<'static, str>,
     user_backtrace: Vec<Trace>,
-    cause: Option<ErrorCause>,
+    cause: Option<ClonableError>,
 }
 
 impl Error {
@@ -165,7 +165,7 @@ impl Error {
     }
 
     fn cause_error(mut self, cause: Box<error::Error + Send + Sync + 'static>) -> Self {
-        let cause = Some(ErrorCause::new(cause));
+        let cause = Some(ClonableError::new(cause));
         self.inner.cause = cause;
         self
     }
@@ -237,39 +237,39 @@ impl Trace {
 }
 
 #[derive(Debug)]
-enum ErrorCause {
-    Generic(GenericError),
+enum ClonableError {
+    Original(BoxedError),
     Missing,
 }
 
-type GenericError = Box<error::Error + Send + Sync + 'static>;
+type BoxedError = Box<error::Error + Send + Sync + 'static>;
 
-impl ErrorCause {
-    fn new(error: GenericError) -> Self {
-        ErrorCause::Generic(error)
+impl ClonableError {
+    fn new(error: BoxedError) -> Self {
+        ClonableError::Original(error)
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            ErrorCause::Generic(ref e) => Some(e.as_ref()),
+            ClonableError::Original(ref e) => Some(e.as_ref()),
             _ => None,
         }
     }
 }
 
-impl Clone for ErrorCause {
+impl Clone for ClonableError {
     fn clone(&self) -> Self {
         match *self {
-            ErrorCause::Generic(_) | ErrorCause::Missing => ErrorCause::Missing,
+            ClonableError::Original(_) | ClonableError::Missing => ClonableError::Missing,
         }
     }
 }
 
-impl fmt::Display for ErrorCause {
+impl fmt::Display for ClonableError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ErrorCause::Generic(ref e) => fmt::Display::fmt(e, f),
-            ErrorCause::Missing => write!(f, "Unknown error"),
+            ClonableError::Original(ref e) => fmt::Display::fmt(e, f),
+            ClonableError::Missing => write!(f, "Unknown error"),
         }
     }
 }
