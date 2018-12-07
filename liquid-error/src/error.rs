@@ -7,7 +7,7 @@ use std::result;
 pub type Result<T> = result::Result<T, Error>;
 
 /// `Result` extension methods for adapting third party errors to `Error`.
-pub trait ResultLiquidChainExt<T, E> {
+pub trait ResultLiquidChainExt<T> {
     /// Create an `Error` with `E` as the cause.
     fn chain(self, msg: &'static str) -> Result<T>;
     /// Create an `Error` with `E` as the cause.
@@ -16,7 +16,7 @@ pub trait ResultLiquidChainExt<T, E> {
         F: FnOnce() -> String;
 }
 
-impl<T, E> ResultLiquidChainExt<T, E> for result::Result<T, E>
+impl<T, E> ResultLiquidChainExt<T> for result::Result<T, E>
 where
     E: error::Error + Send + Sync + 'static,
 {
