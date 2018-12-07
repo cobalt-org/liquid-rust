@@ -165,7 +165,7 @@ impl Error {
     }
 
     fn cause_error(mut self, cause: Box<error::Error + Send + Sync + 'static>) -> Self {
-        let cause = Some(ErrorCause::Generic(GenericError(cause)));
+        let cause = Some(ErrorCause::new(cause));
         self.inner.cause = cause;
         self
     }
@@ -197,10 +197,7 @@ impl error::Error for Error {
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        match self.inner.cause {
-            Some(ErrorCause::Generic(ref e)) => Some(e.0.as_ref()),
-            _ => None,
-        }
+        self.inner.cause.as_ref().and_then(|e| e.cause())
     }
 }
 
@@ -245,6 +242,21 @@ enum ErrorCause {
     Missing,
 }
 
+type GenericError = Box<error::Error + Send + Sync + 'static>;
+
+impl ErrorCause {
+    fn new(error: GenericError) -> Self {
+        ErrorCause::Generic(error)
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            ErrorCause::Generic(ref e) => Some(e.as_ref()),
+            _ => None,
+        }
+    }
+}
+
 impl Clone for ErrorCause {
     fn clone(&self) -> Self {
         match *self {
@@ -259,19 +271,5 @@ impl fmt::Display for ErrorCause {
             ErrorCause::Generic(ref e) => fmt::Display::fmt(e, f),
             ErrorCause::Missing => write!(f, "Unknown error"),
         }
-    }
-}
-
-struct GenericError(Box<error::Error + Send + Sync + 'static>);
-
-impl fmt::Debug for GenericError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self.0, f)
-    }
-}
-
-impl fmt::Display for GenericError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
     }
 }
