@@ -6,6 +6,8 @@
 
 mod clone;
 mod error;
+mod trace;
 
 pub use error::*;
 use clone::*;
+use trace::*;

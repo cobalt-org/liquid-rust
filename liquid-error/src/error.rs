@@ -5,6 +5,7 @@ use std::result;
 
 use super::ClonableError;
 use super::BoxedError;
+use super::Trace;
 
 /// Convenience type alias for Liquid compiler errors
 pub type Result<T> = result::Result<T, Error>;
@@ -203,39 +204,3 @@ impl error::Error for Error {
         self.inner.cause.as_ref().and_then(|e| e.cause())
     }
 }
-
-/// User-visible call trace
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
-struct Trace {
-    trace: Option<borrow::Cow<'static, str>>,
-    context: Vec<(borrow::Cow<'static, str>, borrow::Cow<'static, str>)>,
-}
-
-impl Trace {
-    fn new(trace: borrow::Cow<'static, str>) -> Self {
-        Self {
-            trace: Some(trace),
-            context: vec![],
-        }
-    }
-
-    fn empty() -> Self {
-        Self {
-            trace: None,
-            context: vec![],
-        }
-    }
-
-    fn append_context(&mut self, key: borrow::Cow<'static, str>, value: borrow::Cow<'static, str>) {
-        self.context.push((key, value));
-    }
-
-    fn get_trace(&self) -> Option<&str> {
-        self.trace.as_ref().map(|s| s.as_ref())
-    }
-
-    fn get_context(&self) -> &[(borrow::Cow<'static, str>, borrow::Cow<'static, str>)] {
-        self.context.as_ref()
-    }
-}
-
