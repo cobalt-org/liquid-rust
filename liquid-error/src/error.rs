@@ -3,15 +3,15 @@ use std::error;
 use std::fmt;
 use std::result;
 
-use super::ClonableError;
-use super::BoxedError;
 use super::Trace;
 
 /// Convenience type alias for Liquid compiler errors
 pub type Result<T> = result::Result<T, Error>;
 
+type BoxedError = Box<error::Error + Send + Sync + 'static>;
+
 /// Compiler error
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Error {
     inner: Box<InnerError>,
 }
@@ -20,11 +20,11 @@ pub struct Error {
 // `Result<T>` in the success case and spilling over from register-based returns to stack-based
 // returns.  There are already enough memory allocations below, one more
 // shouldn't hurt.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct InnerError {
     msg: borrow::Cow<'static, str>,
     user_backtrace: Vec<Trace>,
-    cause: Option<ClonableError>,
+    cause: Option<BoxedError>,
 }
 
 impl Error {
@@ -89,7 +89,7 @@ impl Error {
     }
 
     fn cause_error(mut self, cause: BoxedError) -> Self {
-        let cause = Some(ClonableError::new(cause));
+        let cause = Some(cause);
         self.inner.cause = cause;
         self
     }
