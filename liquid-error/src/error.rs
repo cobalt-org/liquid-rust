@@ -98,8 +98,10 @@ pub struct Error {
     inner: Box<InnerError>,
 }
 
-// Guts of `Error` here to keep `Error` small to avoid bloating the size of `Result<T>` in the
-// success case.  There are already enough memory allocations below, one more shouldn't hurt.
+// Guts of `Error` here to keep `Error`'s memory size small to avoid bloating the size of
+// `Result<T>` in the success case and spilling over from register-based returns to stack-based
+// returns.  There are already enough memory allocations below, one more
+// shouldn't hurt.
 #[derive(Clone, Debug)]
 struct InnerError {
     msg: borrow::Cow<'static, str>,
