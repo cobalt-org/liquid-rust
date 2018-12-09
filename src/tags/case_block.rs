@@ -61,9 +61,10 @@ impl Renderable for Case {
                 return case
                     .template
                     .render_to(writer, context)
-                    .trace_with(|| case.trace())
-                    .trace_with(|| self.trace())
-                    .context_with(|| (self.target.to_string(), value.to_string()));
+                    .trace_with(|| case.trace().into())
+                    .trace_with(|| self.trace().into())
+                    .context_key_with(|| self.target.to_string().into())
+                    .value_with(|| value.to_string().into());
             }
         }
 
@@ -71,8 +72,9 @@ impl Renderable for Case {
             return t
                 .render_to(writer, context)
                 .trace("{{% else %}}")
-                .trace_with(|| self.trace())
-                .context_with(|| (self.target.to_string(), value.to_string()));
+                .trace_with(|| self.trace().into())
+                .context_key_with(|| self.target.to_string().into())
+                .value_with(|| value.to_string().into());
         }
 
         Ok(())

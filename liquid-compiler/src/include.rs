@@ -62,17 +62,15 @@ impl Include for FilesystemInclude {
             .root
             .canonicalize()
             .chain("Snippet does not exist")
-            .context_with(|| {
-                let key = "non-existent source".into();
-                let value = self.root.to_string_lossy().into();
-                (key, value)
-            })?;
+            .context_key("non-existent source")
+            .value_with(|| self.root.to_string_lossy().into_owned().into())?;
         let mut path = root.clone();
         path.extend(relative_path.split('/'));
         let path = path
             .canonicalize()
             .chain("Snippet does not exist")
-            .context_with(|| ("non-existent path".into(), path.to_string_lossy().into()))?;
+            .context_key("non-existent path")
+            .value_with(|| path.to_string_lossy().into_owned().into())?;
         if !path.starts_with(&root) {
             return Err(Error::with_msg("Snippet is outside of source")
                 .context("source", format!("{}", root.display()))
@@ -81,11 +79,13 @@ impl Include for FilesystemInclude {
 
         let mut file = File::open(&path)
             .chain("Failed to open snippet")
-            .context_with(|| ("full path".into(), path.to_string_lossy().into()))?;
+            .context_key("full path")
+            .value_with(|| path.to_string_lossy().into_owned().into())?;
         let mut content = String::new();
         file.read_to_string(&mut content)
             .chain("Failed to read snippet")
-            .context_with(|| ("full path".into(), path.to_string_lossy().into()))?;
+            .context_key("full path")
+            .value_with(|| path.to_string_lossy().into_owned().into())?;
         Ok(content)
     }
 }

@@ -141,14 +141,15 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
         .as_scalar()
         .and_then(Scalar::to_integer)
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
-        .context_with(|| (arg_name.to_string(), value.to_string()))?;
+        .context_key_with(|| arg_name.to_string().into())
+        .value_with(|| value.to_string().into())?;
 
     Ok(value as isize)
 }
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let range = self.range.evaluate(context).trace_with(|| self.trace())?;
+        let range = self.range.evaluate(context).trace_with(|| self.trace().into())?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
         let range = iter_array(range, limit, offset, self.reversed);
@@ -158,7 +159,7 @@ impl Renderable for For {
                 if let Some(ref t) = self.else_template {
                     t.render_to(writer, context)
                         .trace("{{% else %}}")
-                        .trace_with(|| self.trace())?;
+                        .trace_with(|| self.trace().into())?;
                 }
             }
 
@@ -182,8 +183,9 @@ impl Renderable for For {
                         scope.stack_mut().set(self.var_name.to_owned(), v);
                         self.item_template
                             .render_to(writer, &mut scope)
-                            .trace_with(|| self.trace())
-                            .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
+                            .trace_with(|| self.trace().into())
+                            .context_key("index")
+                            .value_with(|| format!("{}", i + 1).into())?;
 
                         // given that we're at the end of the loop body
                         // already, dealing with a `continue` signal is just
@@ -355,7 +357,7 @@ fn trace_tablerow_tag(
 
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let range = self.range.evaluate(context).trace_with(|| self.trace())?;
+        let range = self.range.evaluate(context).trace_with(|| self.trace().into())?;
         let cols = evaluate_attr(&self.cols, context)?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
@@ -401,8 +403,9 @@ impl Renderable for TableRow {
                 scope.stack_mut().set(self.var_name.to_owned(), v);
                 self.item_template
                     .render_to(writer, &mut scope)
-                    .trace_with(|| self.trace())
-                    .context_with(|| ("index".to_owned(), format!("{}", i + 1)))?;
+                    .trace_with(|| self.trace().into())
+                    .context_key("index")
+                    .value_with(|| format!("{}", i + 1).into())?;
 
                 write!(writer, "</td>").chain("Failed to render")?;
                 if col_last {

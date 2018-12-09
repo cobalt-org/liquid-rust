@@ -31,7 +31,7 @@ impl Renderable for Cycle {
         let mut cycles = context.cycles();
         let value = cycles
             .cycle_element(&self.name, &self.values)
-            .trace_with(|| self.trace())?;
+            .trace_with(|| self.trace().into())?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }
