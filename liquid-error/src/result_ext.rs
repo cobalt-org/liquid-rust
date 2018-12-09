@@ -2,8 +2,8 @@ use std::borrow;
 use std::error;
 use std::result;
 
-use super::Result;
 use super::Error;
+use super::Result;
 
 type CowStr = borrow::Cow<'static, str>;
 
@@ -62,7 +62,8 @@ where
 
 /// Add context to a `liquid_error::Error`.
 pub trait ResultLiquidExt<T>
-where Self: ::std::marker::Sized
+where
+    Self: ::std::marker::Sized,
 {
     /// Add a new stack frame to the `liquid_error::Error`.
     ///
@@ -163,28 +164,27 @@ impl<T> ResultLiquidExt<T> for Result<T> {
 
     fn context_key<S>(self, key: S) -> Key<T>
     where
-        S: Into<CowStr>
+        S: Into<CowStr>,
     {
         Key::new(self, key)
     }
 
     fn context_key_with<F>(self, key: F) -> FnKey<T, F>
     where
-        F: FnOnce() -> CowStr {
+        F: FnOnce() -> CowStr,
+    {
         FnKey::new(self, key)
     }
 }
 
 /// Partially constructed context (missing value) for `Result<T>`.
 #[allow(missing_debug_implementations)]
-pub struct Key<T>
-{
+pub struct Key<T> {
     builder: Result<T>,
     key: CowStr,
 }
 
-impl<T> Key<T>
-{
+impl<T> Key<T> {
     /// Save off a key for a context that will be added to `builder`.
     #[must_use]
     pub fn new<S>(builder: Result<T>, key: S) -> Self
@@ -193,7 +193,7 @@ impl<T> Key<T>
     {
         Self {
             builder,
-            key: key.into()
+            key: key.into(),
         }
     }
 
@@ -212,7 +212,7 @@ impl<T> Key<T>
     #[must_use]
     pub fn value_with<F>(self, value: F) -> Result<T>
     where
-        F: FnOnce() ->CowStr
+        F: FnOnce() -> CowStr,
     {
         let builder = self.builder;
         let key = self.key;
@@ -227,21 +227,17 @@ where
     F: FnOnce() -> CowStr,
 {
     builder: Result<T>,
-    key: F
+    key: F,
 }
 
 impl<T, F> FnKey<T, F>
 where
-    F: FnOnce() -> CowStr
+    F: FnOnce() -> CowStr,
 {
     /// Save off a key for a context that will be added to `builder`.
     #[must_use]
-    pub fn new(builder: Result<T>, key: F) -> Self
-    {
-        Self {
-            builder,
-            key,
-        }
+    pub fn new(builder: Result<T>, key: F) -> Self {
+        Self { builder, key }
     }
 
     /// Finish creating context and add it to `Result<T>`.
@@ -259,7 +255,7 @@ where
     #[must_use]
     pub fn value_with<V>(self, value: V) -> Result<T>
     where
-        V: FnOnce() -> CowStr
+        V: FnOnce() -> CowStr,
     {
         let builder = self.builder;
         let key = self.key;

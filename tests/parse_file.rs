@@ -48,7 +48,8 @@ pub fn chained_filters_by_file() {
         r#"
 foo: foofoo
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     compare_by_file("chained_filters", &globals);
 }
 
@@ -59,7 +60,8 @@ pub fn example_by_file() {
 num: 5
 numTwo: 6
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     compare_by_file("example", &globals);
 }
 
@@ -77,6 +79,7 @@ pub fn include_with_context_by_file() {
         r#"
 content: "hello, world!"
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     compare_by_file("include_with_context", &globals);
 }

@@ -23,7 +23,10 @@ impl Assign {
 
 impl Renderable for Assign {
     fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
-        let value = self.src.evaluate(context).trace_with(|| self.trace().into())?;
+        let value = self
+            .src
+            .evaluate(context)
+            .trace_with(|| self.trace().into())?;
         context.stack_mut().set_global(self.dst.to_owned(), value);
         Ok(())
     }

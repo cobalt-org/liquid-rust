@@ -51,13 +51,16 @@ fn liquid() -> liquid::Parser {
         .filter(
             "make_funny",
             make_funny as liquid::interpreter::FnFilterValue,
-        ).filter(
+        )
+        .filter(
             "cite_funny",
             cite_funny as liquid::interpreter::FnFilterValue,
-        ).filter(
+        )
+        .filter(
             "add_smiley",
             add_smiley as liquid::interpreter::FnFilterValue,
-        ).filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
+        )
+        .filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
         .filter("paragraph", paragraph as liquid::interpreter::FnFilterValue)
         .filter("link_to", link_to as liquid::interpreter::FnFilterValue)
         .build()
@@ -85,9 +88,9 @@ fn test_variable_traversing_with_two_brackets() {
         "it works!",
         text,
         v!({
-      "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },
-      "include": { "menu": "foo", "locale": "bar" }
-    })
+          "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },
+          "include": { "menu": "foo", "locale": "bar" }
+        })
     );
 }
 

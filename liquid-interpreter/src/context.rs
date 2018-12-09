@@ -94,7 +94,8 @@ impl<'a, 'g> CycleState<'a, 'g> {
         if index >= values.len() {
             return Err(Error::with_msg(
                 "cycle index out of bounds, most likely from mismatched cycles",
-            ).context("index", format!("{}", index))
+            )
+            .context("index", format!("{}", index))
             .context("count", format!("{}", values.len())));
         }
 
@@ -365,7 +366,8 @@ impl<'g> Context<'g> {
             .map(|f| {
                 let f: &FilterValue = f;
                 f
-            }).ok_or_else(|| {
+            })
+            .ok_or_else(|| {
                 let available = itertools::join(self.filters.plugin_names(), ", ");
                 Error::with_msg("Unknown filter")
                     .context("requested filter", name.to_owned())

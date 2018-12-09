@@ -69,9 +69,12 @@ impl FilterChain {
             entry = f
                 .filter(&entry, &*arguments)
                 .chain("Filter error")
-                .context_key("filter").value_with(|| format!("{}", self).into())
-                .context_key("input").value_with(|| format!("{}", &entry).into())
-                .context_key("args").value_with(|| itertools::join(&arguments, ", ").into())?;
+                .context_key("filter")
+                .value_with(|| format!("{}", self).into())
+                .context_key("input")
+                .value_with(|| format!("{}", &entry).into())
+                .context_key("args")
+                .value_with(|| itertools::join(&arguments, ", ").into())?;
         }
 
         Ok(entry)

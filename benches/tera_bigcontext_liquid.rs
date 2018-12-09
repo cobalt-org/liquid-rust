@@ -44,7 +44,8 @@ With that in mind, let’s learn about borrowing.")),
 {%- endif -%}
 {%- endfor -%}
 ",
-        ).expect("Benchmark template parsing failed");
+        )
+        .expect("Benchmark template parsing failed");
 
     template.render(&data).unwrap();
     b.iter(|| template.render(&data));

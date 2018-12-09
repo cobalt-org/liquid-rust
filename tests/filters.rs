@@ -8,7 +8,8 @@ pub fn upcase() {
         r#"
 text: hello
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -24,7 +25,8 @@ pub fn downcase() {
         r#"
 text: HELLO tHeRe
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -40,7 +42,8 @@ pub fn capitalize() {
         r#"
 text: hello world
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -57,7 +60,8 @@ pub fn pluralize_none() {
         r#"
 count: 0
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
@@ -75,7 +79,8 @@ pub fn pluralize_singular() {
         r#"
 count: 1
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
@@ -93,7 +98,8 @@ pub fn pluralize_plural() {
         r#"
 count: 10
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
@@ -110,7 +116,8 @@ pub fn minus() {
         r#"
 num: 4
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -126,7 +133,8 @@ pub fn plus() {
         r#"
 num: 4
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -142,7 +150,8 @@ pub fn minus_error() {
         r#"
 num: 4
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -158,7 +167,8 @@ pub fn first_numeric_array() {
         r#"
 nums: [12, 1]
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -174,7 +184,8 @@ pub fn first_string_array() {
         r#"
 nums: ["first", "second"]
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -190,7 +201,8 @@ pub fn first_char() {
         r#"
 nums: first
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -206,7 +218,8 @@ pub fn last_numeric_array() {
         r#"
 nums: [12, 1]
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -222,7 +235,8 @@ pub fn last_string_array() {
         r#"
 nums: ["first", "second"]
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -238,7 +252,8 @@ pub fn last_char() {
         r#"
 nums: second
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -254,7 +269,8 @@ pub fn replace_first() {
         r#"
 text: bar2bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -270,7 +286,8 @@ pub fn replace() {
         r#"
 text: bar2bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -286,7 +303,8 @@ pub fn prepend_constant() {
         r#"
 text: bar2bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -303,7 +321,8 @@ pub fn prepend_variable() {
 text: bar2bar
 myvar: fifo
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -319,7 +338,8 @@ pub fn append() {
         r#"
 text: roobarb
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -505,7 +525,8 @@ pub fn remove_first_constant() {
         r#"
 text: bar2bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -522,7 +543,8 @@ pub fn remove_first_variable() {
 text: bar2bar
 myvar: bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -538,7 +560,8 @@ pub fn remove() {
         r#"
 text: bar2bar
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -554,7 +577,8 @@ pub fn strip_html() {
         r#"
 text: "<!-- <b> Comment -->Lorem <a>ipsum </b>dolor"
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -570,7 +594,8 @@ pub fn truncatewords() {
         r#"
 text: "first second third"
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -586,7 +611,8 @@ pub fn default_use() {
         r#"
 text: false
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)
@@ -602,7 +628,8 @@ pub fn default_pass() {
         r#"
 text: foo
 "#,
-    ).unwrap();
+    )
+    .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
         .parse(text)

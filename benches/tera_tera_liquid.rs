@@ -123,7 +123,8 @@ fn access_deep_object_with_literal(b: &mut test::Bencher) {
 {% assign goo = deep_object.foo['bar'][\"goo\"] %}
 {% for cow in goo.moo.cows %}{{cow.temperament}}
 {% endfor %}",
-        ).expect("Benchmark template parsing failed");
+        )
+        .expect("Benchmark template parsing failed");
 
     let data = deep_object();
 

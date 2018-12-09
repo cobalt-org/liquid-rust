@@ -149,7 +149,10 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
 
 impl Renderable for For {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let range = self.range.evaluate(context).trace_with(|| self.trace().into())?;
+        let range = self
+            .range
+            .evaluate(context)
+            .trace_with(|| self.trace().into())?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
         let range = iter_array(range, limit, offset, self.reversed);
@@ -357,7 +360,10 @@ fn trace_tablerow_tag(
 
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let range = self.range.evaluate(context).trace_with(|| self.trace().into())?;
+        let range = self
+            .range
+            .evaluate(context)
+            .trace_with(|| self.trace().into())?;
         let cols = evaluate_attr(&self.cols, context)?;
         let limit = evaluate_attr(&self.limit, context)?;
         let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);

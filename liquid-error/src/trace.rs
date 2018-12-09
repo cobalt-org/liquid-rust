@@ -22,7 +22,11 @@ impl Trace {
         }
     }
 
-    pub(crate) fn append_context(&mut self, key: borrow::Cow<'static, str>, value: borrow::Cow<'static, str>) {
+    pub(crate) fn append_context(
+        &mut self,
+        key: borrow::Cow<'static, str>,
+        value: borrow::Cow<'static, str>,
+    ) {
         self.context.push((key, value));
     }
 
@@ -34,4 +38,3 @@ impl Trace {
         self.context.as_ref()
     }
 }
-

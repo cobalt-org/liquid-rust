@@ -219,7 +219,8 @@ impl Value {
                 .map(|s| match *s {
                     borrow::Cow::Borrowed(s) => Scalar::new(s),
                     borrow::Cow::Owned(ref s) => Scalar::new(s.to_owned()),
-                }).collect(),
+                })
+                .collect(),
             _ => vec![],
         };
         Keys(v.into_iter())
@@ -404,9 +405,9 @@ mod test {
             ("alpha".into(), Value::scalar("1")),
             ("beta".into(), Value::scalar(2f64)),
         ]
-            .into_iter()
-            .cloned()
-            .collect();
+        .into_iter()
+        .cloned()
+        .collect();
         let a = Value::Object(a);
 
         let b: Object = [
@@ -414,9 +415,9 @@ mod test {
             ("beta".into(), Value::scalar(2f64)),
             ("gamma".into(), Value::Array(vec![])),
         ]
-            .into_iter()
-            .cloned()
-            .collect();
+        .into_iter()
+        .cloned()
+        .collect();
         let b = Value::Object(b);
 
         assert_eq!(a, a);
