@@ -7,7 +7,7 @@ use itertools;
 use value::{Object, PathRef, Scalar, Value};
 
 use super::Expression;
-use super::Globals;
+use super::ValueStore;
 use super::PluginRegistry;
 use super::{BoxedValueFilter, FilterValue};
 
@@ -128,7 +128,7 @@ impl IfChangedState {
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
-    globals: Option<&'g Globals>,
+    globals: Option<&'g ValueStore>,
     stack: Vec<Object>,
     // State of variables created through increment or decrement tags.
     indexes: Object,
@@ -145,8 +145,8 @@ impl<'g> Stack<'g> {
         }
     }
 
-    /// Create a stack initialized with read-only `Globals`.
-    pub fn with_globals(globals: &'g Globals) -> Self {
+    /// Create a stack initialized with read-only `ValueStore`.
+    pub fn with_globals(globals: &'g ValueStore) -> Self {
         let mut stack = Self::empty();
         stack.globals = Some(globals);
         stack
@@ -196,37 +196,37 @@ impl<'g> Stack<'g> {
     }
 
     fn globals(&self) -> Vec<&str> {
-        let mut globals = self.globals.map(|g| g.globals()).unwrap_or_default();
+        let mut globals = self.globals.map(|g| g.roots()).unwrap_or_default();
         for frame in self.stack.iter() {
-            globals.extend(frame.globals());
+            globals.extend(frame.roots());
         }
         globals.sort();
         globals.dedup();
         globals
     }
 
-    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a Globals> {
+    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a ValueStore> {
         let key = path.iter().next()?;
         let key = key.to_str();
         self.find_frame(key.as_ref())
     }
 
-    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a Globals> {
+    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a ValueStore> {
         for frame in self.stack.iter().rev() {
-            if frame.contains_global(name) {
+            if frame.contains_root(name) {
                 return Some(frame);
             }
         }
 
         if self
             .globals
-            .map(|g| g.contains_global(name))
+            .map(|g| g.contains_root(name))
             .unwrap_or(false)
         {
             return self.globals;
         }
 
-        if self.indexes.contains_global(name) {
+        if self.indexes.contains_root(name) {
             return Some(&self.indexes);
         }
 
@@ -292,7 +292,7 @@ impl<'g> Default for Stack<'g> {
 
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
-    globals: Option<&'g Globals>,
+    globals: Option<&'g ValueStore>,
     filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
@@ -306,7 +306,7 @@ impl<'g> ContextBuilder<'g> {
     }
 
     /// Initialize the stack with the given globals.
-    pub fn set_globals(mut self, values: &'g Globals) -> Self {
+    pub fn set_globals(mut self, values: &'g ValueStore) -> Self {
         self.globals = Some(values);
         self
     }

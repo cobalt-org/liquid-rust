@@ -12,7 +12,7 @@ pub struct Template {
 
 impl Template {
     /// Renders an instance of the Template, using the given globals.
-    pub fn render(&self, globals: &interpreter::Globals) -> Result<String> {
+    pub fn render(&self, globals: &interpreter::ValueStore) -> Result<String> {
         const BEST_GUESS: usize = 10_000;
         let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
@@ -21,7 +21,7 @@ impl Template {
     }
 
     /// Renders an instance of the Template, using the given globals.
-    pub fn render_to(&self, writer: &mut Write, globals: &interpreter::Globals) -> Result<()> {
+    pub fn render_to(&self, writer: &mut Write, globals: &interpreter::ValueStore) -> Result<()> {
         let mut data = interpreter::ContextBuilder::new()
             .set_filters(&self.filters)
             .set_globals(globals)

@@ -54,7 +54,7 @@ pub mod value {
 pub mod filters;
 pub mod tags;
 
-pub use interpreter::Globals;
+pub use interpreter::ValueStore;
 pub use liquid_error::Error;
 pub use parser::*;
 pub use template::*;

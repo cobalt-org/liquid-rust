@@ -7,12 +7,12 @@ use value::PathRef;
 use value::Value;
 
 /// Immutable view into a template's global variables.
-pub trait Globals: fmt::Debug {
-    /// Check if global variable exists.
-    fn contains_global(&self, name: &str) -> bool;
+pub trait ValueStore: fmt::Debug {
+    /// Check if root variable exists.
+    fn contains_root(&self, name: &str) -> bool;
 
-    /// Enumerate all globals
-    fn globals(&self) -> Vec<&str>;
+    /// Enumerate all root variables.
+    fn roots(&self) -> Vec<&str>;
 
     /// Check if variable exists.
     ///
@@ -36,12 +36,12 @@ pub trait Globals: fmt::Debug {
     fn get_variable<'a>(&'a self, path: PathRef) -> Result<&'a Value>;
 }
 
-impl Globals for Object {
-    fn contains_global(&self, name: &str) -> bool {
+impl ValueStore for Object {
+    fn contains_root(&self, name: &str) -> bool {
         self.contains_key(name)
     }
 
-    fn globals(&self) -> Vec<&str> {
+    fn roots(&self) -> Vec<&str> {
         self.keys().map(|s| s.as_ref()).collect()
     }
 
