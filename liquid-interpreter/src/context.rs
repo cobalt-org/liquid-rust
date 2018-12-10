@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 use std::sync;
 
+use anymap;
 use error::{Error, Result};
 use itertools;
-use value::Value;
 
-use super::Expression;
 use super::Stack;
 use super::ValueStore;
 use super::PluginRegistry;
@@ -60,71 +58,6 @@ impl InterruptState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-struct CycleStateInner {
-    // The indices of all the cycles encountered during rendering.
-    cycles: HashMap<String, usize>,
-}
-
-impl CycleStateInner {
-    fn cycle_index(&mut self, name: &str, max: usize) -> usize {
-        let i = self.cycles.entry(name.to_owned()).or_insert(0);
-        let j = *i;
-        *i = (*i + 1) % max;
-        j
-    }
-}
-
-/// See `cycle` tag.
-pub struct CycleState<'a, 'g>
-where
-    'g: 'a,
-{
-    context: &'a mut Context<'g>,
-}
-
-impl<'a, 'g> CycleState<'a, 'g> {
-    /// See `cycle` tag.
-    pub fn cycle_element<'c>(
-        &'c mut self,
-        name: &str,
-        values: &'c [Expression],
-    ) -> Result<&'c Value> {
-        let index = self.context.cycles.cycle_index(name, values.len());
-        if index >= values.len() {
-            return Err(Error::with_msg(
-                "cycle index out of bounds, most likely from mismatched cycles",
-            )
-            .context("index", format!("{}", index))
-            .context("count", format!("{}", values.len())));
-        }
-
-        let val = values[index].evaluate(self.context)?;
-        Ok(val)
-    }
-}
-
-/// Remembers the content of the last rendered `ifstate` block.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct IfChangedState {
-    last_rendered: Option<String>,
-}
-
-impl IfChangedState {
-    /// Checks whether or not a new rendered `&str` is different from
-    /// `last_rendered` and updates `last_rendered` value to the new value.
-    pub fn has_changed(&mut self, rendered: &str) -> bool {
-        let has_changed = if let Some(last_rendered) = &self.last_rendered {
-            last_rendered != rendered
-        } else {
-            true
-        };
-        self.last_rendered = Some(rendered.to_owned());
-
-        has_changed
-    }
-}
-
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
     globals: Option<&'g ValueStore>,
@@ -160,9 +93,8 @@ impl<'g> ContextBuilder<'g> {
         };
         Context {
             stack,
+            registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
-            cycles: CycleStateInner::default(),
-            ifchanged: IfChangedState::default(),
             filters: self.filters,
         }
     }
@@ -175,13 +107,11 @@ impl<'g> Default for ContextBuilder<'g> {
 }
 
 /// Processing context for a template.
-#[derive(Default)]
 pub struct Context<'g> {
     stack: Stack<'g>,
 
+    registers: anymap::AnyMap,
     interrupt: InterruptState,
-    cycles: CycleStateInner,
-    ifchanged: IfChangedState,
 
     filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
@@ -220,17 +150,12 @@ impl<'g> Context<'g> {
         &mut self.interrupt
     }
 
-    /// See `cycle` tag.
-    pub fn cycles<'a>(&'a mut self) -> CycleState<'a, 'g>
-    where
-        'g: 'a,
-    {
-        CycleState { context: self }
-    }
-
-    /// Access the block's `IfChangedState`.
-    pub fn ifchanged(&mut self) -> &mut IfChangedState {
-        &mut self.ifchanged
+    /// Data store for stateful tags/blocks.
+    ///
+    /// If a plugin needs state, it creates a `struct State : Default` and accesses it via
+    /// `get_register_mut`.
+    pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(&mut self) -> &mut T {
+        self.registers.entry::<T>().or_insert_with(|| Default::default())
     }
 
     /// Access the current `Stack`.
@@ -260,10 +185,22 @@ impl<'g> Context<'g> {
     }
 }
 
+impl<'g> Default for Context<'g> {
+    fn default() -> Self {
+        Self {
+            stack: Stack::empty(),
+            registers: anymap::AnyMap::new(),
+            interrupt: InterruptState::default(),
+            filters: Default::default(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
+    use value::Value;
     use value::Scalar;
 
     #[test]

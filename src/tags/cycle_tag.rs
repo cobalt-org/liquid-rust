@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 
 use compiler::LiquidOptions;
 use compiler::TagToken;
@@ -28,9 +29,11 @@ impl Cycle {
 
 impl Renderable for Cycle {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let mut cycles = context.cycles();
-        let value = cycles
-            .cycle_element(&self.name, &self.values)
+        let expr = context
+            .get_register_mut::<State>()
+            .cycle(&self.name, &self.values)
+            .trace_with(|| self.trace().into())?;
+        let value = expr.evaluate(context)
             .trace_with(|| self.trace().into())?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
@@ -98,6 +101,34 @@ pub fn cycle_tag(
     options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct State {
+    // The indices of all the cycles encountered during rendering.
+    cycles: HashMap<String, usize>,
+}
+
+impl State{
+    fn cycle<'e>(& mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
+        let index = self.cycle_index(name, values.len());
+        if index >= values.len() {
+            return Err(Error::with_msg(
+                "cycle index out of bounds, most likely from mismatched cycles",
+            )
+            .context("index", format!("{}", index))
+            .context("count", format!("{}", values.len())));
+        }
+
+        Ok(&values[index])
+    }
+
+    fn cycle_index(&mut self, name: &str, max: usize) -> usize {
+        let i = self.cycles.entry(name.to_owned()).or_insert(0);
+        let j = *i;
+        *i = (*i + 1) % max;
+        j
+    }
 }
 
 #[cfg(test)]
