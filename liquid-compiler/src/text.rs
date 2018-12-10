@@ -1,18 +1,18 @@
 use std::io::Write;
 
-use super::Context;
-use super::Renderable;
+use liquid_interpreter::Context;
+use liquid_interpreter::Renderable;
 use error::{Result, ResultLiquidChainExt};
 
 /// A raw template expression.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Text {
+pub(crate) struct Text {
     text: String,
 }
 
 impl Text {
     /// Create a raw template expression.
-    pub fn new<S: Into<String>>(text: S) -> Text {
+    pub(crate) fn new<S: Into<String>>(text: S) -> Text {
         Text { text: text.into() }
     }
 }

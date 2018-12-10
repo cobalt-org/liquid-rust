@@ -11,6 +11,7 @@ mod include;
 mod options;
 mod parser;
 mod tag;
+mod text;
 
 pub mod error {
     pub use liquid_error::*;
@@ -25,3 +26,5 @@ pub use include::*;
 pub use options::*;
 pub use parser::*;
 pub use tag::*;
+
+use text::Text;

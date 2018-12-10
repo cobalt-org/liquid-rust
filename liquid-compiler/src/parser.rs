@@ -7,7 +7,6 @@ use std;
 
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
-use liquid_interpreter::Text;
 use liquid_interpreter::Variable;
 use liquid_interpreter::{FilterCall, FilterChain};
 use liquid_value::Scalar;
@@ -17,6 +16,7 @@ use super::error::{Error, Result};
 use super::LiquidOptions;
 use super::ParseBlock;
 use super::ParseTag;
+use super::Text;
 
 use pest::Parser;
 

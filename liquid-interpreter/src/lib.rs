@@ -29,7 +29,6 @@ mod registry;
 mod renderable;
 mod stack;
 mod template;
-mod text;
 mod variable;
 
 pub use self::context::*;
@@ -41,5 +40,4 @@ pub use self::stack::*;
 pub use self::registry::*;
 pub use self::renderable::*;
 pub use self::template::*;
-pub use self::text::*;
 pub use self::variable::*;
