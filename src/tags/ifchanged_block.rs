@@ -25,7 +25,7 @@ impl Renderable for IfChanged {
         let mut rendered = Vec::new();
         self.if_changed
             .render_to(&mut rendered, context)
-            .trace_with(|| self.trace())?;
+            .trace_with(|| self.trace().into())?;
 
         let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
         if context.ifchanged().has_changed(&rendered) {

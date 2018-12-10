@@ -20,7 +20,7 @@ impl Renderable for Include {
     fn render_to(&self, writer: &mut Write, mut context: &mut Context) -> Result<()> {
         self.partial
             .render_to(writer, &mut context)
-            .trace_with(|| format!("{{% include {} %}}", self.name))?;
+            .trace_with(|| format!("{{% include {} %}}", self.name).into())?;
 
         Ok(())
     }
@@ -51,7 +51,7 @@ pub fn include_tag(
     arguments.expect_nothing()?;
 
     let partial =
-        parse_partial(&name, options).trace_with(|| format!("{{% include {} %}}", name))?;
+        parse_partial(&name, options).trace_with(|| format!("{{% include {} %}}", name).into())?;
 
     Ok(Box::new(Include { name, partial }))
 }

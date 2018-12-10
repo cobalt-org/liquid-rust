@@ -188,16 +188,16 @@ impl Conditional {
 
 impl Renderable for Conditional {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let condition = self.compare(context).trace_with(|| self.trace())?;
+        let condition = self.compare(context).trace_with(|| self.trace().into())?;
         if condition {
             self.if_true
                 .render_to(writer, context)
-                .trace_with(|| self.trace())?;
+                .trace_with(|| self.trace().into())?;
         } else if let Some(ref template) = self.if_false {
             template
                 .render_to(writer, context)
                 .trace("{{% else %}}")
-                .trace_with(|| self.trace())?;
+                .trace_with(|| self.trace().into())?;
         }
 
         Ok(())

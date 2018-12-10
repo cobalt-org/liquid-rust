@@ -106,7 +106,8 @@ mod test {
             r#"
 test_a: ["test"]
 "#,
-        ).unwrap();
+        )
+        .unwrap();
         let mut actual = Variable::with_literal("test_a");
         let index = vec![Scalar::new(0)];
         actual.extend(index);
@@ -122,7 +123,8 @@ test_a: ["test"]
             r#"
 test_a: ["test1", "test2"]
 "#,
-        ).unwrap();
+        )
+        .unwrap();
         let mut actual = Variable::with_literal("test_a");
         let index = vec![Scalar::new(-1)];
         actual.extend(index);
@@ -139,7 +141,8 @@ test_a: ["test1", "test2"]
 test_a:
   - test_h: 5
 "#,
-        ).unwrap();
+        )
+        .unwrap();
         let mut actual = Variable::with_literal("test_a");
         let index = vec![Scalar::new(0), Scalar::new("test_h")];
         actual.extend(index);

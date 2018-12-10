@@ -307,13 +307,13 @@ fn test_if_with_custom_condition() {
 fn test_operators_are_ignored_unless_isolated() {
     panic!("TODO: Figure out what this is testing");
     /*
-    original_op = Condition.operators["contains"]
-    Condition.operators["contains"] = :[]
+      original_op = Condition.operators["contains"]
+      Condition.operators["contains"] = :[]
 
-    assert_template_result!("yes",
-      %({% if "gnomeslab-and-or-liquid" contains "gnomeslab-and-or-liquid" %}yes{% endif %}))
-  ensure
-    Condition.operators["contains"] = original_op*/
+      assert_template_result!("yes",
+        %({% if "gnomeslab-and-or-liquid" contains "gnomeslab-and-or-liquid" %}yes{% endif %}))
+    ensure
+      Condition.operators["contains"] = original_op*/
 }
 
 #[test]

@@ -5,5 +5,9 @@
 #![warn(unused_extern_crates)]
 
 mod error;
+mod result_ext;
+mod trace;
 
 pub use error::*;
+pub use result_ext::*;
+use trace::*;

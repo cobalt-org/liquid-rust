@@ -24,7 +24,7 @@ where
     value.serialize(Serializer).map_err(|e| e.0)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct SerError(error::Error);
 
 impl fmt::Display for SerError {

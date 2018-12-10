@@ -272,7 +272,8 @@ fn test_assign_from_case() {
                 v!({"collection": { "handle": "menswear-jackets" }})
                     .as_object()
                     .unwrap()
-            ).unwrap()
+            )
+            .unwrap()
     );
     assert_eq!(
         "menswear",
@@ -281,7 +282,8 @@ fn test_assign_from_case() {
                 v!({"collection": { "handle": "menswear-t-shirts" }})
                     .as_object()
                     .unwrap()
-            ).unwrap()
+            )
+            .unwrap()
     );
     assert_eq!(
         "womenswear",

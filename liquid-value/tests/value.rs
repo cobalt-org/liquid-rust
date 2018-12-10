@@ -150,9 +150,9 @@ pub fn deserialize_object() {
         ("Bool".into(), liquid_value::Value::scalar(true)),
         ("Str".into(), liquid_value::Value::scalar("true")),
     ]
-        .iter()
-        .cloned()
-        .collect();
+    .iter()
+    .cloned()
+    .collect();
     let expected = liquid_value::Value::Object(expected);
     assert_eq!(actual, expected);
 }
