@@ -1,13 +1,11 @@
 use std::fmt;
-use std::io::Write;
 
-use error::{Error, Result, ResultLiquidChainExt};
+use error::{Error, Result};
 use value::Path;
 use value::Scalar;
 
 use super::Context;
 use super::Expression;
-use super::Renderable;
 
 /// A `Value` reference.
 #[derive(Clone, Debug, PartialEq)]
@@ -83,15 +81,6 @@ impl fmt::Display for Variable {
     }
 }
 
-impl Renderable for Variable {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        let path = self.evaluate(context)?;
-        let value = context.stack().get(&path)?;
-        write!(writer, "{}", value).chain("Failed to render")?;
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod test {
     use serde_yaml;
@@ -108,13 +97,14 @@ test_a: ["test"]
 "#,
         )
         .unwrap();
-        let mut actual = Variable::with_literal("test_a");
+        let mut var = Variable::with_literal("test_a");
         let index = vec![Scalar::new(0)];
-        actual.extend(index);
+        var.extend(index);
 
-        let mut context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = actual.render(&mut context).unwrap();
-        assert_eq!(actual, "test".to_owned());
+        let context = ContextBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&context).unwrap();
+        let actual = context.stack().get(&actual).unwrap();
+        assert_eq!(actual.to_string(), "test");
     }
 
     #[test]
@@ -125,13 +115,14 @@ test_a: ["test1", "test2"]
 "#,
         )
         .unwrap();
-        let mut actual = Variable::with_literal("test_a");
+        let mut var = Variable::with_literal("test_a");
         let index = vec![Scalar::new(-1)];
-        actual.extend(index);
+        var.extend(index);
 
-        let mut context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = actual.render(&mut context).unwrap();
-        assert_eq!(actual, "test2".to_owned());
+        let context = ContextBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&context).unwrap();
+        let actual = context.stack().get(&actual).unwrap();
+        assert_eq!(actual.to_string(), "test2");
     }
 
     #[test]
@@ -143,12 +134,13 @@ test_a:
 "#,
         )
         .unwrap();
-        let mut actual = Variable::with_literal("test_a");
+        let mut var = Variable::with_literal("test_a");
         let index = vec![Scalar::new(0), Scalar::new("test_h")];
-        actual.extend(index);
+        var.extend(index);
 
-        let mut context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = actual.render(&mut context).unwrap();
-        assert_eq!(actual, "5".to_owned());
+        let context = ContextBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&context).unwrap();
+        let actual = context.stack().get(&actual).unwrap();
+        assert_eq!(actual.to_string(), "5");
     }
 }
