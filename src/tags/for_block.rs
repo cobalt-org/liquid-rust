@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 use liquid_value::{Object, Scalar, Value};
 
 use compiler::BlockElement;
@@ -13,7 +13,7 @@ use compiler::TryMatchToken;
 use interpreter::Expression;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{unexpected_value_error, Context, Interrupt};
+use interpreter::{Context, Interrupt};
 
 #[derive(Clone, Debug)]
 enum Range {
@@ -481,6 +481,17 @@ pub fn tablerow_block(
         limit,
         offset,
     }))
+}
+
+/// Format an error for an unexpected value.
+pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+    let actual = actual.map(|x| x.to_string());
+    unexpected_value_error_string(expected, actual)
+}
+
+fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
+    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
+    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
 #[cfg(test)]

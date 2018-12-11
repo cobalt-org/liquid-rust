@@ -11,15 +11,6 @@ extern crate liquid_value;
 #[cfg(test)]
 extern crate serde_yaml;
 
-/// Liquid Processing Errors.
-pub mod error {
-    pub use liquid_error::*;
-}
-/// Liquid value type.
-pub mod value {
-    pub use liquid_value::*;
-}
-
 mod context;
 mod expression;
 mod filter;

@@ -1,8 +1,9 @@
 use std::io::Write;
 
+use liquid_error::Result;
+
 use super::Context;
 use super::Renderable;
-use error::Result;
 
 /// An executable template block.
 #[derive(Debug)]

@@ -1,8 +1,8 @@
 use std::fmt;
 
-use error::Result;
-use value::Scalar;
-use value::Value;
+use liquid_error::Result;
+use liquid_value::Scalar;
+use liquid_value::Value;
 
 use super::Context;
 use variable::Variable;

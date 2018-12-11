@@ -1,24 +1,13 @@
 use std::sync;
 
 use anymap;
-use error::{Error, Result};
+use liquid_error::{Error, Result};
 use itertools;
 
 use super::Stack;
 use super::ValueStore;
 use super::PluginRegistry;
 use super::{BoxedValueFilter, FilterValue};
-
-/// Format an error for an unexpected value.
-pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
-    let actual = actual.map(|x| x.to_string());
-    unexpected_value_error_string(expected, actual)
-}
-
-fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
-    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
-}
 
 /// Block processing interrupt state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -200,8 +189,8 @@ impl<'g> Default for Context<'g> {
 mod test {
     use super::*;
 
-    use value::Value;
-    use value::Scalar;
+    use liquid_value::Value;
+    use liquid_value::Scalar;
 
     #[test]
     fn scoped_variables() {

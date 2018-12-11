@@ -1,10 +1,10 @@
 use std::fmt;
 
-use error::{Error, Result};
+use liquid_error::{Error, Result};
 use itertools;
-use value::Object;
-use value::PathRef;
-use value::Value;
+use liquid_value::Object;
+use liquid_value::PathRef;
+use liquid_value::Value;
 
 /// Immutable view into a template's global variables.
 pub trait ValueStore: fmt::Debug {

@@ -1,8 +1,8 @@
 use std::borrow;
 
-use error::{Error, Result};
+use liquid_error::{Error, Result};
 use itertools;
-use value::{Object, PathRef, Scalar, Value};
+use liquid_value::{Object, PathRef, Scalar, Value};
 
 use super::ValueStore;
 

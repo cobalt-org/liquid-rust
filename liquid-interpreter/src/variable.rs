@@ -1,8 +1,8 @@
 use std::fmt;
 
-use error::{Error, Result};
-use value::Path;
-use value::Scalar;
+use liquid_error::{Error, Result};
+use liquid_value::Path;
+use liquid_value::Scalar;
 
 use super::Context;
 use super::Expression;
@@ -83,11 +83,12 @@ impl fmt::Display for Variable {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+
+    use liquid_value::Object;
     use serde_yaml;
 
     use super::super::ContextBuilder;
-    use super::*;
-    use value::Object;
 
     #[test]
     fn identifier_path_array_index() {
