@@ -152,7 +152,7 @@ impl liquid::compiler::Include for InfiniteFileSystem {
 }
 
 #[test]
-#[should_panic]
+#[should_panic] // liquid-rust#300
 fn test_recursively_included_template_does_not_produce_endless_loop() {
     panic!("We don't check recursion depth");
     /*
