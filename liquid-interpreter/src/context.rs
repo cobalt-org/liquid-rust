@@ -1,26 +1,13 @@
-use std::borrow;
-use std::collections::HashMap;
 use std::sync;
 
-use error::{Error, Result};
+use anymap;
 use itertools;
-use value::{Object, PathRef, Scalar, Value};
+use liquid_error::{Error, Result};
 
-use super::Expression;
-use super::Globals;
 use super::PluginRegistry;
+use super::Stack;
+use super::ValueStore;
 use super::{BoxedValueFilter, FilterValue};
-
-/// Format an error for an unexpected value.
-pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
-    let actual = actual.map(|x| x.to_string());
-    unexpected_value_error_string(expected, actual)
-}
-
-fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
-    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
-}
 
 /// Block processing interrupt state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,239 +47,9 @@ impl InterruptState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-struct CycleStateInner {
-    // The indices of all the cycles encountered during rendering.
-    cycles: HashMap<String, usize>,
-}
-
-impl CycleStateInner {
-    fn cycle_index(&mut self, name: &str, max: usize) -> usize {
-        let i = self.cycles.entry(name.to_owned()).or_insert(0);
-        let j = *i;
-        *i = (*i + 1) % max;
-        j
-    }
-}
-
-/// See `cycle` tag.
-pub struct CycleState<'a, 'g>
-where
-    'g: 'a,
-{
-    context: &'a mut Context<'g>,
-}
-
-impl<'a, 'g> CycleState<'a, 'g> {
-    /// See `cycle` tag.
-    pub fn cycle_element<'c>(
-        &'c mut self,
-        name: &str,
-        values: &'c [Expression],
-    ) -> Result<&'c Value> {
-        let index = self.context.cycles.cycle_index(name, values.len());
-        if index >= values.len() {
-            return Err(Error::with_msg(
-                "cycle index out of bounds, most likely from mismatched cycles",
-            )
-            .context("index", format!("{}", index))
-            .context("count", format!("{}", values.len())));
-        }
-
-        let val = values[index].evaluate(self.context)?;
-        Ok(val)
-    }
-}
-
-/// Remembers the content of the last rendered `ifstate` block.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct IfChangedState {
-    last_rendered: Option<String>,
-}
-
-impl IfChangedState {
-    /// Checks whether or not a new rendered `&str` is different from
-    /// `last_rendered` and updates `last_rendered` value to the new value.
-    pub fn has_changed(&mut self, rendered: &str) -> bool {
-        let has_changed = if let Some(last_rendered) = &self.last_rendered {
-            last_rendered != rendered
-        } else {
-            true
-        };
-        self.last_rendered = Some(rendered.to_owned());
-
-        has_changed
-    }
-}
-
-/// Stack of variables.
-#[derive(Debug, Clone)]
-pub struct Stack<'g> {
-    globals: Option<&'g Globals>,
-    stack: Vec<Object>,
-    // State of variables created through increment or decrement tags.
-    indexes: Object,
-}
-
-impl<'g> Stack<'g> {
-    /// Create an empty stack
-    pub fn empty() -> Self {
-        Self {
-            globals: None,
-            indexes: Object::new(),
-            // Mutable frame for globals.
-            stack: vec![Object::new()],
-        }
-    }
-
-    /// Create a stack initialized with read-only `Globals`.
-    pub fn with_globals(globals: &'g Globals) -> Self {
-        let mut stack = Self::empty();
-        stack.globals = Some(globals);
-        stack
-    }
-
-    /// Creates a new variable scope chained to a parent scope.
-    fn push_frame(&mut self) {
-        self.stack.push(Object::new());
-    }
-
-    /// Removes the topmost stack frame from the local variable stack.
-    ///
-    /// # Panics
-    ///
-    /// This method will panic if popping the topmost frame results in an
-    /// empty stack. Given that a context is created with a top-level stack
-    /// frame already in place, emptying the stack should never happen in a
-    /// well-formed program.
-    fn pop_frame(&mut self) {
-        if self.stack.pop().is_none() {
-            panic!("Unbalanced push/pop, leaving the stack empty.")
-        };
-    }
-
-    /// Recursively index into the stack.
-    pub fn try_get(&self, path: PathRef) -> Option<&Value> {
-        let frame = self.find_path_frame(path)?;
-
-        frame.try_get_variable(path)
-    }
-
-    /// Recursively index into the stack.
-    pub fn get(&self, path: PathRef) -> Result<&Value> {
-        let frame = self.find_path_frame(path).ok_or_else(|| {
-            let key = path
-                .iter()
-                .next()
-                .cloned()
-                .unwrap_or_else(|| Scalar::new("nil"));
-            let globals = itertools::join(self.globals().iter(), ", ");
-            Error::with_msg("Unknown variable")
-                .context("requested variable", key.to_str().into_owned())
-                .context("available variables", globals)
-        })?;
-
-        frame.get_variable(path)
-    }
-
-    fn globals(&self) -> Vec<&str> {
-        let mut globals = self.globals.map(|g| g.globals()).unwrap_or_default();
-        for frame in self.stack.iter() {
-            globals.extend(frame.globals());
-        }
-        globals.sort();
-        globals.dedup();
-        globals
-    }
-
-    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a Globals> {
-        let key = path.iter().next()?;
-        let key = key.to_str();
-        self.find_frame(key.as_ref())
-    }
-
-    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a Globals> {
-        for frame in self.stack.iter().rev() {
-            if frame.contains_global(name) {
-                return Some(frame);
-            }
-        }
-
-        if self
-            .globals
-            .map(|g| g.contains_global(name))
-            .unwrap_or(false)
-        {
-            return self.globals;
-        }
-
-        if self.indexes.contains_global(name) {
-            return Some(&self.indexes);
-        }
-
-        None
-    }
-
-    /// Used by increment and decrement tags
-    pub fn set_index<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<borrow::Cow<'static, str>>,
-    {
-        self.indexes.insert(name.into(), val)
-    }
-
-    /// Used by increment and decrement tags
-    pub fn get_index<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        self.indexes.get(name)
-    }
-
-    /// Sets a value in the global context.
-    pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<borrow::Cow<'static, str>>,
-    {
-        self.global_frame().insert(name.into(), val)
-    }
-
-    /// Sets a value to the rendering context.
-    /// Note that it needs to be wrapped in a liquid::Value.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there is no frame on the local values stack. Context
-    /// instances are created with a top-level stack frame in place, so
-    /// this should never happen in a well-formed program.
-    pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<borrow::Cow<'static, str>>,
-    {
-        self.current_frame().insert(name.into(), val)
-    }
-
-    fn current_frame(&mut self) -> &mut Object {
-        match self.stack.last_mut() {
-            Some(frame) => frame,
-            None => panic!("Global frame removed."),
-        }
-    }
-
-    fn global_frame(&mut self) -> &mut Object {
-        match self.stack.first_mut() {
-            Some(frame) => frame,
-            None => panic!("Global frame removed."),
-        }
-    }
-}
-
-impl<'g> Default for Stack<'g> {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
-
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
-    globals: Option<&'g Globals>,
+    globals: Option<&'g ValueStore>,
     filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
@@ -306,7 +63,7 @@ impl<'g> ContextBuilder<'g> {
     }
 
     /// Initialize the stack with the given globals.
-    pub fn set_globals(mut self, values: &'g Globals) -> Self {
+    pub fn set_globals(mut self, values: &'g ValueStore) -> Self {
         self.globals = Some(values);
         self
     }
@@ -325,9 +82,8 @@ impl<'g> ContextBuilder<'g> {
         };
         Context {
             stack,
+            registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
-            cycles: CycleStateInner::default(),
-            ifchanged: IfChangedState::default(),
             filters: self.filters,
         }
     }
@@ -340,13 +96,11 @@ impl<'g> Default for ContextBuilder<'g> {
 }
 
 /// Processing context for a template.
-#[derive(Default)]
 pub struct Context<'g> {
     stack: Stack<'g>,
 
+    registers: anymap::AnyMap,
     interrupt: InterruptState,
-    cycles: CycleStateInner,
-    ifchanged: IfChangedState,
 
     filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
@@ -385,17 +139,16 @@ impl<'g> Context<'g> {
         &mut self.interrupt
     }
 
-    /// See `cycle` tag.
-    pub fn cycles<'a>(&'a mut self) -> CycleState<'a, 'g>
-    where
-        'g: 'a,
-    {
-        CycleState { context: self }
-    }
-
-    /// Access the block's `IfChangedState`.
-    pub fn ifchanged(&mut self) -> &mut IfChangedState {
-        &mut self.ifchanged
+    /// Data store for stateful tags/blocks.
+    ///
+    /// If a plugin needs state, it creates a `struct State : Default` and accesses it via
+    /// `get_register_mut`.
+    pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(
+        &mut self,
+    ) -> &mut T {
+        self.registers
+            .entry::<T>()
+            .or_insert_with(|| Default::default())
     }
 
     /// Access the current `Stack`.
@@ -425,37 +178,23 @@ impl<'g> Context<'g> {
     }
 }
 
+impl<'g> Default for Context<'g> {
+    fn default() -> Self {
+        Self {
+            stack: Stack::empty(),
+            registers: anymap::AnyMap::new(),
+            interrupt: InterruptState::default(),
+            filters: Default::default(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use value::Scalar;
-
-    #[test]
-    fn stack_find_frame() {
-        let mut ctx = Context::new();
-        ctx.stack_mut().set_global("number", Value::scalar(42f64));
-        assert!(ctx.stack().find_frame("number").is_some(),);
-    }
-
-    #[test]
-    fn stack_find_frame_failure() {
-        let mut ctx = Context::new();
-        let mut post = Object::new();
-        post.insert("number".into(), Value::scalar(42f64));
-        ctx.stack_mut().set_global("post", Value::Object(post));
-        assert!(ctx.stack().find_frame("post.number").is_none());
-    }
-
-    #[test]
-    fn stack_get() {
-        let mut ctx = Context::new();
-        let mut post = Object::new();
-        post.insert("number".into(), Value::scalar(42f64));
-        ctx.stack_mut().set_global("post", Value::Object(post));
-        let indexes = [Scalar::new("post"), Scalar::new("number")];
-        assert_eq!(ctx.stack().get(&indexes).unwrap(), &Value::scalar(42f64));
-    }
+    use liquid_value::Scalar;
+    use liquid_value::Value;
 
     #[test]
     fn scoped_variables() {

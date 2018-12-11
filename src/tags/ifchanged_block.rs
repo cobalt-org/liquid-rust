@@ -28,7 +28,7 @@ impl Renderable for IfChanged {
             .trace_with(|| self.trace().into())?;
 
         let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
-        if context.ifchanged().has_changed(&rendered) {
+        if context.get_register_mut::<State>().has_changed(&rendered) {
             write!(writer, "{}", rendered).chain("Failed to render")?;
         }
 
@@ -49,6 +49,27 @@ pub fn ifchanged_block(
 
     tokens.assert_empty();
     Ok(Box::new(IfChanged { if_changed }))
+}
+
+/// Remembers the content of the last rendered `ifstate` block.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct State {
+    last_rendered: Option<String>,
+}
+
+impl State {
+    /// Checks whether or not a new rendered `&str` is different from
+    /// `last_rendered` and updates `last_rendered` value to the new value.
+    fn has_changed(&mut self, rendered: &str) -> bool {
+        let has_changed = if let Some(last_rendered) = &self.last_rendered {
+            last_rendered != rendered
+        } else {
+            true
+        };
+        self.last_rendered = Some(rendered.to_owned());
+
+        has_changed
+    }
 }
 
 #[cfg(test)]

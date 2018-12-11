@@ -1,8 +1,9 @@
 use std::fmt::Debug;
 use std::io::Write;
 
+use liquid_error::Result;
+
 use super::Context;
-use error::Result;
 
 /// Any object (tag/block) that can be rendered by liquid must implement this trait.
 pub trait Renderable: Send + Sync + Debug {

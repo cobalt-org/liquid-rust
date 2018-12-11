@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidExt};
 use liquid_value::Value;
 
 use compiler::BlockElement;
@@ -10,9 +10,9 @@ use compiler::TagBlock;
 use compiler::TagToken;
 use compiler::TagTokenIter;
 use interpreter::Context;
+use interpreter::Expression;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::{unexpected_value_error, Expression};
 
 #[derive(Clone, Debug)]
 enum ComparisonOperator {
@@ -384,6 +384,17 @@ pub fn if_block(
 
     tokens.assert_empty();
     Ok(conditional)
+}
+
+/// Format an error for an unexpected value.
+pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+    let actual = actual.map(|x| x.to_string());
+    unexpected_value_error_string(expected, actual)
+}
+
+fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
+    let actual = actual.unwrap_or_else(|| "nothing".to_owned());
+    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
 }
 
 #[cfg(test)]

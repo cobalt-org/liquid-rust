@@ -1,6 +1,5 @@
 use liquid_error;
-
-use value::Value;
+use liquid_value::Value;
 
 /// Expected return type of a `Filter`.
 pub type FilterResult = Result<Value, liquid_error::Error>;

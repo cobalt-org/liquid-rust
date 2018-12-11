@@ -3,8 +3,8 @@ use std::io::Write;
 
 use itertools;
 
-use error::{Result, ResultLiquidChainExt, ResultLiquidExt};
-use value::Value;
+use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_value::Value;
 
 use super::Context;
 use super::Expression;
