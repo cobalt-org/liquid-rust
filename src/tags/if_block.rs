@@ -10,9 +10,9 @@ use compiler::TagBlock;
 use compiler::TagToken;
 use compiler::TagTokenIter;
 use interpreter::Context;
+use interpreter::Expression;
 use interpreter::Renderable;
 use interpreter::Template;
-use interpreter::Expression;
 
 #[derive(Clone, Debug)]
 enum ComparisonOperator {

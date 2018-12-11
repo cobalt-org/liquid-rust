@@ -1,12 +1,12 @@
 use std::sync;
 
 use anymap;
-use liquid_error::{Error, Result};
 use itertools;
+use liquid_error::{Error, Result};
 
+use super::PluginRegistry;
 use super::Stack;
 use super::ValueStore;
-use super::PluginRegistry;
 use super::{BoxedValueFilter, FilterValue};
 
 /// Block processing interrupt state.
@@ -143,8 +143,12 @@ impl<'g> Context<'g> {
     ///
     /// If a plugin needs state, it creates a `struct State : Default` and accesses it via
     /// `get_register_mut`.
-    pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(&mut self) -> &mut T {
-        self.registers.entry::<T>().or_insert_with(|| Default::default())
+    pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(
+        &mut self,
+    ) -> &mut T {
+        self.registers
+            .entry::<T>()
+            .or_insert_with(|| Default::default())
     }
 
     /// Access the current `Stack`.
@@ -189,8 +193,8 @@ impl<'g> Default for Context<'g> {
 mod test {
     use super::*;
 
-    use liquid_value::Value;
     use liquid_value::Scalar;
+    use liquid_value::Value;
 
     #[test]
     fn scoped_variables() {

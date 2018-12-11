@@ -33,8 +33,7 @@ impl Renderable for Cycle {
             .get_register_mut::<State>()
             .cycle(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
-        let value = expr.evaluate(context)
-            .trace_with(|| self.trace().into())?;
+        let value = expr.evaluate(context).trace_with(|| self.trace().into())?;
         write!(writer, "{}", value).chain("Failed to render")?;
         Ok(())
     }
@@ -109,8 +108,8 @@ struct State {
     cycles: HashMap<String, usize>,
 }
 
-impl State{
-    fn cycle<'e>(& mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
+impl State {
+    fn cycle<'e>(&mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
         let index = self.cycle_index(name, values.len());
         if index >= values.len() {
             return Err(Error::with_msg(

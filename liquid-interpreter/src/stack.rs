@@ -1,7 +1,7 @@
 use std::borrow;
 
-use liquid_error::{Error, Result};
 use itertools;
+use liquid_error::{Error, Result};
 use liquid_value::{Object, PathRef, Scalar, Value};
 
 use super::ValueStore;
@@ -99,11 +99,7 @@ impl<'g> Stack<'g> {
             }
         }
 
-        if self
-            .globals
-            .map(|g| g.contains_root(name))
-            .unwrap_or(false)
-        {
+        if self.globals.map(|g| g.contains_root(name)).unwrap_or(false) {
             return self.globals;
         }
 

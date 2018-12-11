@@ -1,8 +1,8 @@
 use std::io::Write;
 
+use error::{Result, ResultLiquidChainExt};
 use liquid_interpreter::Context;
 use liquid_interpreter::Renderable;
-use error::{Result, ResultLiquidChainExt};
 
 /// A raw template expression.
 #[derive(Clone, Debug, Eq, PartialEq)]

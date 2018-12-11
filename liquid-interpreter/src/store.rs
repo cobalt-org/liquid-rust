@@ -1,7 +1,7 @@
 use std::fmt;
 
-use liquid_error::{Error, Result};
 use itertools;
+use liquid_error::{Error, Result};
 use liquid_value::Object;
 use liquid_value::PathRef;
 use liquid_value::Value;
