@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use error::{Result, ResultLiquidChainExt};
+use liquid_error::{Result, ResultLiquidChainExt};
 use liquid_interpreter::Context;
 use liquid_interpreter::Renderable;
 

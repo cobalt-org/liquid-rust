@@ -13,14 +13,6 @@ mod parser;
 mod tag;
 mod text;
 
-pub mod error {
-    pub use liquid_error::*;
-}
-
-pub mod value {
-    pub use liquid_value::*;
-}
-
 pub use block::*;
 pub use include::*;
 pub use options::*;

@@ -1,6 +1,6 @@
+use liquid_error::Result;
 use liquid_interpreter::Renderable;
 
-use super::error::Result;
 use super::LiquidOptions;
 use super::TagBlock;
 use super::TagTokenIter;

@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
 
-use super::error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 
 pub trait Include: Send + Sync + IncludeClone {
     fn include(&self, path: &str) -> Result<String>;
