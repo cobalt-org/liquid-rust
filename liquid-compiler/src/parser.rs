@@ -427,7 +427,17 @@ impl<'a> Tag<'a> {
                 },
                 position,
             );
-            Err(convert_pest_error(pest_error))
+            let mut all_tags: Vec<_> = options.tags.plugin_names().collect();
+            all_tags.sort_unstable();
+            let all_tags = itertools::join(all_tags, ", ");
+            let mut all_blocks: Vec<_> = options.blocks.plugin_names().collect();
+            all_blocks.sort_unstable();
+            let all_blocks = itertools::join(all_blocks, ", ");
+            let error = convert_pest_error(pest_error)
+                .context("requested", name.to_owned())
+                .context("available tags", all_tags)
+                .context("available blocks", all_blocks);
+            Err(error)
         }
     }
 }

@@ -15,6 +15,7 @@ travis-ci = { repository = "cobalt-org/liquid-rust" }
 appveyor  = { repository = "johannhof/liquid-rust" }
 
 [dependencies]
+itertools = "0.7.0"
 pest = "2.0"
 pest_derive = "2.0"
 

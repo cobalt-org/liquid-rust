@@ -122,7 +122,9 @@ impl<'g> Context<'g> {
                 f
             })
             .ok_or_else(|| {
-                let available = itertools::join(self.filters.plugin_names(), ", ");
+                let mut available: Vec<_> = self.filters.plugin_names().collect();
+                available.sort_unstable();
+                let available = itertools::join(available, ", ");
                 Error::with_msg("Unknown filter")
                     .context("requested filter", name.to_owned())
                     .context("available filters", available)

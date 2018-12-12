@@ -1,7 +1,7 @@
 extern crate liquid_error;
 extern crate liquid_interpreter;
 extern crate liquid_value;
-
+extern crate itertools;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
