@@ -60,7 +60,6 @@ pub fn include_tag(
 mod test {
     use std::iter::FromIterator;
     use std::path;
-    use std::sync;
 
     use compiler;
     use filters;
@@ -92,14 +91,13 @@ mod test {
     #[test]
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
-        let template = compiler::parse(text, &options())
+        let mut options = options();
+        options.filters.register("size", (filters::size as compiler::FnFilterValue).into());
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
-        filters.register("size", (filters::size as interpreter::FnFilterValue).into());
         let mut context = ContextBuilder::new()
-            .set_filters(&sync::Arc::new(filters))
             .build();
         context
             .stack_mut()
@@ -114,14 +112,13 @@ mod test {
     #[test]
     fn include_non_string() {
         let text = "{% include example.txt %}";
-        let template = compiler::parse(text, &options())
+        let mut options = options();
+        options.filters.register("size", (filters::size as compiler::FnFilterValue).into());
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
-        filters.register("size", (filters::size as interpreter::FnFilterValue).into());
         let mut context = ContextBuilder::new()
-            .set_filters(&sync::Arc::new(filters))
             .build();
         context
             .stack_mut()

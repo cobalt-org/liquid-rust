@@ -2,7 +2,7 @@ use liquid_value::Value;
 use url::percent_encoding;
 use url::percent_encoding::EncodeSet;
 
-use interpreter::FilterResult;
+use compiler::FilterResult;
 
 use super::{check_args_len, invalid_input};
 

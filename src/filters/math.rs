@@ -1,7 +1,7 @@
 use liquid_value::Value;
 
 use super::{check_args_len, invalid_argument, invalid_input};
-use interpreter::FilterResult;
+use compiler::FilterResult;
 
 /// Returns the absolute value of a number.
 pub fn abs(input: &Value, args: &[Value]) -> FilterResult {

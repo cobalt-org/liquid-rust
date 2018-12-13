@@ -6,7 +6,7 @@ use liquid_error::ResultLiquidExt;
 use compiler::LiquidOptions;
 use compiler::TagTokenIter;
 use interpreter::Context;
-use interpreter::FilterChain;
+use compiler::FilterChain;
 use interpreter::Renderable;
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,7 @@ impl Renderable for Assign {
 pub fn assign_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    _options: &LiquidOptions,
+    options: &LiquidOptions,
 ) -> Result<Box<Renderable>> {
     let dst = arguments
         .expect_next("Identifier expected.")?
@@ -50,7 +50,7 @@ pub fn assign_tag(
 
     let src = arguments
         .expect_next("FilterChain expected.")?
-        .expect_filter_chain()
+        .expect_filter_chain(options)
         .into_result()?;
 
     // no more arguments should be supplied, trying to supply them is an error

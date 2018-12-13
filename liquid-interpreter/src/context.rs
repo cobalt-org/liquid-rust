@@ -1,13 +1,7 @@
-use std::sync;
-
 use anymap;
-use itertools;
-use liquid_error::{Error, Result};
 
-use super::PluginRegistry;
 use super::Stack;
 use super::ValueStore;
-use super::{BoxedValueFilter, FilterValue};
 
 /// Block processing interrupt state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,7 +44,6 @@ impl InterruptState {
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
     globals: Option<&'g ValueStore>,
-    filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
 impl<'g> ContextBuilder<'g> {
@@ -58,19 +51,12 @@ impl<'g> ContextBuilder<'g> {
     pub fn new() -> Self {
         Self {
             globals: None,
-            filters: Default::default(),
         }
     }
 
     /// Initialize the stack with the given globals.
     pub fn set_globals(mut self, values: &'g ValueStore) -> Self {
         self.globals = Some(values);
-        self
-    }
-
-    /// Initialize the context with the given filters.
-    pub fn set_filters(mut self, filters: &sync::Arc<PluginRegistry<BoxedValueFilter>>) -> Self {
-        self.filters = sync::Arc::clone(filters);
         self
     }
 
@@ -84,7 +70,6 @@ impl<'g> ContextBuilder<'g> {
             stack,
             registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
-            filters: self.filters,
         }
     }
 }
@@ -101,8 +86,6 @@ pub struct Context<'g> {
 
     registers: anymap::AnyMap,
     interrupt: InterruptState,
-
-    filters: sync::Arc<PluginRegistry<BoxedValueFilter>>,
 }
 
 impl<'g> Context<'g> {
@@ -111,24 +94,6 @@ impl<'g> Context<'g> {
     /// See `ContextBuilder` for more control.
     pub fn new() -> Self {
         Context::default()
-    }
-
-    /// Grab a `FilterValue`.
-    pub fn get_filter<'b>(&'b self, name: &str) -> Result<&'b FilterValue> {
-        self.filters
-            .get(name)
-            .map(|f| {
-                let f: &FilterValue = f;
-                f
-            })
-            .ok_or_else(|| {
-                let mut available: Vec<_> = self.filters.plugin_names().collect();
-                available.sort_unstable();
-                let available = itertools::join(available, ", ");
-                Error::with_msg("Unknown filter")
-                    .context("requested filter", name.to_owned())
-                    .context("available filters", available)
-            })
     }
 
     /// Access the block's `InterruptState`.
@@ -186,7 +151,6 @@ impl<'g> Default for Context<'g> {
             stack: Stack::empty(),
             registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
-            filters: Default::default(),
         }
     }
 }

@@ -496,8 +496,6 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 
 #[cfg(test)]
 mod test {
-    use std::sync;
-
     use compiler;
     use interpreter;
     use interpreter::ContextBuilder;
@@ -811,19 +809,18 @@ mod test {
             "{% endfor %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let mut options = options();
+        options.filters.register(
+            "shout",
+            ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
+                as compiler::FnFilterValue)
+                .into(),
+        );
+        let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut filters = interpreter::PluginRegistry::<interpreter::BoxedValueFilter>::new();
-        filters.register(
-            "shout",
-            ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
-                as interpreter::FnFilterValue)
-                .into(),
-        );
         let mut context = ContextBuilder::new()
-            .set_filters(&sync::Arc::new(filters))
             .build();
 
         context.stack_mut().set_global(

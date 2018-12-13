@@ -1,8 +1,9 @@
+use std::fmt::Write;
+
 use liquid_value::Value;
 
 use super::{check_args_len, invalid_input};
-use interpreter::FilterResult;
-use std::fmt::Write;
+use compiler::FilterResult;
 
 /// Receives a `Value::Array` as an input.
 /// Returns a copy of the input with the given value appended at the end.

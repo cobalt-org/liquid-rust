@@ -8,6 +8,9 @@ extern crate pest_derive;
 
 mod block;
 mod include;
+mod filter;
+mod filter_chain;
+mod registry;
 mod options;
 mod parser;
 mod tag;
@@ -18,5 +21,8 @@ pub use include::*;
 pub use options::*;
 pub use parser::*;
 pub use tag::*;
+pub use filter::*;
+pub use filter_chain::*;
+pub use registry::*;
 
 use text::Text;

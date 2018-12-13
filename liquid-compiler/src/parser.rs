@@ -5,14 +5,15 @@
 
 use std;
 
+use itertools;
 use liquid_error::{Error, Result};
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Variable;
-use liquid_interpreter::{FilterCall, FilterChain};
 use liquid_value::Scalar;
 use liquid_value::Value;
 
+use super::{FilterCall, FilterChain};
 use super::LiquidOptions;
 use super::ParseBlock;
 use super::ParseTag;
@@ -172,7 +173,7 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair) -> FilterCall {
+fn parse_filter(filter: Pair, options: &LiquidOptions) -> Result<FilterCall> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
@@ -181,12 +182,22 @@ fn parse_filter(filter: Pair) -> FilterCall {
     let name = filter.next().expect("A filter always has a name.").as_str();
     let args = filter.map(parse_value).collect();
 
-    FilterCall::new(name, args)
+    let f = options.filters.get(name)
+            .ok_or_else(|| {
+                let mut available: Vec<_> = options.filters.plugin_names().collect();
+                available.sort_unstable();
+                let available = itertools::join(available, ", ");
+                Error::with_msg("Unknown filter")
+                    .context("requested filter", name.to_owned())
+                    .context("available filters", available)
+            })?.clone();
+    let f = FilterCall::new(name, f, args);
+    Ok(f)
 }
 
 /// Parses a `FilterChain` from a `Pair` with a filter chain.
 /// This `Pair` must be `Rule::FilterChain`.
-fn parse_filter_chain(chain: Pair) -> FilterChain {
+fn parse_filter_chain(chain: Pair, options: &LiquidOptions) -> Result<FilterChain> {
     if chain.as_rule() != Rule::FilterChain {
         panic!("Expected an expression with filters.");
     }
@@ -197,9 +208,11 @@ fn parse_filter_chain(chain: Pair) -> FilterChain {
             .next()
             .expect("A filterchain always has starts by a value."),
     );
-    let filters = chain.map(parse_filter).collect();
+    let filters: Result<Vec<_>> = chain.map(|f| parse_filter(f, options)).collect();
+    let filters = filters?;
 
-    FilterChain::new(entry, filters)
+    let filters = FilterChain::new(entry, filters);
+    Ok(filters)
 }
 
 /// An interface to access elements inside a block.
@@ -340,6 +353,7 @@ pub struct Tag<'a> {
     tokens: TagTokenIter<'a>,
     as_str: &'a str,
 }
+
 impl<'a> From<Pair<'a>> for Tag<'a> {
     fn from(element: Pair<'a>) -> Self {
         if element.as_rule() != Rule::Tag {
@@ -446,6 +460,7 @@ impl<'a> Tag<'a> {
 pub struct Exp<'a> {
     element: Pair<'a>,
 }
+
 impl<'a> From<Pair<'a>> for Exp<'a> {
     fn from(element: Pair<'a>) -> Self {
         if element.as_rule() != Rule::Expression {
@@ -454,9 +469,10 @@ impl<'a> From<Pair<'a>> for Exp<'a> {
         Exp { element }
     }
 }
+
 impl<'a> Exp<'a> {
     /// Parses the expression just as if it weren't inside any block.
-    pub fn parse(self) -> Result<Box<Renderable>> {
+    pub fn parse(self, options: &LiquidOptions) -> Result<Box<Renderable>> {
         let filter_chain = self
             .element
             .into_inner()
@@ -466,7 +482,8 @@ impl<'a> Exp<'a> {
             .next()
             .expect("An expression consists of one filterchain.");
 
-        Ok(Box::new(parse_filter_chain(filter_chain)))
+        let filter_chain = parse_filter_chain(filter_chain, options)?;
+        Ok(Box::new(filter_chain))
     }
 
     /// Returns the expression as a str.
@@ -507,7 +524,7 @@ impl<'a> BlockElement<'a> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse(block, options),
-            BlockElement::Expression(exp) => exp.parse(),
+            BlockElement::Expression(exp) => exp.parse(options),
         }
     }
 
@@ -520,7 +537,7 @@ impl<'a> BlockElement<'a> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse_pair(next_elements, options),
-            BlockElement::Expression(exp) => exp.parse(),
+            BlockElement::Expression(exp) => exp.parse(options),
         }
     }
 
@@ -728,14 +745,20 @@ impl<'a> TagToken<'a> {
     }
 
     /// Tries to obtain a `FilterChain` from this token.
-    pub fn expect_filter_chain(mut self) -> TryMatchToken<'a, FilterChain> {
-        match self.unwrap_filter_chain() {
-            Ok(t) => TryMatchToken::Matches(parse_filter_chain(t)),
+    pub fn expect_filter_chain(mut self, options: &LiquidOptions) -> TryMatchToken<'a, FilterChain> {
+        match self.expect_filter_chain_err(options) {
+            Ok(t) => TryMatchToken::Matches(t),
             Err(_) => {
                 self.expected.push(Rule::FilterChain);
                 TryMatchToken::Fails(self)
             }
         }
+    }
+
+    fn expect_filter_chain_err(&mut self, options: &LiquidOptions) -> Result<FilterChain> {
+        let t = self.unwrap_filter_chain().map_err(|_| Error::with_msg("failed to parse"))?;
+        let f = parse_filter_chain(t, options)?;
+        Ok(f)
     }
 
     /// Tries to obtain a value from this token.
@@ -873,32 +896,6 @@ mod test {
             .next()
             .unwrap();
         assert_eq!(parse_literal(string_single_quotes), Scalar::new("Liquid"));
-    }
-
-    #[test]
-    fn test_parse_filter_chain() {
-        let filter = LiquidParser::parse(Rule::FilterChain, "abc | def:'1',2,'3' | blabla")
-            .unwrap()
-            .next()
-            .unwrap();
-
-        assert_eq!(
-            parse_filter_chain(filter),
-            FilterChain::new(
-                Expression::Variable(Variable::with_literal("abc")),
-                vec![
-                    FilterCall::new(
-                        "def",
-                        vec![
-                            Expression::Literal(Value::scalar("1")),
-                            Expression::Literal(Value::scalar(2.0)),
-                            Expression::Literal(Value::scalar("3")),
-                        ],
-                    ),
-                    FilterCall::new("blabla", vec![]),
-                ]
-            )
-        );
     }
 
     #[test]

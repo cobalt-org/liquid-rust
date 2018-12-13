@@ -3,7 +3,7 @@ use regex::Regex;
 use liquid_value::Value;
 
 use super::check_args_len;
-use interpreter::FilterResult;
+use compiler::FilterResult;
 
 /// Returns the number of already escaped characters.
 fn nr_escaped(text: &str) -> usize {

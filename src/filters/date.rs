@@ -2,7 +2,7 @@ use liquid_value::Scalar;
 use liquid_value::Value;
 
 use super::{check_args_len, invalid_argument, invalid_input};
-use interpreter::FilterResult;
+use compiler::FilterResult;
 
 #[cfg(feature = "extra-filters")]
 use chrono::FixedOffset;
