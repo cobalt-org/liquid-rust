@@ -23,7 +23,7 @@ use liquid_value::Scalar;
 use liquid_value::Value;
 use unicode_segmentation::UnicodeSegmentation;
 
-use interpreter::FilterResult;
+use compiler::FilterResult;
 
 pub fn invalid_input<S: Into<Cow<'static, str>>>(cause: S) -> liquid_error::Error {
     liquid_error::Error::with_msg("Invalid input").context("cause", cause)

@@ -1,3 +1,5 @@
+use std::fmt::{self, Debug};
+
 use liquid_error;
 use liquid_value::Value;
 
@@ -10,7 +12,7 @@ pub type FilterResult = Result<Value, liquid_error::Error>;
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
-pub trait FilterValue: Send + Sync + FilterValueClone {
+pub trait FilterValue: Send + Sync + FilterValueClone + Debug {
     /// Filter `input` based on `arguments`.
     fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult;
 }
@@ -56,14 +58,21 @@ impl FilterValue for FnValueFilter {
     }
 }
 
-#[derive(Clone)]
+impl Debug for FnValueFilter {
+    #[inline]
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        writeln!(formatter, "fn filter")
+    }
+}
+
+#[derive(Clone, Debug)]
 enum EnumValueFilter {
     Fun(FnValueFilter),
     Heap(Box<FilterValue>),
 }
 
 /// Custom `Box<FilterValue>` with a `FnFilterValue` optimization.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BoxedValueFilter {
     filter: EnumValueFilter,
 }

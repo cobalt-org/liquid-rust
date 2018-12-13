@@ -1,5 +1,5 @@
 use liquid;
-use liquid::interpreter::FilterResult;
+use liquid::compiler::FilterResult;
 use liquid::value::Value;
 
 fn make_funny(_input: &Value, _args: &[Value]) -> FilterResult {
@@ -48,21 +48,12 @@ fn link_to(input: &Value, args: &[Value]) -> FilterResult {
 
 fn liquid() -> liquid::Parser {
     liquid::ParserBuilder::new()
-        .filter(
-            "make_funny",
-            make_funny as liquid::interpreter::FnFilterValue,
-        )
-        .filter(
-            "cite_funny",
-            cite_funny as liquid::interpreter::FnFilterValue,
-        )
-        .filter(
-            "add_smiley",
-            add_smiley as liquid::interpreter::FnFilterValue,
-        )
-        .filter("add_tag", add_tag as liquid::interpreter::FnFilterValue)
-        .filter("paragraph", paragraph as liquid::interpreter::FnFilterValue)
-        .filter("link_to", link_to as liquid::interpreter::FnFilterValue)
+        .filter("make_funny", make_funny as liquid::compiler::FnFilterValue)
+        .filter("cite_funny", cite_funny as liquid::compiler::FnFilterValue)
+        .filter("add_smiley", add_smiley as liquid::compiler::FnFilterValue)
+        .filter("add_tag", add_tag as liquid::compiler::FnFilterValue)
+        .filter("paragraph", paragraph as liquid::compiler::FnFilterValue)
+        .filter("link_to", link_to as liquid::compiler::FnFilterValue)
         .build()
 }
 

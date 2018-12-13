@@ -1,5 +1,4 @@
 use std::io::Write;
-use std::sync;
 
 use liquid_error::Result;
 use liquid_interpreter as interpreter;
@@ -7,7 +6,6 @@ use liquid_interpreter::Renderable;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
-    pub(crate) filters: sync::Arc<interpreter::PluginRegistry<interpreter::BoxedValueFilter>>,
 }
 
 impl Template {
@@ -23,7 +21,6 @@ impl Template {
     /// Renders an instance of the Template, using the given globals.
     pub fn render_to(&self, writer: &mut Write, globals: &interpreter::ValueStore) -> Result<()> {
         let mut data = interpreter::ContextBuilder::new()
-            .set_filters(&self.filters)
             .set_globals(globals)
             .build();
         self.template.render_to(writer, &mut data)

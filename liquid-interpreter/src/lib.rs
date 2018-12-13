@@ -13,9 +13,6 @@ extern crate serde_yaml;
 
 mod context;
 mod expression;
-mod filter;
-mod filter_chain;
-mod registry;
 mod renderable;
 mod stack;
 mod store;
@@ -24,9 +21,6 @@ mod variable;
 
 pub use self::context::*;
 pub use self::expression::*;
-pub use self::filter::*;
-pub use self::filter_chain::*;
-pub use self::registry::*;
 pub use self::renderable::*;
 pub use self::stack::*;
 pub use self::store::*;

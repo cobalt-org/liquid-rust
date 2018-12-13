@@ -1,5 +1,5 @@
 use liquid;
-use liquid::interpreter::FilterResult;
+use liquid::compiler::FilterResult;
 use liquid::value::Value;
 
 fn money(input: &Value, _args: &[Value]) -> FilterResult {
@@ -12,10 +12,10 @@ fn money_with_underscore(input: &Value, _args: &[Value]) -> FilterResult {
 
 fn liquid_money() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter("money", money as liquid::interpreter::FnFilterValue)
+        .filter("money", money as liquid::compiler::FnFilterValue)
         .filter(
             "money_with_underscore",
-            money_with_underscore as liquid::interpreter::FnFilterValue,
+            money_with_underscore as liquid::compiler::FnFilterValue,
         )
         .build()
 }
@@ -29,10 +29,7 @@ fn substitute(input: &Value, _args: &[Value]) -> FilterResult {
 
 fn liquid_sub() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter(
-            "substitute",
-            substitute as liquid::interpreter::FnFilterValue,
-        )
+        .filter("substitute", substitute as liquid::compiler::FnFilterValue)
         .build()
 }
 
