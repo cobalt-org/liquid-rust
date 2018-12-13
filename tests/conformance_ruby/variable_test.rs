@@ -64,7 +64,6 @@ fn test_false_renders_as_false() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_nil_renders_as_empty_string() {
     assert_template_result!(r#""#, r#"{{ nil }}"#);
 

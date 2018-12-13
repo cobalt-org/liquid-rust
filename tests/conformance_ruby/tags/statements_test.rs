@@ -35,7 +35,6 @@ fn test_zero_lq_or_equal_one() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_zero_lq_or_equal_one_involving_nil() {
     let text = " {% if null <= 0 %} true {% else %} false {% endif %} ";
     assert_template_result!("  false  ", text);
@@ -110,7 +109,6 @@ fn test_is_not_collection_empty() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_nil() {
     let text = " {% if var == nil %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({ "var": nil }));
@@ -120,7 +118,6 @@ fn test_nil() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_not_nil() {
     let text = " {% if var != nil %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({"var": 1}));
