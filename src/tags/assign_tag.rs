@@ -3,10 +3,10 @@ use std::io::Write;
 use liquid_error::Result;
 use liquid_error::ResultLiquidExt;
 
+use compiler::FilterChain;
 use compiler::LiquidOptions;
 use compiler::TagTokenIter;
 use interpreter::Context;
-use compiler::FilterChain;
 use interpreter::Renderable;
 
 #[derive(Clone, Debug)]

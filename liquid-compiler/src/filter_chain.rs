@@ -4,10 +4,10 @@ use std::io::Write;
 use itertools;
 
 use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
-use liquid_value::Value;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
+use liquid_value::Value;
 
 use super::BoxedValueFilter;
 use super::FilterValue;

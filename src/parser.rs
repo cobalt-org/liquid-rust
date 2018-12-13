@@ -62,19 +62,13 @@ impl ParserBuilder {
             .filter("append", filters::append as compiler::FnFilterValue)
             .filter("at_least", filters::at_least as compiler::FnFilterValue)
             .filter("at_most", filters::at_most as compiler::FnFilterValue)
-            .filter(
-                "capitalize",
-                filters::capitalize as compiler::FnFilterValue,
-            )
+            .filter("capitalize", filters::capitalize as compiler::FnFilterValue)
             .filter("ceil", filters::ceil as compiler::FnFilterValue)
             .filter("compact", filters::compact as compiler::FnFilterValue)
             .filter("concat", filters::concat as compiler::FnFilterValue)
             .filter("date", filters::date as compiler::FnFilterValue)
             .filter("default", filters::default as compiler::FnFilterValue)
-            .filter(
-                "divided_by",
-                filters::divided_by as compiler::FnFilterValue,
-            )
+            .filter("divided_by", filters::divided_by as compiler::FnFilterValue)
             .filter("downcase", filters::downcase as compiler::FnFilterValue)
             .filter("escape", filters::escape as compiler::FnFilterValue)
             .filter(
@@ -117,10 +111,7 @@ impl ParserBuilder {
             )
             .filter("split", filters::split as compiler::FnFilterValue)
             .filter("strip", filters::strip as compiler::FnFilterValue)
-            .filter(
-                "strip_html",
-                filters::strip_html as compiler::FnFilterValue,
-            )
+            .filter("strip_html", filters::strip_html as compiler::FnFilterValue)
             .filter(
                 "strip_newlines",
                 filters::strip_newlines as compiler::FnFilterValue,
@@ -133,14 +124,8 @@ impl ParserBuilder {
             )
             .filter("uniq", filters::uniq as compiler::FnFilterValue)
             .filter("upcase", filters::upcase as compiler::FnFilterValue)
-            .filter(
-                "url_decode",
-                filters::url_decode as compiler::FnFilterValue,
-            )
-            .filter(
-                "url_encode",
-                filters::url_encode as compiler::FnFilterValue,
-            )
+            .filter("url_decode", filters::url_decode as compiler::FnFilterValue)
+            .filter("url_encode", filters::url_encode as compiler::FnFilterValue)
     }
 
     /// Register non-standard filters
@@ -152,22 +137,16 @@ impl ParserBuilder {
     /// Register non-standard filters
     #[cfg(feature = "extra-filters")]
     pub fn extra_filters(self) -> Self {
-        self.filter(
-            "pluralize",
-            filters::pluralize as compiler::FnFilterValue,
-        )
-        .filter(
-            "date_in_tz",
-            filters::date_in_tz as compiler::FnFilterValue,
-        )
-        .filter("push", filters::push as compiler::FnFilterValue)
-        .filter("pop", filters::pop as compiler::FnFilterValue)
-        .filter("unshift", filters::unshift as compiler::FnFilterValue)
-        .filter("shift", filters::shift as compiler::FnFilterValue)
-        .filter(
-            "array_to_sentence_string",
-            filters::array_to_sentence_string as compiler::FnFilterValue,
-        )
+        self.filter("pluralize", filters::pluralize as compiler::FnFilterValue)
+            .filter("date_in_tz", filters::date_in_tz as compiler::FnFilterValue)
+            .filter("push", filters::push as compiler::FnFilterValue)
+            .filter("pop", filters::pop as compiler::FnFilterValue)
+            .filter("unshift", filters::unshift as compiler::FnFilterValue)
+            .filter("shift", filters::shift as compiler::FnFilterValue)
+            .filter(
+                "array_to_sentence_string",
+                filters::array_to_sentence_string as compiler::FnFilterValue,
+            )
     }
 
     /// Inserts a new custom block into the parser

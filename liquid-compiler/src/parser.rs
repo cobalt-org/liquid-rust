@@ -13,11 +13,11 @@ use liquid_interpreter::Variable;
 use liquid_value::Scalar;
 use liquid_value::Value;
 
-use super::{FilterCall, FilterChain};
 use super::LiquidOptions;
 use super::ParseBlock;
 use super::ParseTag;
 use super::Text;
+use super::{FilterCall, FilterChain};
 
 use pest::Parser;
 
@@ -182,15 +182,18 @@ fn parse_filter(filter: Pair, options: &LiquidOptions) -> Result<FilterCall> {
     let name = filter.next().expect("A filter always has a name.").as_str();
     let args = filter.map(parse_value).collect();
 
-    let f = options.filters.get(name)
-            .ok_or_else(|| {
-                let mut available: Vec<_> = options.filters.plugin_names().collect();
-                available.sort_unstable();
-                let available = itertools::join(available, ", ");
-                Error::with_msg("Unknown filter")
-                    .context("requested filter", name.to_owned())
-                    .context("available filters", available)
-            })?.clone();
+    let f = options
+        .filters
+        .get(name)
+        .ok_or_else(|| {
+            let mut available: Vec<_> = options.filters.plugin_names().collect();
+            available.sort_unstable();
+            let available = itertools::join(available, ", ");
+            Error::with_msg("Unknown filter")
+                .context("requested filter", name.to_owned())
+                .context("available filters", available)
+        })?
+        .clone();
     let f = FilterCall::new(name, f, args);
     Ok(f)
 }
@@ -745,7 +748,10 @@ impl<'a> TagToken<'a> {
     }
 
     /// Tries to obtain a `FilterChain` from this token.
-    pub fn expect_filter_chain(mut self, options: &LiquidOptions) -> TryMatchToken<'a, FilterChain> {
+    pub fn expect_filter_chain(
+        mut self,
+        options: &LiquidOptions,
+    ) -> TryMatchToken<'a, FilterChain> {
         match self.expect_filter_chain_err(options) {
             Ok(t) => TryMatchToken::Matches(t),
             Err(_) => {
@@ -756,7 +762,9 @@ impl<'a> TagToken<'a> {
     }
 
     fn expect_filter_chain_err(&mut self, options: &LiquidOptions) -> Result<FilterChain> {
-        let t = self.unwrap_filter_chain().map_err(|_| Error::with_msg("failed to parse"))?;
+        let t = self
+            .unwrap_filter_chain()
+            .map_err(|_| Error::with_msg("failed to parse"))?;
         let f = parse_filter_chain(t, options)?;
         Ok(f)
     }

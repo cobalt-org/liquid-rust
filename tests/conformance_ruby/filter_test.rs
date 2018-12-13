@@ -29,10 +29,7 @@ fn substitute(input: &Value, _args: &[Value]) -> FilterResult {
 
 fn liquid_sub() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter(
-            "substitute",
-            substitute as liquid::compiler::FnFilterValue,
-        )
+        .filter("substitute", substitute as liquid::compiler::FnFilterValue)
         .build()
 }
 

@@ -92,13 +92,14 @@ mod test {
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
         let mut options = options();
-        options.filters.register("size", (filters::size as compiler::FnFilterValue).into());
+        options
+            .filters
+            .register("size", (filters::size as compiler::FnFilterValue).into());
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new()
-            .build();
+        let mut context = ContextBuilder::new().build();
         context
             .stack_mut()
             .set_global("num", value::Value::scalar(5f64));
@@ -113,13 +114,14 @@ mod test {
     fn include_non_string() {
         let text = "{% include example.txt %}";
         let mut options = options();
-        options.filters.register("size", (filters::size as compiler::FnFilterValue).into());
+        options
+            .filters
+            .register("size", (filters::size as compiler::FnFilterValue).into());
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new()
-            .build();
+        let mut context = ContextBuilder::new().build();
         context
             .stack_mut()
             .set_global("num", value::Value::scalar(5f64));

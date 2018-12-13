@@ -49,9 +49,7 @@ pub struct ContextBuilder<'g> {
 impl<'g> ContextBuilder<'g> {
     /// Creates a new, empty rendering context.
     pub fn new() -> Self {
-        Self {
-            globals: None,
-        }
+        Self { globals: None }
     }
 
     /// Initialize the stack with the given globals.

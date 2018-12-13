@@ -1,9 +1,9 @@
-use super::PluginRegistry;
 use super::BoxedBlockParser;
 use super::BoxedTagParser;
 use super::BoxedValueFilter;
 use super::Include;
 use super::NullInclude;
+use super::PluginRegistry;
 
 #[derive(Clone)]
 pub struct LiquidOptions {

@@ -820,8 +820,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new()
-            .build();
+        let mut context = ContextBuilder::new().build();
 
         context.stack_mut().set_global(
             "array",
