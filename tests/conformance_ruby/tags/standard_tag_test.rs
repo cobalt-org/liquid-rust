@@ -430,13 +430,11 @@ fn test_size_of_hash() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_illegal_symbols() {
-    // Implementation specific: strict_variables is enabled, testing that instead.
-    assert_render_error!("{% if true == empty %}?{% endif %}");
-    assert_render_error!("{% if true == null %}?{% endif %}");
-    assert_render_error!("{% if empty == true %}?{% endif %}");
-    assert_render_error!("{% if null == true %}?{% endif %}");
+    assert_template_result!("", "{% if true == empty %}?{% endif %}");
+    assert_template_result!("", "{% if true == null %}?{% endif %}");
+    assert_template_result!("", "{% if empty == true %}?{% endif %}");
+    assert_template_result!("", "{% if null == true %}?{% endif %}");
 }
 
 #[test]

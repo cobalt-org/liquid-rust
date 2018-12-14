@@ -35,6 +35,8 @@ FilterChain = { Value ~ ("|" ~ Filter)* }
 
 // Literals
 NilLiteral = @{ "nil" | "null" }
+EmptyLiteral = @{ "empty" }
+BlankLiteral = @{ "blank" }
 StringLiteral = @{ ("'" ~ (!"'" ~ ANY)* ~ "'")
 		        		 | ("\"" ~ (!"\"" ~ ANY)* ~ "\"") }
 
@@ -43,7 +45,7 @@ FloatLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 
 BooleanLiteral = @{ "true" | "false" }
 
-Literal = { NilLiteral | StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
+Literal = { NilLiteral | EmptyLiteral | BlankLiteral | StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
 
 Range = { "(" ~ Value ~ ".." ~ Value ~ ")" }
 

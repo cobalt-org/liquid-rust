@@ -95,14 +95,12 @@ fn test_var_and_long_string_are_equal_backwards() {
 */
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_is_collection_empty() {
     let text = " {% if array == empty %} true {% else %} false {% endif %} ";
     assert_template_result!("  true  ", text, v!({"array": []}));
 }
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_is_not_collection_empty() {
     let text = " {% if array == empty %} true {% else %} false {% endif %} ";
     assert_template_result!("  false  ", text, v!({"array": [1, 2, 3]}));

@@ -97,6 +97,8 @@ fn parse_literal(literal: Pair) -> Value {
 
     match literal.as_rule() {
         Rule::NilLiteral => Value::Nil,
+        Rule::EmptyLiteral => Value::Empty,
+        Rule::BlankLiteral => Value::Blank,
         Rule::StringLiteral => {
             let literal = literal.as_str();
             let trim_quotes = &literal[1..literal.len() - 1];
@@ -871,6 +873,18 @@ mod test {
             .unwrap();
         assert_eq!(parse_literal(nil), Value::Nil);
 
+        let blank = LiquidParser::parse(Rule::Literal, "blank")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(blank), Value::Blank);
+
+        let empty = LiquidParser::parse(Rule::Literal, "empty")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(empty), Value::Empty);
+
         let integer = LiquidParser::parse(Rule::Literal, "42")
             .unwrap()
             .next()
@@ -942,9 +956,7 @@ mod test {
         let options = LiquidOptions::default();
 
         let mut context = Context::new();
-        context
-            .stack_mut()
-            .set_global("exp", Value::scalar(5));
+        context.stack_mut().set_global("exp", Value::scalar(5));
 
         let text = "    \n    {{ exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();

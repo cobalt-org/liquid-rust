@@ -11,6 +11,7 @@ extern crate itertools;
 extern crate liquid_error;
 extern crate num_traits;
 
+#[macro_use]
 mod macros;
 
 pub mod map;

@@ -191,32 +191,32 @@ macro_rules! value_internal {
     //////////////////////////////////////////////////////////////////////////
 
     (nil) => {
-        ::liquid_value::Value::Nil
+        $crate::Value::Nil
     };
 
     (true) => {
-        ::liquid_value::Value::scalar(true)
+        $crate::Value::scalar(true)
     };
 
     (false) => {
-        ::liquid_value::Value::scalar(false)
+        $crate::Value::scalar(false)
     };
 
     ([]) => {
-        ::liquid_value::Value::Array(value_internal_vec![])
+        $crate::Value::Array(value_internal_vec![])
     };
 
     ([ $($tt:tt)+ ]) => {
-        ::liquid_value::Value::Array(value_internal!(@array [] $($tt)+))
+        $crate::Value::Array(value_internal!(@array [] $($tt)+))
     };
 
     ({}) => {
-        ::liquid_value::Value::Object(Default::default())
+        $crate::Value::Object(Default::default())
     };
 
     ({ $($tt:tt)+ }) => {
-        ::liquid_value::Value::Object({
-            let mut object = ::liquid_value::Object::new();
+        $crate::Value::Object({
+            let mut object = $crate::Object::new();
             value_internal!(@object object () ($($tt)+) ($($tt)+));
             object
         })
@@ -229,7 +229,7 @@ macro_rules! value_internal {
     // Any Serialize type: numbers, strings, struct literals, variables etc.
     // Must be below every other rule.
     ($other:expr) => {
-        ::liquid_value::to_value($other).unwrap()
+        $crate::to_value($other).unwrap()
     };
 }
 
