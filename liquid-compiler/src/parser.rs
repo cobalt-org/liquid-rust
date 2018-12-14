@@ -10,7 +10,6 @@ use liquid_error::{Error, Result};
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Variable;
-use liquid_value::Scalar;
 use liquid_value::Value;
 
 use super::LiquidOptions;
@@ -86,7 +85,7 @@ pub fn parse(text: &str, options: &LiquidOptions) -> Result<Vec<Box<Renderable>>
 
 /// Parses a `Scalar` from a `Pair` with a literal value.
 /// This `Pair` must be `Rule::Literal`.
-fn parse_literal(literal: Pair) -> Scalar {
+fn parse_literal(literal: Pair) -> Value {
     if literal.as_rule() != Rule::Literal {
         panic!("Expected literal.");
     }
@@ -97,29 +96,32 @@ fn parse_literal(literal: Pair) -> Scalar {
         .expect("Get into the rule inside literal.");
 
     match literal.as_rule() {
+        Rule::NilLiteral => Value::Nil,
+        Rule::EmptyLiteral => Value::Empty,
+        Rule::BlankLiteral => Value::Blank,
         Rule::StringLiteral => {
             let literal = literal.as_str();
             let trim_quotes = &literal[1..literal.len() - 1];
 
-            Scalar::new(trim_quotes.to_owned())
+            Value::scalar(trim_quotes.to_owned())
         }
-        Rule::IntegerLiteral => Scalar::new(
+        Rule::IntegerLiteral => Value::scalar(
             literal
                 .as_str()
                 .parse::<i32>()
-                .expect("Matches are parseable as integers."),
+                .expect("Grammar ensures matches are parseable as integers."),
         ),
-        Rule::FloatLiteral => Scalar::new(
+        Rule::FloatLiteral => Value::scalar(
             literal
                 .as_str()
                 .parse::<f64>()
-                .expect("Matches are parseable as floats."),
+                .expect("Grammar ensures matches are parseable as floats."),
         ),
-        Rule::BooleanLiteral => Scalar::new(
+        Rule::BooleanLiteral => Value::scalar(
             literal
                 .as_str()
                 .parse::<bool>()
-                .expect("Matches are parseable as bools."),
+                .expect("Grammar ensures matches are parseable as bools."),
         ),
         _ => unreachable!(),
     }
@@ -165,7 +167,7 @@ fn parse_value(value: Pair) -> Expression {
     let value = value.into_inner().next().expect("Get inside the value.");
 
     match value.as_rule() {
-        Rule::Literal => Expression::with_literal(parse_literal(value)),
+        Rule::Literal => Expression::Literal(parse_literal(value)),
         Rule::Variable => Expression::Variable(parse_variable(value)),
         _ => unreachable!(),
     }
@@ -812,7 +814,7 @@ impl<'a> TagToken<'a> {
     /// The value is returned as a `Value`.
     pub fn expect_literal(mut self) -> TryMatchToken<'a, Value> {
         match self.unwrap_literal() {
-            Ok(t) => TryMatchToken::Matches(Value::scalar(parse_literal(t))),
+            Ok(t) => TryMatchToken::Matches(parse_literal(t)),
             Err(_) => {
                 self.expected.push(Rule::Literal);
                 TryMatchToken::Fails(self)
@@ -860,35 +862,58 @@ mod test {
 
     #[test]
     fn test_parse_literal() {
+        let nil = LiquidParser::parse(Rule::Literal, "nil")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(nil), Value::Nil);
+        let nil = LiquidParser::parse(Rule::Literal, "null")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(nil), Value::Nil);
+
+        let blank = LiquidParser::parse(Rule::Literal, "blank")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(blank), Value::Blank);
+
+        let empty = LiquidParser::parse(Rule::Literal, "empty")
+            .unwrap()
+            .next()
+            .unwrap();
+        assert_eq!(parse_literal(empty), Value::Empty);
+
         let integer = LiquidParser::parse(Rule::Literal, "42")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(integer), Scalar::new(42));
+        assert_eq!(parse_literal(integer), Value::scalar(42));
 
         let negative_int = LiquidParser::parse(Rule::Literal, "-42")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(negative_int), Scalar::new(-42));
+        assert_eq!(parse_literal(negative_int), Value::scalar(-42));
 
         let float = LiquidParser::parse(Rule::Literal, "4321.032")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(float), Scalar::new(4321.032));
+        assert_eq!(parse_literal(float), Value::scalar(4321.032));
 
         let negative_float = LiquidParser::parse(Rule::Literal, "-4321.032")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(negative_float), Scalar::new(-4321.032));
+        assert_eq!(parse_literal(negative_float), Value::scalar(-4321.032));
 
         let boolean = LiquidParser::parse(Rule::Literal, "true")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(boolean), Scalar::new(true));
+        assert_eq!(parse_literal(boolean), Value::scalar(true));
 
         let string_double_quotes = LiquidParser::parse(Rule::Literal, "\"Hello world!\"")
             .unwrap()
@@ -896,14 +921,14 @@ mod test {
             .unwrap();
         assert_eq!(
             parse_literal(string_double_quotes),
-            Scalar::new("Hello world!")
+            Value::scalar("Hello world!")
         );
 
         let string_single_quotes = LiquidParser::parse(Rule::Literal, "'Liquid'")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(string_single_quotes), Scalar::new("Liquid"));
+        assert_eq!(parse_literal(string_single_quotes), Value::scalar("Liquid"));
     }
 
     #[test]
@@ -931,9 +956,7 @@ mod test {
         let options = LiquidOptions::default();
 
         let mut context = Context::new();
-        context
-            .stack_mut()
-            .set_global("exp", Value::Scalar(Scalar::new(5)));
+        context.stack_mut().set_global("exp", Value::scalar(5));
 
         let text = "    \n    {{ exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();

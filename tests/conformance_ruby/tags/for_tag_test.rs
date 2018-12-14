@@ -485,7 +485,6 @@ fn test_for_parentloop_nil_when_not_present() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_inner_for_over_empty_input() {
     assert_template_result!(
         "oo",

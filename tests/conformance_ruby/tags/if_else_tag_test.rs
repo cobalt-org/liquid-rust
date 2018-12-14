@@ -15,7 +15,6 @@ fn test_if() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_literal_comparisons() {
     assert_template_result!(
         " NO ",
@@ -253,7 +252,6 @@ fn test_nested_if() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_comparisons_on_null() {
     assert_template_result!("", "{% if null < 10 %} NO {% endif %}");
     assert_template_result!("", "{% if null <= 10 %} NO {% endif %}");

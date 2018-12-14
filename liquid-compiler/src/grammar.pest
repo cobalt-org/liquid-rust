@@ -3,7 +3,7 @@ NON_WHITESPACE_CONTROL_HYPHEN = _{ !"-}}" ~ !"-%}" ~ "-" }
 LiquidFile = ${ SOI ~ Element* ~ EOI }
 
 // Element-level parsing
-Element = _{ Expression | Tag | Raw } 
+Element = _{ Expression | Tag | Raw }
 
 TagStart = _{ (WHITESPACE* ~ "{%-") | "{%" }
 TagEnd =   _{ ("-%}" ~ WHITESPACE*) | "%}" }
@@ -14,39 +14,42 @@ ExpressionInner = !{FilterChain}
 
 Tag = { TagStart ~ WHITESPACE* ~ TagInner ~ WHITESPACE* ~ TagEnd }
 Expression = { ExpressionStart ~ WHITESPACE* ~ ExpressionInner ~ WHITESPACE* ~ ExpressionEnd }
-// Not allowing Tag/Expression Start/End might become a problem 
+// Not allowing Tag/Expression Start/End might become a problem
 // for {% raw %}, {% comment %} and other blocks that don't parse
 // the elements inside with liquid: unclosed delimiters won't be accepted
-Raw = @{ (!(TagStart | ExpressionStart | TagEnd | ExpressionEnd) ~ ANY)+ }              
+Raw = @{ (!(TagStart | ExpressionStart | TagEnd | ExpressionEnd) ~ ANY)+ }
 
 
-// Inner parsing        
+// Inner parsing
 Identifier = @{ (ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN) ~ (ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN)* }
 
-Variable = ${ Identifier 
+Variable = ${ Identifier
             ~ ( ("." ~ Identifier)
               | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
-              )* 
+              )*
             }
 Value = { Literal | Variable }
-Filter = { Identifier ~ (":" ~ Value ~ ("," ~ Value)*)? } 
+Filter = { Identifier ~ (":" ~ Value ~ ("," ~ Value)*)? }
 FilterChain = { Value ~ ("|" ~ Filter)* }
 
 
-// Literals 
+// Literals
+NilLiteral = @{ "nil" | "null" }
+EmptyLiteral = @{ "empty" }
+BlankLiteral = @{ "blank" }
 StringLiteral = @{ ("'" ~ (!"'" ~ ANY)* ~ "'")
 		        		 | ("\"" ~ (!"\"" ~ ANY)* ~ "\"") }
-                 
+
 IntegerLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
 FloatLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 
 BooleanLiteral = @{ "true" | "false" }
 
-Literal = { StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
+Literal = { NilLiteral | EmptyLiteral | BlankLiteral | StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
 
 Range = { "(" ~ Value ~ ".." ~ Value ~ ")" }
 
-TagToken = _{ Range | FilterChain | DoubleCharSymbol | SingleCharSymbol } 
+TagToken = _{ Range | FilterChain | DoubleCharSymbol | SingleCharSymbol }
 
 // DoubleCharSymbol must be tried first, otherwise it could be parsed as two SingleCharSymbol instead
 SingleCharSymbol = _{ GreaterThan | LesserThan | Assign | Comma | Colon }

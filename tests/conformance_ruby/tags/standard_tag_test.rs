@@ -306,7 +306,6 @@ fn test_assign_from_case() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_case_when_or() {
     let code = "{% case condition %}{% when 1 or 2 or 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
     assert_template_result!(" its 1 or 2 or 3 ", code, v!({ "condition": 1 }));
@@ -323,7 +322,6 @@ fn test_case_when_or() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#279
 fn test_case_when_comma() {
     let code =
         "{% case condition %}{% when 1, 2, 3 %} its 1 or 2 or 3 {% when 4 %} its 4 {% endcase %}";
@@ -433,11 +431,10 @@ fn test_size_of_hash() {
 
 #[test]
 fn test_illegal_symbols() {
-    // Implementation specific: strict_variables is enabled, testing that instead.
-    assert_render_error!("{% if true == empty %}?{% endif %}");
-    assert_render_error!("{% if true == null %}?{% endif %}");
-    assert_render_error!("{% if empty == true %}?{% endif %}");
-    assert_render_error!("{% if null == true %}?{% endif %}");
+    assert_template_result!("", "{% if true == empty %}?{% endif %}");
+    assert_template_result!("", "{% if true == null %}?{% endif %}");
+    assert_template_result!("", "{% if empty == true %}?{% endif %}");
+    assert_template_result!("", "{% if null == true %}?{% endif %}");
 }
 
 #[test]

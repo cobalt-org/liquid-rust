@@ -18,6 +18,10 @@ pub enum Value {
     Object(Object),
     /// Nothing.
     Nil,
+    /// No content.
+    Empty,
+    /// Evaluates to empty string.
+    Blank,
 }
 
 /// Type representing a Liquid array, payload of the `Value::Array` variant
@@ -55,7 +59,7 @@ impl Value {
                 let arr: Vec<String> = x.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 borrow::Cow::Owned(arr.join(", "))
             }
-            Value::Nil => borrow::Cow::Borrowed(""),
+            Value::Nil | Value::Empty | Value::Blank => borrow::Cow::Borrowed(""),
         }
     }
 
@@ -154,12 +158,44 @@ impl Value {
         }
     }
 
+    /// Extracts the empty value if it is empty
+    pub fn as_empty(&self) -> Option<()> {
+        match *self {
+            Value::Empty => Some(()),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is empty
+    pub fn is_empty(&self) -> bool {
+        match *self {
+            Value::Empty => true,
+            _ => false,
+        }
+    }
+
+    /// Extracts the blank value if it is blank
+    pub fn as_blank(&self) -> Option<()> {
+        match *self {
+            Value::Blank => Some(()),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is blank
+    pub fn is_blank(&self) -> bool {
+        match *self {
+            Value::Blank => true,
+            _ => false,
+        }
+    }
+
     /// Evaluate using Liquid "truthiness"
     pub fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match *self {
             Value::Scalar(ref x) => x.is_truthy(),
-            Value::Nil => false,
+            Value::Nil | Value::Empty | Value::Blank => false,
             _ => true,
         }
     }
@@ -169,6 +205,8 @@ impl Value {
         match *self {
             Value::Scalar(ref x) => x.is_default(),
             Value::Nil => true,
+            Value::Empty => true,
+            Value::Blank => true,
             Value::Array(ref x) => x.is_empty(),
             Value::Object(ref x) => x.is_empty(),
         }
@@ -179,6 +217,8 @@ impl Value {
         match *self {
             Value::Scalar(ref x) => x.type_name(),
             Value::Nil => "nil",
+            Value::Empty => "empty",
+            Value::Blank => "blank",
             Value::Array(_) => "array",
             Value::Object(_) => "object",
         }
@@ -316,7 +356,36 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
         (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x == y,
         (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
         (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
-        (&Value::Nil, &Value::Nil) => true,
+        (&Value::Nil, &Value::Nil)
+        | (&Value::Empty, &Value::Empty)
+        | (&Value::Blank, &Value::Blank)
+        | (&Value::Empty, &Value::Blank)
+        | (&Value::Blank, &Value::Empty) => true,
+
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        (&Value::Empty, &Value::Scalar(ref s)) | (&Value::Scalar(ref s), &Value::Empty) => {
+            s.to_str().is_empty()
+        }
+        (&Value::Empty, &Value::Array(ref s)) | (&Value::Array(ref s), &Value::Empty) => {
+            s.is_empty()
+        }
+        (&Value::Empty, &Value::Object(ref s)) | (&Value::Object(ref s), &Value::Empty) => {
+            s.is_empty()
+        }
+
+        // encode a best-guess of blank rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        (&Value::Nil, &Value::Blank) | (&Value::Blank, &Value::Nil) => true,
+        (&Value::Blank, &Value::Scalar(ref s)) | (&Value::Scalar(ref s), &Value::Blank) => {
+            s.to_str().trim().is_empty() || !s.to_bool().unwrap_or(true)
+        }
+        (&Value::Blank, &Value::Array(ref s)) | (&Value::Array(ref s), &Value::Blank) => {
+            s.is_empty()
+        }
+        (&Value::Blank, &Value::Object(ref s)) | (&Value::Object(ref s), &Value::Blank) => {
+            s.is_empty()
+        }
 
         // encode Ruby truthiness: all values except false and nil are true
         (&Value::Nil, &Value::Scalar(ref b)) | (&Value::Scalar(ref b), &Value::Nil) => {
@@ -444,5 +513,36 @@ mod test {
         assert_eq!(Value::scalar(false), Value::Nil);
         assert!(Value::scalar(true) != Value::Nil);
         assert!(Value::scalar("") != Value::Nil);
+    }
+
+    #[test]
+    fn empty_equality() {
+        // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        assert_eq!(Value::Empty, Value::Empty);
+        assert_eq!(Value::Empty, Value::Blank);
+        assert_eq!(Value::Empty, liquid_value!(""));
+        assert_ne!(Value::Empty, liquid_value!(" "));
+        assert_eq!(Value::Empty, liquid_value!([]));
+        assert_ne!(Value::Empty, liquid_value!([nil]));
+        assert_eq!(Value::Empty, liquid_value!({}));
+        assert_ne!(Value::Empty, liquid_value!({ "a": nil }));
+    }
+
+    #[test]
+    fn blank_equality() {
+        // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        assert_eq!(Value::Blank, Value::Blank);
+        assert_eq!(Value::Blank, Value::Empty);
+        assert_eq!(Value::Blank, liquid_value!(nil));
+        assert_eq!(Value::Blank, liquid_value!(false));
+        assert_ne!(Value::Blank, liquid_value!(true));
+        assert_ne!(Value::Blank, liquid_value!(0));
+        assert_ne!(Value::Blank, liquid_value!(1));
+        assert_eq!(Value::Blank, liquid_value!(""));
+        assert_eq!(Value::Blank, liquid_value!(" "));
+        assert_eq!(Value::Blank, liquid_value!([]));
+        assert_ne!(Value::Blank, liquid_value!([nil]));
+        assert_eq!(Value::Blank, liquid_value!({}));
+        assert_ne!(Value::Blank, liquid_value!({ "a": nil }));
     }
 }

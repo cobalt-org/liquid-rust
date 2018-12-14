@@ -36,13 +36,11 @@ fn test_ignore_unknown() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_using_blank_as_variable_name() {
     assert_template_result!(r#""#, r#"{% assign foo = blank %}{{ foo }}"#);
 }
 
 #[test]
-#[should_panic] // liquid-rust#222
 fn test_using_empty_as_variable_name() {
     assert_template_result!(r#""#, r#"{% assign foo = empty %}{{ foo }}"#);
 }
@@ -64,7 +62,6 @@ fn test_false_renders_as_false() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#223
 fn test_nil_renders_as_empty_string() {
     assert_template_result!(r#""#, r#"{{ nil }}"#);
 

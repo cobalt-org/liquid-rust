@@ -122,6 +122,7 @@ impl For {
 fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     match array {
+        Value::Empty => Ok(vec![]),
         Value::Array(x) => Ok(x.to_owned()),
         Value::Object(x) => {
             let x = x
