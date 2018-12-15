@@ -7,43 +7,50 @@ fn make_funny(_input: &Value, _args: &[Value]) -> FilterResult {
 }
 
 fn cite_funny(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!("LOL: {}", input)))
+    Ok(Value::scalar(format!("LOL: {}", input.render())))
 }
 
 fn add_smiley(input: &Value, args: &[Value]) -> FilterResult {
     let smiley = args
         .get(0)
-        .map(|s| s.to_string())
+        .map(|s| s.to_str().into_owned())
         .unwrap_or_else(|| ":-)".to_owned());
-    Ok(Value::scalar(format!("{} {}", input, smiley)))
+    Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
 }
 
 fn add_tag(input: &Value, args: &[Value]) -> FilterResult {
     let tag = args
         .get(0)
-        .map(|s| s.to_string())
+        .map(|s| s.to_str().into_owned())
         .unwrap_or_else(|| "p".to_owned());
     let id = args
         .get(1)
-        .map(|s| s.to_string())
+        .map(|s| s.to_str().into_owned())
         .unwrap_or_else(|| "foo".to_owned());
     Ok(Value::scalar(format!(
         r#"<{} id="{}">{}</{}>"#,
-        tag, id, input, tag
+        tag,
+        id,
+        input.render(),
+        tag
     )))
 }
 
 fn paragraph(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!("<p>{}</p>", input)))
+    Ok(Value::scalar(format!("<p>{}</p>", input.render())))
 }
 
 fn link_to(input: &Value, args: &[Value]) -> FilterResult {
     let name = input;
     let url = args
         .get(0)
-        .map(|s| s.to_string())
+        .map(|s| s.to_str().into_owned())
         .unwrap_or_else(|| ":-)".to_owned());
-    Ok(Value::scalar(format!(r#"<a href="{}">{}</a>"#, url, name)))
+    Ok(Value::scalar(format!(
+        r#"<a href="{}">{}</a>"#,
+        url,
+        name.render()
+    )))
 }
 
 fn liquid() -> liquid::Parser {

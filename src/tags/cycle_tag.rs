@@ -34,7 +34,7 @@ impl Renderable for Cycle {
             .cycle(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
         let value = expr.evaluate(context).trace_with(|| self.trace().into())?;
-        write!(writer, "{}", value).chain("Failed to render")?;
+        write!(writer, "{}", value.render()).chain("Failed to render")?;
         Ok(())
     }
 }

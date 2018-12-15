@@ -32,6 +32,16 @@ impl<'s> ScalarCow<'s> {
         value.into()
     }
 
+    /// A `Display` for a `Scalar` as source code.
+    pub fn source(&self) -> ScalarSource {
+        ScalarSource(&self.0)
+    }
+
+    /// A `Display` for a `Scalar` rendered for the user.
+    pub fn render(&self) -> ScalarRendered {
+        ScalarRendered(&self.0)
+    }
+
     /// Create an owned version of the value.
     pub fn into_owned(self) -> Self {
         match self.0 {
@@ -137,13 +147,6 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Date(_) => "date",
             ScalarCowEnum::Str(_) => "string",
         }
-    }
-}
-
-impl<'s> fmt::Display for ScalarCow<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = self.to_str();
-        write!(f, "{}", data)
     }
 }
 
@@ -292,6 +295,39 @@ impl<'s> PartialOrd<str> for ScalarCow<'s> {
     fn partial_cmp(&self, other: &str) -> Option<Ordering> {
         let other = other.into();
         scalar_cmp(self, &other)
+    }
+}
+
+/// A `Display` for a `Scalar` as source code.
+#[derive(Debug)]
+pub struct ScalarSource<'s>(&'s ScalarCowEnum<'s>);
+
+impl<'s> fmt::Display for ScalarSource<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Date(ref x) => write!(f, "{}", x.format(DATE_FORMAT)),
+            ScalarCowEnum::Str(ref x) => write!(f, r#""{}""#, x),
+        }
+    }
+}
+
+/// A `Display` for a `Scalar` rendered for the user.
+#[derive(Debug)]
+pub struct ScalarRendered<'s>(&'s ScalarCowEnum<'s>);
+
+impl<'s> fmt::Display for ScalarRendered<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Must match `ScalarCow::to_str`
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
+            ScalarCowEnum::Date(ref x) => write!(f, "{}", x.format(DATE_FORMAT)),
+            ScalarCowEnum::Str(ref x) => write!(f, "{}", x),
+        }
     }
 }
 

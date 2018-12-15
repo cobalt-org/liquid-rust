@@ -142,8 +142,8 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
         .as_scalar()
         .and_then(Scalar::to_integer)
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
-        .context_key_with(|| arg_name.to_string().into())
-        .value_with(|| value.to_string().into())?;
+        .context_key_with(|| arg_name.to_owned().into())
+        .value_with(|| value.to_str().into_owned().into())?;
 
     Ok(value as isize)
 }

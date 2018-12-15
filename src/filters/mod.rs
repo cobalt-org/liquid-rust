@@ -497,7 +497,7 @@ pub fn remove_first(input: &Value, args: &[Value]) -> FilterResult {
 pub fn append(input: &Value, args: &[Value]) -> FilterResult {
     check_args_len(args, 1, 0)?;
 
-    let mut input = input.to_string();
+    let mut input = input.to_str().into_owned();
 
     let string = args[0].to_str();
 
@@ -529,7 +529,7 @@ pub fn prepend(input: &Value, args: &[Value]) -> FilterResult {
 
     let input = input.to_str();
 
-    let mut string = args[0].to_string();
+    let mut string = args[0].to_str().into_owned();
 
     string.push_str(input.as_ref());
 

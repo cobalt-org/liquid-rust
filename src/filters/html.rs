@@ -80,7 +80,7 @@ pub fn strip_html(input: &Value, args: &[Value]) -> FilterResult {
     }
     check_args_len(args, 0, 0)?;
 
-    let input = input.to_string();
+    let input = input.to_str().into_owned();
 
     let result = MATCHERS.iter().fold(input, |acc, matcher| {
         matcher.replace_all(&acc, "").into_owned()

@@ -2,6 +2,8 @@ use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
 
+use itertools;
+
 use super::map;
 use super::Scalar;
 use super::ScalarCow;
@@ -47,17 +49,30 @@ impl Value {
         Value::Nil
     }
 
+    /// A `Display` for a `Scalar` as source code.
+    pub fn source(&self) -> ValueSource {
+        ValueSource(&self)
+    }
+
+    /// A `Display` for a `Value` rendered for the user.
+    pub fn render(&self) -> ValueRendered {
+        ValueRendered(&self)
+    }
+
     /// Interpret as a string.
     pub fn to_str(&self) -> borrow::Cow<str> {
         match *self {
             Value::Scalar(ref x) => x.to_str(),
             Value::Array(ref x) => {
-                let arr: Vec<String> = x.iter().map(|v| v.to_string()).collect();
-                borrow::Cow::Owned(arr.join(", "))
+                let arr: Vec<_> = x.iter().map(|v| v.render()).collect();
+                borrow::Cow::Owned(itertools::join(arr, ""))
             }
             Value::Object(ref x) => {
-                let arr: Vec<String> = x.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
-                borrow::Cow::Owned(arr.join(", "))
+                let arr: Vec<_> = x
+                    .iter()
+                    .map(|(k, v)| format!("{}{}", k, v.render()))
+                    .collect();
+                borrow::Cow::Owned(itertools::join(arr, ""))
             }
             Value::Nil | Value::Empty | Value::Blank => borrow::Cow::Borrowed(""),
         }
@@ -330,13 +345,6 @@ impl Default for Value {
     }
 }
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = self.to_str();
-        write!(f, "{}", data)
-    }
-}
-
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
         value_eq(self, other)
@@ -348,6 +356,61 @@ impl Eq for Value {}
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         value_cmp(self, other)
+    }
+}
+
+/// A `Display` for a `Scalar` as source code.
+#[derive(Debug)]
+pub struct ValueSource<'s>(&'s Value);
+
+impl<'s> fmt::Display for ValueSource<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            Value::Scalar(ref x) => write!(f, "{}", x.render())?,
+            Value::Array(ref x) => {
+                write!(f, "[")?;
+                for item in x {
+                    write!(f, "{}, ", item.render())?;
+                }
+                write!(f, "]")?;
+            }
+            Value::Object(ref x) => {
+                write!(f, "{{")?;
+                for (k, v) in x {
+                    write!(f, r#""{}": {}, "#, k, v.render())?;
+                }
+                write!(f, "}}")?;
+            }
+            Value::Nil => write!(f, "nil")?,
+            Value::Empty => write!(f, "empty")?,
+            Value::Blank => write!(f, "blank")?,
+        }
+        Ok(())
+    }
+}
+
+/// A `Display` for a `Value` rendered for the user.
+#[derive(Debug)]
+pub struct ValueRendered<'s>(&'s Value);
+
+impl<'s> fmt::Display for ValueRendered<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Must match `Value::to_str`
+        match self.0 {
+            Value::Scalar(ref x) => write!(f, "{}", x.render())?,
+            Value::Array(ref x) => {
+                for item in x {
+                    write!(f, "{}", item.render())?;
+                }
+            }
+            Value::Object(ref x) => {
+                for (k, v) in x {
+                    write!(f, "{}{}", k, v.render())?;
+                }
+            }
+            Value::Nil | Value::Empty | Value::Blank => (),
+        }
+        Ok(())
     }
 }
 
@@ -413,7 +476,8 @@ mod test {
     #[test]
     fn test_to_string_scalar() {
         let val = Value::scalar(42f64);
-        assert_eq!(&val.to_string(), "42");
+        assert_eq!(&val.render().to_string(), "42");
+        assert_eq!(&val.to_str(), "42");
     }
 
     #[test]
@@ -423,14 +487,16 @@ mod test {
             Value::scalar("test"),
             Value::scalar(5.3),
         ]);
-        assert_eq!(&val.to_string(), "3, test, 5.3");
+        assert_eq!(&val.render().to_string(), "3test5.3");
+        assert_eq!(&val.to_str(), "3test5.3");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
 
     #[test]
     fn test_to_string_nil() {
-        assert_eq!(&Value::nil().to_string(), "");
+        assert_eq!(&Value::nil().render().to_string(), "");
+        assert_eq!(&Value::nil().to_str(), "");
     }
 
     #[test]

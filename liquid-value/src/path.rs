@@ -75,7 +75,7 @@ impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
 
 impl<'s> fmt::Display for Path<'s> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let data = itertools::join(self.iter(), ".");
+        let data = itertools::join(self.iter().map(ScalarCow::render), ".");
         write!(f, "{}", data)
     }
 }

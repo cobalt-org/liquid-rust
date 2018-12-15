@@ -64,7 +64,7 @@ impl Renderable for Case {
                     .trace_with(|| case.trace().into())
                     .trace_with(|| self.trace().into())
                     .context_key_with(|| self.target.to_string().into())
-                    .value_with(|| value.to_string().into());
+                    .value_with(|| value.to_str().into_owned().into());
             }
         }
 
@@ -74,7 +74,7 @@ impl Renderable for Case {
                 .trace("{{% else %}}")
                 .trace_with(|| self.trace().into())
                 .context_key_with(|| self.target.to_string().into())
-                .value_with(|| value.to_string().into());
+                .value_with(|| value.to_str().into_owned().into());
         }
 
         Ok(())

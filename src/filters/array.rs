@@ -83,17 +83,17 @@ pub fn array_to_sentence_string(input: &Value, args: &[Value]) -> FilterResult {
 
     let mut sentence = array
         .next()
-        .map(|v| v.to_string())
+        .map(|v| v.to_str().into_owned())
         .unwrap_or_else(|| "".to_string());
 
     let last = array.next_back();
 
     for value in array {
-        write!(sentence, ", {}", value).expect("It should be safe to write to a string.");
+        write!(sentence, ", {}", value.render()).expect("It should be safe to write to a string.");
     }
 
     if let Some(last) = last {
-        write!(sentence, ", {} {}", connector, last)
+        write!(sentence, ", {} {}", connector, last.render())
             .expect("It should be safe to write to a string.");
     }
 

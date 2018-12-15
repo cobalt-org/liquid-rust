@@ -49,7 +49,7 @@ impl Variable {
             let v = expr.evaluate(context)?;
             let s = v
                 .as_scalar()
-                .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v)))?
+                .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v.source())))?
                 .as_ref();
             path.push(s);
         }
@@ -73,7 +73,7 @@ impl Extend<Expression> for Variable {
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.variable)?;
+        write!(f, "{}", self.variable.render())?;
         for index in self.indexes.iter() {
             write!(f, "[{}]", index)?;
         }
@@ -105,7 +105,7 @@ test_a: ["test"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_string(), "test");
+        assert_eq!(actual.to_str(), "test");
     }
 
     #[test]
@@ -123,7 +123,7 @@ test_a: ["test1", "test2"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_string(), "test2");
+        assert_eq!(actual.to_str(), "test2");
     }
 
     #[test]
@@ -142,6 +142,6 @@ test_a:
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_string(), "5");
+        assert_eq!(actual.to_str(), "5");
     }
 }

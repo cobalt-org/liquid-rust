@@ -43,9 +43,9 @@ impl FilterCall {
             .context_key("filter")
             .value_with(|| format!("{}", self).into())
             .context_key("input")
-            .value_with(|| format!("{}", &entry).into())
+            .value_with(|| format!("{}", entry.source()).into())
             .context_key("args")
-            .value_with(|| itertools::join(&arguments, ", ").into())
+            .value_with(|| itertools::join(arguments.iter().map(Value::source), ", ").into())
     }
 }
 
@@ -101,7 +101,7 @@ impl fmt::Display for FilterChain {
 impl Renderable for FilterChain {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
         let entry = self.evaluate(context)?;
-        write!(writer, "{}", entry).chain("Failed to render")?;
+        write!(writer, "{}", entry.to_str()).chain("Failed to render")?;
         Ok(())
     }
 }
