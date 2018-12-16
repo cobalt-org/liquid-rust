@@ -422,7 +422,6 @@ fn test_legacy_reverse_hash() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#258
 fn test_map() {
     assert_eq!(
         v!([1, 2, 3, 4]),

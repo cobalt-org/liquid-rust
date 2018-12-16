@@ -66,7 +66,7 @@ impl Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Expression::Literal(ref x) => write!(f, "{}", x),
+            Expression::Literal(ref x) => write!(f, "{}", x.source()),
             Expression::Variable(ref x) => write!(f, "{}", x),
         }
     }

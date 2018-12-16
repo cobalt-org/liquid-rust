@@ -4,6 +4,7 @@ use itertools;
 use liquid_error::{Error, Result};
 use liquid_value::Object;
 use liquid_value::PathRef;
+use liquid_value::ScalarCow;
 use liquid_value::Value;
 
 /// Immutable view into a template's global variables.
@@ -61,12 +62,13 @@ impl ValueStore for Object {
                 let subpath_end = path.len() - cur_idx;
                 let subpath = &path[0..subpath_end];
                 if let Some(parent) = self.try_get_variable(subpath) {
-                    let subpath = itertools::join(subpath.iter(), ".");
+                    let subpath = itertools::join(subpath.iter().map(ScalarCow::render), ".");
                     let requested = &path[subpath_end];
-                    let available = itertools::join(parent.keys(), ", ");
+                    let available: Vec<_> = parent.keys().collect();
+                    let available = itertools::join(available.iter().map(ScalarCow::render), ", ");
                     return Err(Error::with_msg("Unknown index")
                         .context("variable", subpath)
-                        .context("requested index", format!("{}", requested))
+                        .context("requested index", format!("{}", requested.render()))
                         .context("available indexes", available));
                 }
             }
