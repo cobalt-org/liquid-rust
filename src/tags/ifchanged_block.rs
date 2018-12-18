@@ -2,7 +2,7 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
 
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -40,7 +40,7 @@ pub fn ifchanged_block(
     _tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
@@ -79,8 +79,8 @@ mod test {
     use interpreter;
     use tags;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options.blocks.register(
             "ifchanged",
             (ifchanged_block as compiler::FnParseBlock).into(),

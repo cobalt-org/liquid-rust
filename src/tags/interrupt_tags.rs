@@ -2,7 +2,7 @@ use std::io::Write;
 
 use liquid_error::Result;
 
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagTokenIter;
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
@@ -20,7 +20,7 @@ impl Renderable for Break {
 pub fn break_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    _options: &LiquidOptions,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
@@ -40,7 +40,7 @@ impl Renderable for Continue {
 pub fn continue_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    _options: &LiquidOptions,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
@@ -54,8 +54,8 @@ mod test {
     use interpreter;
     use tags;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .tags
             .register("break", (break_tag as compiler::FnParseTag).into());

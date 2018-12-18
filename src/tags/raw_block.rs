@@ -2,7 +2,7 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidChainExt};
 
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -24,7 +24,7 @@ pub fn raw_block(
     _tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    _options: &LiquidOptions,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
@@ -44,8 +44,8 @@ mod test {
     use compiler;
     use interpreter;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .blocks
             .register("raw", (raw_block as compiler::FnParseBlock).into());

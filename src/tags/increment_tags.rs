@@ -2,7 +2,7 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidChainExt};
 
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -34,7 +34,7 @@ impl Renderable for Increment {
 pub fn increment_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    _options: &LiquidOptions,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     let id = arguments
         .expect_next("Identifier expected.")?
@@ -74,7 +74,7 @@ impl Renderable for Decrement {
 pub fn decrement_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    _options: &LiquidOptions,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     let id = arguments
         .expect_next("Identifier expected.")?
@@ -95,8 +95,8 @@ mod test {
     use interpreter;
     use tags;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .tags
             .register("assign", (tags::assign_tag as compiler::FnParseTag).into());

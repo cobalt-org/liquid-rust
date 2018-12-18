@@ -5,7 +5,7 @@ use liquid_error::{Error, Result, ResultLiquidExt};
 use liquid_value::Value;
 
 use compiler::BlockElement;
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagToken;
 use compiler::TagTokenIter;
@@ -301,7 +301,7 @@ pub fn unless_block(
     _tag_name: &str,
     arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
 
@@ -338,7 +338,7 @@ fn parse_if(
     tag_name: &'static str,
     arguments: TagTokenIter,
     tokens: &mut TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let condition = parse_condition(arguments)?;
 
@@ -378,7 +378,7 @@ pub fn if_block(
     _tag_name: &str,
     arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let conditional = parse_if("if", arguments, &mut tokens, options)?;
 
@@ -405,8 +405,8 @@ mod test {
     use value::Object;
     use value::Value;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .blocks
             .register("if", (if_block as compiler::FnParseBlock).into());

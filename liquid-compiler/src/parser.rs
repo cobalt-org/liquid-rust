@@ -12,7 +12,7 @@ use liquid_interpreter::Renderable;
 use liquid_interpreter::Variable;
 use liquid_value::Value;
 
-use super::LiquidOptions;
+use super::Language;
 use super::ParseBlock;
 use super::ParseTag;
 use super::Text;
@@ -60,7 +60,7 @@ fn error_from_pair(pair: Pair, msg: String) -> Error {
 }
 
 /// Parses the provided &str into a number of Renderable items.
-pub fn parse(text: &str, options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {
+pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<Renderable>>> {
     let mut liquid = LiquidParser::parse(Rule::LiquidFile, text)
         .map_err(convert_pest_error)?
         .next()
@@ -175,7 +175,7 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair, options: &LiquidOptions) -> Result<FilterCall> {
+fn parse_filter(filter: Pair, options: &Language) -> Result<FilterCall> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
@@ -202,7 +202,7 @@ fn parse_filter(filter: Pair, options: &LiquidOptions) -> Result<FilterCall> {
 
 /// Parses a `FilterChain` from a `Pair` with a filter chain.
 /// This `Pair` must be `Rule::FilterChain`.
-fn parse_filter_chain(chain: Pair, options: &LiquidOptions) -> Result<FilterChain> {
+fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
     if chain.as_rule() != Rule::FilterChain {
         panic!("Expected an expression with filters.");
     }
@@ -290,7 +290,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
     }
 
     /// A convenient method that parses every element remaining in the block.
-    pub fn parse_all(&mut self, options: &LiquidOptions) -> Result<Vec<Box<Renderable>>> {
+    pub fn parse_all(&mut self, options: &Language) -> Result<Vec<Box<Renderable>>> {
         let mut renderables = Vec::new();
         while let Some(r) = self.parse_next(options)? {
             renderables.push(r);
@@ -301,7 +301,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
     /// Parses the next element in the block just as if it weren't inside any block.
     ///
     /// Returns none if no element is left and raises the same errors as `next()`.
-    pub fn parse_next(&mut self, options: &LiquidOptions) -> Result<Option<Box<Renderable>>> {
+    pub fn parse_next(&mut self, options: &Language) -> Result<Option<Box<Renderable>>> {
         match self.next()? {
             None => Ok(None),
             Some(element) => Ok(Some(element.parse(self, options)?)),
@@ -415,11 +415,7 @@ impl<'a> Tag<'a> {
     }
 
     /// Parses the tag just as if it weren't inside any block.
-    pub fn parse(
-        self,
-        tag_block: &mut TagBlock,
-        options: &LiquidOptions,
-    ) -> Result<Box<Renderable>> {
+    pub fn parse(self, tag_block: &mut TagBlock, options: &Language) -> Result<Box<Renderable>> {
         self.parse_pair(&mut tag_block.iter, options)
     }
 
@@ -427,7 +423,7 @@ impl<'a> Tag<'a> {
     fn parse_pair(
         self,
         next_elements: &mut Iterator<Item = Pair>,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         let (name, tokens) = (self.name, self.tokens);
         let position = name.as_span();
@@ -477,7 +473,7 @@ impl<'a> From<Pair<'a>> for Exp<'a> {
 
 impl<'a> Exp<'a> {
     /// Parses the expression just as if it weren't inside any block.
-    pub fn parse(self, options: &LiquidOptions) -> Result<Box<Renderable>> {
+    pub fn parse(self, options: &Language) -> Result<Box<Renderable>> {
         let filter_chain = self
             .element
             .into_inner()
@@ -524,7 +520,7 @@ impl<'a> BlockElement<'a> {
     pub fn parse(
         self,
         block: &mut TagBlock<'a, '_>,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
@@ -537,7 +533,7 @@ impl<'a> BlockElement<'a> {
     fn parse_pair(
         self,
         next_elements: &mut Iterator<Item = Pair>,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
@@ -750,10 +746,7 @@ impl<'a> TagToken<'a> {
     }
 
     /// Tries to obtain a `FilterChain` from this token.
-    pub fn expect_filter_chain(
-        mut self,
-        options: &LiquidOptions,
-    ) -> TryMatchToken<'a, FilterChain> {
+    pub fn expect_filter_chain(mut self, options: &Language) -> TryMatchToken<'a, FilterChain> {
         match self.expect_filter_chain_err(options) {
             Ok(t) => TryMatchToken::Matches(t),
             Err(_) => {
@@ -763,7 +756,7 @@ impl<'a> TagToken<'a> {
         }
     }
 
-    fn expect_filter_chain_err(&mut self, options: &LiquidOptions) -> Result<FilterChain> {
+    fn expect_filter_chain_err(&mut self, options: &Language) -> Result<FilterChain> {
         let t = self
             .unwrap_filter_chain()
             .map_err(|_| Error::with_msg("failed to parse"))?;
@@ -953,7 +946,7 @@ mod test {
 
     #[test]
     fn test_whitespace_control() {
-        let options = LiquidOptions::default();
+        let options = Language::default();
 
         let mut context = Context::new();
         context.stack_mut().set_global("exp", Value::scalar(5));

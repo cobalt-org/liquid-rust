@@ -6,7 +6,7 @@ use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
 use liquid_value::{Object, Scalar, Value};
 
 use compiler::BlockElement;
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
@@ -236,7 +236,7 @@ pub fn for_block(
     _tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let var_name = arguments
         .expect_next("Identifier expected.")?
@@ -430,7 +430,7 @@ pub fn tablerow_block(
     _tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let var_name = arguments
         .expect_next("Identifier expected.")?
@@ -505,8 +505,8 @@ mod test {
 
     use super::*;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .blocks
             .register("for", (for_block as compiler::FnParseBlock).into());

@@ -1,7 +1,7 @@
 use liquid_error::Result;
 use liquid_interpreter::Renderable;
 
-use super::LiquidOptions;
+use super::Language;
 use super::TagTokenIter;
 
 /// A trait for creating custom tags. This is a simple type alias for a function.
@@ -9,13 +9,13 @@ use super::TagTokenIter;
 /// This function will be called whenever the parser encounters a tag and returns
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
+/// the tag and the global [`Language`](struct.Language.html).
 pub trait ParseTag: Send + Sync + ParseTagClone {
     fn parse(
         &self,
         tag_name: &str,
         arguments: TagTokenIter,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>>;
 }
 
@@ -37,7 +37,7 @@ impl Clone for Box<ParseTag> {
         self.clone_box()
     }
 }
-pub type FnParseTag = fn(&str, TagTokenIter, &LiquidOptions) -> Result<Box<Renderable>>;
+pub type FnParseTag = fn(&str, TagTokenIter, &Language) -> Result<Box<Renderable>>;
 
 #[derive(Clone)]
 struct FnTagParser {
@@ -55,7 +55,7 @@ impl ParseTag for FnTagParser {
         &self,
         tag_name: &str,
         arguments: TagTokenIter,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, options)
     }
@@ -77,7 +77,7 @@ impl ParseTag for BoxedTagParser {
         &self,
         tag_name: &str,
         arguments: TagTokenIter,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         match self.parser {
             TagParserEnum::Fun(ref f) => f.parse(tag_name, arguments, options),

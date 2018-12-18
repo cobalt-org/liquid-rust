@@ -4,7 +4,7 @@ use liquid_error::Result;
 use liquid_error::ResultLiquidExt;
 
 use compiler::FilterChain;
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -35,7 +35,7 @@ impl Renderable for Assign {
 pub fn assign_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let dst = arguments
         .expect_next("Identifier expected.")?
@@ -68,8 +68,8 @@ mod test {
     use value::Scalar;
     use value::Value;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .tags
             .register("assign", (assign_tag as compiler::FnParseTag).into());
