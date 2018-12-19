@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidExt};
 
 use compiler::parse;
 use compiler::Language;
@@ -27,7 +27,11 @@ impl Renderable for Include {
 }
 
 fn parse_partial(name: &str, options: &Language) -> Result<Template> {
-    let content = options.include_source.include(name)?;
+    let content = options
+        .include_source
+        .as_ref()
+        .ok_or_else(|| Error::with_msg("File does not exist").context("path", name.to_owned()))?
+        .include(name)?;
 
     parse(&content, options).map(Template::new)
 }
@@ -74,7 +78,7 @@ mod test {
         let include_path = path::PathBuf::from_iter("tests/fixtures/input".split('/'));
 
         let mut options = Language::default();
-        options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
+        options.include_source = Some(Box::new(compiler::FilesystemInclude::new(include_path)));
         options
             .tags
             .register("include", (include_tag as compiler::FnParseTag).into());

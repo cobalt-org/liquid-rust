@@ -189,8 +189,6 @@ impl ParserBuilder {
             filters,
             include_source,
         } = self;
-        let include_source =
-            include_source.unwrap_or_else(|| Box::new(compiler::NullInclude::new()));
 
         let mut options = compiler::Language::empty();
         options.blocks = blocks;
