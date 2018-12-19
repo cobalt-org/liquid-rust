@@ -11,7 +11,7 @@ pub type FilterResult = Result<Value, liquid_error::Error>;
 /// This function will be called whenever the parser encounters a tag and returns
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the tag and the global [`LiquidOptions`](struct.LiquidOptions.html).
+/// the tag and the global [`Language`](struct.Language.html).
 pub trait FilterValue: Send + Sync + FilterValueClone + Debug {
     /// Filter `input` based on `arguments`.
     fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult;

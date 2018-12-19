@@ -189,22 +189,19 @@ impl ParserBuilder {
             filters,
             include_source,
         } = self;
-        let include_source =
-            include_source.unwrap_or_else(|| Box::new(compiler::NullInclude::new()));
 
-        let options = compiler::LiquidOptions {
-            blocks,
-            tags,
-            filters,
-            include_source,
-        };
+        let mut options = compiler::Language::empty();
+        options.blocks = blocks;
+        options.tags = tags;
+        options.filters = filters;
+        options.include_source = include_source;
         Parser { options }
     }
 }
 
 #[derive(Default, Clone)]
 pub struct Parser {
-    options: compiler::LiquidOptions,
+    options: compiler::Language,
 }
 
 impl Parser {

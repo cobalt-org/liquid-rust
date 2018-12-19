@@ -1,7 +1,7 @@
 use liquid_error::Result;
 use liquid_interpreter::Renderable;
 
-use super::LiquidOptions;
+use super::Language;
 use super::TagBlock;
 use super::TagTokenIter;
 
@@ -12,14 +12,14 @@ use super::TagTokenIter;
 /// a new `Renderable` based on its parameters. The received parameters specify the name
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
-/// the global [`LiquidOptions`](struct.LiquidOptions.html).
+/// the global [`Language`](struct.Language.html).
 pub trait ParseBlock: Send + Sync + ParseBlockClone {
     fn parse(
         &self,
         tag_name: &str,
         arguments: TagTokenIter,
         block: TagBlock,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>>;
 }
 
@@ -42,7 +42,7 @@ impl Clone for Box<ParseBlock> {
     }
 }
 
-pub type FnParseBlock = fn(&str, TagTokenIter, TagBlock, &LiquidOptions) -> Result<Box<Renderable>>;
+pub type FnParseBlock = fn(&str, TagTokenIter, TagBlock, &Language) -> Result<Box<Renderable>>;
 
 #[derive(Clone)]
 struct FnBlockParser {
@@ -61,7 +61,7 @@ impl ParseBlock for FnBlockParser {
         tag_name: &str,
         arguments: TagTokenIter,
         tokens: TagBlock,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         (self.parser)(tag_name, arguments, tokens, options)
     }
@@ -84,7 +84,7 @@ impl ParseBlock for BoxedBlockParser {
         tag_name: &str,
         arguments: TagTokenIter,
         tokens: TagBlock,
-        options: &LiquidOptions,
+        options: &Language,
     ) -> Result<Box<Renderable>> {
         match self.parser {
             BlockParserEnum::Fun(ref f) => f.parse(tag_name, arguments, tokens, options),

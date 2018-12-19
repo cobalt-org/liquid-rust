@@ -1,9 +1,9 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidExt};
 
 use compiler::parse;
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
 use interpreter::Context;
@@ -26,8 +26,12 @@ impl Renderable for Include {
     }
 }
 
-fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
-    let content = options.include_source.include(name)?;
+fn parse_partial(name: &str, options: &Language) -> Result<Template> {
+    let content = options
+        .include_source
+        .as_ref()
+        .ok_or_else(|| Error::with_msg("File does not exist").context("path", name.to_owned()))?
+        .include(name)?;
 
     parse(&content, options).map(Template::new)
 }
@@ -35,7 +39,7 @@ fn parse_partial(name: &str, options: &LiquidOptions) -> Result<Template> {
 pub fn include_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let name = arguments.expect_next("Identifier or literal expected.")?;
 
@@ -70,11 +74,11 @@ mod test {
 
     use super::*;
 
-    fn options() -> LiquidOptions {
+    fn options() -> Language {
         let include_path = path::PathBuf::from_iter("tests/fixtures/input".split('/'));
 
-        let mut options = LiquidOptions::default();
-        options.include_source = Box::new(compiler::FilesystemInclude::new(include_path));
+        let mut options = Language::default();
+        options.include_source = Some(Box::new(compiler::FilesystemInclude::new(include_path)));
         options
             .tags
             .register("include", (include_tag as compiler::FnParseTag).into());

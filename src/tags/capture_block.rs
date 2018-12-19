@@ -3,7 +3,7 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
-use compiler::LiquidOptions;
+use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -41,7 +41,7 @@ pub fn capture_block(
     _tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    options: &LiquidOptions,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     let id = arguments
         .expect_next("Identifier expected")?
@@ -69,8 +69,8 @@ mod test {
     use interpreter;
     use value::Scalar;
 
-    fn options() -> LiquidOptions {
-        let mut options = LiquidOptions::default();
+    fn options() -> Language {
+        let mut options = Language::default();
         options
             .blocks
             .register("capture", (capture_block as compiler::FnParseBlock).into());

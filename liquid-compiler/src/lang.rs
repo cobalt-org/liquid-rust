@@ -2,24 +2,31 @@ use super::BoxedBlockParser;
 use super::BoxedTagParser;
 use super::BoxedValueFilter;
 use super::Include;
-use super::NullInclude;
 use super::PluginRegistry;
 
 #[derive(Clone)]
-pub struct LiquidOptions {
+pub struct Language {
     pub blocks: PluginRegistry<BoxedBlockParser>,
     pub tags: PluginRegistry<BoxedTagParser>,
     pub filters: PluginRegistry<BoxedValueFilter>,
-    pub include_source: Box<Include>,
+    pub include_source: Option<Box<Include>>,
+    non_exhaustive: (),
 }
 
-impl Default for LiquidOptions {
-    fn default() -> LiquidOptions {
-        LiquidOptions {
+impl Language {
+    pub fn empty() -> Self {
+        Default::default()
+    }
+}
+
+impl Default for Language {
+    fn default() -> Language {
+        Language {
             blocks: Default::default(),
             tags: Default::default(),
             filters: Default::default(),
-            include_source: Box::new(NullInclude::new()),
+            include_source: None,
+            non_exhaustive: Default::default(),
         }
     }
 }
