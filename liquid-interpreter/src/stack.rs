@@ -6,11 +6,30 @@ use liquid_value::{Object, PathRef, Scalar, Value};
 
 use super::ValueStore;
 
+#[derive(Clone, Default, Debug)]
+struct Frame {
+    name: Option<String>,
+    data: Object,
+}
+
+impl Frame {
+    fn new() -> Self {
+        Default::default()
+    }
+
+    fn with_name<S: Into<String>>(name: S) -> Self {
+        Self {
+            name: Some(name.into()),
+            data: Object::new(),
+        }
+    }
+}
+
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
     globals: Option<&'g ValueStore>,
-    stack: Vec<Object>,
+    stack: Vec<Frame>,
     // State of variables created through increment or decrement tags.
     indexes: Object,
 }
@@ -22,7 +41,7 @@ impl<'g> Stack<'g> {
             globals: None,
             indexes: Object::new(),
             // Mutable frame for globals.
-            stack: vec![Object::new()],
+            stack: vec![Frame::new()],
         }
     }
 
@@ -35,7 +54,12 @@ impl<'g> Stack<'g> {
 
     /// Creates a new variable scope chained to a parent scope.
     pub(crate) fn push_frame(&mut self) {
-        self.stack.push(Object::new());
+        self.stack.push(Frame::new());
+    }
+
+    /// Creates a new variable scope chained to a parent scope.
+    pub(crate) fn push_named_frame<S: Into<String>>(&mut self, name: S) {
+        self.stack.push(Frame::with_name(name));
     }
 
     /// Removes the topmost stack frame from the local variable stack.
@@ -50,6 +74,14 @@ impl<'g> Stack<'g> {
         if self.stack.pop().is_none() {
             panic!("Unbalanced push/pop, leaving the stack empty.")
         };
+    }
+
+    /// The name of the currently active template.
+    pub fn frame_name(&self) -> Option<&str> {
+        self.stack
+            .iter()
+            .rev()
+            .find_map(|f| f.name.as_ref().map(|s| s.as_str()))
     }
 
     /// Recursively index into the stack.
@@ -79,7 +111,7 @@ impl<'g> Stack<'g> {
     fn globals(&self) -> Vec<&str> {
         let mut globals = self.globals.map(|g| g.roots()).unwrap_or_default();
         for frame in self.stack.iter() {
-            globals.extend(frame.roots());
+            globals.extend(frame.data.roots());
         }
         globals.sort();
         globals.dedup();
@@ -94,8 +126,8 @@ impl<'g> Stack<'g> {
 
     fn find_frame<'a>(&'a self, name: &str) -> Option<&'a ValueStore> {
         for frame in self.stack.iter().rev() {
-            if frame.contains_root(name) {
-                return Some(frame);
+            if frame.data.contains_root(name) {
+                return Some(&frame.data);
             }
         }
 
@@ -148,14 +180,14 @@ impl<'g> Stack<'g> {
 
     fn current_frame(&mut self) -> &mut Object {
         match self.stack.last_mut() {
-            Some(frame) => frame,
+            Some(frame) => &mut frame.data,
             None => panic!("Global frame removed."),
         }
     }
 
     fn global_frame(&mut self) -> &mut Object {
         match self.stack.first_mut() {
-            Some(frame) => frame,
+            Some(frame) => &mut frame.data,
             None => panic!("Global frame removed."),
         }
     }
