@@ -1,5 +1,11 @@
-use anymap;
+use std::sync;
 
+use anymap;
+use liquid_error::Error;
+use liquid_error::Result;
+
+use super::PartialStore;
+use super::Renderable;
 use super::Stack;
 use super::ValueStore;
 
@@ -41,20 +47,51 @@ impl InterruptState {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+struct NullPartials;
+
+impl PartialStore for NullPartials {
+    fn contains(&self, _name: &str) -> bool {
+        false
+    }
+
+    fn names(&self) -> Vec<&str> {
+        Vec::new()
+    }
+
+    fn try_get(&self, _name: &str) -> Option<sync::Arc<Renderable>> {
+        None
+    }
+
+    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+        Err(Error::with_msg("Partial does not exist").context("name", name.to_owned()))
+    }
+}
+
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
     globals: Option<&'g ValueStore>,
+    partials: Option<&'g PartialStore>,
 }
 
 impl<'g> ContextBuilder<'g> {
     /// Creates a new, empty rendering context.
     pub fn new() -> Self {
-        Self { globals: None }
+        Self {
+            globals: None,
+            partials: None,
+        }
     }
 
     /// Initialize the stack with the given globals.
     pub fn set_globals(mut self, values: &'g ValueStore) -> Self {
         self.globals = Some(values);
+        self
+    }
+
+    /// Initialize partial-templates availible for including.
+    pub fn set_partials(mut self, values: &'g PartialStore) -> Self {
+        self.partials = Some(values);
         self
     }
 
@@ -64,8 +101,10 @@ impl<'g> ContextBuilder<'g> {
             Some(globals) => Stack::with_globals(globals),
             None => Stack::empty(),
         };
+        let partials = self.partials.unwrap_or(&NullPartials);
         Context {
             stack,
+            partials,
             registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
         }
@@ -81,6 +120,7 @@ impl<'g> Default for ContextBuilder<'g> {
 /// Processing context for a template.
 pub struct Context<'g> {
     stack: Stack<'g>,
+    partials: &'g PartialStore,
 
     registers: anymap::AnyMap,
     interrupt: InterruptState,
@@ -102,6 +142,11 @@ impl<'g> Context<'g> {
     /// Access the block's `InterruptState`.
     pub fn interrupt_mut(&mut self) -> &mut InterruptState {
         &mut self.interrupt
+    }
+
+    /// Partial templates for inclusion.
+    pub fn partials(&self) -> &PartialStore {
+        self.partials
     }
 
     /// Data store for stateful tags/blocks.
@@ -160,6 +205,7 @@ impl<'g> Default for Context<'g> {
     fn default() -> Self {
         Self {
             stack: Stack::empty(),
+            partials: &NullPartials,
             registers: anymap::AnyMap::new(),
             interrupt: InterruptState::default(),
         }

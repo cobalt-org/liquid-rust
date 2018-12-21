@@ -13,6 +13,7 @@ extern crate serde_yaml;
 
 mod context;
 mod expression;
+mod partials;
 mod renderable;
 mod stack;
 mod store;
@@ -21,6 +22,7 @@ mod variable;
 
 pub use self::context::*;
 pub use self::expression::*;
+pub use self::partials::*;
 pub use self::renderable::*;
 pub use self::stack::*;
 pub use self::store::*;
