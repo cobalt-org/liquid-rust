@@ -1,3 +1,5 @@
+use std::borrow;
+
 use liquid;
 
 const N: usize = 10;
@@ -30,12 +32,20 @@ fn repeat<S: AsRef<str>>(content: S, count: usize) -> String {
     (0..count).map(|_| content).collect::<String>()
 }
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 struct BlankTestFilesystem;
 
-impl liquid::compiler::Include for BlankTestFilesystem {
-    fn include(&self, relative_path: &str) -> Result<String, liquid::Error> {
-        Ok(relative_path.to_owned())
+impl liquid::partials::PartialSource for BlankTestFilesystem {
+    fn contains(&self, _name: &str) -> bool {
+        true
+    }
+
+    fn names(&self) -> Vec<&str> {
+        vec![]
+    }
+
+    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
+        Some(name.to_owned().into())
     }
 }
 
@@ -139,8 +149,9 @@ fn test_raw_is_not_blank() {
 #[test]
 fn test_include_is_blank() {
     let liquid = liquid::ParserBuilder::with_liquid()
-        .include_source(Box::new(BlankTestFilesystem))
-        .build();
+        .partials(liquid::partials::OnDemandCompiler::<BlankTestFilesystem>::empty())
+        .build()
+        .unwrap();
 
     assert_template_result!(
         repeat("foobar", N + 1),

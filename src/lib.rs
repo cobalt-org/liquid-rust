@@ -10,7 +10,7 @@
 //! ## Example
 //! ```rust
 //! let template = liquid::ParserBuilder::with_liquid()
-//!     .build()
+//!     .build().unwrap()
 //!     .parse("Liquid! {{num | minus: 2}}").unwrap();
 //!
 //! let mut globals = liquid::value::Object::new();
@@ -52,6 +52,7 @@ pub mod value {
 }
 
 pub mod filters;
+pub mod partials;
 pub mod tags;
 
 pub use interpreter::ValueStore;

@@ -262,6 +262,7 @@ fn test_assign_from_case() {
     let code = r#"{% case collection.handle %}{% when "menswear-jackets" %}{% assign ptitle = "menswear" %}{% when "menswear-t-shirts" %}{% assign ptitle = "menswear" %}{% else %}{% assign ptitle = "womenswear" %}{% endcase %}{{ ptitle }}"#;
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(code)
         .unwrap();
 

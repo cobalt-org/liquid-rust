@@ -12,10 +12,20 @@ fn compare_by_file(name: &str, globals: &value::Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
+    let mut partials = liquid::Partials::empty();
+    partials.add("tests/fixtures/input/example.txt", r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}
+"#);
+    partials.add(
+        "tests/fixtures/input/include_with_val.txt",
+        r#"{{content}}
+"#,
+    );
+
     let template = ParserBuilder::with_liquid()
         .extra_filters()
-        .include_source(Box::new(compiler::FilesystemInclude::new(".")))
+        .partials(partials)
         .build()
+        .unwrap()
         .parse_file(input_file)
         .unwrap();
 

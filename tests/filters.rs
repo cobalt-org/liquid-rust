@@ -12,6 +12,7 @@ text: hello
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -29,6 +30,7 @@ text: HELLO tHeRe
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -46,6 +48,7 @@ text: hello world
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -65,6 +68,7 @@ count: 0
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -84,6 +88,7 @@ count: 1
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -103,6 +108,7 @@ count: 10
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -120,6 +126,7 @@ num: 4
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -137,6 +144,7 @@ num: 4
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -154,6 +162,7 @@ num: 4
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals);
@@ -171,6 +180,7 @@ nums: [12, 1]
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -188,6 +198,7 @@ nums: ["first", "second"]
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -205,6 +216,7 @@ nums: first
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -222,6 +234,7 @@ nums: [12, 1]
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -239,6 +252,7 @@ nums: ["first", "second"]
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -256,6 +270,7 @@ nums: second
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -273,6 +288,7 @@ text: bar2bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -290,6 +306,7 @@ text: bar2bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -307,6 +324,7 @@ text: bar2bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -325,6 +343,7 @@ myvar: fifo
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -342,6 +361,7 @@ text: roobarb
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -358,6 +378,7 @@ pub fn split_with_comma() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -372,6 +393,7 @@ pub fn split_no_comma() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -385,6 +407,7 @@ pub fn split_then_join() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -398,6 +421,7 @@ pub fn slice_one() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -411,6 +435,7 @@ pub fn slice_negative() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -424,6 +449,7 @@ pub fn slice_overflow() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -437,6 +463,7 @@ pub fn slice_empty() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -450,6 +477,7 @@ pub fn split_sort_join() {
     let globals: liquid::value::Object = Default::default();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -465,6 +493,7 @@ pub fn modulo() {
             serde_yaml::from_str(&format!("num: {}", t.0)).unwrap();
         let template = liquid::ParserBuilder::with_liquid()
             .build()
+            .unwrap()
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
@@ -488,6 +517,7 @@ pub fn escape() {
         globals.insert("var".into(), liquid::value::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
+            .unwrap()
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
@@ -511,6 +541,7 @@ pub fn escape_once() {
         globals.insert("var".into(), liquid::value::Value::scalar(t.0));
         let template = liquid::ParserBuilder::with_liquid()
             .build()
+            .unwrap()
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
@@ -529,6 +560,7 @@ text: bar2bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -547,6 +579,7 @@ myvar: bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -564,6 +597,7 @@ text: bar2bar
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -581,6 +615,7 @@ text: "<!-- <b> Comment -->Lorem <a>ipsum </b>dolor"
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -598,6 +633,7 @@ text: "first second third"
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -615,6 +651,7 @@ text: false
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
@@ -632,6 +669,7 @@ text: foo
     .unwrap();
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();

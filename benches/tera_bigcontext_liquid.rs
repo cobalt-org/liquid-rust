@@ -33,7 +33,10 @@ With that in mind, let’s learn about borrowing.")),
             .into_iter()
             .collect();
 
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     let template = parser
         .parse(
             "

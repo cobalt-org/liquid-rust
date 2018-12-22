@@ -1,47 +1,42 @@
 use std::io::Write;
 
-use liquid_error::{Error, Result, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt};
 
-use compiler::parse;
 use compiler::Language;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
 use interpreter::Context;
+use interpreter::Expression;
 use interpreter::Renderable;
-use interpreter::Template;
 
 #[derive(Debug)]
 struct Include {
-    name: String,
-    partial: Template,
+    partial: Expression,
 }
 
 impl Renderable for Include {
     fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
-        context.run_in_named_scope(self.name.clone(), |mut scope| -> Result<()> {
-            self.partial
+        let name = self.partial.evaluate(context)?.render().to_string();
+        context.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
+            let partial = scope
+                .partials()
+                .get(&name)
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+            partial
                 .render_to(writer, &mut scope)
-                .trace_with(|| format!("{{% include {} %}}", self.name).into())
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())
+                .context_key_with(|| self.partial.to_string().into())
+                .value_with(|| name.to_string().into())
         })?;
 
         Ok(())
     }
 }
 
-fn parse_partial(name: &str, options: &Language) -> Result<Template> {
-    let content = options
-        .include_source
-        .as_ref()
-        .ok_or_else(|| Error::with_msg("File does not exist").context("path", name.to_owned()))?
-        .include(name)?;
-
-    parse(&content, options).map(Template::new)
-}
-
 pub fn include_tag(
     _tag_name: &str,
     mut arguments: TagTokenIter,
-    options: &Language,
+    _options: &Language,
 ) -> Result<Box<Renderable>> {
     let name = arguments.expect_next("Identifier or literal expected.")?;
 
@@ -56,31 +51,48 @@ pub fn include_tag(
     // no more arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
 
-    let partial =
-        parse_partial(&name, options).trace_with(|| format!("{{% include {} %}}", name).into())?;
+    let partial = Expression::with_literal(name);
 
-    Ok(Box::new(Include { name, partial }))
+    Ok(Box::new(Include { partial }))
 }
 
 #[cfg(test)]
 mod test {
-    use std::iter::FromIterator;
-    use std::path;
+    use std::borrow;
 
     use compiler;
     use filters;
     use interpreter;
     use interpreter::ContextBuilder;
+    use partials;
+    use partials::PartialCompiler;
     use tags;
     use value;
 
     use super::*;
 
-    fn options() -> Language {
-        let include_path = path::PathBuf::from_iter("tests/fixtures/input".split('/'));
+    #[derive(Default, Debug, Clone, Copy)]
+    struct TestSource;
 
+    impl partials::PartialSource for TestSource {
+        fn contains(&self, _name: &str) -> bool {
+            true
+        }
+
+        fn names(&self) -> Vec<&str> {
+            vec![]
+        }
+
+        fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
+            match name {
+                "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
+                _ => None
+            }
+        }
+    }
+
+    fn options() -> Language {
         let mut options = Language::default();
-        options.include_source = Some(Box::new(compiler::FilesystemInclude::new(include_path)));
         options
             .tags
             .register("include", (include_tag as compiler::FnParseTag).into());
@@ -105,7 +117,12 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new().build();
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut context = ContextBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
         context
             .stack_mut()
             .set_global("num", value::Value::scalar(5f64));
@@ -113,7 +130,7 @@ mod test {
             .stack_mut()
             .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "5 wat wot\n");
+        assert_eq!(output, "5 wat wot");
     }
 
     #[test]
@@ -127,7 +144,12 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new().build();
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut context = ContextBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
         context
             .stack_mut()
             .set_global("num", value::Value::scalar(5f64));
@@ -135,19 +157,33 @@ mod test {
             .stack_mut()
             .set_global("numTwo", value::Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
-        assert_eq!(output, "5 wat wot\n");
+        assert_eq!(output, "5 wat wot");
     }
 
     #[test]
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
-        let template = compiler::parse(text, &options()).map(interpreter::Template::new);
+        let mut options = options();
+        options
+            .filters
+            .register("size", (filters::size as compiler::FnFilterValue).into());
+        let template = compiler::parse(text, &options)
+            .map(interpreter::Template::new)
+            .unwrap();
 
-        assert!(template.is_err());
-        if let Err(val) = template {
-            let val = val.to_string();
-            println!("val={}", val);
-            assert!(val.contains("Snippet does not exist"));
-        }
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut context = ContextBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        context
+            .stack_mut()
+            .set_global("num", value::Value::scalar(5f64));
+        context
+            .stack_mut()
+            .set_global("numTwo", value::Value::scalar(10f64));
+        let output = template.render(&mut context);
+        assert!(output.is_err());
     }
 }

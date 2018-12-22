@@ -14,6 +14,7 @@ pub fn pass_between_threads() {
     let template = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse_file(&input_file)
         .unwrap();
     let template = Arc::new(template);

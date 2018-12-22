@@ -1,34 +1,45 @@
+use std::borrow;
+
 use liquid;
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 struct TestFileSystem;
 
-impl liquid::compiler::Include for TestFileSystem {
-    fn include(&self, relative_path: &str) -> Result<String, liquid::Error> {
-        let template = match relative_path {
-            "product" => "Product: {{ product.title }} ",
-            "locale_variables" => "Locale: {{echo1}} {{echo2}}",
-            "variant" => "Variant: {{ variant.title }}",
+impl liquid::partials::PartialSource for TestFileSystem {
+    fn contains(&self, _name: &str) -> bool {
+        true
+    }
+
+    fn names(&self) -> Vec<&str> {
+        vec![]
+    }
+
+    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
+        let template = match name {
+            "product" => "Product: {{ product.title }} ".into(),
+            "locale_variables" => "Locale: {{echo1}} {{echo2}}".into(),
+            "variant" => "Variant: {{ variant.title }}".into(),
             "nested_template" => {
-                "{% include 'header' %} {% include 'body' %} {% include 'footer' %}"
+                "{% include 'header' %} {% include 'body' %} {% include 'footer' %}".into()
             }
-            "body" => "body {% include 'body_detail' %}",
+            "body" => "body {% include 'body_detail' %}".into(),
             "nested_product_template" => {
-                "Product: {{ nested_product_template.title }} {%include 'details'%} "
+                "Product: {{ nested_product_template.title }} {%include 'details'%} ".into()
             }
-            "recursively_nested_template" => "-{% include 'recursively_nested_template' %}",
-            "pick_a_source" => "from TestFileSystem",
-            "assignments" => "{% assign foo = 'bar' %}",
-            _ => relative_path,
+            "recursively_nested_template" => "-{% include 'recursively_nested_template' %}".into(),
+            "pick_a_source" => "from TestFileSystem".into(),
+            "assignments" => "{% assign foo = 'bar' %}".into(),
+            _ => name.to_owned().into(),
         };
-        Ok(template.to_owned())
+        Some(template)
     }
 }
 
 fn liquid() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .include_source(Box::new(TestFileSystem))
+        .partials(liquid::partials::OnDemandCompiler::<TestFileSystem>::empty())
         .build()
+        .unwrap()
 }
 
 #[test]
@@ -142,12 +153,20 @@ fn test_nested_include_with_variable() {
     );
 }
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 struct InfiniteFileSystem;
 
-impl liquid::compiler::Include for InfiniteFileSystem {
-    fn include(&self, _relative_path: &str) -> Result<String, liquid::Error> {
-        Ok("-{% include 'loop' %}".to_owned())
+impl liquid::partials::PartialSource for InfiniteFileSystem {
+    fn contains(&self, _name: &str) -> bool {
+        true
+    }
+
+    fn names(&self) -> Vec<&str> {
+        vec![]
+    }
+
+    fn try_get<'a>(&'a self, _name: &str) -> Option<borrow::Cow<'a, str>> {
+        Some("-{% include 'loop' %}".into())
     }
 }
 
@@ -156,7 +175,10 @@ impl liquid::compiler::Include for InfiniteFileSystem {
 fn test_recursively_included_template_does_not_produce_endless_loop() {
     panic!("We don't check recursion depth");
     /*
-    let parser = liquid::ParserBuilder::with_liquid().include_source(Box::new(InfiniteFileSystem)).build();
+    liquid::ParserBuilder::with_liquid()
+        .partials(liquid::partials::OnDemandCompiler::<TestFileSystem>::empty())
+        .build()
+        .unwrap()
     parser.parse("{% include 'loop' %}").unwrap();
     */
 }

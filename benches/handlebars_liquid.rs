@@ -36,13 +36,19 @@ teams:
 
 #[bench]
 fn parse_template(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     b.iter(|| parser.parse(ITERATE));
 }
 
 #[bench]
 fn render_template(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     let template = parser
         .parse(ITERATE)
         .expect("Benchmark template parsing failed");
@@ -58,7 +64,10 @@ static LOOP: &'static str = "BEFORE\n{% for this in real%}{{this}}{%endfor%}AFTE
 
 #[bench]
 fn large_loop_helper(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     let template = parser
         .parse(LOOP)
         .expect("Benchmark template parsing failed");

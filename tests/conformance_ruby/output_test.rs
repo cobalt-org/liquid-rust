@@ -62,6 +62,7 @@ fn liquid() -> liquid::Parser {
         .filter("paragraph", paragraph as liquid::compiler::FnFilterValue)
         .filter("link_to", link_to as liquid::compiler::FnFilterValue)
         .build()
+        .unwrap()
 }
 
 fn assigns() -> liquid::value::Value {
