@@ -17,10 +17,12 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render_to(&self, writer: &mut Write, mut context: &mut Context) -> Result<()> {
-        self.partial
-            .render_to(writer, &mut context)
-            .trace_with(|| format!("{{% include {} %}}", self.name).into())?;
+    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+        context.run_in_named_scope(self.name.clone(), |mut scope| -> Result<()> {
+            self.partial
+                .render_to(writer, &mut scope)
+                .trace_with(|| format!("{{% include {} %}}", self.name).into())
+        })?;
 
         Ok(())
     }

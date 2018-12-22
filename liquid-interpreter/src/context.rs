@@ -141,6 +141,19 @@ impl<'g> Context<'g> {
         self.stack.pop_frame();
         result
     }
+
+    /// Sets up a new stack frame, executes the supplied function and then
+    /// tears the stack frame down before returning the function's result
+    /// to the caller.
+    pub fn run_in_named_scope<RvalT, S: Into<String>, FnT>(&mut self, name: S, f: FnT) -> RvalT
+    where
+        FnT: FnOnce(&mut Context) -> RvalT,
+    {
+        self.stack.push_named_frame(name);
+        let result = f(self);
+        self.stack.pop_frame();
+        result
+    }
 }
 
 impl<'g> Default for Context<'g> {
