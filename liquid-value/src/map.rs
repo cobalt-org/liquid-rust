@@ -201,6 +201,8 @@ impl PartialEq for Map {
     }
 }
 
+impl Eq for Map {}
+
 /// Access an element of this map. Panics if the given key is not present in the
 /// map.
 ///
