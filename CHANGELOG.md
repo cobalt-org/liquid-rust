@@ -1,3 +1,127 @@
+<a name="0.18.0"></a>
+## 0.18.0 (2018-12-27)
+
+
+#### Behavior Features
+
+*   Indexing by variable ([c216a439](https://github.com/cobalt-org/liquid-rust/commit/c216a439d978bedb88ec4baba0e8703d6877e20e), closes [#209](https://github.com/cobalt-org/liquid-rust/issues/209))
+* **array:**  indexing with `.first` and `.last` ([36d79cf2](https://github.com/cobalt-org/liquid-rust/commit/36d79cf2f5855b2f5428d8a2d173af8d26dd98bf))
+* **case_block:**  support comma separated values in `when` ([0e56f772](https://github.com/cobalt-org/liquid-rust/commit/0e56f7721863a8065ee33eb035b343e16d04e231))
+* **errors:**  Report available tags blocks ([04e486a8](https://github.com/cobalt-org/liquid-rust/commit/04e486a87781c6cb46c8ca0da56f7a310eb567cb), closes [#183](https://github.com/cobalt-org/liquid-rust/issues/183))
+* **filters:**
+  *  array manipulation filters ([94e66600](https://github.com/cobalt-org/liquid-rust/commit/94e6660040d5b021e0ee6aac86ef51e25dd2c725))
+  *  Allow the input to index ([ceccb9b2](https://github.com/cobalt-org/liquid-rust/commit/ceccb9b28f68ea168a75daa13059e776ca0d880c), closes [#207](https://github.com/cobalt-org/liquid-rust/issues/207))
+  *  add filters "at_least" and "at_most" ([be3e55c0](https://github.com/cobalt-org/liquid-rust/commit/be3e55c079fe43f8f35ebe5add00fd05ef912f79))
+* **for-block:**
+  * Support iterating on Object ([2469bfc0](https://github.com/cobalt-org/liquid-rust/commit/2469bfc0678b75e16e466cc73b7761b1eb27658d), closes [#201](https://github.com/cobalt-org/liquid-rust/issues/201))
+  *  support parameters with variables ([7376ccf5](https://github.com/cobalt-org/liquid-rust/commit/7376ccf51f5d2f0a67ca0dbad3d25d395f4fbd6d), closes [#162](https://github.com/cobalt-org/liquid-rust/issues/162))
+* **if_block:**  support multiple conditions with `and` and `or` ([fb16a066](https://github.com/cobalt-org/liquid-rust/commit/fb16a066eeb7fd226883fdae64ec34660d8e539d))
+* **tablerow:**  add tablerow object for its tag ([6b95cca5](https://github.com/cobalt-org/liquid-rust/commit/6b95cca5486e2b351bda5b8ffd9e23df98a478d1))
+* **unless_block:**  support `else` ([8577eb1e](https://github.com/cobalt-org/liquid-rust/commit/8577eb1e63091623e80da732e3bbf4f6106329d1))
+* **tags:**  add more shopify tags ([18660736](https://github.com/cobalt-org/liquid-rust/commit/1866073682eb97a62bae8eefef87dcc44740a0e6), closes [#163](https://github.com/cobalt-org/liquid-rust/issues/163))
+* **grammar:**
+  *  Support for empty/blank literals ([ef721815](https://github.com/cobalt-org/liquid-rust/commit/ef72181575e46c7c9329deb30ecb651cab903d3f), closes [#222](https://github.com/cobalt-org/liquid-rust/issues/222)
+  *  Support for nil literals ([7d3b0e5b](https://github.com/cobalt-org/liquid-rust/commit/7d3b0e5bb82bef9cc82698fc9514a47a557fdb6f), closes [#223](https://github.com/cobalt-org/liquid-rust/issues/223)
+*   Improve error reporting ([e373b1e1](https://github.com/cobalt-org/liquid-rust/commit/e373b1e1a7a1597fe29b5c9020beae1612fc1002))
+
+#### Bug Fixes
+
+*   Deeply nested array indexes ([51c3a853](https://github.com/cobalt-org/liquid-rust/commit/51c3a853a74d0b933983e95a2c6f38d1fdf6512d), closes [#230](https://github.com/cobalt-org/liquid-rust/issues/230))
+*   Support more expressive indexing ([e579dd3d](https://github.com/cobalt-org/liquid-rust/commit/e579dd3df4465a4d3b42e3d06293f370ef5b750c)
+* **for_block:**  make ranges inclusive. ([42055c35](https://github.com/cobalt-org/liquid-rust/commit/42055c356125b0e66524a5ee7a2fa34e4af4397c))
+* **if:**  Improve accuracy of contains op ([07452cd3](https://github.com/cobalt-org/liquid-rust/commit/07452cd38f8d8907bd1f5f602439e2ee99021e69))
+* **newlines_to_br:**  should preserve newlines ([01904edb](https://github.com/cobalt-org/liquid-rust/commit/01904edbbb2bc8d7279fe82274df939f7e75d857))
+* **comment_block:**  allow nesting ([8d1f64e7](https://github.com/cobalt-org/liquid-rust/commit/8d1f64e7a4e749cf402fe77d2321cba4dacc8a6b))
+* **errors:**
+  * List alternative filters ([406187bc](https://github.com/cobalt-org/liquid-rust/commit/406187bcd1963636d7119d751938a37b6ce5bab5)
+  * look of values/variables ([111160c3](https://github.com/cobalt-org/liquid-rust/commit/111160c3898195753cbccbdca693870acdc278dc), closes [#258](https://github.com/cobalt-org/liquid-rust/issues/258))
+* **dbg:**  Fix --help for debug tool ([45c5d397](https://github.com/cobalt-org/liquid-rust/commit/45c5d39770081fc88b1570c64b03d56e6d53b45d))
+
+#### Breaking Behavior Changes
+
+* **grammar:**
+  *  Support for empty/blank literals ([ef721815](https://github.com/cobalt-org/liquid-rust/commit/ef72181575e46c7c9329deb30ecb651cab903d3f), closes [#222](https://github.com/cobalt-org/liquid-rust/issues/222)
+  *  Support for nil literals ([7d3b0e5b](https://github.com/cobalt-org/liquid-rust/commit/7d3b0e5bb82bef9cc82698fc9514a47a557fdb6f), closes [#223](https://github.com/cobalt-org/liquid-rust/issues/223)
+
+#### Performance
+
+*   Slight change for if-existence ([92aaadf5](https://github.com/cobalt-org/liquid-rust/commit/92aaadf5a583adaad08745613842d9b98225a14a))
+*   if-existence bypass error reporting cost ([c7fde6f4](https://github.com/cobalt-org/liquid-rust/commit/c7fde6f44c96a23a86b8fb0f29d060e4dec389bc))
+*   Improve for-loop ([f4500fdf](https://github.com/cobalt-org/liquid-rust/commit/f4500fdfafa8543b9161fbefba3175acfcf0b23c))
+*   Slight speed up for for-over-hash ([8e2ce0e6](https://github.com/cobalt-org/liquid-rust/commit/8e2ce0e66bfebc698589f5ca9c87853f4cc80170))
+*   Speed up variable accesses ([f7392486](https://github.com/cobalt-org/liquid-rust/commit/f7392486b540646a05080275b4d4d5cfa507e3c5)
+*   Reduce allocations ([cbb1d254](https://github.com/cobalt-org/liquid-rust/commit/cbb1d254b0ed15b32674e7688af6c55cee91c125), closes [#188](https://github.com/cobalt-org/liquid-rust/issues/188)
+* **render:** 
+  * Use a Write ([0093a595](https://github.com/cobalt-org/liquid-rust/commit/0093a595b9dc0f335c3f8eed7a0309123a82b708), closes [#187](https://github.com/cobalt-org/liquid-rust/issues/187)
+  * Bypass UTF-8 validation overhead ([c759fc33](https://github.com/cobalt-org/liquid-rust/commit/c759fc335710797c0cfd75c42b0c598d191fc0b6))
+  * Default buffer size ([58eec66b](https://github.com/cobalt-org/liquid-rust/commit/58eec66b49a2a7156b745753c50080b8afad6b7a))
+* **value:**
+  *  Support str's ([e3aae68d](https://github.com/cobalt-org/liquid-rust/commit/e3aae68d672570db89aeea3daf58423b8f9e6bda)
+  *  Reduce allocations with `Cow` ([7fd1e62d](https://github.com/cobalt-org/liquid-rust/commit/7fd1e62d7622ea5e61ef52f225b897f318d59b2c)
+  * Allow slicing Paths ([9601e30a](https://github.com/cobalt-org/liquid-rust/commit/9601e30a0803261e92a84bfe86699108f13c03d7)
+
+#### API Features
+
+* **parser:**  accept newlines as `WHITESPACE` ([7bec9871](https://github.com/cobalt-org/liquid-rust/commit/7bec9871b47e15e1aa07a40d3de3518bd80303fc), closes [#286](https://github.com/cobalt-org/liquid-rust/issues/286), [#280](https://github.com/cobalt-org/liquid-rust/issues/280))
+* **interpreter:**
+  * Runtime partials ([0ef46a17](https://github.com/cobalt-org/liquid-rust/commit/0ef46a170aa21c6113830fa62c26e8b708b97fff))
+  *  Support runtime include for tags ([5a0854fa](https://github.com/cobalt-org/liquid-rust/commit/5a0854fa3706505fd1b32dc1bf6ecb7292e173a4)
+  *  Allow named stack frames ([4c378178](https://github.com/cobalt-org/liquid-rust/commit/4c3781782176c3ea334963c50f52f9119b178017))
+  *  Create dedicated Path for indexing into a Value ([a936ba52](https://github.com/cobalt-org/liquid-rust/commit/a936ba5290130d1fe53ccb4b59c2d04744406674))
+  * New caching policies ([d2ba7a61](https://github.com/cobalt-org/liquid-rust/commit/d2ba7a61c0af0600bfd8841fc6f12951ae53557c))
+  *  Support arbitrary state ([033c9b75](https://github.com/cobalt-org/liquid-rust/commit/033c9b75c7476057f0858e78ec5b93a0a7cb7895)
+* **error:**
+  *  liquid re-export all error stuff ([808f708e](https://github.com/cobalt-org/liquid-rust/commit/808f708e5ac48853a977a3cdfc98ec968116766e))
+  *  Cloneable errors ([e18c68e1](https://github.com/cobalt-org/liquid-rust/commit/e18c68e14cc3a894737ef23e0f07a9363eea5f79))
+  *  Improve missing variable errors ([d6e1aea5](https://github.com/cobalt-org/liquid-rust/commit/d6e1aea5ff9f0340c87bc45b4c07fcd34991805c))
+* **value:**
+  *  Convinience eq/cmp impls ([78f7a952](https://github.com/cobalt-org/liquid-rust/commit/78f7a9522fc9693919777b04bc8400e708870701))
+  *  Value literal macro ([ea5ac0aa](https://github.com/cobalt-org/liquid-rust/commit/ea5ac0aaaa976da089fac6b025bfea450e4da852))
+  *  Allow moving into constituent types ([bc07812c](https://github.com/cobalt-org/liquid-rust/commit/bc07812ccdb06e0383cc4701831d0fc20d5be654))
+  *  Create to_value ([61ae6de6](https://github.com/cobalt-org/liquid-rust/commit/61ae6de625c53171327263bafec954f0ee2a4977))
+  * Return error from Globals ([fde1397b](https://github.com/cobalt-org/liquid-rust/commit/fde1397b5d81b015e30379432c8c017acb63c3b3))
+  * Rich Gobals API ([385a62fd](https://github.com/cobalt-org/liquid-rust/commit/385a62fd6d362c4cb5a58694dcf073a471920c34)
+
+#### Breaking API Changes
+
+*   Speed up variable accesses ([f7392486](https://github.com/cobalt-org/liquid-rust/commit/f7392486b540646a05080275b4d4d5cfa507e3c5)
+*   Allow slicing Paths ([9601e30a](https://github.com/cobalt-org/liquid-rust/commit/9601e30a0803261e92a84bfe86699108f13c03d7)
+*   Rich Gobals API ([385a62fd](https://github.com/cobalt-org/liquid-rust/commit/385a62fd6d362c4cb5a58694dcf073a471920c34)
+*   Support more expressive indexing ([e579dd3d](https://github.com/cobalt-org/liquid-rust/commit/e579dd3df4465a4d3b42e3d06293f370ef5b750c)
+*   Force serde to always be on ([7f1e2027](https://github.com/cobalt-org/liquid-rust/commit/7f1e2027c28cfd8e34e9ac7e98efd50867c5052d)
+*   Cleanup each crate's API ([2e4ab661](https://github.com/cobalt-org/liquid-rust/commit/2e4ab66116ee97183b4d712006bba459f02b3b88)
+*   Isolate context creation ([00cac8cb](https://github.com/cobalt-org/liquid-rust/commit/00cac8cb1804e3e1c0514673a9ecc23a13a5f006)
+*   Isolate Stack state ([3f8e9432](https://github.com/cobalt-org/liquid-rust/commit/3f8e9432e481fb67ee82d1120405f00112f60810)
+*   Isolate cycle state ([34dc950a](https://github.com/cobalt-org/liquid-rust/commit/34dc950a3eddd54340910029d6b4bf13e27721b0)
+*   Isolate interrupt state ([06596643](https://github.com/cobalt-org/liquid-rust/commit/06596643a46ec40eadba000602f4af7aa81fe2a4)
+*   Reduce allocations ([cbb1d254](https://github.com/cobalt-org/liquid-rust/commit/cbb1d254b0ed15b32674e7688af6c55cee91c125), closes [#188](https://github.com/cobalt-org/liquid-rust/issues/188)
+* **compiler:**
+  *  Rename LiquidOptions ([0442f38c](https://github.com/cobalt-org/liquid-rust/commit/0442f38c83ec12cd93f6e906c4c43d38383d08bb)
+  *  Move filters to interpreter ([b9c2ff87](https://github.com/cobalt-org/liquid-rust/commit/b9c2ff87caf5c30ac6fe5520a9e343690d020c7a)
+* **context:**  Reduce scope of public API ([866eb0cb](https://github.com/cobalt-org/liquid-rust/commit/866eb0cb3758a919919009a421c92cd8a148906d)
+* **error:**
+  *  Simplify Result::context API ([6e6f3b5e](https://github.com/cobalt-org/liquid-rust/commit/6e6f3b5eec626a3e9fd325754f36e622f760021e)
+  *  Simplify by removing cloning ([bbd71146](https://github.com/cobalt-org/liquid-rust/commit/bbd71146b4b8f7a14f6ac131b981d76f3dae5a5e)
+  *  Clean up error API ([6a950048](https://github.com/cobalt-org/liquid-rust/commit/6a9500488bf6c3bbcc0cbc8c09f52f694595cb6f)
+* **errors:**  List alternative filters ([406187bc](https://github.com/cobalt-org/liquid-rust/commit/406187bcd1963636d7119d751938a37b6ce5bab5)
+* **filter:**  Switch to standard error type ([3d18b718](https://github.com/cobalt-org/liquid-rust/commit/3d18b71865b38d9f0a3aa4722d0a7adad13c2016)
+* **interpreter:**
+  *  Support runtime include for tags ([5a0854fa](https://github.com/cobalt-org/liquid-rust/commit/5a0854fa3706505fd1b32dc1bf6ecb7292e173a4)
+  *  Moving Text closer to use ([6e9f5bec](https://github.com/cobalt-org/liquid-rust/commit/6e9f5bec78ec8295352b4d40230234bdc89966ee)
+  *  Rename Globals to ValueStore ([fbe4f2c3](https://github.com/cobalt-org/liquid-rust/commit/fbe4f2c3f4953ccb08ee317d2e4be4755d5d0e62)
+  *  Clarify names ([6b96f92b](https://github.com/cobalt-org/liquid-rust/commit/6b96f92be169aad4d9393cb48d9ad37e856d014a)
+* **perf:**  Don't clone globals ([fbc1c153](https://github.com/cobalt-org/liquid-rust/commit/fbc1c153df9988db09cbb8a0a148c8a30b9ab598)
+* **plugins:**
+  *  Support arbitrary state ([033c9b75](https://github.com/cobalt-org/liquid-rust/commit/033c9b75c7476057f0858e78ec5b93a0a7cb7895)
+  *  Abstract plugin registry ([ef4cabf3](https://github.com/cobalt-org/liquid-rust/commit/ef4cabf3c7cdf885bccd1f61d9dfa3da9aab5fa2)
+* **render:**  Use a Write ([0093a595](https://github.com/cobalt-org/liquid-rust/commit/0093a595b9dc0f335c3f8eed7a0309123a82b708), closes [#187](https://github.com/cobalt-org/liquid-rust/issues/187)
+* **value:**
+  *  Newtype for Map ([eab6f40f](https://github.com/cobalt-org/liquid-rust/commit/eab6f40fdb1a6f5858b0dbe3cf89d89600559fd1)
+  *  Support str's ([e3aae68d](https://github.com/cobalt-org/liquid-rust/commit/e3aae68d672570db89aeea3daf58423b8f9e6bda)
+  *  Reduce allocations with `Cow` ([7fd1e62d](https://github.com/cobalt-org/liquid-rust/commit/7fd1e62d7622ea5e61ef52f225b897f318d59b2c)
+
+
+
 <a name="0.17.1"></a>
 ## 0.17.1 (2018-11-17)
 
@@ -9,10 +133,10 @@
 
 #### Features
 
-* **array:** 
+* **array:**
   * indexing with `.first` and `.last` ([36d79cf2](https://github.com/cobalt-org/liquid-rust/commit/36d79cf2f5855b2f5428d8a2d173af8d26dd98bf))
   * array manipulation filters ([94e66600](https://github.com/cobalt-org/liquid-rust/commit/94e6660040d5b021e0ee6aac86ef51e25dd2c725))
-* **blocks:** 
+* **blocks:**
   * support multiple if conditions with `and` and `or` ([fb16a066](https://github.com/cobalt-org/liquid-rust/commit/fb16a066eeb7fd226883fdae64ec34660d8e539d))
   * add tablerow object for its tag ([6b95cca5](https://github.com/cobalt-org/liquid-rust/commit/6b95cca5486e2b351bda5b8ffd9e23df98a478d1))
 
@@ -24,7 +148,7 @@
 
 #### Breaking Changes
 
-*   Support more expressive indexing ([e579dd3d](https://github.com/cobalt-org/liquid-rust/commit/e579dd3df4465a4d3b42e3d06293f370ef5b750c), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+*   Support more expressive indexing ([e579dd3d](https://github.com/cobalt-org/liquid-rust/commit/e579dd3df4465a4d3b42e3d06293f370ef5b750c)
 * **for_block:**  make ranges inclusive. ([42055c35](https://github.com/cobalt-org/liquid-rust/commit/42055c356125b0e66524a5ee7a2fa34e4af4397c))
 
 #### Features

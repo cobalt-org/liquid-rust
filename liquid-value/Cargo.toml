@@ -1,6 +1,6 @@
 [package]
 name = "liquid-value"
-version = "0.17.1"
+version = "0.18.0"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/liquid-value"
@@ -20,7 +20,7 @@ num-traits = "0.2"
 # Exposed in API
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-liquid-error = { version = "0.16", path = "../liquid-error" }
+liquid-error = { version = "0.18", path = "../liquid-error" }
 
 [dev-dependencies]
 difference = "2.0"
