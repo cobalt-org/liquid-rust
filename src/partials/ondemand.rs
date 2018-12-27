@@ -80,7 +80,7 @@ where
 {
     fn compile(self, language: sync::Arc<Language>) -> Result<Box<PartialStore + Send + Sync>> {
         let store = OnDemandStore {
-            language: language,
+            language,
             source: self.source,
         };
         Ok(Box::new(store))

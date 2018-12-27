@@ -156,9 +156,7 @@ impl<'g> Context<'g> {
     pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(
         &mut self,
     ) -> &mut T {
-        self.registers
-            .entry::<T>()
-            .or_insert_with(|| Default::default())
+        self.registers.entry::<T>().or_insert_with(Default::default)
     }
 
     /// Access the current `Stack`.
