@@ -44,6 +44,9 @@ mod template;
 pub mod compiler {
     pub use liquid_compiler::*;
 }
+pub mod error {
+    pub use liquid_error::*;
+}
 pub mod interpreter {
     pub use liquid_interpreter::*;
 }
