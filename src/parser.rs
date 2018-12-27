@@ -15,7 +15,7 @@ use tags;
 /// Storage for partial-templates.
 ///
 /// This is the recommended policy.  See `liquid::partials` for more options.
-pub type Partials = partials::OnDemandCompiler<partials::InMemorySource>;
+pub type Partials = partials::EagerCompiler<partials::InMemorySource>;
 
 pub struct ParserBuilder<P = Partials>
 where

@@ -7,10 +7,14 @@ use liquid_error::Error;
 use liquid_error::Result;
 use liquid_interpreter::PartialStore;
 
+mod eager;
 mod inmemory;
+mod lazy;
 mod ondemand;
 
+pub use self::eager::*;
 pub use self::inmemory::*;
+pub use self::lazy::*;
 pub use self::ondemand::*;
 
 /// Compile a `PartialSource` into a `PartialStore` of `Renderable`s.
