@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidChainExt};
+use liquid_error::{Result, ResultLiquidReplaceExt};
 use liquid_interpreter::Context;
 use liquid_interpreter::Renderable;
 
@@ -19,7 +19,7 @@ impl Text {
 
 impl Renderable for Text {
     fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
-        write!(writer, "{}", &self.text).chain("Failed to render")?;
+        write!(writer, "{}", &self.text).replace("Failed to render")?;
         Ok(())
     }
 }

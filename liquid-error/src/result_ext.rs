@@ -2,7 +2,9 @@ use std::borrow;
 use std::error;
 use std::result;
 
+use super::CloneableError;
 use super::Error;
+use super::ErrorClone;
 use super::Result;
 
 type CowStr = borrow::Cow<'static, str>;
@@ -10,43 +12,90 @@ type CowStr = borrow::Cow<'static, str>;
 /// `Result` extension methods for adapting third party errors to `Error`.
 pub trait ResultLiquidChainExt<T> {
     /// Create an `Error` with `E` as the cause.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidChainExt;
-    ///
-    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
-    /// let error: Result<i32> = error.chain("Missing liquid partial");
-    /// ```
     #[must_use]
     fn chain<S: Into<CowStr>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` with `E` as the cause.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidChainExt;
-    ///
-    /// let filename = "foo";
-    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
-    /// let error: Result<i32> = error
-    ///     .chain_with(|| format!("Missing liquid partial: {}", filename).into());
-    /// ```
     #[must_use]
     fn chain_with<F>(self, msg: F) -> Result<T>
     where
         F: FnOnce() -> CowStr;
 }
 
+/// `Result` extension methods for adapting third party errors to `Error`.
+pub trait ResultLiquidReplaceExt<T> {
+    /// Create an `Error` ignoring `E` as the cause.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::io;
+    /// use liquid_error::Result;
+    /// use liquid_error::ResultLiquidReplaceExt;
+    ///
+    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
+    /// let error: Result<i32> = error.lossy_chain("Missing liquid partial");
+    /// ```
+    #[must_use]
+    fn lossy_chain<S: Into<CowStr>>(self, msg: S) -> Result<T>;
+
+    /// Create an `Error` ignoring `E` as the cause.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::io;
+    /// use liquid_error::Result;
+    /// use liquid_error::ResultLiquidReplaceExt;
+    ///
+    /// let filename = "foo";
+    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
+    /// let error: Result<i32> = error
+    ///     .lossy_chain_with(|| format!("Missing liquid partial: {}", filename).into());
+    /// ```
+    #[must_use]
+    fn lossy_chain_with<F>(self, msg: F) -> Result<T>
+    where
+        F: FnOnce() -> CowStr;
+
+    /// Create an `Error` ignoring `E` as the cause.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::io;
+    /// use liquid_error::Result;
+    /// use liquid_error::ResultLiquidReplaceExt;
+    ///
+    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
+    /// let error: Result<i32> = error.replace("Missing liquid partial");
+    /// ```
+    #[must_use]
+    fn replace<S: Into<CowStr>>(self, msg: S) -> Result<T>;
+
+    /// Create an `Error` ignoring `E` as the cause.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use std::io;
+    /// use liquid_error::Result;
+    /// use liquid_error::ResultLiquidReplaceExt;
+    ///
+    /// let filename = "foo";
+    /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
+    /// let error: Result<i32> = error
+    ///     .replace_with(|| format!("Missing liquid partial: {}", filename).into());
+    /// ```
+    #[must_use]
+    fn replace_with<F>(self, msg: F) -> Result<T>
+    where
+        F: FnOnce() -> CowStr;
+}
+
 impl<T, E> ResultLiquidChainExt<T> for result::Result<T, E>
 where
-    E: error::Error + Send + Sync + 'static,
+    E: ErrorClone,
 {
     fn chain<S: Into<CowStr>>(self, msg: S) -> Result<T> {
         self.map_err(|err| Error::with_msg(msg).cause(err))
@@ -57,6 +106,33 @@ where
         F: FnOnce() -> CowStr,
     {
         self.map_err(|err| Error::with_msg(msg()).cause(err))
+    }
+}
+
+impl<T, E> ResultLiquidReplaceExt<T> for result::Result<T, E>
+where
+    E: error::Error + Send + Sync + 'static,
+{
+    fn lossy_chain<S: Into<CowStr>>(self, msg: S) -> Result<T> {
+        self.map_err(|err| Error::with_msg(msg).cause(CloneableError::new(err)))
+    }
+
+    fn lossy_chain_with<F>(self, msg: F) -> Result<T>
+    where
+        F: FnOnce() -> CowStr,
+    {
+        self.map_err(|err| Error::with_msg(msg()).cause(CloneableError::new(err)))
+    }
+
+    fn replace<S: Into<CowStr>>(self, msg: S) -> Result<T> {
+        self.map_err(|_| Error::with_msg(msg))
+    }
+
+    fn replace_with<F>(self, msg: F) -> Result<T>
+    where
+        F: FnOnce() -> CowStr,
+    {
+        self.map_err(|_| Error::with_msg(msg()))
     }
 }
 

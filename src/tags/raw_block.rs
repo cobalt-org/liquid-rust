@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidChainExt};
+use liquid_error::{Result, ResultLiquidReplaceExt};
 
 use compiler::Language;
 use compiler::TagBlock;
@@ -15,7 +15,7 @@ struct RawT {
 
 impl Renderable for RawT {
     fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
-        write!(writer, "{}", self.content).chain("Failed to render")?;
+        write!(writer, "{}", self.content).replace("Failed to render")?;
         Ok(())
     }
 }

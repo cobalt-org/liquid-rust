@@ -4,7 +4,7 @@ use std::path;
 use std::sync;
 
 use liquid_compiler as compiler;
-use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_interpreter as interpreter;
 
 use super::Template;
@@ -307,12 +307,12 @@ impl Parser {
 
     fn parse_file_path(self, file: &path::Path) -> Result<Template> {
         let mut f = File::open(file)
-            .chain("Cannot open file")
+            .replace("Cannot open file")
             .context_key("path")
             .value_with(|| file.to_string_lossy().into_owned().into())?;
         let mut buf = String::new();
         f.read_to_string(&mut buf)
-            .chain("Cannot read file")
+            .replace("Cannot read file")
             .context_key("path")
             .value_with(|| file.to_string_lossy().into_owned().into())?;
 
