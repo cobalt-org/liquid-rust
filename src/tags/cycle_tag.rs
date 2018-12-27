@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
 
 use compiler::Language;
 use compiler::TagToken;
@@ -34,7 +34,7 @@ impl Renderable for Cycle {
             .cycle(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
         let value = expr.evaluate(context).trace_with(|| self.trace().into())?;
-        write!(writer, "{}", value.render()).chain("Failed to render")?;
+        write!(writer, "{}", value.render()).replace("Failed to render")?;
         Ok(())
     }
 }

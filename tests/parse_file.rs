@@ -7,18 +7,14 @@ use liquid::*;
 use std::fs::File;
 use std::io::Read;
 
-// README: The compare_by_file and following tests are almost line for line carbon-copies of the
-// tests in `fixtures.rs`. This might be overkill but keep that in mind when making changes to
-// fixtures that might necessitate changes to the parse_file method tested here.
-
 fn compare_by_file(name: &str, globals: &value::Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
     let template = ParserBuilder::with_liquid()
         .extra_filters()
-        .include_source(Box::new(compiler::FilesystemInclude::new(".")))
         .build()
+        .unwrap()
         .parse_file(input_file)
         .unwrap();
 
@@ -38,19 +34,9 @@ pub fn error_on_nonexistent_file() {
     let template = ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse_file("not-a-file.ext");
     assert!(template.is_err());
-}
-
-#[test]
-pub fn chained_filters_by_file() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-foo: foofoo
-"#,
-    )
-    .unwrap();
-    compare_by_file("chained_filters", &globals);
 }
 
 #[test]
@@ -63,23 +49,4 @@ numTwo: 6
     )
     .unwrap();
     compare_by_file("example", &globals);
-}
-
-#[test]
-pub fn include_by_file() {
-    let mut globals: value::Object = Default::default();
-    globals.insert("num".into(), value::Value::scalar(5f64));
-    globals.insert("numTwo".into(), value::Value::scalar(10f64));
-    compare_by_file("include", &globals);
-}
-
-#[test]
-pub fn include_with_context_by_file() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-content: "hello, world!"
-"#,
-    )
-    .unwrap();
-    compare_by_file("include_with_context", &globals);
 }

@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_value::{Object, Scalar, Value};
 
 use compiler::BlockElement;
@@ -403,9 +403,10 @@ impl Renderable for TableRow {
 
                 if col_first {
                     write!(writer, "<tr class=\"row{}\">", row_index + 1)
-                        .chain("Failed to render")?;
+                        .replace("Failed to render")?;
                 }
-                write!(writer, "<td class=\"col{}\">", col_index + 1).chain("Failed to render")?;
+                write!(writer, "<td class=\"col{}\">", col_index + 1)
+                    .replace("Failed to render")?;
 
                 scope.stack_mut().set(self.var_name.to_owned(), v);
                 self.item_template
@@ -414,9 +415,9 @@ impl Renderable for TableRow {
                     .context_key("index")
                     .value_with(|| format!("{}", i + 1).into())?;
 
-                write!(writer, "</td>").chain("Failed to render")?;
+                write!(writer, "</td>").replace("Failed to render")?;
                 if col_last {
-                    write!(writer, "</tr>").chain("Failed to render")?;
+                    write!(writer, "</tr>").replace("Failed to render")?;
                 }
             }
             Ok(())

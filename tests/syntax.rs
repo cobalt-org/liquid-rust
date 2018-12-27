@@ -11,6 +11,7 @@ fn compare(input: &str, expected: &str) {
     let template = ParserBuilder::with_liquid()
         .extra_filters()
         .build()
+        .unwrap()
         .parse(&input)
         .unwrap();
 

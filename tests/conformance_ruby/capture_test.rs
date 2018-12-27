@@ -17,6 +17,7 @@ fn test_capture_with_hyphen_in_variable_name() {
 "#;
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(template_source)
         .unwrap();
     let rendered = template.render(&liquid::value::Object::default()).unwrap();
@@ -38,6 +39,7 @@ fn test_capture_to_variable_from_outer_scope_if_existing() {
 "#;
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(template_source)
         .unwrap();
     let rendered = template.render(&liquid::value::Object::default()).unwrap();
@@ -58,6 +60,7 @@ fn test_assigning_from_capture() {
 "#;
     let template = liquid::ParserBuilder::with_liquid()
         .build()
+        .unwrap()
         .parse(template_source)
         .unwrap();
     let rendered = template.render(&liquid::value::Object::default()).unwrap();

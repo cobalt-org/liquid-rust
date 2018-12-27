@@ -9,13 +9,19 @@ static TEXT_ONLY: &'static str = "Hello World";
 
 #[bench]
 fn bench_parse_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     b.iter(|| parser.parse(TEXT_ONLY));
 }
 
 #[bench]
 fn bench_render_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid().extra_filters().build();
+    let parser = liquid::ParserBuilder::with_liquid()
+        .extra_filters()
+        .build()
+        .unwrap();
     let template = parser
         .parse(TEXT_ONLY)
         .expect("Benchmark template parsing failed");

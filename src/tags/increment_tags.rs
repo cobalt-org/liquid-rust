@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidChainExt};
+use liquid_error::{Result, ResultLiquidReplaceExt};
 
 use compiler::Language;
 use compiler::TagTokenIter;
@@ -22,7 +22,7 @@ impl Renderable for Increment {
             .and_then(|i| i.to_integer())
             .unwrap_or(0);
 
-        write!(writer, "{}", val).chain("Failed to render")?;
+        write!(writer, "{}", val).replace("Failed to render")?;
         val += 1;
         context
             .stack_mut()
@@ -63,7 +63,7 @@ impl Renderable for Decrement {
             .unwrap_or(0);
 
         val -= 1;
-        write!(writer, "{}", val).chain("Failed to render")?;
+        write!(writer, "{}", val).replace("Failed to render")?;
         context
             .stack_mut()
             .set_index(self.id.to_owned(), Value::scalar(val));

@@ -1,35 +1,50 @@
 use std::fs::File;
 use std::io::prelude::Read;
 use std::path;
+use std::sync;
 
 use liquid_compiler as compiler;
-use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_interpreter as interpreter;
 
 use super::Template;
 use filters;
+use partials;
 use tags;
 
-#[derive(Default, Clone)]
-pub struct ParserBuilder {
+/// Storage for partial-templates.
+///
+/// This is the recommended policy.  See `liquid::partials` for more options.
+pub type Partials = partials::EagerCompiler<partials::InMemorySource>;
+
+pub struct ParserBuilder<P = Partials>
+where
+    P: partials::PartialCompiler,
+{
     blocks: compiler::PluginRegistry<compiler::BoxedBlockParser>,
     tags: compiler::PluginRegistry<compiler::BoxedTagParser>,
     filters: compiler::PluginRegistry<compiler::BoxedValueFilter>,
-    include_source: Option<Box<compiler::Include>>,
+    partials: Option<P>,
 }
 
-impl ParserBuilder {
+impl ParserBuilder<Partials> {
     /// Create an empty Liquid parser
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Create a Liquid parser with built-in Liquid features
     pub fn with_liquid() -> Self {
-        Self::default()
-            .liquid_tags()
-            .liquid_blocks()
-            .liquid_filters()
+        Self::new().liquid()
+    }
+}
+
+impl<P> ParserBuilder<P>
+where
+    P: partials::PartialCompiler,
+{
+    /// Create a Liquid parser with built-in Liquid features
+    pub fn liquid(self) -> Self {
+        self.liquid_tags().liquid_blocks().liquid_filters()
     }
 
     /// Register built-in Liquid tags
@@ -175,33 +190,63 @@ impl ParserBuilder {
         self
     }
 
-    /// Define the source for includes
-    pub fn include_source(mut self, includes: Box<compiler::Include>) -> Self {
-        self.include_source = Some(includes);
-        self
-    }
-
-    /// Create a parser
-    pub fn build(self) -> Parser {
+    /// Set which partial-templates will be available.
+    pub fn partials<N: partials::PartialCompiler>(self, partials: N) -> ParserBuilder<N> {
         let Self {
             blocks,
             tags,
             filters,
-            include_source,
+            partials: _partials,
+        } = self;
+        ParserBuilder {
+            blocks,
+            tags,
+            filters,
+            partials: Some(partials),
+        }
+    }
+
+    /// Create a parser
+    pub fn build(self) -> Result<Parser> {
+        let Self {
+            blocks,
+            tags,
+            filters,
+            partials,
         } = self;
 
         let mut options = compiler::Language::empty();
         options.blocks = blocks;
         options.tags = tags;
         options.filters = filters;
-        options.include_source = include_source;
-        Parser { options }
+        let options = sync::Arc::new(options);
+        let partials = partials
+            .map(|p| p.compile(options.clone()))
+            .map_or(Ok(None), |r| r.map(Some))?
+            .map(|p| p.into());
+        let p = Parser { options, partials };
+        Ok(p)
+    }
+}
+
+impl<P> Default for ParserBuilder<P>
+where
+    P: partials::PartialCompiler,
+{
+    fn default() -> Self {
+        Self {
+            blocks: Default::default(),
+            tags: Default::default(),
+            filters: Default::default(),
+            partials: Default::default(),
+        }
     }
 }
 
 #[derive(Default, Clone)]
 pub struct Parser {
-    options: compiler::Language,
+    options: sync::Arc<compiler::Language>,
+    partials: Option<sync::Arc<interpreter::PartialStore + Send + Sync>>,
 }
 
 impl Parser {
@@ -216,7 +261,7 @@ impl Parser {
     ///
     /// ```
     /// let template = liquid::ParserBuilder::with_liquid()
-    ///     .build()
+    ///     .build().unwrap()
     ///     .parse("Liquid!").unwrap();
     ///
     /// let globals = liquid::value::Object::new();
@@ -226,7 +271,10 @@ impl Parser {
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
         let template = compiler::parse(text, &self.options).map(interpreter::Template::new)?;
-        Ok(Template { template })
+        Ok(Template {
+            template,
+            partials: self.partials.clone(),
+        })
     }
 
     /// Parse a liquid template from a file, returning a `Result<Template, Error>`.
@@ -244,7 +292,7 @@ impl Parser {
     ///
     /// ```rust,no_run
     /// let template = liquid::ParserBuilder::with_liquid()
-    ///     .build()
+    ///     .build().unwrap()
     ///     .parse_file("path/to/template.txt").unwrap();
     ///
     /// let mut globals = liquid::value::Object::new();
@@ -259,12 +307,12 @@ impl Parser {
 
     fn parse_file_path(self, file: &path::Path) -> Result<Template> {
         let mut f = File::open(file)
-            .chain("Cannot open file")
+            .replace("Cannot open file")
             .context_key("path")
             .value_with(|| file.to_string_lossy().into_owned().into())?;
         let mut buf = String::new();
         f.read_to_string(&mut buf)
-            .chain("Cannot read file")
+            .replace("Cannot read file")
             .context_key("path")
             .value_with(|| file.to_string_lossy().into_owned().into())?;
 

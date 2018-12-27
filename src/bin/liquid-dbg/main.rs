@@ -84,18 +84,12 @@ fn run() -> Result<()> {
         .arg(option("input", "LIQUID").required(true))
         .arg(option("output", "TXT"))
         .arg(option("context", "YAML"))
-        .arg(option("include-root", "PATH"))
         .get_matches_safe()?;
-
-    let root = matches
-        .value_of("include-root")
-        .map(path::PathBuf::from)
-        .unwrap_or_default();
 
     let parser = liquid::ParserBuilder::with_liquid()
         .extra_filters()
-        .include_source(Box::new(liquid::compiler::FilesystemInclude::new(root)))
-        .build();
+        .build()
+        .expect("should succeed without partials");
     let template_path = matches
         .value_of("input")
         .map(path::PathBuf::from)

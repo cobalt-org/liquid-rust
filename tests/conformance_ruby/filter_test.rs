@@ -18,6 +18,7 @@ fn liquid_money() -> liquid::Parser {
             money_with_underscore as liquid::compiler::FnFilterValue,
         )
         .build()
+        .unwrap()
 }
 
 fn substitute(input: &Value, _args: &[Value]) -> FilterResult {
@@ -31,6 +32,7 @@ fn liquid_sub() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
         .filter("substitute", substitute as liquid::compiler::FnFilterValue)
         .build()
+        .unwrap()
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidChainExt, ResultLiquidExt};
+use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 
 use compiler::Language;
 use compiler::TagBlock;
@@ -29,7 +29,7 @@ impl Renderable for IfChanged {
 
         let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
         if context.get_register_mut::<State>().has_changed(&rendered) {
-            write!(writer, "{}", rendered).chain("Failed to render")?;
+            write!(writer, "{}", rendered).replace("Failed to render")?;
         }
 
         Ok(())
