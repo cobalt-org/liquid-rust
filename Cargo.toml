@@ -37,7 +37,7 @@ regex = "1.0"
 lazy_static = "1.0"
 chrono = "0.4"
 unicode-segmentation = "1.2"
-itertools = "0.7.0"
+itertools = "0.8.0"
 url = "1.5"
 liquid-error = { version = "0.18", path = "liquid-error" }
 liquid-value = { version = "0.18", path = "liquid-value" }
