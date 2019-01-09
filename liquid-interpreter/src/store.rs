@@ -66,10 +66,11 @@ impl ValueStore for Object {
                     let requested = &path[subpath_end];
                     let available: Vec<_> = parent.keys().collect();
                     let available = itertools::join(available.iter().map(ScalarCow::render), ", ");
-                    return Err(Error::with_msg("Unknown index")
+                    return Error::with_msg("Unknown index")
                         .context("variable", subpath)
                         .context("requested index", format!("{}", requested.render()))
-                        .context("available indexes", available));
+                        .context("available indexes", available)
+                        .into_err();
                 }
             }
 
@@ -79,9 +80,10 @@ impl ValueStore for Object {
                 .to_str()
                 .into_owned();
             let available = itertools::join(self.keys(), ", ");
-            return Err(Error::with_msg("Unknown variable")
+            return Error::with_msg("Unknown variable")
                 .context("requested variable", requested)
-                .context("available variables", available));
+                .context("available variables", available)
+                .into_err();
         }
     }
 }

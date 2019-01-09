@@ -94,6 +94,15 @@ impl Error {
         self.inner.cause = cause;
         self
     }
+
+    /// Simplify returning early with an error.
+    pub fn into_err<T, E>(self) -> ::std::result::Result<T, E>
+    where
+        Self: Into<E>,
+    {
+        let err = self.into();
+        Err(err)
+    }
 }
 
 const ERROR_DESCRIPTION: &str = "liquid";
