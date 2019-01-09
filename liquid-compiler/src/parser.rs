@@ -248,10 +248,11 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         let element = self.iter.next().expect("File shouldn't end before EOI.");
 
         if element.as_rule() == Rule::EOI {
-            return Err(error_from_pair(
+            return error_from_pair(
                 element,
                 format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
-            ));
+            )
+            .into_err();
         }
 
         // Tags are treated separately so as to check for a possible `{% endtag %}`
@@ -271,7 +272,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
 
                 // no more arguments should be supplied, trying to supply them is an error
                 if let Some(token) = tag.next() {
-                    return Err(TagToken::from(token).raise_error());
+                    return TagToken::from(token).raise_error().into_err();
                 }
 
                 self.closed = true;

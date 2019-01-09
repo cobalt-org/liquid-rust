@@ -49,18 +49,20 @@ fn check_args_len(
     optional: usize,
 ) -> Result<(), liquid_error::Error> {
     if args.len() < required {
-        return Err(invalid_argument_count(format!(
+        return invalid_argument_count(format!(
             "expected at least {}, {} given",
             required,
             args.len()
-        )));
+        ))
+        .into_err();
     }
     if required + optional < args.len() {
-        return Err(invalid_argument_count(format!(
+        return invalid_argument_count(format!(
             "expected at most {}, {} given",
             required + optional,
             args.len()
-        )));
+        ))
+        .into_err();
     }
     Ok(())
 }
@@ -147,7 +149,7 @@ pub fn slice(input: &Value, args: &[Value]) -> FilterResult {
         .and_then(Scalar::to_integer)
         .ok_or_else(|| invalid_argument(0, "Whole number expected"))?;
     if length < 1 {
-        return Err(invalid_argument(1, "Positive number expected"));
+        return invalid_argument(1, "Positive number expected").into_err();
     }
     let length = length as isize;
 

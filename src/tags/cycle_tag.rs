@@ -54,7 +54,7 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
                     // This will allow non string literals such as 0 to be parsed as such.
                     // Is this ok or should more specific functions be created?
                     TryMatchToken::Matches(name) => name.to_str().into_owned(),
-                    TryMatchToken::Fails(name) => return Err(name.raise_error()),
+                    TryMatchToken::Fails(name) => return name.raise_error().into_err(),
                 },
             };
         }
@@ -63,9 +63,10 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
             values.push(first.expect_value().into_result()?);
         }
         Some(_) => {
-            return Err(second
+            return second
                 .expect("is some")
-                .raise_custom_error("\":\" or \",\" expected."))
+                .raise_custom_error("\":\" or \",\" expected.")
+                .into_err()
         }
     }
 
@@ -80,7 +81,12 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
         match next.as_ref().map(TagToken::as_str) {
             Some(",") => {}
             None => break,
-            Some(_) => return Err(next.expect("is some").raise_custom_error("\",\" expected.")),
+            Some(_) => {
+                return next
+                    .expect("is some")
+                    .raise_custom_error("\",\" expected.")
+                    .into_err()
+            }
         }
     }
 
@@ -112,11 +118,10 @@ impl State {
     fn cycle<'e>(&mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
         let index = self.cycle_index(name, values.len());
         if index >= values.len() {
-            return Err(Error::with_msg(
-                "cycle index out of bounds, most likely from mismatched cycles",
-            )
-            .context("index", format!("{}", index))
-            .context("count", format!("{}", values.len())));
+            return Error::with_msg("cycle index out of bounds, most likely from mismatched cycles")
+                .context("index", format!("{}", index))
+                .context("count", format!("{}", values.len()))
+                .into_err();
         }
 
         Ok(&values[index])

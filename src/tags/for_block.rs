@@ -254,7 +254,7 @@ pub fn for_block(
         TryMatchToken::Matches(array) => Range::Array(array),
         TryMatchToken::Fails(range) => match range.expect_range() {
             TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
-            TryMatchToken::Fails(range) => return Err(range.raise_error()),
+            TryMatchToken::Fails(range) => return range.raise_error().into_err(),
         },
     };
 
@@ -269,9 +269,9 @@ pub fn for_block(
             "offset" => offset = Some(parse_attr(&mut arguments)?),
             "reversed" => reversed = true,
             _ => {
-                return Err(
-                    token.raise_custom_error("\"limit\", \"offset\" or \"reversed\" expected.")
-                )
+                return token
+                    .raise_custom_error("\"limit\", \"offset\" or \"reversed\" expected.")
+                    .into_err()
             }
         }
     }
@@ -449,7 +449,7 @@ pub fn tablerow_block(
         TryMatchToken::Matches(array) => Range::Array(array),
         TryMatchToken::Fails(range) => match range.expect_range() {
             TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
-            TryMatchToken::Fails(range) => return Err(range.raise_error()),
+            TryMatchToken::Fails(range) => return range.raise_error().into_err(),
         },
     };
 
@@ -464,7 +464,9 @@ pub fn tablerow_block(
             "limit" => limit = Some(parse_attr(&mut arguments)?),
             "offset" => offset = Some(parse_attr(&mut arguments)?),
             _ => {
-                return Err(token.raise_custom_error("\"cols\", \"limit\" or \"offset\" expected."))
+                return token
+                    .raise_custom_error("\"cols\", \"limit\" or \"offset\" expected.")
+                    .into_err()
             }
         }
     }
