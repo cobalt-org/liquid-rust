@@ -12,7 +12,6 @@ fn test_output_in_raw() {
 }
 
 #[test]
-#[should_panic] // liquid-ignore#277
 fn test_open_tag_in_raw() {
     assert_template_result!(
         " Foobar {% invalid ",

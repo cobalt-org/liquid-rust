@@ -23,7 +23,7 @@ Expression = { ExpressionStart ~ WHITESPACE* ~ ExpressionInner ~ WHITESPACE* ~ E
 // Not allowing Tag/Expression Start/End might become a problem
 // for {% raw %}, {% comment %} and other blocks that don't parse
 // the elements inside with liquid: unclosed delimiters won't be accepted
-Raw = @{ (!(TagStart | ExpressionStart | TagEnd | ExpressionEnd) ~ ANY)+ }
+Raw = @{ (!(TagStart | ExpressionStart) ~ ANY)+ }
 
 
 // Inner parsing
