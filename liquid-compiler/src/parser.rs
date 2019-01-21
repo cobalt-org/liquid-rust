@@ -61,8 +61,8 @@ fn error_from_pair(pair: Pair, msg: String) -> Error {
 
 /// Parses the provided &str into a number of Renderable items.
 pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<Renderable>>> {
-    let mut liquid = LiquidParser::parse(Rule::LiquidFile, text)
-        .map_err(convert_pest_error)?
+    let mut liquid = LiquidParser::parse(Rule::LaxLiquidFile, text)
+        .expect("Parsing with Rule::LaxLiquidFile should not raise errors, but InvalidLiquid tokens instead.")
         .next()
         .expect("Unwrapping LiquidFile to access the elements.")
         .into_inner();
@@ -290,6 +290,84 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         Ok(Some(element.into()))
     }
 
+    /// Retrieves all the content of this block as a String, regardless of
+    /// being valid liquid or not.
+    ///
+    /// Do not use this method in a block you already called `.next()` on.
+    ///
+    /// Set the parameter `allow_nesting` of this function to true if you
+    /// still want these tags to nest (so the number of `{% name %}` must
+    /// be equal to the number of `{% endname %}`) of false if you don't
+    /// (only the first `{% name %}` is parsed, a single `{% endname %}`
+    /// will always close the tag).
+    ///
+    /// # Panics
+    ///
+    /// Will panic if used in a closed block.
+    pub fn escape_liquid(&mut self, allow_nesting: bool) -> Result<&'a str> {
+        if self.closed {
+            panic!("`escape_liquid` must be used in an open tag.")
+        }
+
+        let mut nesting_level = 1;
+
+        // Working with pest positions allows returning a `&str` instead of a `String`
+        let mut start_pos = None;
+        let mut end_pos = None;
+
+        while let Some(element) = self.iter.next() {
+            let element_as_span = element.as_span();
+            if start_pos.is_none() {
+                start_pos = Some(element_as_span.start_pos());
+            }
+
+            if element.as_rule() == Rule::EOI {
+                return error_from_pair(
+                    element,
+                    format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
+                )
+                .into_err();
+            }
+
+            // Tags are potentially `{% endtag %}`
+            if element.as_rule() == Rule::Tag {
+                let mut tag = element
+                    .into_inner()
+                    .next()
+                    .expect("Unwrapping TagInner")
+                    .into_inner();
+                let name = tag.next().expect("Tags start by their identifier.");
+                let name_str = name.as_str();
+
+                // The name of the closing tag is "end" followed by the tag's name.
+                if name_str.len() > 3 && &name_str[0..3] == "end" && &name_str[3..] == self.name {
+                    // No more arguments should be supplied. If they are, it is
+                    // assumed not to be a tag closer.
+                    if tag.next().is_none() {
+                        nesting_level -= 1;
+                        if nesting_level == 0 {
+                            self.closed = true;
+                            let start_pos = start_pos.expect("Will be `Some` inside this loop.");
+                            let output = match end_pos {
+                                Some(end_pos) => start_pos.span(&end_pos).as_str(),
+                                None => "",
+                            };
+
+                            return Ok(output);
+                        }
+                    }
+                } else if name_str == self.name && allow_nesting {
+                    // Going deeper in the nested blocks.
+                    nesting_level += 1;
+                }
+            }
+
+            end_pos = Some(element_as_span.end_pos());
+        }
+
+        panic!("Function must eventually find either a Rule::EOI or a closing tag.")
+    }
+
     /// A convenient method that parses every element remaining in the block.
     pub fn parse_all(&mut self, options: &Language) -> Result<Vec<Box<Renderable>>> {
         let mut renderables = Vec::new();
@@ -494,6 +572,72 @@ impl<'a> Exp<'a> {
     }
 }
 
+/// This token could not be recognized as valid liquid.
+/// If parsed, will raise an error.
+pub struct InvalidLiquidToken<'a> {
+    element: Pair<'a>,
+}
+impl<'a> InvalidLiquidToken<'a> {
+    /// Returns the expression as a str.
+    // TODO consider removing this
+    pub fn as_str(&self) -> &str {
+        self.element.as_str()
+    }
+
+    /// Tries to parse this as valid liquid, which will inevitably raise an error.
+    /// This is needed in order to raise the right error message.
+    pub fn parse(self, tag_block: &mut TagBlock) -> Result<Box<Renderable>> {
+        self.parse_pair(&mut tag_block.iter)
+    }
+
+    /// Tries to parse this as valid liquid, which will inevitably raise an error.
+    /// This is needed in order to raise the correct error message.
+    fn parse_pair(self, next_elements: &mut Iterator<Item = Pair>) -> Result<Box<Renderable>> {
+        use pest::error::LineColLocation;
+
+        let invalid_token_span = self.element.as_span();
+        let invalid_token_position = invalid_token_span.start_pos();
+        let (offset_l, offset_c) = invalid_token_position.line_col();
+        let offset_l = offset_l - 1;
+        let offset_c = offset_c - 1;
+
+        let end_position = match next_elements.last() {
+            Some(element) => element.as_span().end_pos(),
+            None => invalid_token_span.end_pos(),
+        };
+
+        let mut text = String::from(&invalid_token_position.line_of()[..offset_c]);
+        text.push_str(invalid_token_position.span(&end_position).as_str());
+
+        // Reparses from the line where invalid liquid started, in order
+        // to raise the error.
+        let mut error = match LiquidParser::parse(Rule::LiquidFile, &text) {
+            Ok(_) => panic!("`LiquidParser::parse` should fail in InvalidLiquidTokens."),
+            Err(error) => error,
+        };
+
+        // Adds an offset to the line of the error, in order to show the right line
+        // TODO when liquid::error is able to handle line/col information by itself
+        // make this operation on the liquid Error type instead.
+        error.line_col = match error.line_col {
+            LineColLocation::Span((ls, cs), (le, ce)) => {
+                LineColLocation::Span((ls + offset_l, cs), (le + offset_l, ce))
+            }
+            LineColLocation::Pos((ls, cs)) => LineColLocation::Pos((ls + offset_l, cs)),
+        };
+
+        Err(convert_pest_error(error))
+    }
+}
+impl<'a> From<Pair<'a>> for InvalidLiquidToken<'a> {
+    fn from(element: Pair<'a>) -> Self {
+        if element.as_rule() != Rule::InvalidLiquid {
+            panic!("Tried to parse a valid liquid token as invalid.");
+        }
+        InvalidLiquidToken { element }
+    }
+}
+
 /// An element that can be raw text, a tag, or an expression.
 ///
 /// This is the result of calling `next()` on a `TagBlock`.
@@ -501,6 +645,7 @@ pub enum BlockElement<'a> {
     Raw(Raw<'a>),
     Tag(Tag<'a>),
     Expression(Exp<'a>),
+    Invalid(InvalidLiquidToken<'a>),
 }
 impl<'a> From<Pair<'a>> for BlockElement<'a> {
     fn from(element: Pair<'a>) -> Self {
@@ -508,6 +653,7 @@ impl<'a> From<Pair<'a>> for BlockElement<'a> {
             Rule::Raw => BlockElement::Raw(element.into()),
             Rule::Tag => BlockElement::Tag(element.into()),
             Rule::Expression => BlockElement::Expression(element.into()),
+            Rule::InvalidLiquid => BlockElement::Invalid(element.into()),
             _ => panic!(
                 "Only rules Raw | Tag | Expression can be converted to BlockElement. Found {:?}",
                 element.as_rule()
@@ -527,6 +673,7 @@ impl<'a> BlockElement<'a> {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse(block, options),
             BlockElement::Expression(exp) => exp.parse(options),
+            BlockElement::Invalid(invalid) => invalid.parse(block),
         }
     }
 
@@ -540,6 +687,7 @@ impl<'a> BlockElement<'a> {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse_pair(next_elements, options),
             BlockElement::Expression(exp) => exp.parse(options),
+            BlockElement::Invalid(invalid) => invalid.parse_pair(next_elements),
         }
     }
 
@@ -549,6 +697,7 @@ impl<'a> BlockElement<'a> {
             BlockElement::Raw(raw) => raw.as_str(),
             BlockElement::Tag(tag) => tag.as_str(),
             BlockElement::Expression(exp) => exp.as_str(),
+            BlockElement::Invalid(invalid) => invalid.as_str(),
         }
     }
 }

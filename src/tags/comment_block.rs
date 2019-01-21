@@ -28,10 +28,15 @@ pub fn comment_block(
     arguments.expect_nothing()?;
 
     while let Some(token) = tokens.next()? {
-        // Only parse `{% comment %}` tags (in order to allow nesting)
+        // Only needs to parse tags. Expressions and raw text will never have side effects.
         if let BlockElement::Tag(tag) = token {
             if tag.name() == tag_name {
+                // Parses `{% comment %}` tags (in order to allow nesting)
                 tag.parse(&mut tokens, options)?;
+            } else {
+                // Other tags are parsed (because of possible side effects, such as in `{% raw %}`)
+                // But their errors are ignored
+                let _ = tag.parse(&mut tokens, options);
             }
         }
     }

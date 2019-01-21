@@ -18,7 +18,6 @@ fn test_no_transform() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#277
 fn test_has_a_block_which_does_nothing() {
     assert_template_result!(
         "the comment block should be removed  .. right?",

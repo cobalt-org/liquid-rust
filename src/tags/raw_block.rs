@@ -29,10 +29,7 @@ pub fn raw_block(
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
 
-    let mut content = String::new();
-    while let Some(element) = tokens.next()? {
-        content.push_str(element.as_str());
-    }
+    let content = tokens.escape_liquid(false)?.to_string();
 
     tokens.assert_empty();
     Ok(Box::new(RawT { content }))

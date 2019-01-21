@@ -1,6 +1,12 @@
 WHITESPACE = _{" " | NEWLINE }
 NON_WHITESPACE_CONTROL_HYPHEN = _{ !"-}}" ~ !"-%}" ~ "-" }
+// Lax liquid file won't raise errors. This allows blocks to override
+// liquid rules and parse their content on their own.
+LaxLiquidFile = ${ SOI ~ (Element | InvalidLiquid)* ~ EOI }
 LiquidFile = ${ SOI ~ Element* ~ EOI }
+
+// A token that could not be parsed as valid liquid
+InvalidLiquid = { !Expression ~ ANY }
 
 // Element-level parsing
 Element = _{ Expression | Tag | Raw }
@@ -17,7 +23,7 @@ Expression = { ExpressionStart ~ WHITESPACE* ~ ExpressionInner ~ WHITESPACE* ~ E
 // Not allowing Tag/Expression Start/End might become a problem
 // for {% raw %}, {% comment %} and other blocks that don't parse
 // the elements inside with liquid: unclosed delimiters won't be accepted
-Raw = @{ (!(TagStart | ExpressionStart | TagEnd | ExpressionEnd) ~ ANY)+ }
+Raw = @{ (!(TagStart | ExpressionStart) ~ ANY)+ }
 
 
 // Inner parsing
