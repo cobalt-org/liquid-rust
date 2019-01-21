@@ -2,6 +2,7 @@ use std::io::Write;
 
 use liquid_error::Result;
 
+use compiler::BlockElement;
 use compiler::Language;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
@@ -18,15 +19,27 @@ impl Renderable for Comment {
 }
 
 pub fn comment_block(
-    _tag_name: &str,
+    tag_name: &str,
     mut arguments: TagTokenIter,
     mut tokens: TagBlock,
-    _options: &Language,
+    options: &Language,
 ) -> Result<Box<Renderable>> {
     // no arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
 
-    tokens.escape_liquid(true)?;
+    while let Some(token) = tokens.next()? {
+        // Only needs to parse tags. Expressions and raw text will never have side effects.
+        if let BlockElement::Tag(tag) = token {
+            if tag.name() == tag_name {
+                // Parses `{% comment %}` tags (in order to allow nesting)
+                tag.parse(&mut tokens, options)?;
+            } else {
+                // Other tags are parsed (because of possible side effects, such as in `{% raw %}`)
+                // But their errors are ignored
+                let _ = tag.parse(&mut tokens, options);
+            }
+        }
+    }
 
     tokens.assert_empty();
     Ok(Box::new(Comment))
