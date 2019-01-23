@@ -1,3 +1,15 @@
+<a name="0.18.1"></a>
+## 0.18.1 (2019-01-23)
+
+
+#### Bug Fixes
+
+* **comment:**  parse tags inside comment, but ignore their content ([a153b127](https://github.com/cobalt-org/liquid-rust/commit/a153b12775bc0d8c23f23905da60ea2c8f21dbee))
+* **grammar:**  allow unmatched `}}` and `%}` as valid liquid ([1889c7b0](https://github.com/cobalt-org/liquid-rust/commit/1889c7b09e19f315e470ff2e70a06e503759eaa0), closes [#320](https://github.com/cobalt-org/liquid-rust/issues/320))
+* **parser:**  blocks can accept invalid liquid ([3b2b5fcc](https://github.com/cobalt-org/liquid-rust/commit/3b2b5fcccd0bdec041ce09da9619cd837a81af88), closes [#277](https://github.com/cobalt-org/liquid-rust/issues/277))
+
+
+
 <a name="0.18.0"></a>
 ## 0.18.0 (2018-12-27)
 
@@ -51,7 +63,7 @@
 *   Slight speed up for for-over-hash ([8e2ce0e6](https://github.com/cobalt-org/liquid-rust/commit/8e2ce0e66bfebc698589f5ca9c87853f4cc80170))
 *   Speed up variable accesses ([f7392486](https://github.com/cobalt-org/liquid-rust/commit/f7392486b540646a05080275b4d4d5cfa507e3c5)
 *   Reduce allocations ([cbb1d254](https://github.com/cobalt-org/liquid-rust/commit/cbb1d254b0ed15b32674e7688af6c55cee91c125), closes [#188](https://github.com/cobalt-org/liquid-rust/issues/188)
-* **render:** 
+* **render:**
   * Use a Write ([0093a595](https://github.com/cobalt-org/liquid-rust/commit/0093a595b9dc0f335c3f8eed7a0309123a82b708), closes [#187](https://github.com/cobalt-org/liquid-rust/issues/187)
   * Bypass UTF-8 validation overhead ([c759fc33](https://github.com/cobalt-org/liquid-rust/commit/c759fc335710797c0cfd75c42b0c598d191fc0b6))
   * Default buffer size ([58eec66b](https://github.com/cobalt-org/liquid-rust/commit/58eec66b49a2a7156b745753c50080b8afad6b7a))
