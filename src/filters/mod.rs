@@ -5,12 +5,17 @@ mod html;
 mod math;
 mod url;
 
+#[cfg(feature = "jekyll-filters")]
+mod jekyll;
+
 #[cfg(feature = "extra-filters")]
 pub use self::array::{array_to_sentence_string, pop, push, shift, unshift};
 pub use self::date::date;
 #[cfg(feature = "extra-filters")]
 pub use self::date::date_in_tz;
 pub use self::html::{escape, escape_once, newline_to_br, strip_html};
+#[cfg(feature = "jekyll-filters")]
+pub use self::jekyll::slugify;
 pub use self::math::{abs, at_least, at_most, divided_by, minus, modulo, plus, times};
 pub use self::url::{url_decode, url_encode};
 

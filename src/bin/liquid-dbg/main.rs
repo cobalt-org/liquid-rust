@@ -88,6 +88,7 @@ fn run() -> Result<()> {
 
     let parser = liquid::ParserBuilder::with_liquid()
         .extra_filters()
+        .jekyll_filters()
         .build()
         .expect("should succeed without partials");
     let template_path = matches

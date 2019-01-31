@@ -21,6 +21,7 @@
 //! ```
 
 extern crate chrono;
+extern crate deunicode;
 extern crate itertools;
 extern crate regex;
 extern crate unicode_segmentation;
