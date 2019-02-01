@@ -164,6 +164,18 @@ where
             )
     }
 
+    /// Register non-standard filters
+    #[cfg(not(feature = "jekyll-filters"))]
+    pub fn jekyll_filters(self) -> Self {
+        self
+    }
+
+    /// Register non-standard filters
+    #[cfg(feature = "jekyll-filters")]
+    pub fn jekyll_filters(self) -> Self {
+        self.filter("slugify", filters::slugify as compiler::FnFilterValue)
+    }
+
     /// Inserts a new custom block into the parser
     pub fn block<B: Into<compiler::BoxedBlockParser>>(
         mut self,
