@@ -1,3 +1,13 @@
+<a name="0.18.2"></a>
+## 0.18.2 (2019-02-01)
+
+
+#### Features
+
+* **jekyll-filter:**  slugify filter ([21a5be0b](https://github.com/cobalt-org/liquid-rust/commit/21a5be0b0f538ae67d31e5a23180f88af95df69d))
+
+
+
 <a name="0.18.1"></a>
 ## 0.18.1 (2019-01-23)
 
