@@ -1,0 +1,27 @@
+[package]
+name = "liquid-derive"
+version = "0.18.0"
+authors = ["Pedro Gonçalo Correia <goncalerta@gmail.com>"]
+description = "The liquid templating language for Rust"
+readme = "README.md"
+categories = ["template-engine"]
+keywords = ["liquid", "template", "templating", "language", "html"]
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[badges]
+travis-ci = { repository = "cobalt-org/liquid-rust" }
+appveyor  = { repository = "johannhof/liquid-rust" }
+
+[dependencies]
+syn = "0.15"
+proc-quote = "0.1"
+proc-macro2 = "0.4.27"
+
+# Exposed in API
+liquid-error = { version = "0.18", path = "../liquid-error" }
+liquid-value = { version = "0.18", path = "../liquid-value" }
+liquid-interpreter = { version = "0.18", path = "../liquid-interpreter" }
+liquid-compiler = { version = "0.18", path = "../liquid-compiler" }

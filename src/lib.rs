@@ -35,12 +35,21 @@ extern crate serde;
 extern crate serde_yaml;
 
 extern crate liquid_compiler;
+extern crate liquid_derive;
 extern crate liquid_error;
 extern crate liquid_interpreter;
 extern crate liquid_value;
 
 mod parser;
 mod template;
+
+/// Allows `liquid-derive` macros to work inside this crate.
+///
+/// This is necessary because paths to liquid items will
+/// start with `::liquid` in those macros.
+mod liquid {
+    pub use *;
+}
 
 pub mod compiler {
     pub use liquid_compiler::*;
@@ -53,6 +62,9 @@ pub mod interpreter {
 }
 pub mod value {
     pub use liquid_value::*;
+}
+pub mod derive {
+    pub use liquid_derive::*;
 }
 
 pub mod filters;
