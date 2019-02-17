@@ -23,7 +23,7 @@ where
 {
     blocks: compiler::PluginRegistry<compiler::BoxedBlockParser>,
     tags: compiler::PluginRegistry<compiler::BoxedTagParser>,
-    filters: compiler::PluginRegistry<compiler::BoxedValueFilter>,
+    filters: compiler::PluginRegistry<Box<compiler::ParseFilter>>,
     partials: Option<P>,
 }
 
@@ -193,12 +193,10 @@ where
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<compiler::BoxedValueFilter>>(
-        mut self,
-        name: &'static str,
-        filter: F,
-    ) -> Self {
-        self.filters.register(name, filter.into());
+    pub fn filter<F: Into<Box<compiler::ParseFilter>>>(mut self, filter: F) -> Self {
+        let filter = filter.into();
+        self.filters
+            .register(compiler::FilterReflection::name(&*filter), filter);
         self
     }
 

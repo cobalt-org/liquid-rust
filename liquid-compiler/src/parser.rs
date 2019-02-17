@@ -6,7 +6,7 @@
 use std;
 
 use itertools;
-use liquid_error::{Error, Result};
+use liquid_error::{Error, Result, ResultLiquidExt};
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
 use liquid_interpreter::Variable;
@@ -16,7 +16,7 @@ use super::Language;
 use super::ParseBlock;
 use super::ParseTag;
 use super::Text;
-use super::{FilterCall, FilterChain};
+use super::{Filter, FilterArguments, FilterChain};
 
 use pest::Parser;
 
@@ -175,28 +175,56 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair, options: &Language) -> Result<FilterCall> {
+fn parse_filter(filter: Pair, options: &Language) -> Result<Box<Filter>> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
 
+    let filter_str = filter.as_str();
     let mut filter = filter.into_inner();
     let name = filter.next().expect("A filter always has a name.").as_str();
-    let args = filter.map(parse_value).collect();
 
-    let f = options
-        .filters
-        .get(name)
-        .ok_or_else(|| {
-            let mut available: Vec<_> = options.filters.plugin_names().collect();
-            available.sort_unstable();
-            let available = itertools::join(available, ", ");
-            Error::with_msg("Unknown filter")
-                .context("requested filter", name.to_owned())
-                .context("available filters", available)
-        })?
-        .clone();
-    let f = FilterCall::new(name, f, args);
+    let mut keyword_args = Vec::new();
+    let mut positional_args = Vec::new();
+
+    for arg in filter {
+        match arg.as_rule() {
+            Rule::PositionalFilterArgument => {
+                let value = arg.into_inner().next().expect("Rule ensures value.");
+                let value = parse_value(value);
+                positional_args.push(value);
+            }
+            Rule::KeywordFilterArgument => {
+                let mut arg = arg.into_inner();
+                let key = arg.next().expect("Rule ensures identifier.").as_str();
+                let value = arg.next().expect("Rule ensures value.");
+                let value = parse_value(value);
+                keyword_args.push((key, value));
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    let args = FilterArguments {
+        positional: Box::new(positional_args.into_iter()),
+        keyword: Box::new(keyword_args.into_iter()),
+    };
+
+    let f = options.filters.get(name).ok_or_else(|| {
+        let mut available: Vec<_> = options.filters.plugin_names().collect();
+        available.sort_unstable();
+        let available = itertools::join(available, ", ");
+        Error::with_msg("Unknown filter")
+            .context("requested filter", name.to_owned())
+            .context("available filters", available)
+    })?;
+
+    let f = f
+        .parse(args)
+        .trace("Filter parsing error")
+        .context_key("filter")
+        .value_with(|| filter_str.to_string().into())?;
+
     Ok(f)
 }
 

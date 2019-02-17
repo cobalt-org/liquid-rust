@@ -9,7 +9,7 @@ use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct Assign {
     dst: String,
     src: FilterChain,
