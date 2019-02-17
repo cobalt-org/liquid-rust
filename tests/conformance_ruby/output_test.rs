@@ -1,66 +1,182 @@
 use liquid;
-use liquid::compiler::FilterResult;
+use liquid::compiler::Filter;
+use liquid::compiler::FilterParameters;
+use liquid::derive::*;
+use liquid::error::Result;
+use liquid::interpreter::Context;
+use liquid::interpreter::Expression;
 use liquid::value::Value;
+use std::borrow::Cow;
 
-fn make_funny(_input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar("LOL"))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "make_funny",
+    description = "tests helper",
+    parsed(MakeFunnyFilter)
+)]
+pub struct MakeFunnyFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "make_funny"]
+pub struct MakeFunnyFilter;
+
+impl Filter for MakeFunnyFilter {
+    fn evaluate(&self, _input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar("LOL"))
+    }
 }
 
-fn cite_funny(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!("LOL: {}", input.render())))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "cite_funny",
+    description = "tests helper",
+    parsed(CiteFunnyFilter)
+)]
+pub struct CiteFunnyFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "cite_funny"]
+pub struct CiteFunnyFilter;
+
+impl Filter for CiteFunnyFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar(format!("LOL: {}", input.render())))
+    }
 }
 
-fn add_smiley(input: &Value, args: &[Value]) -> FilterResult {
-    let smiley = args
-        .get(0)
-        .map(|s| s.to_str().into_owned())
-        .unwrap_or_else(|| ":-)".to_owned());
-    Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
+#[derive(Debug, FilterParameters)]
+struct AddSmileyFilterParameters {
+    #[parameter(description = "", arg_type = "str")]
+    smiley: Option<Expression>,
 }
 
-fn add_tag(input: &Value, args: &[Value]) -> FilterResult {
-    let tag = args
-        .get(0)
-        .map(|s| s.to_str().into_owned())
-        .unwrap_or_else(|| "p".to_owned());
-    let id = args
-        .get(1)
-        .map(|s| s.to_str().into_owned())
-        .unwrap_or_else(|| "foo".to_owned());
-    Ok(Value::scalar(format!(
-        r#"<{} id="{}">{}</{}>"#,
-        tag,
-        id,
-        input.render(),
-        tag
-    )))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "add_smiley",
+    description = "tests helper",
+    parameters(AddSmileyFilterParameters),
+    parsed(AddSmileyFilter)
+)]
+pub struct AddSmileyFilterParser;
+
+#[derive(Debug, FromFilterParameters, Display_filter)]
+#[name = "add_smiley"]
+pub struct AddSmileyFilter {
+    #[parameters]
+    args: AddSmileyFilterParameters,
 }
 
-fn paragraph(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!("<p>{}</p>", input.render())))
+impl Filter for AddSmileyFilter {
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+        let smiley = args.smiley.unwrap_or(Cow::from(":-)")).to_string();
+        Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
+    }
 }
 
-fn link_to(input: &Value, args: &[Value]) -> FilterResult {
-    let name = input;
-    let url = args
-        .get(0)
-        .map(|s| s.to_str().into_owned())
-        .unwrap_or_else(|| ":-)".to_owned());
-    Ok(Value::scalar(format!(
-        r#"<a href="{}">{}</a>"#,
-        url,
-        name.render()
-    )))
+#[derive(Debug, FilterParameters)]
+struct AddTagFilterParameters {
+    #[parameter(description = "", arg_type = "str")]
+    tag: Option<Expression>,
+
+    #[parameter(description = "", arg_type = "str")]
+    id: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "add_tag",
+    description = "tests helper",
+    parameters(AddTagFilterParameters),
+    parsed(AddTagFilter)
+)]
+pub struct AddTagFilterParser;
+
+#[derive(Debug, FromFilterParameters, Display_filter)]
+#[name = "add_tag"]
+pub struct AddTagFilter {
+    #[parameters]
+    args: AddTagFilterParameters,
+}
+
+impl Filter for AddTagFilter {
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+
+        let tag = args.tag.unwrap_or(Cow::from("p")).to_string();
+        let id = args.id.unwrap_or(Cow::from("foo")).to_string();
+        Ok(Value::scalar(format!(
+            r#"<{} id="{}">{}</{}>"#,
+            tag,
+            id,
+            input.render(),
+            tag
+        )))
+    }
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "paragraph",
+    description = "tests helper",
+    parsed(ParagraphFilter)
+)]
+pub struct ParagraphFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "paragraph"]
+pub struct ParagraphFilter;
+
+impl Filter for ParagraphFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar(format!("<p>{}</p>", input.render())))
+    }
+}
+
+#[derive(Debug, FilterParameters)]
+struct LinkToFilterParameters {
+    #[parameter(description = "", arg_type = "str")]
+    url: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "link_to",
+    description = "tests helper",
+    parameters(LinkToFilterParameters),
+    parsed(LinkToFilter)
+)]
+pub struct LinkToFilterParser;
+
+#[derive(Debug, FromFilterParameters, Display_filter)]
+#[name = "link_to"]
+pub struct LinkToFilter {
+    #[parameters]
+    args: LinkToFilterParameters,
+}
+
+impl Filter for LinkToFilter {
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+
+        let name = input;
+        let url = args.url.unwrap_or(Cow::from(":-)")).to_string();
+        Ok(Value::scalar(format!(
+            r#"<a href="{}">{}</a>"#,
+            url,
+            name.render()
+        )))
+    }
 }
 
 fn liquid() -> liquid::Parser {
     liquid::ParserBuilder::new()
-        .filter("make_funny", make_funny as liquid::compiler::FnFilterValue)
-        .filter("cite_funny", cite_funny as liquid::compiler::FnFilterValue)
-        .filter("add_smiley", add_smiley as liquid::compiler::FnFilterValue)
-        .filter("add_tag", add_tag as liquid::compiler::FnFilterValue)
-        .filter("paragraph", paragraph as liquid::compiler::FnFilterValue)
-        .filter("link_to", link_to as liquid::compiler::FnFilterValue)
+        .filter(MakeFunnyFilterParser)
+        .filter(CiteFunnyFilterParser)
+        .filter(AddSmileyFilterParser)
+        .filter(AddTagFilterParser)
+        .filter(ParagraphFilterParser)
+        .filter(LinkToFilterParser)
         .build()
         .unwrap()
 }

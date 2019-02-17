@@ -1,36 +1,74 @@
 use liquid;
-use liquid::compiler::FilterResult;
+use liquid::compiler::Filter;
+use liquid::derive::*;
+use liquid::error::Result;
+use liquid::interpreter::Context;
 use liquid::value::Value;
 
-fn money(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!(" {}$ ", input.render())))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(name = "money", description = "tests helper", parsed(MoneyFilter))]
+pub struct MoneyFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "money"]
+pub struct MoneyFilter;
+
+impl Filter for MoneyFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar(format!(" {}$ ", input.render())))
+    }
 }
 
-fn money_with_underscore(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!(" {}$ ", input.render())))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "money_with_underscore",
+    description = "tests helper",
+    parsed(MoneyWithUnderscoreFilter)
+)]
+pub struct MoneyWithUnderscoreFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "money_with_underscore"]
+pub struct MoneyWithUnderscoreFilter;
+
+impl Filter for MoneyWithUnderscoreFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar(format!(" {}$ ", input.render())))
+    }
 }
 
 fn liquid_money() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter("money", money as liquid::compiler::FnFilterValue)
-        .filter(
-            "money_with_underscore",
-            money_with_underscore as liquid::compiler::FnFilterValue,
-        )
+        .filter(MoneyFilterParser)
+        .filter(MoneyWithUnderscoreFilterParser)
         .build()
         .unwrap()
 }
 
-fn substitute(input: &Value, _args: &[Value]) -> FilterResult {
-    Ok(Value::scalar(format!(
-        "No keyword argument support: {}",
-        input.render()
-    )))
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "substitute",
+    description = "tests helper",
+    parsed(SubstituteFilter)
+)]
+pub struct SubstituteFilterParser;
+
+#[derive(Debug, Default, Display_filter)]
+#[name = "substitute"]
+pub struct SubstituteFilter;
+
+impl Filter for SubstituteFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::scalar(format!(
+            "No keyword argument support: {}",
+            input.render()
+        )))
+    }
 }
 
 fn liquid_sub() -> liquid::Parser {
     liquid::ParserBuilder::with_liquid()
-        .filter("substitute", substitute as liquid::compiler::FnFilterValue)
+        .filter(SubstituteFilterParser)
         .build()
         .unwrap()
 }

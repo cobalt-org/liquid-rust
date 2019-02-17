@@ -1,9 +1,8 @@
-use liquid;
 #[test]
 fn test_slugify_default() {
     assert_eq!(
         v!("q-bert-says"),
-        filters!(slugify, v!(" Q*bert says @!#@!"))
+        jekyll_filters!(Slugify, v!(" Q*bert says @!#@!"))
     );
 }
 
@@ -11,6 +10,6 @@ fn test_slugify_default() {
 fn test_slugify_pretty() {
     assert_eq!(
         v!("q-bert-says-_@!-@!"),
-        filters!(slugify, v!(" Q*bert says _@!#?@!"), v!("pretty"))
+        jekyll_filters!(Slugify, v!(" Q*bert says _@!#?@!"), v!("pretty"))
     );
 }
