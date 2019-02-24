@@ -160,12 +160,12 @@ num: 4
 "#,
     )
     .unwrap();
-    let template = liquid::ParserBuilder::with_liquid()
+    let output = liquid::ParserBuilder::with_liquid()
         .build()
         .unwrap()
         .parse(text)
-        .unwrap();
-    let output = template.render(&globals);
+        .and_then(|template| template.render(&globals));
+
     assert!(output.is_err());
 }
 

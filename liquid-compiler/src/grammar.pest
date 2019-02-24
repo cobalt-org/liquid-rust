@@ -35,9 +35,11 @@ Variable = ${ Identifier
               )*
             }
 Value = { Literal | Variable }
-Filter = { Identifier ~ (":" ~ Value ~ ("," ~ Value)*)? }
+Filter = { Identifier ~ (":" ~ FilterArgument ~ ("," ~ FilterArgument)*)? }
 FilterChain = { Value ~ ("|" ~ Filter)* }
-
+PositionalFilterArgument = {Value}
+KeywordFilterArgument = {Identifier ~ ":" ~ Value}
+FilterArgument = _{KeywordFilterArgument | PositionalFilterArgument }
 
 // Literals
 NilLiteral = @{ "nil" | "null" }

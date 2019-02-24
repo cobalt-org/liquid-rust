@@ -1,101 +1,254 @@
-use std::fmt::{self, Debug};
+use std::fmt::{Debug, Display};
 
-use liquid_error;
+use liquid_error::Result;
+use liquid_interpreter::{Context, Expression};
 use liquid_value::Value;
 
-/// Expected return type of a `Filter`.
-pub type FilterResult = Result<Value, liquid_error::Error>;
-
-/// A trait for creating custom tags. This is a simple type alias for a function.
+/// A structure that holds the information of a single parameter in a filter.
+/// This includes its name, description and whether it is optional or required.
 ///
-/// This function will be called whenever the parser encounters a tag and returns
-/// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
-/// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the tag and the global [`Language`](struct.Language.html).
-pub trait FilterValue: Send + Sync + FilterValueClone + Debug {
+/// This is the return type in some `FilterReflection` functions.
+pub struct ParameterReflection {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub is_optional: bool,
+}
+
+/// A trait that holds the information of the parameters of a filter.
+///
+/// All structs that implement `FilterParameters` must implement this.
+/// This is actually automatically implemented with `#[derive(FilterParameters)]`.
+///
+/// This trait allows `FilterReflection` macro to extract the parameters information
+/// from a given `FilterParameters` structure.
+pub trait FilterParametersReflection {
+    fn positional_parameters() -> &'static [ParameterReflection];
+    fn keyword_parameters() -> &'static [ParameterReflection];
+}
+
+/// A trait that holds the information of a filter about itself, such as
+/// its name, description and parameters.
+///
+/// All structs that implement `ParseFilter` must implement this.
+///
+/// # Deriving
+///
+/// This trait may be derived with `liquid-derive`'s `#[derive(FilterReflection)]`. However,
+/// it is necessary to use the `#[filter(...)]`  helper attribute. See documentation on
+/// `liquid-derive` for more information.
+pub trait FilterReflection {
+    fn name(&self) -> &'static str;
+    fn description(&self) -> &'static str;
+
+    fn positional_parameters(&self) -> &'static [ParameterReflection];
+    fn keyword_parameters(&self) -> &'static [ParameterReflection];
+}
+
+/// A trait that declares and holds the parameters of a filter.
+///
+/// Provides `from_args`, to construct itself from `FilterArguments` (parses the arguments)
+/// and `evaluate`, to construct its evaluated counterpart (evaluates the arguments).
+///
+/// # Deriving
+///
+/// The whole point of this structure is to facilitate the process of deriving a filter.
+/// Thus, this trait and all traits it requires may be derived with `#[derive(Debug, FilterParameters)]`.
+///
+/// See documentation for `FilterParameters` macro on `liquid-derive` for more information.
+pub trait FilterParameters<'a>: Sized + FilterParametersReflection + Debug + Display {
+    type EvaluatedFilterParameters;
+    fn from_args(args: FilterArguments) -> Result<Self>;
+    fn evaluate(&'a self, context: &'a Context) -> Result<Self::EvaluatedFilterParameters>;
+}
+
+/// Structure that holds the unparsed arguments of a filter, both positional and keyword.
+pub struct FilterArguments<'a> {
+    pub positional: Box<Iterator<Item = Expression>>,
+    pub keyword: Box<Iterator<Item = (&'a str, Expression)> + 'a>,
+}
+
+/// A trait that holds a filter, ready to evaluate.
+///
+/// # Deriving
+///
+/// You cannot derive `Filter`, as it would go against the very point of creating your own filter.
+/// You can, however, derive some other traits that are necessary in order to implement it.
+///
+/// In order to implement this trait, the struct must also implement `Debug` and `Display`, as well
+/// as either `Default` or `From<T>` (where T is the FilterParameters struct), respectively, in a
+/// filter without or with parameters.
+///
+/// For `Debug` and `Default`, one may use rust's `#[derive(Debug)]` and `#[derive(Default)]` macros.
+/// For `Display` and `From<T>`, one may use `liquid-derive`'s `#[derive(Display_filter)]` and
+/// `#[derive(FromFilterParameters)]`.
+///
+/// Note, however, that you may need helper attributes like `#[name = "..."]` and `#[parameters]` for
+/// using liquid-derive`'s macros. See documentation on `liquid-derive` for more information.
+///
+/// # Examples
+///
+/// Filter for filter with no arguments:
+/// ```ignore
+/// #[derive(Debug, Default, Display_filter)]
+/// #[name = "abs"] // The name of the filter, for `Display_filter`.
+/// struct AbsFilter; // There are no parameters, so implements `Default`.
+///
+/// impl Filter for AbsFilter {
+///     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+///         // Implementation of the filter here
+///     }
+/// }
+/// ```
+///
+/// Filter for filter with arguments:
+/// ```ignore
+/// #[derive(Debug, FromFilterParameters, Display_filter)]
+/// #[name = "at_least"] // The name of the filter for derives
+/// struct AtLeastFilter { // There are parameters, so derives `FromFilterParameters`.
+///     #[parameters] // Mark the FilterParameters struct for derives
+///     args: AtLeastArgs, // A struct that implements `FilterParameters`
+/// }
+///
+/// impl Filter for AtLeastFilter {
+///     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+///         // Evaluate the `FilterParameters`
+///         let args = self.args.evaluate(context)?;
+///
+///         // Implementation of the filter here
+///     }
+/// }
+/// ```
+///
+/// Filter for a configurable filter:
+/// ```ignore
+/// #[derive(Debug, Display_filter)]
+/// #[name = "example"] // The name of the filter for `Display`
+/// // Because construction happens manually (without derive) in `FilterParser`
+/// // no need to derive neither `Default` nor `FromFilterParameters`.
+/// struct ExampleFilter {
+///     #[parameters] // Mark the FilterParameters struct for `Display`
+///     args: ExampleArgs, // A struct that implements `FilterParameters`
+///     state: i32, // See `ParseFilter` example for context
+/// }
+///
+/// impl Filter for AtLeastFilter {
+///     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+///         // Evaluate the `FilterParameters`
+///         let args = self.args.evaluate(context)?;
+///
+///         // Implementation of the filter here
+///     }
+/// }
+/// ```
+pub trait Filter: Send + Sync + Debug + Display {
+    // This will evaluate the expressions and evaluate the filter.
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value>;
+}
+
+/// A trait to register a new filter in the `liquid::Parser`.
+///
+/// To implement this trait, the structure must also implement `FilterReflection`, thus giving
+/// meta information about the filter (namely it's name).
+///
+/// Every time a filter with that name is encountered, it is parsed with the `ParseFilter::parse`
+/// method, yielding a new `Filter`.
+///
+/// # Deriving
+///
+/// In order to implement this trait, the struct must also implement `FilterReflection` and
+/// `Clone`.
+///
+/// `Clone` may be derived with rust's `#[derive(Clone)]`. `FilterReflection` may be derived
+/// with `liquid-derive`'s `#[derive(FilterReflection)]`. ParseFilter may be derived with
+/// `#[derive(FilterReflection)]`.
+///
+/// In order to use `liquid-derive`'s macros, however, it is necessary to use the `#[filter(...)]`
+/// helper attribute. See documentation on `liquid-derive` for more information.
+///
+/// # Examples
+///
+/// ParseFilter for filter with no arguments:
+/// ```ignore
+/// #[derive(Clone, ParseFilter, FilterReflection)]
+/// #[filter(
+///     name = "abs",
+///     description = "Returns the absolute value of a number.",
+///     parsed(AbsFilter) // A struct that implements `Filter` (must implement `Default`)
+/// )]
+/// pub struct Abs;
+/// ```
+///
+/// ParseFilter for filter with arguments:
+/// ```ignore
+/// #[derive(Clone, ParseFilter, FilterReflection)]
+/// #[filter(
+///     name = "slice",
+///     description = "Takes a slice of a given string or array.",
+///     parameters(SliceArgs), // A struct that implements `FilterParameters`
+///     parsed(SliceFilter) // A struct that implements `Filter` (must implement `From<SliceArgs>`)
+/// )]
+/// pub struct Slice;
+/// ```
+///
+/// ParseFilter for a configurable filter:
+/// ```ignore
+/// #[derive(Clone, FilterReflection)]
+/// #[filter(
+///     name = "example",
+///     description = "This filter exists for example purposes.",
+///     parameters(ExampleArgs) // A struct that implements `FilterParameters`
+/// )]
+/// pub struct ExampleParser {
+///     // You can add as many fields as you find necessary to configure the filter
+///     // before registering it.
+///     pub mode: i32,
+/// }
+///
+/// // For configurable filters, there is no default implementation of `ParseFilter`
+/// impl ParseFilter for ExampleParser {
+///     fn parse(&self, arguments: FilterArguments) -> Result<Box<Filter>> {
+///         // Create the `FilterParameters` struct from the given `arguments`
+///         let args = ExampleArgs::from_args(arguments)?;
+///         // Use the configuration state of the `ParseFilter`
+///         let state = self.state;
+///         
+///         // Create the `Filter` struct and return it, passing the information
+///         // about the arguments and the configuration of the `ParseFilter`.
+///         Ok(Box::new(ExampleFilter { args, state }))
+///     }
+/// }
+/// ```
+pub trait ParseFilter: Send + Sync + ParseFilterClone + FilterReflection {
     /// Filter `input` based on `arguments`.
-    fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult;
+    fn parse(&self, arguments: FilterArguments) -> Result<Box<Filter>>;
 }
 
-/// Support cloning of `Box<FilterValue>`.
-pub trait FilterValueClone {
-    /// Cloning of `dyn FilterValue`.
-    fn clone_box(&self) -> Box<FilterValue>;
+/// Support cloning of `Box<ParseFilter>`.
+pub trait ParseFilterClone {
+    /// Cloning of `dyn ParseFilter`.
+    fn clone_box(&self) -> Box<ParseFilter>;
 }
 
-impl<T> FilterValueClone for T
+impl<T> ParseFilterClone for T
 where
-    T: 'static + FilterValue + Clone,
+    T: 'static + ParseFilter + Clone,
 {
-    fn clone_box(&self) -> Box<FilterValue> {
+    fn clone_box(&self) -> Box<ParseFilter> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<FilterValue> {
-    fn clone(&self) -> Box<FilterValue> {
+impl Clone for Box<ParseFilter> {
+    fn clone(&self) -> Box<ParseFilter> {
         self.clone_box()
     }
 }
 
-/// Function signature that can act as a `FilterValue`.
-pub type FnFilterValue = fn(&Value, &[Value]) -> FilterResult;
-
-#[derive(Clone)]
-struct FnValueFilter {
-    filter: FnFilterValue,
-}
-
-impl FnValueFilter {
-    fn new(filter: FnFilterValue) -> Self {
-        Self { filter }
-    }
-}
-
-impl FilterValue for FnValueFilter {
-    fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult {
-        (self.filter)(input, arguments)
-    }
-}
-
-impl Debug for FnValueFilter {
-    #[inline]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        writeln!(formatter, "fn filter")
-    }
-}
-
-#[derive(Clone, Debug)]
-enum EnumValueFilter {
-    Fun(FnValueFilter),
-    Heap(Box<FilterValue>),
-}
-
-/// Custom `Box<FilterValue>` with a `FnFilterValue` optimization.
-#[derive(Clone, Debug)]
-pub struct BoxedValueFilter {
-    filter: EnumValueFilter,
-}
-
-impl FilterValue for BoxedValueFilter {
-    fn filter(&self, input: &Value, arguments: &[Value]) -> FilterResult {
-        match self.filter {
-            EnumValueFilter::Fun(ref f) => f.filter(input, arguments),
-            EnumValueFilter::Heap(ref f) => f.filter(input, arguments),
-        }
-    }
-}
-
-impl From<fn(&Value, &[Value]) -> FilterResult> for BoxedValueFilter {
-    fn from(filter: FnFilterValue) -> BoxedValueFilter {
-        let filter = EnumValueFilter::Fun(FnValueFilter::new(filter));
-        Self { filter }
-    }
-}
-
-impl From<Box<FilterValue>> for BoxedValueFilter {
-    fn from(filter: Box<FilterValue>) -> BoxedValueFilter {
-        let filter = EnumValueFilter::Heap(filter);
-        Self { filter }
+impl<T> From<T> for Box<ParseFilter>
+where
+    T: 'static + ParseFilter,
+{
+    fn from(filter: T) -> Self {
+        Box::new(filter)
     }
 }

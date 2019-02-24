@@ -132,7 +132,14 @@ macro_rules! filters {
         filters!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        liquid::filters::$a(&$b, &[$($c),*]).unwrap()
+        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+
+        let context = ::liquid::interpreter::Context::default();
+
+        let filter = ::liquid::compiler::ParseFilter::parse(&::liquid::filters::std::$a, args).unwrap();
+        ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
     }};
 }
 
@@ -143,6 +150,53 @@ macro_rules! filters_fail {
         filters_fail!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        liquid::filters::$a(&$b, &[$($c),*]).unwrap_err()
+        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+
+        let context = ::liquid::interpreter::Context::default();
+
+        ::liquid::compiler::ParseFilter::parse(&::liquid::filters::std::$a, args)
+            .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+            .unwrap_err()
+    }};
+}
+
+#[cfg(feature = "jekyll-filters")]
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! jekyll_filters {
+    ($a:ident, $b:expr) => {{
+        jekyll_filters!($a, $b, )
+    }};
+    ($a:ident, $b:expr, $($c:expr),*) => {{
+        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+
+        let context = ::liquid::interpreter::Context::default();
+
+        let filter = ::liquid::compiler::ParseFilter::parse(&::liquid::filters::jekyll::$a, args).unwrap();
+        ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+    }};
+}
+
+#[cfg(feature = "jekyll-filters")]
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! jekyll_filters_fail {
+    ($a:ident, $b:expr) => {{
+        jekyll_filters_fail!($a, $b, )
+    }};
+    ($a:ident, $b:expr, $($c:expr),*) => {{
+        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+
+        let context = ::liquid::interpreter::Context::default();
+
+        ::liquid::compiler::ParseFilter::parse(&::liquid::filters::jekyll::$a, args)
+            .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+            .unwrap_err()
     }};
 }

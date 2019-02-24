@@ -1,13 +1,13 @@
 use super::BoxedBlockParser;
 use super::BoxedTagParser;
-use super::BoxedValueFilter;
+use super::ParseFilter;
 use super::PluginRegistry;
 
 #[derive(Clone)]
 pub struct Language {
     pub blocks: PluginRegistry<BoxedBlockParser>,
     pub tags: PluginRegistry<BoxedTagParser>,
-    pub filters: PluginRegistry<BoxedValueFilter>,
+    pub filters: PluginRegistry<Box<ParseFilter>>,
     non_exhaustive: (),
 }
 

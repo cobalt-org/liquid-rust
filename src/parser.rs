@@ -23,7 +23,7 @@ where
 {
     blocks: compiler::PluginRegistry<compiler::BoxedBlockParser>,
     tags: compiler::PluginRegistry<compiler::BoxedTagParser>,
-    filters: compiler::PluginRegistry<compiler::BoxedValueFilter>,
+    filters: compiler::PluginRegistry<Box<compiler::ParseFilter>>,
     partials: Option<P>,
 }
 
@@ -73,74 +73,53 @@ where
 
     /// Register built-in Liquid filters
     pub fn liquid_filters(self) -> Self {
-        self.filter("abs", filters::abs as compiler::FnFilterValue)
-            .filter("append", filters::append as compiler::FnFilterValue)
-            .filter("at_least", filters::at_least as compiler::FnFilterValue)
-            .filter("at_most", filters::at_most as compiler::FnFilterValue)
-            .filter("capitalize", filters::capitalize as compiler::FnFilterValue)
-            .filter("ceil", filters::ceil as compiler::FnFilterValue)
-            .filter("compact", filters::compact as compiler::FnFilterValue)
-            .filter("concat", filters::concat as compiler::FnFilterValue)
-            .filter("date", filters::date as compiler::FnFilterValue)
-            .filter("default", filters::default as compiler::FnFilterValue)
-            .filter("divided_by", filters::divided_by as compiler::FnFilterValue)
-            .filter("downcase", filters::downcase as compiler::FnFilterValue)
-            .filter("escape", filters::escape as compiler::FnFilterValue)
-            .filter(
-                "escape_once",
-                filters::escape_once as compiler::FnFilterValue,
-            )
-            .filter("first", filters::first as compiler::FnFilterValue)
-            .filter("floor", filters::floor as compiler::FnFilterValue)
-            .filter("join", filters::join as compiler::FnFilterValue)
-            .filter("last", filters::last as compiler::FnFilterValue)
-            .filter("lstrip", filters::lstrip as compiler::FnFilterValue)
-            .filter("map", filters::map as compiler::FnFilterValue)
-            .filter("minus", filters::minus as compiler::FnFilterValue)
-            .filter("modulo", filters::modulo as compiler::FnFilterValue)
-            .filter(
-                "newline_to_br",
-                filters::newline_to_br as compiler::FnFilterValue,
-            )
-            .filter("plus", filters::plus as compiler::FnFilterValue)
-            .filter("prepend", filters::prepend as compiler::FnFilterValue)
-            .filter("remove", filters::remove as compiler::FnFilterValue)
-            .filter(
-                "remove_first",
-                filters::remove_first as compiler::FnFilterValue,
-            )
-            .filter("replace", filters::replace as compiler::FnFilterValue)
-            .filter(
-                "replace_first",
-                filters::replace_first as compiler::FnFilterValue,
-            )
-            .filter("reverse", filters::reverse as compiler::FnFilterValue)
-            .filter("round", filters::round as compiler::FnFilterValue)
-            .filter("rstrip", filters::rstrip as compiler::FnFilterValue)
-            .filter("size", filters::size as compiler::FnFilterValue)
-            .filter("slice", filters::slice as compiler::FnFilterValue)
-            .filter("sort", filters::sort as compiler::FnFilterValue)
-            .filter(
-                "sort_natural",
-                filters::sort_natural as compiler::FnFilterValue,
-            )
-            .filter("split", filters::split as compiler::FnFilterValue)
-            .filter("strip", filters::strip as compiler::FnFilterValue)
-            .filter("strip_html", filters::strip_html as compiler::FnFilterValue)
-            .filter(
-                "strip_newlines",
-                filters::strip_newlines as compiler::FnFilterValue,
-            )
-            .filter("times", filters::times as compiler::FnFilterValue)
-            .filter("truncate", filters::truncate as compiler::FnFilterValue)
-            .filter(
-                "truncatewords",
-                filters::truncatewords as compiler::FnFilterValue,
-            )
-            .filter("uniq", filters::uniq as compiler::FnFilterValue)
-            .filter("upcase", filters::upcase as compiler::FnFilterValue)
-            .filter("url_decode", filters::url_decode as compiler::FnFilterValue)
-            .filter("url_encode", filters::url_encode as compiler::FnFilterValue)
+        self.filter(filters::std::Abs)
+            .filter(filters::std::Append)
+            .filter(filters::std::AtLeast)
+            .filter(filters::std::AtMost)
+            .filter(filters::std::Capitalize)
+            .filter(filters::std::Ceil)
+            .filter(filters::std::Compact)
+            .filter(filters::std::Concat)
+            .filter(filters::std::Date)
+            .filter(filters::std::Default)
+            .filter(filters::std::DividedBy)
+            .filter(filters::std::Downcase)
+            .filter(filters::std::Escape)
+            .filter(filters::std::EscapeOnce)
+            .filter(filters::std::First)
+            .filter(filters::std::Floor)
+            .filter(filters::std::Join)
+            .filter(filters::std::Last)
+            .filter(filters::std::Lstrip)
+            .filter(filters::std::Map)
+            .filter(filters::std::Minus)
+            .filter(filters::std::Modulo)
+            .filter(filters::std::NewlineToBr)
+            .filter(filters::std::Plus)
+            .filter(filters::std::Prepend)
+            .filter(filters::std::Remove)
+            .filter(filters::std::RemoveFirst)
+            .filter(filters::std::Replace)
+            .filter(filters::std::ReplaceFirst)
+            .filter(filters::std::Reverse)
+            .filter(filters::std::Round)
+            .filter(filters::std::Rstrip)
+            .filter(filters::std::Size)
+            .filter(filters::std::Slice)
+            .filter(filters::std::Sort)
+            .filter(filters::std::SortNatural)
+            .filter(filters::std::Split)
+            .filter(filters::std::Strip)
+            .filter(filters::std::StripHtml)
+            .filter(filters::std::StripNewlines)
+            .filter(filters::std::Times)
+            .filter(filters::std::Truncate)
+            .filter(filters::std::TruncateWords)
+            .filter(filters::std::Uniq)
+            .filter(filters::std::Upcase)
+            .filter(filters::std::UrlDecode)
+            .filter(filters::std::UrlEncode)
     }
 
     /// Register non-standard filters
@@ -152,16 +131,8 @@ where
     /// Register non-standard filters
     #[cfg(feature = "extra-filters")]
     pub fn extra_filters(self) -> Self {
-        self.filter("pluralize", filters::pluralize as compiler::FnFilterValue)
-            .filter("date_in_tz", filters::date_in_tz as compiler::FnFilterValue)
-            .filter("push", filters::push as compiler::FnFilterValue)
-            .filter("pop", filters::pop as compiler::FnFilterValue)
-            .filter("unshift", filters::unshift as compiler::FnFilterValue)
-            .filter("shift", filters::shift as compiler::FnFilterValue)
-            .filter(
-                "array_to_sentence_string",
-                filters::array_to_sentence_string as compiler::FnFilterValue,
-            )
+        self.filter(filters::extra::DateInTz)
+            .filter(filters::extra::Pluralize)
     }
 
     /// Register non-standard filters
@@ -173,7 +144,12 @@ where
     /// Register non-standard filters
     #[cfg(feature = "jekyll-filters")]
     pub fn jekyll_filters(self) -> Self {
-        self.filter("slugify", filters::slugify as compiler::FnFilterValue)
+        self.filter(filters::jekyll::Slugify)
+            .filter(filters::jekyll::Pop)
+            .filter(filters::jekyll::Push)
+            .filter(filters::jekyll::Shift)
+            .filter(filters::jekyll::Unshift)
+            .filter(filters::jekyll::ArrayToSentenceString)
     }
 
     /// Inserts a new custom block into the parser
@@ -193,12 +169,10 @@ where
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<compiler::BoxedValueFilter>>(
-        mut self,
-        name: &'static str,
-        filter: F,
-    ) -> Self {
-        self.filters.register(name, filter.into());
+    pub fn filter<F: Into<Box<compiler::ParseFilter>>>(mut self, filter: F) -> Self {
+        let filter = filter.into();
+        self.filters
+            .register(compiler::FilterReflection::name(&*filter), filter);
         self
     }
 

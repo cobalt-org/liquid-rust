@@ -501,9 +501,10 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 #[cfg(test)]
 mod test {
     use compiler;
+    use compiler::Filter;
+    use derive::*;
     use interpreter;
     use interpreter::ContextBuilder;
-
     use tags;
 
     use super::*;
@@ -805,6 +806,20 @@ mod test {
             );
     }
 
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(name = "shout", description = "tests helper", parsed(ShoutFilter))]
+    pub struct ShoutFilterParser;
+
+    #[derive(Debug, Default, Display_filter)]
+    #[name = "shout"]
+    pub struct ShoutFilter;
+
+    impl Filter for ShoutFilter {
+        fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+            Ok(Value::scalar(input.to_str().to_uppercase()))
+        }
+    }
+
     #[test]
     fn use_filters() {
         let text = concat!(
@@ -814,12 +829,9 @@ mod test {
         );
 
         let mut options = options();
-        options.filters.register(
-            "shout",
-            ((|input, _args| Ok(Value::scalar(input.to_str().to_uppercase())))
-                as compiler::FnFilterValue)
-                .into(),
-        );
+        options
+            .filters
+            .register("shout", Box::new(ShoutFilterParser));
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
