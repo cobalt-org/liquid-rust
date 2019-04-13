@@ -40,6 +40,7 @@ chrono = "0.4"
 unicode-segmentation = "1.2"
 itertools = "0.8.0"
 url = "1.5"
+doc-comment = "0.1"
 liquid-error = { version = "0.18", path = "liquid-error" }
 liquid-value = { version = "0.18", path = "liquid-value" }
 liquid-compiler = { version = "0.18", path = "liquid-compiler" }
@@ -55,7 +56,6 @@ deunicode = "1.0.0"
 
 [dev-dependencies]
 difference = "2.0"
-docmatic = "0.1"
 serde_yaml = "0.8"
 tera = "0.11"
 handlebars = "1.1"
