@@ -41,7 +41,6 @@ install:
 script:
 - cargo check --verbose --all
 - cargo check --verbose --features "cli serde_json object_sorted"
-- rm -rf target/debug/deps/*liquid*  # Avoid skeptic problems
 - cargo test  --verbose --all
 - cargo when --channel nightly bench --all
 - cargo when --channel stable doc --all --no-deps --all-features
