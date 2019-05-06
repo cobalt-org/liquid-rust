@@ -5,7 +5,9 @@ use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
 use compiler::BlockElement;
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
@@ -109,59 +111,84 @@ fn parse_condition(arguments: &mut TagTokenIter) -> Result<Vec<Expression>> {
     Ok(values)
 }
 
-pub fn case_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let target = arguments
-        .expect_next("Value expected.")?
-        .expect_value()
-        .into_result()?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CaseBlock;
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+impl CaseBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    let mut cases = Vec::new();
-    let mut else_block = None;
-    let mut current_block = Vec::new();
-    let mut current_condition = None;
+impl BlockReflection for CaseBlock {
+    fn start_tag(&self) -> &'static str {
+        "case"
+    }
 
-    while let Some(element) = tokens.next()? {
-        match element {
-            BlockElement::Tag(mut tag) => match tag.name() {
-                "when" => {
-                    if let Some(condition) = current_condition {
-                        cases.push(CaseOption::new(condition, Template::new(current_block)));
+    fn end_tag(&self) -> &'static str {
+        "endcase"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for CaseBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let target = arguments
+            .expect_next("Value expected.")?
+            .expect_value()
+            .into_result()?;
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let mut cases = Vec::new();
+        let mut else_block = None;
+        let mut current_block = Vec::new();
+        let mut current_condition = None;
+
+        while let Some(element) = tokens.next()? {
+            match element {
+                BlockElement::Tag(mut tag) => match tag.name() {
+                    "when" => {
+                        if let Some(condition) = current_condition {
+                            cases.push(CaseOption::new(condition, Template::new(current_block)));
+                        }
+                        current_block = Vec::new();
+                        current_condition = Some(parse_condition(tag.tokens())?);
                     }
-                    current_block = Vec::new();
-                    current_condition = Some(parse_condition(tag.tokens())?);
-                }
-                "else" => {
-                    // no more arguments should be supplied, trying to supply them is an error
-                    tag.tokens().expect_nothing()?;
-                    else_block = Some(tokens.parse_all(options)?);
-                    break;
-                }
-                _ => current_block.push(tag.parse(&mut tokens, options)?),
-            },
-            element => current_block.push(element.parse(&mut tokens, options)?),
+                    "else" => {
+                        // no more arguments should be supplied, trying to supply them is an error
+                        tag.tokens().expect_nothing()?;
+                        else_block = Some(tokens.parse_all(options)?);
+                        break;
+                    }
+                    _ => current_block.push(tag.parse(&mut tokens, options)?),
+                },
+                element => current_block.push(element.parse(&mut tokens, options)?),
+            }
         }
+
+        if let Some(condition) = current_condition {
+            cases.push(CaseOption::new(condition, Template::new(current_block)));
+        }
+
+        let else_block = else_block.map(Template::new);
+
+        tokens.assert_empty();
+        Ok(Box::new(Case {
+            target,
+            cases,
+            else_block,
+        }))
     }
-
-    if let Some(condition) = current_condition {
-        cases.push(CaseOption::new(condition, Template::new(current_block)));
-    }
-
-    let else_block = else_block.map(Template::new);
-
-    tokens.assert_empty();
-    Ok(Box::new(Case {
-        target,
-        cases,
-        else_block,
-    }))
 }
 
 #[cfg(test)]
@@ -172,9 +199,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("case", (case_block as compiler::FnParseBlock).into());
+        options.blocks.register("case", CaseBlock.into());
         options
     }
 

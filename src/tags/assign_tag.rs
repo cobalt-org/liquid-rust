@@ -5,6 +5,8 @@ use liquid_error::ResultLiquidExt;
 
 use compiler::FilterChain;
 use compiler::Language;
+use compiler::ParseTag;
+use compiler::TagReflection;
 use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -32,31 +34,48 @@ impl Renderable for Assign {
     }
 }
 
-pub fn assign_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let dst = arguments
-        .expect_next("Identifier expected.")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct AssignTag;
 
-    arguments
-        .expect_next("Assignment operator \"=\" expected.")?
-        .expect_str("=")
-        .into_result_custom_msg("Assignment operator \"=\" expected.")?;
+impl AssignTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    let src = arguments
-        .expect_next("FilterChain expected.")?
-        .expect_filter_chain(options)
-        .into_result()?;
+impl TagReflection for AssignTag {
+    fn tag(&self) -> &'static str {
+        "assign"
+    }
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
 
-    Ok(Box::new(Assign { dst, src }))
+impl ParseTag for AssignTag {
+    fn parse(&self, mut arguments: TagTokenIter, options: &Language) -> Result<Box<Renderable>> {
+        let dst = arguments
+            .expect_next("Identifier expected.")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        arguments
+            .expect_next("Assignment operator \"=\" expected.")?
+            .expect_str("=")
+            .into_result_custom_msg("Assignment operator \"=\" expected.")?;
+
+        let src = arguments
+            .expect_next("FilterChain expected.")?
+            .expect_filter_chain(options)
+            .into_result()?;
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        Ok(Box::new(Assign { dst, src }))
+    }
 }
 
 #[cfg(test)]
@@ -70,15 +89,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("assign", (assign_tag as compiler::FnParseTag).into());
-        options
-            .blocks
-            .register("if", (tags::if_block as compiler::FnParseBlock).into());
-        options
-            .blocks
-            .register("for", (tags::for_block as compiler::FnParseBlock).into());
+        options.tags.register("assign", AssignTag.into());
+        options.blocks.register("if", tags::IfBlock.into());
+        options.blocks.register("for", tags::ForBlock.into());
         options
     }
 

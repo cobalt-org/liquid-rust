@@ -6,7 +6,9 @@ use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_value::{Object, Scalar, Value};
 
 use compiler::BlockElement;
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
@@ -232,84 +234,109 @@ fn trace_for_tag(
     )
 }
 
-pub fn for_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let var_name = arguments
-        .expect_next("Identifier expected.")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct ForBlock;
 
-    arguments
-        .expect_next("\"in\" expected.")?
-        .expect_str("in")
-        .into_result_custom_msg("\"in\" expected.")?;
+impl ForBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    let range = arguments.expect_next("Array or range expected.")?;
-    let range = match range.expect_value() {
-        TryMatchToken::Matches(array) => Range::Array(array),
-        TryMatchToken::Fails(range) => match range.expect_range() {
-            TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
-            TryMatchToken::Fails(range) => return range.raise_error().into_err(),
-        },
-    };
+impl BlockReflection for ForBlock {
+    fn start_tag(&self) -> &'static str {
+        "for"
+    }
 
-    // now we get to check for parameters...
-    let mut limit = None;
-    let mut offset = None;
-    let mut reversed = false;
+    fn end_tag(&self) -> &'static str {
+        "endfor"
+    }
 
-    while let Some(token) = arguments.next() {
-        match token.as_str() {
-            "limit" => limit = Some(parse_attr(&mut arguments)?),
-            "offset" => offset = Some(parse_attr(&mut arguments)?),
-            "reversed" => reversed = true,
-            _ => {
-                return token
-                    .raise_custom_error("\"limit\", \"offset\" or \"reversed\" expected.")
-                    .into_err()
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for ForBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let var_name = arguments
+            .expect_next("Identifier expected.")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        arguments
+            .expect_next("\"in\" expected.")?
+            .expect_str("in")
+            .into_result_custom_msg("\"in\" expected.")?;
+
+        let range = arguments.expect_next("Array or range expected.")?;
+        let range = match range.expect_value() {
+            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Fails(range) => match range.expect_range() {
+                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Fails(range) => return range.raise_error().into_err(),
+            },
+        };
+
+        // now we get to check for parameters...
+        let mut limit = None;
+        let mut offset = None;
+        let mut reversed = false;
+
+        while let Some(token) = arguments.next() {
+            match token.as_str() {
+                "limit" => limit = Some(parse_attr(&mut arguments)?),
+                "offset" => offset = Some(parse_attr(&mut arguments)?),
+                "reversed" => reversed = true,
+                _ => {
+                    return token
+                        .raise_custom_error("\"limit\", \"offset\" or \"reversed\" expected.")
+                        .into_err();
+                }
             }
         }
-    }
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
 
-    let mut item_template = Vec::new();
-    let mut else_template = None;
+        let mut item_template = Vec::new();
+        let mut else_template = None;
 
-    while let Some(element) = tokens.next()? {
-        match element {
-            BlockElement::Tag(mut tag) => match tag.name() {
-                "else" => {
-                    // no more arguments should be supplied, trying to supply them is an error
-                    tag.tokens().expect_nothing()?;
-                    else_template = Some(tokens.parse_all(options)?);
-                    break;
-                }
-                _ => item_template.push(tag.parse(&mut tokens, options)?),
-            },
-            element => item_template.push(element.parse(&mut tokens, options)?),
+        while let Some(element) = tokens.next()? {
+            match element {
+                BlockElement::Tag(mut tag) => match tag.name() {
+                    "else" => {
+                        // no more arguments should be supplied, trying to supply them is an error
+                        tag.tokens().expect_nothing()?;
+                        else_template = Some(tokens.parse_all(options)?);
+                        break;
+                    }
+                    _ => item_template.push(tag.parse(&mut tokens, options)?),
+                },
+                element => item_template.push(element.parse(&mut tokens, options)?),
+            }
         }
+
+        let item_template = Template::new(item_template);
+        let else_template = else_template.map(Template::new);
+
+        tokens.assert_empty();
+        Ok(Box::new(For {
+            var_name,
+            range,
+            item_template,
+            else_template,
+            limit,
+            offset,
+            reversed,
+        }))
     }
-
-    let item_template = Template::new(item_template);
-    let else_template = else_template.map(Template::new);
-
-    tokens.assert_empty();
-    Ok(Box::new(For {
-        var_name,
-        range,
-        item_template,
-        else_template,
-        limit,
-        offset,
-        reversed,
-    }))
 }
 
 #[derive(Debug)]
@@ -427,64 +454,89 @@ impl Renderable for TableRow {
     }
 }
 
-pub fn tablerow_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let var_name = arguments
-        .expect_next("Identifier expected.")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct TableRowBlock;
 
-    arguments
-        .expect_next("\"in\" expected.")?
-        .expect_str("in")
-        .into_result_custom_msg("\"in\" expected.")?;
+impl TableRowBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    let range = arguments.expect_next("Array or range expected.")?;
-    let range = match range.expect_value() {
-        TryMatchToken::Matches(array) => Range::Array(array),
-        TryMatchToken::Fails(range) => match range.expect_range() {
-            TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
-            TryMatchToken::Fails(range) => return range.raise_error().into_err(),
-        },
-    };
-
-    // now we get to check for parameters...
-    let mut cols = None;
-    let mut limit = None;
-    let mut offset = None;
-
-    while let Some(token) = arguments.next() {
-        match token.as_str() {
-            "cols" => cols = Some(parse_attr(&mut arguments)?),
-            "limit" => limit = Some(parse_attr(&mut arguments)?),
-            "offset" => offset = Some(parse_attr(&mut arguments)?),
-            _ => {
-                return token
-                    .raise_custom_error("\"cols\", \"limit\" or \"offset\" expected.")
-                    .into_err()
-            }
-        }
+impl BlockReflection for TableRowBlock {
+    fn start_tag(&self) -> &'static str {
+        "tablerow"
     }
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+    fn end_tag(&self) -> &'static str {
+        "endtablerow"
+    }
 
-    let item_template = Template::new(tokens.parse_all(options)?);
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
 
-    tokens.assert_empty();
-    Ok(Box::new(TableRow {
-        var_name,
-        range,
-        item_template,
-        cols,
-        limit,
-        offset,
-    }))
+impl ParseBlock for TableRowBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let var_name = arguments
+            .expect_next("Identifier expected.")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        arguments
+            .expect_next("\"in\" expected.")?
+            .expect_str("in")
+            .into_result_custom_msg("\"in\" expected.")?;
+
+        let range = arguments.expect_next("Array or range expected.")?;
+        let range = match range.expect_value() {
+            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Fails(range) => match range.expect_range() {
+                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Fails(range) => return range.raise_error().into_err(),
+            },
+        };
+
+        // now we get to check for parameters...
+        let mut cols = None;
+        let mut limit = None;
+        let mut offset = None;
+
+        while let Some(token) = arguments.next() {
+            match token.as_str() {
+                "cols" => cols = Some(parse_attr(&mut arguments)?),
+                "limit" => limit = Some(parse_attr(&mut arguments)?),
+                "offset" => offset = Some(parse_attr(&mut arguments)?),
+                _ => {
+                    return token
+                        .raise_custom_error("\"cols\", \"limit\" or \"offset\" expected.")
+                        .into_err();
+                }
+            }
+        }
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let item_template = Template::new(tokens.parse_all(options)?);
+
+        tokens.assert_empty();
+        Ok(Box::new(TableRow {
+            var_name,
+            range,
+            item_template,
+            cols,
+            limit,
+            offset,
+        }))
+    }
 }
 
 /// Format an error for an unexpected value.
@@ -511,16 +563,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("for", (for_block as compiler::FnParseBlock).into());
-        options.blocks.register(
-            "tablerow",
-            (tablerow_block as compiler::FnParseBlock).into(),
-        );
-        options
-            .tags
-            .register("assign", (tags::assign_tag as compiler::FnParseTag).into());
+        options.blocks.register("for", ForBlock.into());
+        options.blocks.register("tablerow", TableRowBlock.into());
+        options.tags.register("assign", tags::AssignTag.into());
         options
     }
 

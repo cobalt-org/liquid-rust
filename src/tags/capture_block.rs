@@ -3,7 +3,9 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidExt};
 use liquid_value::Value;
 
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -37,29 +39,54 @@ impl Renderable for Capture {
     }
 }
 
-pub fn capture_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let id = arguments
-        .expect_next("Identifier expected")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CaptureBlock;
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+impl CaptureBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    let template = Template::new(
-        tokens
-            .parse_all(options)
-            .trace_with(|| format!("{{% capture {} %}}", &id).into())?,
-    );
+impl BlockReflection for CaptureBlock {
+    fn start_tag(&self) -> &'static str {
+        "capture"
+    }
 
-    tokens.assert_empty();
-    Ok(Box::new(Capture { id, template }))
+    fn end_tag(&self) -> &'static str {
+        "endcapture"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for CaptureBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let id = arguments
+            .expect_next("Identifier expected")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let template = Template::new(
+            tokens
+                .parse_all(options)
+                .trace_with(|| format!("{{% capture {} %}}", &id).into())?,
+        );
+
+        tokens.assert_empty();
+        Ok(Box::new(Capture { id, template }))
+    }
 }
 
 #[cfg(test)]
@@ -71,9 +98,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("capture", (capture_block as compiler::FnParseBlock).into());
+        options.blocks.register("capture", CaptureBlock.into());
         options
     }
 

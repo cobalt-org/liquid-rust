@@ -3,6 +3,8 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidReplaceExt};
 
 use compiler::Language;
+use compiler::ParseTag;
+use compiler::TagReflection;
 use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
@@ -31,21 +33,38 @@ impl Renderable for Increment {
     }
 }
 
-pub fn increment_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    let id = arguments
-        .expect_next("Identifier expected.")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct IncrementTag;
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+impl IncrementTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    Ok(Box::new(Increment { id }))
+impl TagReflection for IncrementTag {
+    fn tag(&self) -> &'static str {
+        "increment"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for IncrementTag {
+    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+        let id = arguments
+            .expect_next("Identifier expected.")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        Ok(Box::new(Increment { id }))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -71,21 +90,38 @@ impl Renderable for Decrement {
     }
 }
 
-pub fn decrement_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    let id = arguments
-        .expect_next("Identifier expected.")?
-        .expect_identifier()
-        .into_result()?
-        .to_string();
+#[derive(Copy, Clone, Debug, Default)]
+pub struct DecrementTag;
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+impl DecrementTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    Ok(Box::new(Decrement { id }))
+impl TagReflection for DecrementTag {
+    fn tag(&self) -> &'static str {
+        "decrement"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for DecrementTag {
+    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+        let id = arguments
+            .expect_next("Identifier expected.")?
+            .expect_identifier()
+            .into_result()?
+            .to_string();
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        Ok(Box::new(Decrement { id }))
+    }
 }
 
 #[cfg(test)]
@@ -97,15 +133,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("assign", (tags::assign_tag as compiler::FnParseTag).into());
-        options
-            .tags
-            .register("increment", (increment_tag as compiler::FnParseTag).into());
-        options
-            .tags
-            .register("decrement", (decrement_tag as compiler::FnParseTag).into());
+        options.tags.register("assign", tags::AssignTag.into());
+        options.tags.register("increment", IncrementTag.into());
+        options.tags.register("decrement", DecrementTag.into());
         options
     }
 
