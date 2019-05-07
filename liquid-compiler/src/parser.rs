@@ -13,8 +13,6 @@ use liquid_interpreter::Variable;
 use liquid_value::Value;
 
 use super::Language;
-use super::ParseBlock;
-use super::ParseTag;
 use super::Text;
 use super::{Filter, FilterArguments, FilterChain};
 
@@ -537,10 +535,10 @@ impl<'a> Tag<'a> {
         let name = name.as_str();
 
         if let Some(plugin) = options.tags.get(name) {
-            plugin.parse(name, tokens, options)
+            plugin.parse(tokens, options)
         } else if let Some(plugin) = options.blocks.get(name) {
             let block = TagBlock::new(name, next_elements);
-            let renderables = plugin.parse(name, tokens, block, options)?;
+            let renderables = plugin.parse(tokens, block, options)?;
             Ok(renderables)
         } else {
             let pest_error = ::pest::error::Error::new_from_span(

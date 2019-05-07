@@ -3,6 +3,8 @@ use std::io::Write;
 use liquid_error::{Result, ResultLiquidExt};
 
 use compiler::Language;
+use compiler::ParseTag;
+use compiler::TagReflection;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
 use interpreter::Context;
@@ -33,27 +35,44 @@ impl Renderable for Include {
     }
 }
 
-pub fn include_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    let name = arguments.expect_next("Identifier or literal expected.")?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct IncludeTag;
 
-    // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.
-    // Those inputs would fail anyway by there being not a path with those names so they are not a big concern.
-    let name = match name.expect_literal() {
-        // Using `to_str()` on literals ensures `Strings` will have their quotes trimmed.
-        TryMatchToken::Matches(name) => name.to_str().to_string(),
-        TryMatchToken::Fails(name) => name.as_str().to_string(),
-    };
+impl IncludeTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+impl TagReflection for IncludeTag {
+    fn tag(&self) -> &'static str {
+        "include"
+    }
 
-    let partial = Expression::with_literal(name);
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
 
-    Ok(Box::new(Include { partial }))
+impl ParseTag for IncludeTag {
+    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+        let name = arguments.expect_next("Identifier or literal expected.")?;
+
+        // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.
+        // Those inputs would fail anyway by there being not a path with those names so they are not a big concern.
+        let name = match name.expect_literal() {
+            // Using `to_str()` on literals ensures `Strings` will have their quotes trimmed.
+            TryMatchToken::Matches(name) => name.to_str().to_string(),
+            TryMatchToken::Fails(name) => name.as_str().to_string(),
+        };
+
+        // no more arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let partial = Expression::with_literal(name);
+
+        Ok(Box::new(Include { partial }))
+    }
 }
 
 #[cfg(test)]
@@ -95,16 +114,11 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("include", (include_tag as compiler::FnParseTag).into());
-        options.blocks.register(
-            "comment",
-            (tags::comment_block as compiler::FnParseBlock).into(),
-        );
+        options.tags.register("include", IncludeTag.into());
         options
             .blocks
-            .register("if", (tags::if_block as compiler::FnParseBlock).into());
+            .register("comment", tags::CommentBlock.into());
+        options.blocks.register("if", tags::IfBlock.into());
         options
     }
 

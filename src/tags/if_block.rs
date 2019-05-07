@@ -5,7 +5,9 @@ use liquid_error::{Error, Result, ResultLiquidExt};
 use liquid_value::Value;
 
 use compiler::BlockElement;
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagToken;
 use compiler::TagTokenIter;
@@ -297,41 +299,66 @@ fn parse_condition(arguments: TagTokenIter) -> Result<Condition> {
     Ok(lh)
 }
 
-pub fn unless_block(
-    _tag_name: &str,
-    arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let condition = parse_condition(arguments)?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct UnlessBlock;
 
-    let mut if_true = Vec::new();
-    let mut if_false = None;
+impl UnlessBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    while let Some(element) = tokens.next()? {
-        match element {
-            BlockElement::Tag(mut tag) => match tag.name() {
-                "else" => {
-                    if_false = Some(tokens.parse_all(options)?);
-                    break;
-                }
-                _ => if_true.push(tag.parse(&mut tokens, options)?),
-            },
-            element => if_true.push(element.parse(&mut tokens, options)?),
-        }
+impl BlockReflection for UnlessBlock {
+    fn start_tag(&self) -> &'static str {
+        "unless"
     }
 
-    let if_true = Template::new(if_true);
-    let if_false = if_false.map(Template::new);
+    fn end_tag(&self) -> &'static str {
+        "endunless"
+    }
 
-    tokens.assert_empty();
-    Ok(Box::new(Conditional {
-        tag_name: "unless",
-        condition,
-        mode: false,
-        if_true,
-        if_false,
-    }))
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for UnlessBlock {
+    fn parse(
+        &self,
+        arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let condition = parse_condition(arguments)?;
+
+        let mut if_true = Vec::new();
+        let mut if_false = None;
+
+        while let Some(element) = tokens.next()? {
+            match element {
+                BlockElement::Tag(mut tag) => match tag.name() {
+                    "else" => {
+                        if_false = Some(tokens.parse_all(options)?);
+                        break;
+                    }
+                    _ => if_true.push(tag.parse(&mut tokens, options)?),
+                },
+                element => if_true.push(element.parse(&mut tokens, options)?),
+            }
+        }
+
+        let if_true = Template::new(if_true);
+        let if_false = if_false.map(Template::new);
+
+        tokens.assert_empty();
+        Ok(Box::new(Conditional {
+            tag_name: self.start_tag(),
+            condition,
+            mode: false,
+            if_true,
+            if_false,
+        }))
+    }
 }
 
 fn parse_if(
@@ -374,16 +401,41 @@ fn parse_if(
     }))
 }
 
-pub fn if_block(
-    _tag_name: &str,
-    arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    let conditional = parse_if("if", arguments, &mut tokens, options)?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct IfBlock;
 
-    tokens.assert_empty();
-    Ok(conditional)
+impl IfBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl BlockReflection for IfBlock {
+    fn start_tag(&self) -> &'static str {
+        "if"
+    }
+
+    fn end_tag(&self) -> &'static str {
+        "endif"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for IfBlock {
+    fn parse(
+        &self,
+        arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        let conditional = parse_if(self.start_tag(), arguments, &mut tokens, options)?;
+
+        tokens.assert_empty();
+        Ok(conditional)
+    }
 }
 
 /// Format an error for an unexpected value.
@@ -407,12 +459,8 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("if", (if_block as compiler::FnParseBlock).into());
-        options
-            .blocks
-            .register("unless", (unless_block as compiler::FnParseBlock).into());
+        options.blocks.register("if", IfBlock.into());
+        options.blocks.register("unless", UnlessBlock.into());
         options
     }
 

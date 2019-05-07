@@ -3,6 +3,8 @@ use std::io::Write;
 use liquid_error::Result;
 
 use compiler::Language;
+use compiler::ParseTag;
+use compiler::TagReflection;
 use compiler::TagTokenIter;
 use interpreter::Renderable;
 use interpreter::{Context, Interrupt};
@@ -17,14 +19,31 @@ impl Renderable for Break {
     }
 }
 
-pub fn break_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    // no arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
-    Ok(Box::new(Break))
+#[derive(Copy, Clone, Debug, Default)]
+pub struct BreakTag;
+
+impl BreakTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl TagReflection for BreakTag {
+    fn tag(&self) -> &'static str {
+        "break"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for BreakTag {
+    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+        // no arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+        Ok(Box::new(Break))
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -37,14 +56,31 @@ impl Renderable for Continue {
     }
 }
 
-pub fn continue_tag(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    // no arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
-    Ok(Box::new(Continue))
+#[derive(Copy, Clone, Debug, Default)]
+pub struct ContinueTag;
+
+impl ContinueTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl TagReflection for ContinueTag {
+    fn tag(&self) -> &'static str {
+        "continue"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for ContinueTag {
+    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+        // no arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+        Ok(Box::new(Continue))
+    }
 }
 
 #[cfg(test)]
@@ -56,18 +92,10 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("break", (break_tag as compiler::FnParseTag).into());
-        options
-            .tags
-            .register("continue", (continue_tag as compiler::FnParseTag).into());
-        options
-            .blocks
-            .register("for", (tags::for_block as compiler::FnParseBlock).into());
-        options
-            .blocks
-            .register("if", (tags::if_block as compiler::FnParseBlock).into());
+        options.tags.register("break", BreakTag.into());
+        options.tags.register("continue", ContinueTag.into());
+        options.blocks.register("for", tags::ForBlock.into());
+        options.blocks.register("if", tags::IfBlock.into());
         options
     }
 

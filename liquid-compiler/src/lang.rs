@@ -1,12 +1,12 @@
-use super::BoxedBlockParser;
-use super::BoxedTagParser;
+use super::ParseBlock;
 use super::ParseFilter;
+use super::ParseTag;
 use super::PluginRegistry;
 
 #[derive(Clone)]
 pub struct Language {
-    pub blocks: PluginRegistry<BoxedBlockParser>,
-    pub tags: PluginRegistry<BoxedTagParser>,
+    pub blocks: PluginRegistry<Box<ParseBlock>>,
+    pub tags: PluginRegistry<Box<ParseTag>>,
     pub filters: PluginRegistry<Box<ParseFilter>>,
     non_exhaustive: (),
 }

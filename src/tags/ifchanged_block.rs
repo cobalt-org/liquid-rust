@@ -2,7 +2,9 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -36,19 +38,44 @@ impl Renderable for IfChanged {
     }
 }
 
-pub fn ifchanged_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    // no arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct IfChangedBlock;
 
-    let if_changed = Template::new(tokens.parse_all(options)?);
+impl IfChangedBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    tokens.assert_empty();
-    Ok(Box::new(IfChanged { if_changed }))
+impl BlockReflection for IfChangedBlock {
+    fn start_tag(&self) -> &'static str {
+        "ifchanged"
+    }
+
+    fn end_tag(&self) -> &'static str {
+        "endifchanged"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for IfChangedBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        options: &Language,
+    ) -> Result<Box<Renderable>> {
+        // no arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let if_changed = Template::new(tokens.parse_all(options)?);
+
+        tokens.assert_empty();
+        Ok(Box::new(IfChanged { if_changed }))
+    }
 }
 
 /// Remembers the content of the last rendered `ifstate` block.
@@ -81,16 +108,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register(
-            "ifchanged",
-            (ifchanged_block as compiler::FnParseBlock).into(),
-        );
-        options
-            .blocks
-            .register("for", (tags::for_block as compiler::FnParseBlock).into());
-        options
-            .blocks
-            .register("if", (tags::if_block as compiler::FnParseBlock).into());
+        options.blocks.register("ifchanged", IfChangedBlock.into());
+        options.blocks.register("for", tags::ForBlock.into());
+        options.blocks.register("if", tags::IfBlock.into());
         options
     }
 

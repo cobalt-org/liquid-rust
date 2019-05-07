@@ -5,6 +5,22 @@ use super::Language;
 use super::TagBlock;
 use super::TagTokenIter;
 
+pub trait BlockReflection {
+    fn start_tag(&self) -> &'static str;
+
+    fn end_tag(&self) -> &'static str;
+
+    fn description(&self) -> &'static str;
+
+    fn example(&self) -> Option<&'static str> {
+        None
+    }
+
+    fn spec(&self) -> Option<&'static str> {
+        None
+    }
+}
+
 /// A trait for creating custom custom block-size tags (`{% if something %}{% endif %}`).
 /// This is a simple type alias for a function.
 ///
@@ -13,10 +29,9 @@ use super::TagTokenIter;
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`Language`](struct.Language.html).
-pub trait ParseBlock: Send + Sync + ParseBlockClone {
+pub trait ParseBlock: Send + Sync + ParseBlockClone + BlockReflection {
     fn parse(
         &self,
-        tag_name: &str,
         arguments: TagTokenIter,
         block: TagBlock,
         options: &Language,
@@ -42,67 +57,11 @@ impl Clone for Box<ParseBlock> {
     }
 }
 
-pub type FnParseBlock = fn(&str, TagTokenIter, TagBlock, &Language) -> Result<Box<Renderable>>;
-
-#[derive(Clone)]
-struct FnBlockParser {
-    parser: FnParseBlock,
-}
-
-impl FnBlockParser {
-    fn new(parser: FnParseBlock) -> Self {
-        Self { parser }
-    }
-}
-
-impl ParseBlock for FnBlockParser {
-    fn parse(
-        &self,
-        tag_name: &str,
-        arguments: TagTokenIter,
-        tokens: TagBlock,
-        options: &Language,
-    ) -> Result<Box<Renderable>> {
-        (self.parser)(tag_name, arguments, tokens, options)
-    }
-}
-
-#[derive(Clone)]
-enum BlockParserEnum {
-    Fun(FnBlockParser),
-    Heap(Box<ParseBlock>),
-}
-
-#[derive(Clone)]
-pub struct BoxedBlockParser {
-    parser: BlockParserEnum,
-}
-
-impl ParseBlock for BoxedBlockParser {
-    fn parse(
-        &self,
-        tag_name: &str,
-        arguments: TagTokenIter,
-        tokens: TagBlock,
-        options: &Language,
-    ) -> Result<Box<Renderable>> {
-        match self.parser {
-            BlockParserEnum::Fun(ref f) => f.parse(tag_name, arguments, tokens, options),
-            BlockParserEnum::Heap(ref f) => f.parse(tag_name, arguments, tokens, options),
-        }
-    }
-}
-
-impl From<FnParseBlock> for BoxedBlockParser {
-    fn from(parser: FnParseBlock) -> BoxedBlockParser {
-        let parser = BlockParserEnum::Fun(FnBlockParser::new(parser));
-        Self { parser }
-    }
-}
-
-impl From<Box<ParseBlock>> for BoxedBlockParser {
-    fn from(parser: Box<ParseBlock>) -> BoxedBlockParser {
-        let parser = BlockParserEnum::Heap(parser);
-        Self { parser }
+impl<T> From<T> for Box<ParseBlock>
+where
+    T: 'static + ParseBlock,
+{
+    fn from(filter: T) -> Self {
+        Box::new(filter)
     }
 }

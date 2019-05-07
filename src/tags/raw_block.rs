@@ -2,7 +2,9 @@ use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidReplaceExt};
 
+use compiler::BlockReflection;
 use compiler::Language;
+use compiler::ParseBlock;
 use compiler::TagBlock;
 use compiler::TagTokenIter;
 use interpreter::Context;
@@ -20,19 +22,44 @@ impl Renderable for RawT {
     }
 }
 
-pub fn raw_block(
-    _tag_name: &str,
-    mut arguments: TagTokenIter,
-    mut tokens: TagBlock,
-    _options: &Language,
-) -> Result<Box<Renderable>> {
-    // no arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
+#[derive(Copy, Clone, Debug, Default)]
+pub struct RawBlock;
 
-    let content = tokens.escape_liquid(false)?.to_string();
+impl RawBlock {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
-    tokens.assert_empty();
-    Ok(Box::new(RawT { content }))
+impl BlockReflection for RawBlock {
+    fn start_tag(&self) -> &'static str {
+        "raw"
+    }
+
+    fn end_tag(&self) -> &'static str {
+        "endraw"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseBlock for RawBlock {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        mut tokens: TagBlock,
+        _options: &Language,
+    ) -> Result<Box<Renderable>> {
+        // no arguments should be supplied, trying to supply them is an error
+        arguments.expect_nothing()?;
+
+        let content = tokens.escape_liquid(false)?.to_string();
+
+        tokens.assert_empty();
+        Ok(Box::new(RawT { content }))
+    }
 }
 
 #[cfg(test)]
@@ -43,9 +70,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("raw", (raw_block as compiler::FnParseBlock).into());
+        options.blocks.register("raw", RawBlock.into());
         options
     }
 

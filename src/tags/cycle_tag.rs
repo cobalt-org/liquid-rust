@@ -5,6 +5,8 @@ use itertools;
 use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
 
 use compiler::Language;
+use compiler::ParseTag;
+use compiler::TagReflection;
 use compiler::TagToken;
 use compiler::TagTokenIter;
 use compiler::TryMatchToken;
@@ -66,7 +68,7 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
             return second
                 .expect("is some")
                 .raise_custom_error("\":\" or \",\" expected.")
-                .into_err()
+                .into_err();
         }
     }
 
@@ -85,7 +87,7 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
                 return next
                     .expect("is some")
                     .raise_custom_error("\",\" expected.")
-                    .into_err()
+                    .into_err();
             }
         }
     }
@@ -100,12 +102,29 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
     Ok(Cycle { name, values })
 }
 
-pub fn cycle_tag(
-    _tag_name: &str,
-    arguments: TagTokenIter,
-    options: &Language,
-) -> Result<Box<Renderable>> {
-    parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CycleTag;
+
+impl CycleTag {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl TagReflection for CycleTag {
+    fn tag(&self) -> &'static str {
+        "cycle"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for CycleTag {
+    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<Renderable>> {
+        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -144,9 +163,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("cycle", (cycle_tag as compiler::FnParseTag).into());
+        options.tags.register("cycle", CycleTag.into());
         options
     }
 
