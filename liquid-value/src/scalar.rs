@@ -53,11 +53,11 @@ impl<'s> ScalarCow<'s> {
     /// Create a reference to the value.
     pub fn as_ref<'r: 's>(&'r self) -> ScalarCow<'r> {
         match self.0 {
-            ScalarCowEnum::Integer(x) => Scalar::new(x),
-            ScalarCowEnum::Float(x) => Scalar::new(x),
-            ScalarCowEnum::Bool(x) => Scalar::new(x),
-            ScalarCowEnum::Date(x) => Scalar::new(x),
-            ScalarCowEnum::Str(ref x) => Scalar::new(x.as_ref()),
+            ScalarCowEnum::Integer(x) => ScalarCow::new(x),
+            ScalarCowEnum::Float(x) => ScalarCow::new(x),
+            ScalarCowEnum::Bool(x) => ScalarCow::new(x),
+            ScalarCowEnum::Date(x) => ScalarCow::new(x),
+            ScalarCowEnum::Str(ref x) => ScalarCow::new(x.as_ref()),
         }
     }
 

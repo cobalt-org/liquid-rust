@@ -336,7 +336,7 @@ impl ParseBlock for UnlessBlock {
 
         while let Some(element) = tokens.next()? {
             match element {
-                BlockElement::Tag(mut tag) => match tag.name() {
+                BlockElement::Tag(tag) => match tag.name() {
                     "else" => {
                         if_false = Some(tokens.parse_all(options)?);
                         break;
@@ -374,7 +374,7 @@ fn parse_if(
 
     while let Some(element) = tokens.next()? {
         match element {
-            BlockElement::Tag(mut tag) => match tag.name() {
+            BlockElement::Tag(tag) => match tag.name() {
                 "else" => {
                     if_false = Some(tokens.parse_all(options)?);
                     break;
