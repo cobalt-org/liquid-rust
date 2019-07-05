@@ -43,7 +43,7 @@ url = "1.5"
 doc-comment = "0.3"
 liquid-error = { version = "^0.19", path = "liquid-error" }
 liquid-value = { version = "^0.19", path = "liquid-value" }
-liquid-compiler = { version = "0.18", path = "liquid-compiler" }
+liquid-compiler = { version = "^0.19", path = "liquid-compiler" }
 liquid-interpreter = { version = "^0.19", path = "liquid-interpreter" }
 liquid-derive = { version = "0.18", path = "liquid-derive" }
 
