@@ -18,7 +18,7 @@ appveyor  = { repository = "johannhof/liquid-rust" }
 itertools = "0.8.0"
 anymap = "0.12"
 # Exposed in API
-liquid-error = { version = "0.18", path = "../liquid-error" }
+liquid-error = { version = "^0.19", path = "../liquid-error" }
 liquid-value = { version = "0.18", path = "../liquid-value" }
 
 [dev-dependencies]
