@@ -22,4 +22,4 @@ pest_derive = "2.0"
 # Exposed in API
 liquid-error = { version = "^0.19", path = "../liquid-error" }
 liquid-value = { version = "^0.19", path = "../liquid-value" }
-liquid-interpreter = { version = "0.18", path = "../liquid-interpreter" }
+liquid-interpreter = { version = "^0.19", path = "../liquid-interpreter" }
