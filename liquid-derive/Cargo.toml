@@ -1,6 +1,6 @@
 [package]
 name = "liquid-derive"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Pedro Gonçalo Correia <goncalerta@gmail.com>"]
 description = "The liquid templating language for Rust"
 readme = "README.md"
