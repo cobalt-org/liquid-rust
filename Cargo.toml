@@ -39,7 +39,7 @@ lazy_static = "1.0"
 chrono = "0.4"
 unicode-segmentation = "1.2"
 itertools = "0.8.0"
-url = "1.5"
+url = "2.0"
 doc-comment = "0.3"
 liquid-error = { version = "^0.19", path = "liquid-error" }
 liquid-value = { version = "^0.19", path = "liquid-value" }
