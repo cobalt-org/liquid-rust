@@ -1,3 +1,22 @@
+<a name="0.19.0"></a>
+## 0.19.0 (2019-06-08)
+
+
+#### Features
+
+*   Reflection for tags/blocks ([72f8cee8](https://github.com/cobalt-org/liquid-rust/commit/72f8cee870b34ba76b0297e8e8e012f9ba88427c), closes [#315](https://github.com/cobalt-org/liquid-rust/issues/315), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+* **Revamp Filters API:**
+  *  New Filter API ([7a7de4b5](https://github.com/cobalt-org/liquid-rust/commit/7a7de4b540c6625da0bc3e432a20884daae0bdf1), closes [#301](https://github.com/cobalt-org/liquid-rust/issues/301))
+  *  Create liquid-derive crate ([c05525dd](https://github.com/cobalt-org/liquid-rust/commit/c05525dd977b1e04d770fabc33636c436c11673b))
+  *  Add named arguments in grammar ([abdd5cb4](https://github.com/cobalt-org/liquid-rust/commit/abdd5cb4b239570f10c6bf0341b207694281319c), closes [#92](https://github.com/cobalt-org/liquid-rust/issues/92))
+
+#### Breaking Changes
+
+*   Reflection for tags/blocks ([72f8cee8](https://github.com/cobalt-org/liquid-rust/commit/72f8cee870b34ba76b0297e8e8e012f9ba88427c), closes [#315](https://github.com/cobalt-org/liquid-rust/issues/315), breaks [#](https://github.com/cobalt-org/liquid-rust/issues/))
+*  New Filter API ([7a7de4b5](https://github.com/cobalt-org/liquid-rust/commit/7a7de4b540c6625da0bc3e432a20884daae0bdf1), closes [#301](https://github.com/cobalt-org/liquid-rust/issues/301))
+
+
+
 <a name="0.18.2"></a>
 ## 0.18.2 (2019-02-01)
 
