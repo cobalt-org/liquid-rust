@@ -284,11 +284,11 @@ impl Parser {
     /// assert_eq!(output, "Liquid! 4\n".to_string());
     /// ```
     ///
-    pub fn parse_file<P: AsRef<path::Path>>(self, file: P) -> Result<Template> {
+    pub fn parse_file<P: AsRef<path::Path>>(&self, file: P) -> Result<Template> {
         self.parse_file_path(file.as_ref())
     }
 
-    fn parse_file_path(self, file: &path::Path) -> Result<Template> {
+    fn parse_file_path(&self, file: &path::Path) -> Result<Template> {
         let mut f = File::open(file)
             .replace("Cannot open file")
             .context_key("path")
