@@ -903,7 +903,7 @@ fn test_where_no_key_set() {
 #[test]
 fn test_where_non_array_map_input() {
     assert_eq!(
-        v![{ "a": "ok" }],
+        v!([{ "a": "ok" }]),
         filters!(Where, v!({ "a": "ok" }), v!("a"), v!("ok"))
     );
     assert_eq!(

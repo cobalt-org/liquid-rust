@@ -4,7 +4,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Object, Scalar, Value};
 use std::cmp;
 
 #[derive(Debug, FilterParameters)]
@@ -103,8 +103,10 @@ impl Filter for SortNaturalFilter {
 
 #[derive(Debug, FilterParameters)]
 struct WhereArgs {
+    #[parameter(description = "The property being matched", arg_type = "str")]
+    property: Expression,
     #[parameter(
-        description = "The value the property is matched with.",
+        description = "The value the property is matched with",
         arg_type = "any"
     )]
     target_value: Option<Expression>,
@@ -127,9 +129,61 @@ struct WhereFilter {
     args: WhereArgs,
 }
 
+fn apply_where_filter<'a, T: Iterator<Item = &'a Object>>(
+    input: T,
+    property: &str,
+    target_value: Option<&Value>,
+) -> Vec<Value> {
+    match target_value {
+        None => input
+            .filter(|object| object.get(property).map_or(false, Value::is_truthy))
+            .map(|object| Value::Object(object.clone()))
+            .collect(),
+        Some(target_value) => input
+            .filter(|object| {
+                object
+                    .get(property)
+                    .map_or(false, |value| value == target_value)
+            })
+            .map(|object| Value::Object(object.clone()))
+            .collect(),
+    }
+}
+
 impl Filter for WhereFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        Ok(Value::array(vec![]))
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+
+        match input {
+            Value::Array(array) => {
+                if array.is_empty() {
+                    // Retrun an empty array ony if we got an empty array
+                    return Ok(Value::array(vec![]));
+                }
+                let res = apply_where_filter(
+                    array.iter().filter_map(Value::as_object),
+                    &args.property,
+                    args.target_value,
+                );
+                if !res.is_empty() {
+                    Ok(Value::array(res))
+                } else {
+                    // We're required to return Nil if the original array wasn't
+                    // empty, but no element matched the filter. This is probably
+                    // an artifact of Ruby's select function.
+                    Ok(Value::nil())
+                }
+            }
+            // In the case of a single object, take it, but return an array.
+            Value::Object(object) => Ok(Value::array(apply_where_filter(
+                std::iter::once(object),
+                &args.property,
+                args.target_value,
+            ))),
+            _ => Err(invalid_input(
+                "Array of objects or a single object expected",
+            )),
+        }
     }
 }
 
