@@ -101,6 +101,38 @@ impl Filter for SortNaturalFilter {
     }
 }
 
+#[derive(Debug, FilterParameters)]
+struct WhereArgs {
+    #[parameter(
+        description = "The value the property is matched with.",
+        arg_type = "any"
+    )]
+    target_value: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "where",
+    description = "Filter the elements of an array to those with a certain property value. \
+                   By default the target is any truthy value.",
+    parameters(WhereArgs),
+    parsed(WhereFilter)
+)]
+pub struct Where;
+
+#[derive(Debug, FromFilterParameters, Display_filter)]
+#[name = "where"]
+struct WhereFilter {
+    #[parameters]
+    args: WhereArgs,
+}
+
+impl Filter for WhereFilter {
+    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        Ok(Value::array(vec![]))
+    }
+}
+
 /// Removes any duplicate elements in an array.
 ///
 /// This has an O(n^2) worst-case complexity.

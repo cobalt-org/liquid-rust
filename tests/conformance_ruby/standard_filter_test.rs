@@ -865,10 +865,7 @@ fn test_date_raises_nothing() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where() {
-    panic!("where is unimplemented");
-    /*
     let input = v!([
       { "handle": "alpha", "ok": true },
       { "handle": "beta", "ok": false },
@@ -881,92 +878,85 @@ fn test_where() {
       { "handle": "delta", "ok": true }
     ]);
 
-    assert_eq!(expectation, filters!(where, input, v!("ok"), true));
-    assert_eq!(expectation, filters!(where, input, v!("ok")));
-    */
+    assert_eq!(expectation, filters!(Where, input, v!("ok"), v!(true)));
+    assert_eq!(expectation, filters!(Where, input, v!("ok")));
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_no_key_set() {
-    panic!("where is unimplemented");
-    /*
-    input = [
-      { v!("handle"): v!("alpha"), v!("ok"): true },
-      { v!("handle"): v!("beta") },
-      { v!("handle"): v!("gamma") },
-      { v!("handle"): v!("delta"), v!("ok"): true }
-    ]
+    let input = v!([
+      { "handle": "alpha", "ok": true },
+      { "handle": "beta" },
+      { "handle": "gamma" },
+      { "handle": "delta", "ok": true }
+    ]);
 
-    expectation = [
-      { v!("handle"): v!("alpha"), v!("ok"): true },
-      { v!("handle"): v!("delta"), v!("ok"): true }
-    ]
+    let expectation = v!([
+      { "handle": "alpha", "ok": true },
+      { "handle": "delta", "ok": true }
+    ]);
 
-    assert_eq!(expectation, filters!(where, input, v!("ok"), true));
-    assert_eq!(expectation, filters!(where, input, v!("ok")));
-    */
+    assert_eq!(expectation, filters!(Where, input, v!("ok"), v!(true)));
+    assert_eq!(expectation, filters!(Where, input, v!("ok")));
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_non_array_map_input() {
-    panic!("where is unimplemented");
-    /*
-    assert_eq!([{ v!("a"): v!("ok") }], filters!(where, { v!("a"): v!("ok") }, "a", r#"ok")#);
-    assert_eq!([], filters!(where, { v!("a"): v!("not ok") }, "a", r#"ok")#);
-    */
+    assert_eq!(
+        v![{ "a": "ok" }],
+        filters!(Where, v!({ "a": "ok" }), v!("a"), v!("ok"))
+    );
+    assert_eq!(
+        v!([]),
+        filters!(Where, v!({ "a": "not ok" }), v!("a"), v!("ok"))
+    );
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_indexable_but_non_map_value() {
-    panic!("where is unimplemented");
-    /*
-    assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok"), true) }
-    assert_raises(Liquid::ArgumentError) { filters!(where, 1, v!("ok")) }
-    */
+    filters_fail!(Where, v!(1), v!("ok"), v!(true));
+    filters_fail!(Where, v!(1), v!("ok"));
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_non_boolean_value() {
-    panic!("where is unimplemented");
-    /*
-    input = [
-      { v!("message"): v!("Bonjour!"), v!("language"): v!("French") },
-      { v!("message"): v!("Hello!"), v!("language"): v!("English") },
-      { v!("message"): v!("Hallo!"), v!("language"): v!("German") }
-    ]
+    let input = v!([
+      { "message": "Bonjour!", "language": "French" },
+      { "message": "Hello!", "language": "English" },
+      { "message": "Hallo!", "language": "German" }
+    ]);
 
-    assert_eq!([{ v!("message"): v!("Bonjour!"), v!("language"): v!("French") }], filters!(where, input, "language", r#"French")#);
-    assert_eq!([{ v!("message"): v!("Hallo!"), v!("language"): v!("German") }], filters!(where, input, "language", r#"German")#);
-    assert_eq!([{ v!("message"): v!("Hello!"), v!("language"): v!("English") }], filters!(where, input, "language", r#"English")#);
-    */
+    assert_eq!(
+        v!([{ "message": "Bonjour!", "language": "French" }]),
+        filters!(Where, input, v!("language"), v!("French"))
+    );
+    assert_eq!(
+        v!([{ "message": "Hallo!", "language": "German" }]),
+        filters!(Where, input, v!("language"), v!("German"))
+    );
+    assert_eq!(
+        v!([{ "message": "Hello!", "language": "English" }]),
+        filters!(Where, input, v!("language"), v!("English"))
+    );
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_array_of_only_unindexable_values() {
-    panic!("where is unimplemented");
-    /*
-    assert_eq!(Nil, filters!(where, [Nil], v!("ok"), true));
-    assert_eq!(Nil, filters!(where, [Nil], v!("ok")));
-    */
+    assert_eq!(Nil, filters!(Where, v!([Nil]), v!("ok"), v!(true)));
+    assert_eq!(Nil, filters!(Where, v!([Nil]), v!("ok")));
 }
 
 #[test]
-#[should_panic] // liquid-rust#291
 fn test_where_no_target_value() {
-    panic!("where is unimplemented");
-    /*
-    input = [
-      { v!("foo"): false },
-      { v!("foo"): true },
-      { v!("foo"): v!("for sure") },
-      { v!("bar"): true }
-    ]
+    let input = v!([
+      { "foo": false },
+      { "foo": true },
+      { "foo": "for sure" },
+      { "bar": true }
+    ]);
 
-    assert_eq!([{ v!("foo"): true }, { v!("foo"): v!("for sure") }], filters!(where, input, v!("foo")));
-    */
+    assert_eq!(
+        v!([{ "foo": true }, { "foo": "for sure" }]),
+        filters!(Where, input, v!("foo"))
+    );
 }
