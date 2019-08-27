@@ -137,10 +137,12 @@ impl State {
     fn cycle<'e>(&mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
         let index = self.cycle_index(name, values.len());
         if index >= values.len() {
-            return Error::with_msg("cycle index out of bounds, most likely from mismatched cycles")
-                .context("index", format!("{}", index))
-                .context("count", format!("{}", values.len()))
-                .into_err();
+            return Error::with_msg(
+                "cycle index out of bounds, most likely from mismatched cycles",
+            )
+            .context("index", format!("{}", index))
+            .context("count", format!("{}", values.len()))
+            .into_err();
         }
 
         Ok(&values[index])
