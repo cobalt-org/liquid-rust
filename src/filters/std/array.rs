@@ -157,7 +157,7 @@ impl Filter for WhereFilter {
         match input {
             Value::Array(array) => {
                 if array.is_empty() {
-                    // Retrun an empty array ony if we got an empty array
+                    // Retrun an empty array only if we got an empty array
                     return Ok(Value::array(vec![]));
                 }
                 let res = apply_where_filter(
