@@ -160,19 +160,14 @@ impl Filter for WhereFilter {
                     // Retrun an empty array only if we got an empty array
                     return Ok(Value::array(vec![]));
                 }
-                let res = apply_where_filter(
+                if !array.iter().all(Value::is_object) {
+                    return Ok(Value::Nil);
+                }
+                Ok(Value::array(apply_where_filter(
                     array.iter().filter_map(Value::as_object),
                     &args.property,
                     args.target_value,
-                );
-                if !res.is_empty() {
-                    Ok(Value::array(res))
-                } else {
-                    // We're required to return Nil if the original array wasn't
-                    // empty, but no element matched the filter. This is probably
-                    // an artifact of Ruby's select function.
-                    Ok(Value::nil())
-                }
+                )))
             }
             // In the case of a single object, take it, but return an array.
             Value::Object(object) => Ok(Value::array(apply_where_filter(
