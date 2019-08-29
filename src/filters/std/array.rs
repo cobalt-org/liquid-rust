@@ -4,7 +4,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Object, Scalar, Value};
 use std::cmp;
 
 #[derive(Debug, FilterParameters)]
@@ -98,6 +98,87 @@ impl Filter for SortNaturalFilter {
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
         let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
         Ok(Value::array(result))
+    }
+}
+
+#[derive(Debug, FilterParameters)]
+struct WhereArgs {
+    #[parameter(description = "The property being matched", arg_type = "str")]
+    property: Expression,
+    #[parameter(
+        description = "The value the property is matched with",
+        arg_type = "any"
+    )]
+    target_value: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "where",
+    description = "Filter the elements of an array to those with a certain property value. \
+                   By default the target is any truthy value.",
+    parameters(WhereArgs),
+    parsed(WhereFilter)
+)]
+pub struct Where;
+
+#[derive(Debug, FromFilterParameters, Display_filter)]
+#[name = "where"]
+struct WhereFilter {
+    #[parameters]
+    args: WhereArgs,
+}
+
+fn apply_where_filter<'a, T: Iterator<Item = &'a Object>>(
+    input: T,
+    property: &str,
+    target_value: Option<&Value>,
+) -> Vec<Value> {
+    match target_value {
+        None => input
+            .filter(|object| object.get(property).map_or(false, Value::is_truthy))
+            .map(|object| Value::Object(object.clone()))
+            .collect(),
+        Some(target_value) => input
+            .filter(|object| {
+                object
+                    .get(property)
+                    .map_or(false, |value| value == target_value)
+            })
+            .map(|object| Value::Object(object.clone()))
+            .collect(),
+    }
+}
+
+impl Filter for WhereFilter {
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+
+        match input {
+            Value::Array(array) => {
+                if array.is_empty() {
+                    // Retrun an empty array only if we got an empty array
+                    return Ok(Value::array(vec![]));
+                }
+                if !array.iter().all(Value::is_object) {
+                    return Ok(Value::Nil);
+                }
+                Ok(Value::array(apply_where_filter(
+                    array.iter().filter_map(Value::as_object),
+                    &args.property,
+                    args.target_value,
+                )))
+            }
+            // In the case of a single object, take it, but return an array.
+            Value::Object(object) => Ok(Value::array(apply_where_filter(
+                std::iter::once(object),
+                &args.property,
+                args.target_value,
+            ))),
+            _ => Err(invalid_input(
+                "Array of objects or a single object expected",
+            )),
+        }
     }
 }
 
