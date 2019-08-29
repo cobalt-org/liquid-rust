@@ -11,8 +11,7 @@ keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 
 [badges]
-travis-ci = { repository = "cobalt-org/liquid-rust" }
-appveyor  = { repository = "johannhof/liquid-rust" }
+azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
 itertools = "0.8.0"

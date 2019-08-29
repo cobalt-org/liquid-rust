@@ -12,8 +12,7 @@ license = "MIT"
 proc-macro = true
 
 [badges]
-travis-ci = { repository = "cobalt-org/liquid-rust" }
-appveyor  = { repository = "johannhof/liquid-rust" }
+azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
 syn = "0.15"
