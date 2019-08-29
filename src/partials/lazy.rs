@@ -80,7 +80,7 @@ impl<S> PartialCompiler for LazyCompiler<S>
 where
     S: PartialSource + Send + Sync + 'static,
 {
-    fn compile(self, language: sync::Arc<Language>) -> Result<Box<PartialStore + Send + Sync>> {
+    fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>> {
         let store = LazyStore {
             language: language,
             source: self.source,
@@ -93,14 +93,14 @@ where
 struct LazyStore<S: PartialSource> {
     language: sync::Arc<Language>,
     source: S,
-    cache: sync::Mutex<HashMap<String, Result<sync::Arc<liquid_interpreter::Renderable>>>>,
+    cache: sync::Mutex<HashMap<String, Result<sync::Arc<dyn liquid_interpreter::Renderable>>>>,
 }
 
 impl<S> LazyStore<S>
 where
     S: PartialSource,
 {
-    fn try_get_or_create(&self, name: &str) -> Option<sync::Arc<Renderable>> {
+    fn try_get_or_create(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
         let cache = self.cache.lock().expect("not to be poisoned and reused");
         if let Some(result) = cache.get(name) {
             result.as_ref().ok().cloned()
@@ -115,7 +115,7 @@ where
         }
     }
 
-    fn get_or_create(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+    fn get_or_create(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         let cache = self.cache.lock().expect("not to be poisoned and reused");
         if let Some(result) = cache.get(name) {
             result.clone()
@@ -142,11 +142,11 @@ where
         self.source.names()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<Renderable>> {
+    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
         self.try_get_or_create(name)
     }
 
-    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         self.get_or_create(name)
     }
 }

@@ -21,9 +21,9 @@ pub struct ParserBuilder<P = Partials>
 where
     P: partials::PartialCompiler,
 {
-    blocks: compiler::PluginRegistry<Box<compiler::ParseBlock>>,
-    tags: compiler::PluginRegistry<Box<compiler::ParseTag>>,
-    filters: compiler::PluginRegistry<Box<compiler::ParseFilter>>,
+    blocks: compiler::PluginRegistry<Box<dyn compiler::ParseBlock>>,
+    tags: compiler::PluginRegistry<Box<dyn compiler::ParseTag>>,
+    filters: compiler::PluginRegistry<Box<dyn compiler::ParseFilter>>,
     partials: Option<P>,
 }
 
@@ -153,21 +153,21 @@ where
     }
 
     /// Inserts a new custom block into the parser
-    pub fn block<B: Into<Box<compiler::ParseBlock>>>(mut self, block: B) -> Self {
+    pub fn block<B: Into<Box<dyn compiler::ParseBlock>>>(mut self, block: B) -> Self {
         let block = block.into();
         self.blocks.register(block.start_tag(), block);
         self
     }
 
     /// Inserts a new custom tag into the parser
-    pub fn tag<T: Into<Box<compiler::ParseTag>>>(mut self, tag: T) -> Self {
+    pub fn tag<T: Into<Box<dyn compiler::ParseTag>>>(mut self, tag: T) -> Self {
         let tag = tag.into();
         self.tags.register(tag.tag(), tag);
         self
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<Box<compiler::ParseFilter>>>(mut self, filter: F) -> Self {
+    pub fn filter<F: Into<Box<dyn compiler::ParseFilter>>>(mut self, filter: F) -> Self {
         let filter = filter.into();
         self.filters.register(filter.name(), filter);
         self
@@ -229,7 +229,7 @@ where
 #[derive(Default, Clone)]
 pub struct Parser {
     options: sync::Arc<compiler::Language>,
-    partials: Option<sync::Arc<interpreter::PartialStore + Send + Sync>>,
+    partials: Option<sync::Arc<dyn interpreter::PartialStore + Send + Sync>>,
 }
 
 impl Parser {

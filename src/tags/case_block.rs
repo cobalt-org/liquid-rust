@@ -56,7 +56,7 @@ impl Case {
 }
 
 impl Renderable for Case {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let value = self.target.evaluate(context)?.to_owned();
         for case in &self.cases {
             if case.evaluate(&value, context)? {
@@ -140,7 +140,7 @@ impl ParseBlock for CaseBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let target = arguments
             .expect_next("Value expected.")?
             .expect_value()

@@ -25,7 +25,7 @@ impl Capture {
 }
 
 impl Renderable for Capture {
-    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let mut captured = Vec::new();
         self.template
             .render_to(&mut captured, context)
@@ -68,7 +68,7 @@ impl ParseBlock for CaptureBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let id = arguments
             .expect_next("Identifier expected")?
             .expect_identifier()

@@ -18,7 +18,7 @@ impl Text {
 }
 
 impl Renderable for Text {
-    fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
         write!(writer, "{}", &self.text).replace("Failed to render")?;
         Ok(())
     }

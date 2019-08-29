@@ -63,8 +63,8 @@ pub trait FilterParameters<'a>: Sized + FilterParametersReflection + Debug + Dis
 
 /// Structure that holds the unparsed arguments of a filter, both positional and keyword.
 pub struct FilterArguments<'a> {
-    pub positional: Box<Iterator<Item = Expression>>,
-    pub keyword: Box<Iterator<Item = (&'a str, Expression)> + 'a>,
+    pub positional: Box<dyn Iterator<Item = Expression>>,
+    pub keyword: Box<dyn Iterator<Item = (&'a str, Expression)> + 'a>,
 }
 
 /// A trait that holds a filter, ready to evaluate.
@@ -220,31 +220,31 @@ pub trait Filter: Send + Sync + Debug + Display {
 /// ```
 pub trait ParseFilter: Send + Sync + ParseFilterClone + FilterReflection {
     /// Filter `input` based on `arguments`.
-    fn parse(&self, arguments: FilterArguments) -> Result<Box<Filter>>;
+    fn parse(&self, arguments: FilterArguments) -> Result<Box<dyn Filter>>;
 }
 
 /// Support cloning of `Box<ParseFilter>`.
 pub trait ParseFilterClone {
     /// Cloning of `dyn ParseFilter`.
-    fn clone_box(&self) -> Box<ParseFilter>;
+    fn clone_box(&self) -> Box<dyn ParseFilter>;
 }
 
 impl<T> ParseFilterClone for T
 where
     T: 'static + ParseFilter + Clone,
 {
-    fn clone_box(&self) -> Box<ParseFilter> {
+    fn clone_box(&self) -> Box<dyn ParseFilter> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<ParseFilter> {
-    fn clone(&self) -> Box<ParseFilter> {
+impl Clone for Box<dyn ParseFilter> {
+    fn clone(&self) -> Box<dyn ParseFilter> {
         self.clone_box()
     }
 }
 
-impl<T> From<T> for Box<ParseFilter>
+impl<T> From<T> for Box<dyn ParseFilter>
 where
     T: 'static + ParseFilter,
 {

@@ -189,7 +189,7 @@ impl Conditional {
 }
 
 impl Renderable for Conditional {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let condition = self.compare(context).trace_with(|| self.trace().into())?;
         if condition {
             self.if_true
@@ -328,7 +328,7 @@ impl ParseBlock for UnlessBlock {
         arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let condition = parse_condition(arguments)?;
 
         let mut if_true = Vec::new();
@@ -366,7 +366,7 @@ fn parse_if(
     arguments: TagTokenIter,
     tokens: &mut TagBlock,
     options: &Language,
-) -> Result<Box<Renderable>> {
+) -> Result<Box<dyn Renderable>> {
     let condition = parse_condition(arguments)?;
 
     let mut if_true = Vec::new();
@@ -430,7 +430,7 @@ impl ParseBlock for IfBlock {
         arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let conditional = parse_if(self.start_tag(), arguments, &mut tokens, options)?;
 
         tokens.assert_empty();

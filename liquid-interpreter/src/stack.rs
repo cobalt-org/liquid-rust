@@ -28,7 +28,7 @@ impl Frame {
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
-    globals: Option<&'g ValueStore>,
+    globals: Option<&'g dyn ValueStore>,
     stack: Vec<Frame>,
     // State of variables created through increment or decrement tags.
     indexes: Object,
@@ -46,7 +46,7 @@ impl<'g> Stack<'g> {
     }
 
     /// Create a stack initialized with read-only `ValueStore`.
-    pub fn with_globals(globals: &'g ValueStore) -> Self {
+    pub fn with_globals(globals: &'g dyn ValueStore) -> Self {
         let mut stack = Self::empty();
         stack.globals = Some(globals);
         stack
@@ -118,13 +118,13 @@ impl<'g> Stack<'g> {
         globals
     }
 
-    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a ValueStore> {
+    fn find_path_frame<'a>(&'a self, path: PathRef) -> Option<&'a dyn ValueStore> {
         let key = path.iter().next()?;
         let key = key.to_str();
         self.find_frame(key.as_ref())
     }
 
-    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a ValueStore> {
+    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a dyn ValueStore> {
         for frame in self.stack.iter().rev() {
             if frame.data.contains_root(name) {
                 return Some(&frame.data);

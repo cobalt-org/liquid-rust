@@ -15,7 +15,7 @@ use interpreter::Renderable;
 struct Comment;
 
 impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
         Ok(())
     }
 }
@@ -49,7 +49,7 @@ impl ParseBlock for CommentBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
 

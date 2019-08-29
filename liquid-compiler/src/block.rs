@@ -35,29 +35,29 @@ pub trait ParseBlock: Send + Sync + ParseBlockClone + BlockReflection {
         arguments: TagTokenIter,
         block: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>>;
+    ) -> Result<Box<dyn Renderable>>;
 }
 
 pub trait ParseBlockClone {
-    fn clone_box(&self) -> Box<ParseBlock>;
+    fn clone_box(&self) -> Box<dyn ParseBlock>;
 }
 
 impl<T> ParseBlockClone for T
 where
     T: 'static + ParseBlock + Clone,
 {
-    fn clone_box(&self) -> Box<ParseBlock> {
+    fn clone_box(&self) -> Box<dyn ParseBlock> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<ParseBlock> {
-    fn clone(&self) -> Box<ParseBlock> {
+impl Clone for Box<dyn ParseBlock> {
+    fn clone(&self) -> Box<dyn ParseBlock> {
         self.clone_box()
     }
 }
 
-impl<T> From<T> for Box<ParseBlock>
+impl<T> From<T> for Box<dyn ParseBlock>
 where
     T: 'static + ParseBlock,
 {

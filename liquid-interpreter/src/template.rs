@@ -8,18 +8,18 @@ use super::Renderable;
 /// An executable template block.
 #[derive(Debug)]
 pub struct Template {
-    elements: Vec<Box<Renderable>>,
+    elements: Vec<Box<dyn Renderable>>,
 }
 
 impl Template {
     /// Create an executable template block.
-    pub fn new(elements: Vec<Box<Renderable>>) -> Template {
+    pub fn new(elements: Vec<Box<dyn Renderable>>) -> Template {
         Template { elements }
     }
 }
 
 impl Renderable for Template {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         for el in &self.elements {
             el.render_to(writer, context)?;
 

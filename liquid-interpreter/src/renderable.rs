@@ -15,5 +15,5 @@ pub trait Renderable: Send + Sync + Debug {
     }
 
     /// Renders the Renderable instance given a Liquid context.
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()>;
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()>;
 }
