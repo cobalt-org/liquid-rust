@@ -373,7 +373,7 @@ impl Filter for FirstFilter {
                     .unwrap_or_else(|| "".to_owned());
                 Ok(Value::scalar(c))
             }
-            Value::Array(ref x) => Ok(x.first().cloned().unwrap_or_else(|| Value::scalar(""))),
+            Value::Array(ref x) => Ok(x.first().cloned().unwrap_or_else(|| Value::Nil)),
             _ => Err(invalid_input("String or Array expected")),
         }
     }
@@ -403,7 +403,7 @@ impl Filter for LastFilter {
                     .unwrap_or_else(|| "".to_owned());
                 Ok(Value::scalar(c))
             }
-            Value::Array(ref x) => Ok(x.last().cloned().unwrap_or_else(|| Value::scalar(""))),
+            Value::Array(ref x) => Ok(x.last().cloned().unwrap_or_else(|| Value::Nil)),
             _ => Err(invalid_input("String or Array expected")),
         }
     }
@@ -540,7 +540,7 @@ mod tests {
             unit!(First, Value::Array(vec![tos!("test"), tos!("two")])),
             tos!("test")
         );
-        assert_eq!(unit!(First, Value::Array(vec![])), tos!(""));
+        assert_eq!(unit!(First, Value::Array(vec![])), Value::Nil);
     }
 
     #[test]
@@ -606,7 +606,7 @@ mod tests {
             unit!(Last, Value::Array(vec![tos!("test"), tos!("last")])),
             tos!("last")
         );
-        assert_eq!(unit!(Last, Value::Array(vec![])), tos!(""));
+        assert_eq!(unit!(Last, Value::Array(vec![])), Value::Nil);
     }
 
     #[test]

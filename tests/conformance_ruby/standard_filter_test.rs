@@ -593,7 +593,6 @@ fn test_date() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#254
 fn test_first_last() {
     assert_eq!(v!(1), filters!(First, v!([1, 2, 3])));
     assert_eq!(v!(3), filters!(Last, v!([1, 2, 3])));
