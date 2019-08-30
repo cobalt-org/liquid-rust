@@ -54,7 +54,11 @@ impl TagReflection for AssignTag {
 }
 
 impl ParseTag for AssignTag {
-    fn parse(&self, mut arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         let dst = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()

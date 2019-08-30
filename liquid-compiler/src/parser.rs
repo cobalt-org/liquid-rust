@@ -520,7 +520,11 @@ impl<'a> Tag<'a> {
     }
 
     /// Parses the tag just as if it weren't inside any block.
-    pub fn parse(self, tag_block: &mut TagBlock, options: &Language) -> Result<Box<dyn Renderable>> {
+    pub fn parse(
+        self,
+        tag_block: &mut TagBlock,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         self.parse_pair(&mut tag_block.iter, options)
     }
 
@@ -618,7 +622,10 @@ impl<'a> InvalidLiquidToken<'a> {
 
     /// Tries to parse this as valid liquid, which will inevitably raise an error.
     /// This is needed in order to raise the correct error message.
-    fn parse_pair(self, next_elements: &mut dyn Iterator<Item = Pair>) -> Result<Box<dyn Renderable>> {
+    fn parse_pair(
+        self,
+        next_elements: &mut dyn Iterator<Item = Pair>,
+    ) -> Result<Box<dyn Renderable>> {
         use pest::error::LineColLocation;
 
         let invalid_token_span = self.element.as_span();

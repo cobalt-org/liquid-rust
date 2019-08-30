@@ -91,7 +91,8 @@ where
                     liquid_compiler::parse(s.as_ref(), &language)
                         .map(liquid_interpreter::Template::new)
                         .map(|t| {
-                            let t: sync::Arc<dyn liquid_interpreter::Renderable> = sync::Arc::new(t);
+                            let t: sync::Arc<dyn liquid_interpreter::Renderable> =
+                                sync::Arc::new(t);
                             t
                         })
                 });

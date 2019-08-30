@@ -55,7 +55,11 @@ impl TagReflection for IncludeTag {
 }
 
 impl ParseTag for IncludeTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         let name = arguments.expect_next("Identifier or literal expected.")?;
 
         // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.

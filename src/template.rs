@@ -22,7 +22,11 @@ impl Template {
     }
 
     /// Renders an instance of the Template, using the given globals.
-    pub fn render_to(&self, writer: &mut dyn Write, globals: &dyn interpreter::ValueStore) -> Result<()> {
+    pub fn render_to(
+        &self,
+        writer: &mut dyn Write,
+        globals: &dyn interpreter::ValueStore,
+    ) -> Result<()> {
         let context = interpreter::ContextBuilder::new().set_globals(globals);
         let context = match self.partials {
             Some(ref partials) => context.set_partials(partials.as_ref()),

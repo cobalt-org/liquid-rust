@@ -39,7 +39,11 @@ impl TagReflection for BreakTag {
 }
 
 impl ParseTag for BreakTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
         Ok(Box::new(Break))
@@ -76,7 +80,11 @@ impl TagReflection for ContinueTag {
 }
 
 impl ParseTag for ContinueTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
         Ok(Box::new(Continue))

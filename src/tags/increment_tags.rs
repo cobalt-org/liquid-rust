@@ -53,7 +53,11 @@ impl TagReflection for IncrementTag {
 }
 
 impl ParseTag for IncrementTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         let id = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()
@@ -110,7 +114,11 @@ impl TagReflection for DecrementTag {
 }
 
 impl ParseTag for DecrementTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         let id = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()
