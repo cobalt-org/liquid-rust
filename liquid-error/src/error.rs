@@ -130,7 +130,7 @@ impl error::Error for Error {
         ERROR_DESCRIPTION
     }
 
-    fn cause(&self) -> Option<&dyn error::Error> {
-        self.inner.cause.as_ref().and_then(|e| e.cause())
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        self.inner.cause.as_ref().and_then(|e| e.source())
     }
 }

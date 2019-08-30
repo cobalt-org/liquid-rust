@@ -51,7 +51,7 @@ impl error::Error for CloneableError {
         self.error.as_str()
     }
 
-    fn cause(&self) -> Option<&dyn error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }
 }
