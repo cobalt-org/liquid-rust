@@ -10,7 +10,7 @@ use liquid_value::Value;
 /// It does not affect spaces between words.  Note that while this works for the case of tabs,
 /// spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived Core
 /// Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_start).
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "strip",
@@ -35,7 +35,7 @@ impl Filter for StripFilter {
 /// The filter does not affect spaces between words.  Note that while this works for the case of
 /// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
 /// Core Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_start).
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "lstrip",
@@ -51,7 +51,7 @@ struct LstripFilter;
 impl Filter for LstripFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let input = input.to_str();
-        Ok(Value::scalar(input.trim_left().to_owned()))
+        Ok(Value::scalar(input.trim_start().to_owned()))
     }
 }
 
@@ -60,7 +60,7 @@ impl Filter for LstripFilter {
 /// The filter does not affect spaces between words.  Note that while this works for the case of
 /// tabs, spaces, and newlines, it also removes any other codepoints defined by the Unicode Derived
 /// Core Property `White_Space` (per [rust
-/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_left).
+/// documentation](https://doc.rust-lang.org/std/primitive.str.html#method.trim_start).
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "rstrip",
@@ -76,7 +76,7 @@ struct RstripFilter;
 impl Filter for RstripFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let input = input.to_str();
-        Ok(Value::scalar(input.trim_right().to_owned()))
+        Ok(Value::scalar(input.trim_end().to_owned()))
     }
 }
 

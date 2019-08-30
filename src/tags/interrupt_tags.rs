@@ -13,7 +13,7 @@ use interpreter::{Context, Interrupt};
 struct Break;
 
 impl Renderable for Break {
-    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Break);
         Ok(())
     }
@@ -39,7 +39,11 @@ impl TagReflection for BreakTag {
 }
 
 impl ParseTag for BreakTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
         Ok(Box::new(Break))
@@ -50,7 +54,7 @@ impl ParseTag for BreakTag {
 struct Continue;
 
 impl Renderable for Continue {
-    fn render_to(&self, _writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Continue);
         Ok(())
     }
@@ -76,7 +80,11 @@ impl TagReflection for ContinueTag {
 }
 
 impl ParseTag for ContinueTag {
-    fn parse(&self, mut arguments: TagTokenIter, _options: &Language) -> Result<Box<Renderable>> {
+    fn parse(
+        &self,
+        mut arguments: TagTokenIter,
+        _options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
         Ok(Box::new(Continue))

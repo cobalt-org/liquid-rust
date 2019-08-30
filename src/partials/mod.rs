@@ -26,7 +26,7 @@ pub use self::ondemand::*;
 /// - Whether to cache the results or not.
 pub trait PartialCompiler {
     /// Convert a `PartialSource` into a `PartialStore`.
-    fn compile(self, language: sync::Arc<Language>) -> Result<Box<PartialStore + Send + Sync>>;
+    fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>>;
 }
 
 /// Partial-template source repository.

@@ -23,7 +23,7 @@ impl IfChanged {
 }
 
 impl Renderable for IfChanged {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let mut rendered = Vec::new();
         self.if_changed
             .render_to(&mut rendered, context)
@@ -67,7 +67,7 @@ impl ParseBlock for IfChangedBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
 

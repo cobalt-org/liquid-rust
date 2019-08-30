@@ -46,7 +46,7 @@ impl TestStatefulFilterParser {
 }
 
 impl ParseFilter for TestStatefulFilterParser {
-    fn parse(&self, arguments: FilterArguments) -> Result<Box<Filter>> {
+    fn parse(&self, arguments: FilterArguments) -> Result<Box<dyn Filter>> {
         let args = TestStatefulFilterParameters::from_args(arguments)?;
         let state = self.state;
 

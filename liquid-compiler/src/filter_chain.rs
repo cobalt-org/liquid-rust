@@ -14,12 +14,12 @@ use liquid_value::Value;
 #[derive(Debug)]
 pub struct FilterChain {
     entry: Expression,
-    filters: Vec<Box<Filter>>,
+    filters: Vec<Box<dyn Filter>>,
 }
 
 impl FilterChain {
     /// Create a new expression.
-    pub fn new(entry: Expression, filters: Vec<Box<Filter>>) -> Self {
+    pub fn new(entry: Expression, filters: Vec<Box<dyn Filter>>) -> Self {
         Self { entry, filters }
     }
 
@@ -55,7 +55,7 @@ impl fmt::Display for FilterChain {
 }
 
 impl Renderable for FilterChain {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let entry = self.evaluate(context)?;
         write!(writer, "{}", entry.to_str()).replace("Failed to render")?;
         Ok(())

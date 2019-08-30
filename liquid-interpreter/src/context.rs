@@ -59,19 +59,19 @@ impl PartialStore for NullPartials {
         Vec::new()
     }
 
-    fn try_get(&self, _name: &str) -> Option<sync::Arc<Renderable>> {
+    fn try_get(&self, _name: &str) -> Option<sync::Arc<dyn Renderable>> {
         None
     }
 
-    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         Err(Error::with_msg("Partial does not exist").context("name", name.to_owned()))
     }
 }
 
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
-    globals: Option<&'g ValueStore>,
-    partials: Option<&'g PartialStore>,
+    globals: Option<&'g dyn ValueStore>,
+    partials: Option<&'g dyn PartialStore>,
 }
 
 impl<'g> ContextBuilder<'g> {
@@ -84,13 +84,13 @@ impl<'g> ContextBuilder<'g> {
     }
 
     /// Initialize the stack with the given globals.
-    pub fn set_globals(mut self, values: &'g ValueStore) -> Self {
+    pub fn set_globals(mut self, values: &'g dyn ValueStore) -> Self {
         self.globals = Some(values);
         self
     }
 
     /// Initialize partial-templates availible for including.
-    pub fn set_partials(mut self, values: &'g PartialStore) -> Self {
+    pub fn set_partials(mut self, values: &'g dyn PartialStore) -> Self {
         self.partials = Some(values);
         self
     }
@@ -120,7 +120,7 @@ impl<'g> Default for ContextBuilder<'g> {
 /// Processing context for a template.
 pub struct Context<'g> {
     stack: Stack<'g>,
-    partials: &'g PartialStore,
+    partials: &'g dyn PartialStore,
 
     registers: anymap::AnyMap,
     interrupt: InterruptState,
@@ -145,7 +145,7 @@ impl<'g> Context<'g> {
     }
 
     /// Partial templates for inclusion.
-    pub fn partials(&self) -> &PartialStore {
+    pub fn partials(&self) -> &dyn PartialStore {
         self.partials
     }
 
@@ -153,7 +153,7 @@ impl<'g> Context<'g> {
     ///
     /// If a plugin needs state, it creates a `struct State : Default` and accesses it via
     /// `get_register_mut`.
-    pub fn get_register_mut<T: anymap::any::IntoBox<anymap::any::Any> + Default>(
+    pub fn get_register_mut<T: anymap::any::IntoBox<dyn anymap::any::Any> + Default>(
         &mut self,
     ) -> &mut T {
         self.registers.entry::<T>().or_insert_with(Default::default)

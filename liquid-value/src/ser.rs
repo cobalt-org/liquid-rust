@@ -38,8 +38,8 @@ impl ::std::error::Error for SerError {
         self.0.description()
     }
 
-    fn cause(&self) -> Option<&::std::error::Error> {
-        ::std::error::Error::cause(&self.0)
+    fn source(&self) -> Option<&(dyn (::std::error::Error) + 'static)> {
+        ::std::error::Error::source(&self.0)
     }
 }
 

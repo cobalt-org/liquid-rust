@@ -25,29 +25,29 @@ pub trait TagReflection {
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`Language`](struct.Language.html).
 pub trait ParseTag: Send + Sync + ParseTagClone + TagReflection {
-    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<Renderable>>;
+    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>>;
 }
 
 pub trait ParseTagClone {
-    fn clone_box(&self) -> Box<ParseTag>;
+    fn clone_box(&self) -> Box<dyn ParseTag>;
 }
 
 impl<T> ParseTagClone for T
 where
     T: 'static + ParseTag + Clone,
 {
-    fn clone_box(&self) -> Box<ParseTag> {
+    fn clone_box(&self) -> Box<dyn ParseTag> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<ParseTag> {
-    fn clone(&self) -> Box<ParseTag> {
+impl Clone for Box<dyn ParseTag> {
+    fn clone(&self) -> Box<dyn ParseTag> {
         self.clone_box()
     }
 }
 
-impl<T> From<T> for Box<ParseTag>
+impl<T> From<T> for Box<dyn ParseTag>
 where
     T: 'static + ParseTag,
 {

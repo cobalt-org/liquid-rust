@@ -78,7 +78,7 @@ impl<S> PartialCompiler for OnDemandCompiler<S>
 where
     S: PartialSource + Send + Sync + 'static,
 {
-    fn compile(self, language: sync::Arc<Language>) -> Result<Box<PartialStore + Send + Sync>> {
+    fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>> {
         let store = OnDemandStore {
             language,
             source: self.source,
@@ -104,7 +104,7 @@ where
         self.source.names()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<Renderable>> {
+    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
         let s = self.source.try_get(name)?;
         let s = s.as_ref();
         let template = liquid_compiler::parse(s, &self.language)
@@ -114,7 +114,7 @@ where
         Some(template)
     }
 
-    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         let s = self.source.get(name)?;
         let s = s.as_ref();
         let template = liquid_compiler::parse(s, &self.language)

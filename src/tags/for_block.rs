@@ -151,7 +151,7 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
 }
 
 impl Renderable for For {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let range = self
             .range
             .evaluate(context)
@@ -263,7 +263,7 @@ impl ParseBlock for ForBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let var_name = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()
@@ -387,7 +387,7 @@ fn trace_tablerow_tag(
 }
 
 impl Renderable for TableRow {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let range = self
             .range
             .evaluate(context)
@@ -483,7 +483,7 @@ impl ParseBlock for TableRowBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let var_name = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()

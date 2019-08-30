@@ -30,7 +30,7 @@ impl Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let expr = context
             .get_register_mut::<State>()
             .cycle(&self.name, &self.values)
@@ -122,8 +122,8 @@ impl TagReflection for CycleTag {
 }
 
 impl ParseTag for CycleTag {
-    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<Renderable>> {
-        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<Renderable>)
+    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>> {
+        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
     }
 }
 

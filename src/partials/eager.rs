@@ -81,7 +81,7 @@ impl<S> PartialCompiler for EagerCompiler<S>
 where
     S: PartialSource + Send + Sync + 'static,
 {
-    fn compile(self, language: sync::Arc<Language>) -> Result<Box<PartialStore + Send + Sync>> {
+    fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>> {
         let store: HashMap<_, _> = self
             .source
             .names()
@@ -91,7 +91,8 @@ where
                     liquid_compiler::parse(s.as_ref(), &language)
                         .map(liquid_interpreter::Template::new)
                         .map(|t| {
-                            let t: sync::Arc<liquid_interpreter::Renderable> = sync::Arc::new(t);
+                            let t: sync::Arc<dyn liquid_interpreter::Renderable> =
+                                sync::Arc::new(t);
                             t
                         })
                 });
@@ -104,7 +105,7 @@ where
 }
 
 struct EagerStore {
-    store: HashMap<String, Result<sync::Arc<liquid_interpreter::Renderable>>>,
+    store: HashMap<String, Result<sync::Arc<dyn liquid_interpreter::Renderable>>>,
 }
 
 impl PartialStore for EagerStore {
@@ -116,11 +117,11 @@ impl PartialStore for EagerStore {
         self.store.keys().map(|s| s.as_str()).collect()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<Renderable>> {
+    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
         self.store.get(name).and_then(|r| r.clone().ok())
     }
 
-    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>> {
+    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         let result = self.store.get(name).ok_or_else(|| {
             let mut available: Vec<_> = self.names();
             available.sort_unstable();

@@ -58,7 +58,7 @@ fn error_from_pair(pair: Pair, msg: String) -> Error {
 }
 
 /// Parses the provided &str into a number of Renderable items.
-pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<Renderable>>> {
+pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<dyn Renderable>>> {
     let mut liquid = LiquidParser::parse(Rule::LaxLiquidFile, text)
         .expect("Parsing with Rule::LaxLiquidFile should not raise errors, but InvalidLiquid tokens instead.")
         .next()
@@ -173,7 +173,7 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair, options: &Language) -> Result<Box<Filter>> {
+fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
@@ -249,12 +249,12 @@ fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
 /// An interface to access elements inside a block.
 pub struct TagBlock<'a: 'b, 'b> {
     name: &'b str,
-    iter: &'b mut Iterator<Item = Pair<'a>>,
+    iter: &'b mut dyn Iterator<Item = Pair<'a>>,
     closed: bool,
 }
 
 impl<'a, 'b> TagBlock<'a, 'b> {
-    fn new(name: &'b str, next_elements: &'b mut Iterator<Item = Pair<'a>>) -> Self {
+    fn new(name: &'b str, next_elements: &'b mut dyn Iterator<Item = Pair<'a>>) -> Self {
         TagBlock {
             name,
             iter: next_elements,
@@ -395,7 +395,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
     }
 
     /// A convenient method that parses every element remaining in the block.
-    pub fn parse_all(&mut self, options: &Language) -> Result<Vec<Box<Renderable>>> {
+    pub fn parse_all(&mut self, options: &Language) -> Result<Vec<Box<dyn Renderable>>> {
         let mut renderables = Vec::new();
         while let Some(r) = self.parse_next(options)? {
             renderables.push(r);
@@ -406,7 +406,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
     /// Parses the next element in the block just as if it weren't inside any block.
     ///
     /// Returns none if no element is left and raises the same errors as `next()`.
-    pub fn parse_next(&mut self, options: &Language) -> Result<Option<Box<Renderable>>> {
+    pub fn parse_next(&mut self, options: &Language) -> Result<Option<Box<dyn Renderable>>> {
         match self.next()? {
             None => Ok(None),
             Some(element) => Ok(Some(element.parse(self, options)?)),
@@ -447,7 +447,7 @@ impl<'a> Into<&'a str> for Raw<'a> {
 }
 impl<'a> Raw<'a> {
     /// Turns the text into a Renderable.
-    pub fn to_renderable(self) -> Box<Renderable> {
+    pub fn to_renderable(self) -> Box<dyn Renderable> {
         Box::new(Text::new(self.as_str()))
     }
 
@@ -520,16 +520,20 @@ impl<'a> Tag<'a> {
     }
 
     /// Parses the tag just as if it weren't inside any block.
-    pub fn parse(self, tag_block: &mut TagBlock, options: &Language) -> Result<Box<Renderable>> {
+    pub fn parse(
+        self,
+        tag_block: &mut TagBlock,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         self.parse_pair(&mut tag_block.iter, options)
     }
 
     /// The same as `parse`, but directly takes an iterator over `Pair`s instead of a TagBlock.
     fn parse_pair(
         self,
-        next_elements: &mut Iterator<Item = Pair>,
+        next_elements: &mut dyn Iterator<Item = Pair>,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         let (name, tokens) = (self.name, self.tokens);
         let position = name.as_span();
         let name = name.as_str();
@@ -578,7 +582,7 @@ impl<'a> From<Pair<'a>> for Exp<'a> {
 
 impl<'a> Exp<'a> {
     /// Parses the expression just as if it weren't inside any block.
-    pub fn parse(self, options: &Language) -> Result<Box<Renderable>> {
+    pub fn parse(self, options: &Language) -> Result<Box<dyn Renderable>> {
         let filter_chain = self
             .element
             .into_inner()
@@ -612,13 +616,16 @@ impl<'a> InvalidLiquidToken<'a> {
 
     /// Tries to parse this as valid liquid, which will inevitably raise an error.
     /// This is needed in order to raise the right error message.
-    pub fn parse(self, tag_block: &mut TagBlock) -> Result<Box<Renderable>> {
+    pub fn parse(self, tag_block: &mut TagBlock) -> Result<Box<dyn Renderable>> {
         self.parse_pair(&mut tag_block.iter)
     }
 
     /// Tries to parse this as valid liquid, which will inevitably raise an error.
     /// This is needed in order to raise the correct error message.
-    fn parse_pair(self, next_elements: &mut Iterator<Item = Pair>) -> Result<Box<Renderable>> {
+    fn parse_pair(
+        self,
+        next_elements: &mut dyn Iterator<Item = Pair>,
+    ) -> Result<Box<dyn Renderable>> {
         use pest::error::LineColLocation;
 
         let invalid_token_span = self.element.as_span();
@@ -694,7 +701,7 @@ impl<'a> BlockElement<'a> {
         self,
         block: &mut TagBlock<'a, '_>,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse(block, options),
@@ -706,9 +713,9 @@ impl<'a> BlockElement<'a> {
     /// The same as `parse`, but directly takes an iterator over `Pair`s instead of a TagBlock.
     fn parse_pair(
         self,
-        next_elements: &mut Iterator<Item = Pair>,
+        next_elements: &mut dyn Iterator<Item = Pair>,
         options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         match self {
             BlockElement::Raw(raw) => Ok(raw.to_renderable()),
             BlockElement::Tag(tag) => tag.parse_pair(next_elements, options),
@@ -732,7 +739,7 @@ impl<'a> BlockElement<'a> {
 ///
 /// The awareness of the position allows more precise error messages.
 pub struct TagTokenIter<'a> {
-    iter: Box<Iterator<Item = TagToken<'a>> + 'a>,
+    iter: Box<dyn Iterator<Item = TagToken<'a>> + 'a>,
     position: ::pest::Position<'a>,
 }
 impl<'a> Iterator for TagTokenIter<'a> {

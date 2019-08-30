@@ -9,7 +9,7 @@ use super::Trace;
 /// Convenience type alias for Liquid compiler errors
 pub type Result<T> = result::Result<T, Error>;
 
-type BoxedError = Box<ErrorClone>;
+type BoxedError = Box<dyn ErrorClone>;
 
 /// Compiler error
 #[derive(Debug, Clone)]
@@ -130,7 +130,7 @@ impl error::Error for Error {
         ERROR_DESCRIPTION
     }
 
-    fn cause(&self) -> Option<&error::Error> {
-        self.inner.cause.as_ref().and_then(|e| e.cause())
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        self.inner.cause.as_ref().and_then(|e| e.source())
     }
 }

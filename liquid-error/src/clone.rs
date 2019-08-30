@@ -4,20 +4,20 @@ use std::fmt;
 /// An error that can be cloned.
 pub trait ErrorClone: error::Error + Send + Sync + 'static {
     /// Clone the error.
-    fn clone_box(&self) -> Box<ErrorClone>;
+    fn clone_box(&self) -> Box<dyn ErrorClone>;
 }
 
 impl<E> ErrorClone for E
 where
     E: error::Error + Clone + Send + Sync + 'static,
 {
-    fn clone_box(&self) -> Box<ErrorClone> {
+    fn clone_box(&self) -> Box<dyn ErrorClone> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<ErrorClone> {
-    fn clone(&self) -> Box<ErrorClone> {
+impl Clone for Box<dyn ErrorClone> {
+    fn clone(&self) -> Box<dyn ErrorClone> {
         self.clone_box()
     }
 }
@@ -51,7 +51,7 @@ impl error::Error for CloneableError {
         self.error.as_str()
     }
 
-    fn cause(&self) -> Option<&error::Error> {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }
 }

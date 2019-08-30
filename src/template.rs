@@ -8,12 +8,12 @@ use liquid_interpreter::Renderable;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
-    pub(crate) partials: Option<sync::Arc<PartialStore + Send + Sync>>,
+    pub(crate) partials: Option<sync::Arc<dyn PartialStore + Send + Sync>>,
 }
 
 impl Template {
     /// Renders an instance of the Template, using the given globals.
-    pub fn render(&self, globals: &interpreter::ValueStore) -> Result<String> {
+    pub fn render(&self, globals: &dyn interpreter::ValueStore) -> Result<String> {
         const BEST_GUESS: usize = 10_000;
         let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
@@ -22,7 +22,11 @@ impl Template {
     }
 
     /// Renders an instance of the Template, using the given globals.
-    pub fn render_to(&self, writer: &mut Write, globals: &interpreter::ValueStore) -> Result<()> {
+    pub fn render_to(
+        &self,
+        writer: &mut dyn Write,
+        globals: &dyn interpreter::ValueStore,
+    ) -> Result<()> {
         let context = interpreter::ContextBuilder::new().set_globals(globals);
         let context = match self.partials {
             Some(ref partials) => context.set_partials(partials.as_ref()),

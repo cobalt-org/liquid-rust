@@ -14,8 +14,8 @@ pub trait PartialStore: fmt::Debug {
     fn names(&self) -> Vec<&str>;
 
     /// Access a partial-template.
-    fn try_get(&self, name: &str) -> Option<sync::Arc<Renderable>>;
+    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>>;
 
     /// Access a .partial-template
-    fn get(&self, name: &str) -> Result<sync::Arc<Renderable>>;
+    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>>;
 }

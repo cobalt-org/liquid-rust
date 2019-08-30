@@ -16,7 +16,7 @@ struct RawT {
 }
 
 impl Renderable for RawT {
-    fn render_to(&self, writer: &mut Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
         write!(writer, "{}", self.content).replace("Failed to render")?;
         Ok(())
     }
@@ -51,7 +51,7 @@ impl ParseBlock for RawBlock {
         mut arguments: TagTokenIter,
         mut tokens: TagBlock,
         _options: &Language,
-    ) -> Result<Box<Renderable>> {
+    ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
 

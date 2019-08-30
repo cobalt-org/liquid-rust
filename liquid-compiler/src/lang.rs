@@ -5,9 +5,9 @@ use super::PluginRegistry;
 
 #[derive(Clone)]
 pub struct Language {
-    pub blocks: PluginRegistry<Box<ParseBlock>>,
-    pub tags: PluginRegistry<Box<ParseTag>>,
-    pub filters: PluginRegistry<Box<ParseFilter>>,
+    pub blocks: PluginRegistry<Box<dyn ParseBlock>>,
+    pub tags: PluginRegistry<Box<dyn ParseTag>>,
+    pub filters: PluginRegistry<Box<dyn ParseFilter>>,
     non_exhaustive: (),
 }
 
