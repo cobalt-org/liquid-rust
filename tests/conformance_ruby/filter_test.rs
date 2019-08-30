@@ -135,7 +135,6 @@ fn test_sort() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#249
 fn test_sort_natural() {
     let assigns = v!({
         "words": ["case", "Assert", "Insensitive"],

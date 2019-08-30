@@ -72,27 +72,60 @@ fn nil_safe_casecmp(a: &Option<String>, b: &Option<String>) -> Option<cmp::Order
     }
 }
 
+#[derive(Debug, Default, FilterParameters)]
+struct SortArgs {
+    #[parameter(description = "The property used for sorting.", arg_type = "str")]
+    property: Option<Expression>,
+}
+
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "sort",
     description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
+    parameters(SortArgs),
     parsed(SortFilter)
 )]
 pub struct Sort;
 
-#[derive(Debug, Default, Display_filter)]
+#[derive(Debug, Default, FromFilterParameters, Display_filter)]
 #[name = "sort"]
-struct SortFilter;
+struct SortFilter {
+    #[parameters]
+    args: SortArgs,
+}
+
+fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a Value {
+    value
+        .as_object()
+        .and_then(|obj| obj.get(property))
+        .unwrap_or(&Value::Nil)
+}
 
 impl Filter for SortFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        // TODO(#333) optional property parameter
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
 
         let array = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
+
+        if args.property.is_some() && !array.iter().all(Value::is_object) {
+            return Err(invalid_input("Array of objects expected"));
+        }
+
         let mut sorted = array.clone();
-        sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+        if let Some(property) = &args.property {
+            // Using unwrap is ok since all of the elements are objects
+            sorted.sort_by(|a, b| {
+                nil_safe_compare(
+                    safe_property_getter(a, property),
+                    safe_property_getter(b, property),
+                )
+                .unwrap_or(cmp::Ordering::Equal)
+            });
+        } else {
+            sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+        }
         Ok(Value::array(sorted))
     }
 }
@@ -101,25 +134,46 @@ impl Filter for SortFilter {
 #[filter(
     name = "sort_natural",
     description = "Sorts items in an array.",
+    parameters(SortArgs),
     parsed(SortNaturalFilter)
 )]
 pub struct SortNatural;
 
-#[derive(Debug, Default, Display_filter)]
+#[derive(Debug, Default, FromFilterParameters, Display_filter)]
 #[name = "sort_natural"]
-struct SortNaturalFilter;
+struct SortNaturalFilter {
+    #[parameters]
+    args: SortArgs,
+}
 
 impl Filter for SortNaturalFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        // TODO(#334) optional property parameter
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
 
         let array = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
-        let mut sorted: Vec<_> = array
-            .iter()
-            .map(|v| (nil_safe_casecmp_key(v), v.clone()))
-            .collect();
+
+        if args.property.is_some() && !array.iter().all(Value::is_object) {
+            return Err(invalid_input("Array of objects expected"));
+        }
+
+        let mut sorted: Vec<_> = if let Some(property) = &args.property {
+            array
+                .iter()
+                .map(|v| {
+                    (
+                        nil_safe_casecmp_key(safe_property_getter(v, property)),
+                        v.clone(),
+                    )
+                })
+                .collect()
+        } else {
+            array
+                .iter()
+                .map(|v| (nil_safe_casecmp_key(v), v.clone()))
+                .collect()
+        };
         sorted.sort_by(|a, b| nil_safe_casecmp(&a.0, &b.0).unwrap_or(cmp::Ordering::Equal));
         let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
         Ok(Value::array(result))
