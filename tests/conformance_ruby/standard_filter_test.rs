@@ -224,9 +224,10 @@ fn test_sort() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#262
 fn test_sort_with_nils() {
     assert_eq!(v!([1, 2, 3, 4, nil]), filters!(Sort, v!([nil, 4, 3, 2, 1])));
+    /*
+    // liquid-rust#333
     assert_eq!(
         v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }, {}]),
         filters!(
@@ -234,7 +235,7 @@ fn test_sort_with_nils() {
             v!([{ "a": 4 }, { "a": 3 }, {}, { "a": 1 }, { "a": 2 }]),
             v!("a")
         )
-    );
+    );*/
 }
 
 #[test]
@@ -275,12 +276,13 @@ fn test_sort_natural() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#262
 fn test_sort_natural_with_nils() {
     assert_eq!(
         v!(["a", "B", "c", "D", nil]),
         filters!(SortNatural, v!([nil, "c", "D", "a", "B"]))
     );
+    /*
+    // liquid-rust#334
     assert_eq!(
         v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }, {}]),
         filters!(
@@ -289,6 +291,7 @@ fn test_sort_natural_with_nils() {
             v!("a")
         )
     );
+    */
 }
 
 #[test]

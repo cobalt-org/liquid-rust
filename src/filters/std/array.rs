@@ -47,6 +47,31 @@ impl Filter for JoinFilter {
     }
 }
 
+fn nil_safe_compare(a: &Value, b: &Value) -> Option<cmp::Ordering> {
+    match (a, b) {
+        (Value::Nil, Value::Nil) => Some(cmp::Ordering::Equal),
+        (Value::Nil, _) => Some(cmp::Ordering::Greater),
+        (_, Value::Nil) => Some(cmp::Ordering::Less),
+        (a, b) => a.partial_cmp(b),
+    }
+}
+
+fn nil_safe_casecmp_key(value: &Value) -> Option<String> {
+    match value {
+        Value::Nil => None,
+        value => Some(value.to_str().to_lowercase()),
+    }
+}
+
+fn nil_safe_casecmp(a: &Option<String>, b: &Option<String>) -> Option<cmp::Ordering> {
+    match (a, b) {
+        (None, None) => Some(cmp::Ordering::Equal),
+        (None, _) => Some(cmp::Ordering::Greater),
+        (_, None) => Some(cmp::Ordering::Less),
+        (a, b) => a.partial_cmp(b),
+    }
+}
+
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "sort",
@@ -67,7 +92,7 @@ impl Filter for SortFilter {
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
         let mut sorted = array.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
+        sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
         Ok(Value::array(sorted))
     }
 }
@@ -93,9 +118,9 @@ impl Filter for SortNaturalFilter {
             .ok_or_else(|| invalid_input("Array expected"))?;
         let mut sorted: Vec<_> = array
             .iter()
-            .map(|v| (v.to_str().to_lowercase(), v.clone()))
+            .map(|v| (nil_safe_casecmp_key(v), v.clone()))
             .collect();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Equal));
+        sorted.sort_by(|a, b| nil_safe_casecmp(&a.0, &b.0).unwrap_or(cmp::Ordering::Equal));
         let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
         Ok(Value::array(result))
     }
