@@ -73,8 +73,8 @@ fn nil_safe_casecmp(a: &Option<String>, b: &Option<String>) -> Option<cmp::Order
 }
 
 #[derive(Debug, Default, FilterParameters)]
-struct SortArgs {
-    #[parameter(description = "The property used for sorting.", arg_type = "str")]
+struct PropertyArgs {
+    #[parameter(description = "The property accessed by the filter.", arg_type = "str")]
     property: Option<Expression>,
 }
 
@@ -82,7 +82,7 @@ struct SortArgs {
 #[filter(
     name = "sort",
     description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
-    parameters(SortArgs),
+    parameters(PropertyArgs),
     parsed(SortFilter)
 )]
 pub struct Sort;
@@ -91,7 +91,7 @@ pub struct Sort;
 #[name = "sort"]
 struct SortFilter {
     #[parameters]
-    args: SortArgs,
+    args: PropertyArgs,
 }
 
 fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a Value {
@@ -134,7 +134,7 @@ impl Filter for SortFilter {
 #[filter(
     name = "sort_natural",
     description = "Sorts items in an array.",
-    parameters(SortArgs),
+    parameters(PropertyArgs),
     parsed(SortNaturalFilter)
 )]
 pub struct SortNatural;
@@ -143,7 +143,7 @@ pub struct SortNatural;
 #[name = "sort_natural"]
 struct SortNaturalFilter {
     #[parameters]
-    args: SortArgs,
+    args: PropertyArgs,
 }
 
 impl Filter for SortNaturalFilter {
@@ -363,23 +363,43 @@ impl Filter for MapFilter {
 #[filter(
     name = "compact",
     description = "Remove nulls from an iterable.",
+    parameters(PropertyArgs),
     parsed(CompactFilter)
 )]
 pub struct Compact;
 
-#[derive(Debug, Default, Display_filter)]
+#[derive(Debug, Default, FromFilterParameters, Display_filter)]
 #[name = "compact"]
-struct CompactFilter;
+struct CompactFilter {
+    #[parameters]
+    args: PropertyArgs,
+}
 
 impl Filter for CompactFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+        let args = self.args.evaluate(context)?;
+
         let array = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
 
-        // TODO(#335) optional property parameter
-
-        let result: Vec<_> = array.iter().filter(|v| !v.is_nil()).cloned().collect();
+        let result: Vec<_> = if let Some(property) = &args.property {
+            if !array.iter().all(Value::is_object) {
+                return Err(invalid_input("Array of objects expected"));
+            }
+            // Reject non objects that don't have the required property
+            array
+                .iter()
+                .filter(|v| {
+                    !v.as_object()
+                        .and_then(|obj| obj.get(property.as_ref()))
+                        .map_or(true, Value::is_nil)
+                })
+                .cloned()
+                .collect()
+        } else {
+            array.iter().filter(|v| !v.is_nil()).cloned().collect()
+        };
 
         Ok(Value::array(result))
     }

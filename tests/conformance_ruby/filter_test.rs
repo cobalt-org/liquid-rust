@@ -160,11 +160,10 @@ fn test_sort_natural() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#246
 fn test_compact() {
     let assigns = v!({
         "words": ["a", nil, "b", nil, "c"],
-        "hashes": [{ "a": "A" }, { "a": nil }, { "a": "C" }],
+        "hashes": [{ "a": "A" }, { "a": nil }, { "a": "C" }, {}],
     });
 
     // Test strings

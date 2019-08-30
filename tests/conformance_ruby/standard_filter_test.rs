@@ -413,9 +413,15 @@ fn test_uniq_empty_array() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#335
 fn test_compact_empty_array() {
     assert_eq!(v!([]), filters!(Compact, v!([]), v!("a")));
+}
+
+#[test]
+fn test_compact_invalid_property() {
+    let input = v!([[1], [2], [3]]);
+
+    filters_fail!(Compact, input, v!("bar"));
 }
 
 #[test]
