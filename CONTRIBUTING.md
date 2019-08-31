@@ -36,6 +36,12 @@ We appreciate your help as-is.  We'd love to help you through the process for co
 - [ ] Install [Clippy](https://github.com/Manishearth/rust-clippy) and run `rustup run nightly cargo clippy` to catch common mistakes (will be checked by Travis)
 - [ ] Install [Rustfmt](https://github.com/rust-lang-nursery/rustfmt) and run `cargo fmt` to format your code (will also be checked by Travis)
 
+For commit messages, we use [Conventional](https://www.conventionalcommits.org)
+style.  If you already wrote your commits and don't feel comfortable changing
+them, don't worry and go ahead and create your PR.  We'll work with you on the
+best route forward. You can check your branch locally with
+[`committed`](https://github.com/crate-ci/committed).
+
 For new tags or filters, we recommend
 - Open an RFC Issue for discussing what the API should be.  We'd like to avoid disrupting people once they start using a feature.
 - Consider incubating it in your code first to so it can be iterated on to find what works well.
