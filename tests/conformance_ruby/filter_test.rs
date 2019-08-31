@@ -113,7 +113,6 @@ fn test_join() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#250
 fn test_sort() {
     let assigns = v!({
         "value": 3,

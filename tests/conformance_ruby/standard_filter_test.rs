@@ -365,7 +365,6 @@ fn test_sort_natural_empty_array() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_legacy_sort_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
