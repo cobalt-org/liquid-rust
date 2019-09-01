@@ -17,7 +17,7 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 [dependencies]
 syn = "0.15"
 proc-quote = "0.2"
-proc-macro2 = "0.4.27"
+proc-macro2 = "1.0.2"
 
 # Exposed in API
 liquid-error = { version = "^0.19", path = "../liquid-error" }
