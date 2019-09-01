@@ -1,7 +1,3 @@
-environment:
-  global:
-    #APPVEYOR_CACHE_SKIP_RESTORE: true
-
 install:
   - echo Do Nothing
 
