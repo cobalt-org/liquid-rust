@@ -675,3 +675,23 @@ text: foo
     let output = template.render(&globals).unwrap();
     assert_eq!(output, "foo".to_string());
 }
+
+#[test]
+fn test_compact() {
+    let text = "{{hashes | compact: 'a' | map: 'a' | join}}";
+    let globals: liquid::value::Object = serde_yaml::from_str(
+        r#"
+words: ["a", null, "b", null, "c"]
+hashes: [{"a": "A"}, {"a": null}, {"a": "C"}, {}]
+"#,
+    )
+    .unwrap();
+
+    let template = liquid::ParserBuilder::with_liquid()
+        .build()
+        .unwrap()
+        .parse(text)
+        .unwrap();
+    let output = template.render(&globals).unwrap();
+    assert_eq!(output, "A C".to_string());
+}
