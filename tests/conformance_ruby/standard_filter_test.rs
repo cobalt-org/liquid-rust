@@ -210,7 +210,6 @@ fn test_join() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort() {
     assert_eq!(v!([1, 2, 3, 4]), filters!(Sort, v!([4, 3, 2, 1])));
     assert_eq!(
@@ -224,7 +223,6 @@ fn test_sort() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#262
 fn test_sort_with_nils() {
     assert_eq!(v!([1, 2, 3, 4, nil]), filters!(Sort, v!([nil, 4, 3, 2, 1])));
     assert_eq!(
@@ -238,7 +236,6 @@ fn test_sort_with_nils() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": 4, "handle": "alpha" },
@@ -247,18 +244,28 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
       { "handle": "delta" },
       { "price": 2, "handle": "epsilon" }
     ]);
-    let expectation = v!([
-      { "price": 1, "handle": "gamma" },
-      { "price": 2, "handle": "epsilon" },
-      { "price": 4, "handle": "alpha" },
-      { "handle": "delta" },
-      { "handle": "beta" }
-    ]);
-    assert_eq!(expectation, filters!(Sort, input, v!("price")));
+    let expectation_start = vec![
+        v!({ "price": 1, "handle": "gamma" }),
+        v!({ "price": 2, "handle": "epsilon" }),
+        v!({ "price": 4, "handle": "alpha" }),
+    ];
+    // Those two results are viable, since both values "map" to nil.
+    // Since the sorting is unstable, the order between the results is undefined.
+    // The original test (Ruby implementation) tests for only one of the results,
+    // which, I think, was the one produced by their specific implementation.
+    let expectation_end = (
+        vec![v!({ "handle": "delta" }), v!({ "handle": "beta" })],
+        vec![v!({ "handle": "beta" }), v!({ "handle": "delta" })],
+    );
+    let result = filters!(Sort, input, v!("price"));
+    let result = result.into_array();
+    assert!(result.is_some());
+    let result = result.unwrap();
+    assert_eq!(expectation_start, &result[..3]);
+    assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_natural() {
     assert_eq!(
         v!(["a", "B", "c", "D"]),
@@ -275,7 +282,6 @@ fn test_sort_natural() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#262
 fn test_sort_natural_with_nils() {
     assert_eq!(
         v!(["a", "B", "c", "D", nil]),
@@ -292,7 +298,6 @@ fn test_sort_natural_with_nils() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": "4", "handle": "alpha" },
@@ -301,18 +306,28 @@ fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
       { "handle": "delta" },
       { "price": 2, "handle": "epsilon" }
     ]);
-    let expectation = v!([
-      { "price": "1", "handle": "gamma" },
-      { "price": 2, "handle": "epsilon" },
-      { "price": "4", "handle": "alpha" },
-      { "handle": "delta" },
-      { "handle": "beta" }
-    ]);
-    assert_eq!(expectation, filters!(SortNatural, input, v!("price")));
+    let expectation_start = vec![
+        v!({ "price": "1", "handle": "gamma" }),
+        v!({ "price": 2, "handle": "epsilon" }),
+        v!({ "price": "4", "handle": "alpha" }),
+    ];
+    // Those two results are viable, since both values "map" to nil.
+    // Since the sorting is unstable, the order between the results is undefined.
+    // The original test (Ruby implementation) tests for only one of the results,
+    // which, I think, was the one produced by their specific implementation.
+    let expectation_end = (
+        vec![v!({ "handle": "delta" }), v!({ "handle": "beta" })],
+        vec![v!({ "handle": "beta" }), v!({ "handle": "delta" })],
+    );
+    let result = filters!(SortNatural, input, v!("price"));
+    let result = result.into_array();
+    assert!(result.is_some());
+    let result = result.unwrap();
+    assert_eq!(expectation_start, &result[..3]);
+    assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_natural_case_check() {
     let input = v!([
       { "key": "X" },
@@ -340,19 +355,16 @@ fn test_sort_natural_case_check() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_empty_array() {
     assert_eq!(v!([]), filters!(Sort, v!([]), v!("a")));
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_sort_natural_empty_array() {
     assert_eq!(v!([]), filters!(SortNatural, v!([]), v!("a")));
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_legacy_sort_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
@@ -361,7 +373,6 @@ fn test_legacy_sort_hash() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#257
 fn test_numerical_vs_lexicographical_sort() {
     assert_eq!(v!([2, 10]), filters!(Sort, v!([10, 2])));
     assert_eq!(
@@ -401,9 +412,15 @@ fn test_uniq_empty_array() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#335
 fn test_compact_empty_array() {
     assert_eq!(v!([]), filters!(Compact, v!([]), v!("a")));
+}
+
+#[test]
+fn test_compact_invalid_property() {
+    let input = v!([[1], [2], [3]]);
+
+    filters_fail!(Compact, input, v!("bar"));
 }
 
 #[test]
@@ -593,7 +610,6 @@ fn test_date() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#254
 fn test_first_last() {
     assert_eq!(v!(1), filters!(First, v!([1, 2, 3])));
     assert_eq!(v!(3), filters!(Last, v!([1, 2, 3])));
