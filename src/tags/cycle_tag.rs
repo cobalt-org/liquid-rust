@@ -125,6 +125,10 @@ impl ParseTag for CycleTag {
     fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>> {
         parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
     }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

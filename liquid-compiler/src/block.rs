@@ -29,13 +29,15 @@ pub trait BlockReflection {
 /// of the block, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the block, a Vec of all [Elements](lexer/enum.Element.html) inside the block and
 /// the global [`Language`](struct.Language.html).
-pub trait ParseBlock: Send + Sync + ParseBlockClone + BlockReflection {
+pub trait ParseBlock: Send + Sync + ParseBlockClone {
     fn parse(
         &self,
         arguments: TagTokenIter,
         block: TagBlock,
         options: &Language,
     ) -> Result<Box<dyn Renderable>>;
+
+    fn reflection(&self) -> &dyn BlockReflection;
 }
 
 pub trait ParseBlockClone {

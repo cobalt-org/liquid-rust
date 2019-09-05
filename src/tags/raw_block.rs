@@ -60,6 +60,10 @@ impl ParseBlock for RawBlock {
         tokens.assert_empty();
         Ok(Box::new(RawT { content }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 #[cfg(test)]

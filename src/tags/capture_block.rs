@@ -87,6 +87,10 @@ impl ParseBlock for CaptureBlock {
         tokens.assert_empty();
         Ok(Box::new(Capture { id, template }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 #[cfg(test)]

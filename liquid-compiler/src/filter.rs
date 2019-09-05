@@ -211,16 +211,18 @@ pub trait Filter: Send + Sync + Debug + Display {
 ///         let args = ExampleArgs::from_args(arguments)?;
 ///         // Use the configuration state of the `ParseFilter`
 ///         let state = self.state;
-///         
+///
 ///         // Create the `Filter` struct and return it, passing the information
 ///         // about the arguments and the configuration of the `ParseFilter`.
 ///         Ok(Box::new(ExampleFilter { args, state }))
 ///     }
 /// }
 /// ```
-pub trait ParseFilter: Send + Sync + ParseFilterClone + FilterReflection {
+pub trait ParseFilter: Send + Sync + ParseFilterClone {
     /// Filter `input` based on `arguments`.
     fn parse(&self, arguments: FilterArguments) -> Result<Box<dyn Filter>>;
+
+    fn reflection(&self) -> &dyn FilterReflection;
 }
 
 /// Support cloning of `Box<ParseFilter>`.

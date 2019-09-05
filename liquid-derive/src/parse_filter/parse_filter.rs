@@ -27,6 +27,10 @@ fn generate_parse_filter(filter_parser: &ParseFilter) -> Result<TokenStream> {
                     #build_filter_parameters
                     #return_expr
                 }
+
+                fn reflection(&self) -> &::liquid::compiler::FilterReflection {
+                    self
+                }
             }
         })
     } else {
@@ -46,6 +50,10 @@ fn generate_parse_filter(filter_parser: &ParseFilter) -> Result<TokenStream> {
                     }
 
                     #return_expr
+                }
+
+                fn reflection(&self) -> &::liquid::compiler::FilterReflection {
+                    self
                 }
             }
         })

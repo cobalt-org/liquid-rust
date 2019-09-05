@@ -52,6 +52,10 @@ impl ParseFilter for TestStatefulFilterParser {
 
         Ok(Box::new(TestStatefulFilter { args, state }))
     }
+
+    fn reflection(&self) -> &dyn liquid::compiler::FilterReflection {
+        self
+    }
 }
 
 #[derive(Debug, Display_filter)]

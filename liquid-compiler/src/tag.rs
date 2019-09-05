@@ -24,8 +24,10 @@ pub trait TagReflection {
 /// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
 /// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
 /// the tag and the global [`Language`](struct.Language.html).
-pub trait ParseTag: Send + Sync + ParseTagClone + TagReflection {
+pub trait ParseTag: Send + Sync + ParseTagClone {
     fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>>;
+
+    fn reflection(&self) -> &dyn TagReflection;
 }
 
 pub trait ParseTagClone {

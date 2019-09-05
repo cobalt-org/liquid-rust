@@ -359,6 +359,10 @@ impl ParseBlock for UnlessBlock {
             if_false,
         }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 fn parse_if(
@@ -435,6 +439,10 @@ impl ParseBlock for IfBlock {
 
         tokens.assert_empty();
         Ok(conditional)
+    }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
     }
 }
 
