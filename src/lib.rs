@@ -41,6 +41,7 @@ extern crate liquid_interpreter;
 extern crate liquid_value;
 
 mod parser;
+mod reflection;
 mod template;
 
 /// Allows `liquid-derive` macros to work inside this crate.
@@ -74,6 +75,7 @@ pub mod tags;
 pub use interpreter::ValueStore;
 pub use liquid_error::Error;
 pub use parser::*;
+pub use reflection::*;
 pub use template::*;
 
 #[macro_use]
