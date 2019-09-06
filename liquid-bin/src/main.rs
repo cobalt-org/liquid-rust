@@ -5,9 +5,7 @@
 extern crate clap;
 extern crate liquid;
 
-#[cfg(feature = "serde_json")]
 extern crate serde_json;
-#[cfg(feature = "serde_yaml")]
 extern crate serde_yaml;
 
 use std::ffi;
@@ -27,26 +25,14 @@ fn option<'a>(name: &'a str, value: &'a str) -> clap::Arg<'a, 'a> {
     clap::Arg::with_name(name).long(name).value_name(value)
 }
 
-#[cfg(feature = "serde_yaml")]
 fn load_yaml(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_yaml::from_reader(f).map_err(|e| e.into())
 }
 
-#[cfg(not(feature = "serde_yaml"))]
-fn load_yaml(_path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
-    Err(Error::new("yaml is unsupported"))?
-}
-
-#[cfg(feature = "serde_json")]
 fn load_json(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_json::from_reader(f).map_err(|e| e.into())
-}
-
-#[cfg(not(feature = "serde_json"))]
-fn load_json(_path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
-    Err(Error::new("json is unsupported"))?
 }
 
 fn build_context(path: &path::Path) -> Result<liquid::value::Object, Box<dyn std::error::Error>> {
