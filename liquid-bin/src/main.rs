@@ -1,9 +1,8 @@
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 
-#[macro_use]
-extern crate clap;
 extern crate liquid;
+extern crate structopt;
 
 extern crate serde_json;
 extern crate serde_yaml;
@@ -13,6 +12,8 @@ use std::fs;
 use std::io::Write;
 use std::path;
 
+use structopt::StructOpt;
+
 #[derive(Copy, Clone, Debug, derive_more::Display, derive_more::From, derive_more::Constructor)]
 #[display(fmt = "{}", msg)]
 struct Error {
@@ -20,10 +21,6 @@ struct Error {
 }
 
 impl std::error::Error for Error {}
-
-fn option<'a>(name: &'a str, value: &'a str) -> clap::Arg<'a, 'a> {
-    clap::Arg::with_name(name).long(name).value_name(value)
-}
 
 fn load_yaml(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
@@ -52,38 +49,38 @@ fn build_context(path: &path::Path) -> Result<liquid::value::Object, Box<dyn std
     Ok(value)
 }
 
+#[derive(StructOpt)]
+struct Args {
+    #[structopt(long, parse(from_os_str))]
+    input: std::path::PathBuf,
+
+    #[structopt(long, parse(from_os_str))]
+    output: Option<std::path::PathBuf>,
+
+    #[structopt(long, parse(from_os_str))]
+    context: Option<std::path::PathBuf>,
+}
+
 fn run() -> Result<i32, Box<dyn std::error::Error>> {
-    let matches = clap::App::new("liquidate")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .arg(option("input", "LIQUID").required(true))
-        .arg(option("output", "TXT"))
-        .arg(option("context", "YAML"))
-        .get_matches_safe()?;
+    let args = Args::from_args();
 
     let parser = liquid::ParserBuilder::with_liquid()
         .extra_filters()
         .jekyll_filters()
         .build()
         .expect("should succeed without partials");
-    let template_path = matches
-        .value_of("input")
-        .map(path::PathBuf::from)
-        .expect("Parameter was required");
-    let template = parser.parse_file(template_path)?;
+    let template = parser.parse_file(&args.input)?;
 
-    let data = matches
-        .value_of("context")
-        .map(|s| {
-            let p = path::PathBuf::from(s);
-            build_context(p.as_path())
-        })
+    let data = args
+        .context
+        .as_ref()
+        .map(|p| build_context(p.as_path()))
         .map_or(Ok(None), |r| r.map(Some))?
         .unwrap_or_else(liquid::value::Object::new);
     let output = template.render(&data)?;
-    match matches.value_of("output") {
+    match args.output {
         Some(path) => {
-            let mut out = fs::File::create(path::PathBuf::from(path))?;
+            let mut out = fs::File::create(path)?;
             out.write_all(output.as_bytes())?;
         }
         None => {

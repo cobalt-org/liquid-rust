@@ -16,7 +16,7 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 [dependencies]
 liquid = { version = "0.19", path = "../" }
 serde = { version = "1.0", features = ["derive"] }
-clap = "2.26"
+structopt = "0.3"
 serde_yaml = "0.8"
 serde_json = "1.0"
 derive_more = "0.15.0"
