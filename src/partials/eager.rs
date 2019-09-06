@@ -102,6 +102,10 @@ where
         let store = EagerStore { store };
         Ok(Box::new(store))
     }
+
+    fn source(&self) -> &dyn PartialSource {
+        &self.source
+    }
 }
 
 struct EagerStore {

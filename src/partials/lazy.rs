@@ -88,6 +88,10 @@ where
         };
         Ok(Box::new(store))
     }
+
+    fn source(&self) -> &dyn PartialSource {
+        &self.source
+    }
 }
 
 struct LazyStore<S: PartialSource> {
