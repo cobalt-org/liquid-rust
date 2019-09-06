@@ -3,8 +3,6 @@
 
 #[macro_use]
 extern crate clap;
-#[macro_use]
-extern crate error_chain;
 extern crate liquid;
 
 #[cfg(feature = "serde_json")]
@@ -14,70 +12,61 @@ extern crate serde_yaml;
 
 use std::ffi;
 use std::fs;
-use std::io;
 use std::io::Write;
 use std::path;
 
-error_chain! {
-    links {
-    }
-
-    foreign_links {
-        Clap(clap::Error);
-        Io(io::Error);
-        Liquid(liquid::Error);
-        Yaml(serde_yaml::Error) #[cfg(feature = "serde_yaml")];
-        Json(serde_json::Error) #[cfg(feature = "serde_json")];
-    }
-
-    errors {
-    }
+#[derive(Copy, Clone, Debug, derive_more::Display, derive_more::From, derive_more::Constructor)]
+#[display(fmt = "{}", msg)]
+struct Error {
+    msg: &'static str,
 }
+
+impl std::error::Error for Error {}
 
 fn option<'a>(name: &'a str, value: &'a str) -> clap::Arg<'a, 'a> {
     clap::Arg::with_name(name).long(name).value_name(value)
 }
 
 #[cfg(feature = "serde_yaml")]
-fn load_yaml(path: &path::Path) -> Result<liquid::value::Value> {
+fn load_yaml(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_yaml::from_reader(f).map_err(|e| e.into())
 }
 
 #[cfg(not(feature = "serde_yaml"))]
-fn load_yaml(_path: &path::Path) -> Result<liquid::value::Value> {
-    bail!("yaml is unsupported");
+fn load_yaml(_path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
+    Err(Error::new("yaml is unsupported"))?
 }
 
 #[cfg(feature = "serde_json")]
-fn load_json(path: &path::Path) -> Result<liquid::value::Value> {
+fn load_json(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_json::from_reader(f).map_err(|e| e.into())
 }
 
 #[cfg(not(feature = "serde_json"))]
-fn load_json(_path: &path::Path) -> Result<liquid::value::Value> {
-    bail!("json is unsupported");
+fn load_json(_path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
+    Err(Error::new("json is unsupported"))?
 }
 
-fn build_context(path: &path::Path) -> Result<liquid::value::Object> {
+fn build_context(path: &path::Path) -> Result<liquid::value::Object, Box<dyn std::error::Error>> {
     let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
     let value = if extension == ffi::OsStr::new("yaml") {
         load_yaml(path)
     } else if extension == ffi::OsStr::new("yaml") {
         load_json(path)
     } else {
-        Err("Unsupported file type".into())
+        Err(Error::new("Unsupported file type"))?
     }?;
     let value = match value {
         liquid::value::Value::Object(o) => Ok(o),
-        _ => Err("File must be an object"),
+        _ => Err(Error::new("File must be an object")),
     }?;
 
     Ok(value)
 }
 
-fn run() -> Result<()> {
+fn run() -> Result<i32, Box<dyn std::error::Error>> {
     let matches = clap::App::new("liquidate")
         .version(crate_version!())
         .author(crate_authors!())
@@ -116,7 +105,10 @@ fn run() -> Result<()> {
         }
     }
 
-    Ok(())
+    Ok(0)
 }
 
-quick_main!(run);
+fn main() {
+    let code = run().unwrap();
+    std::process::exit(code);
+}
