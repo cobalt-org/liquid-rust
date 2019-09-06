@@ -5,6 +5,7 @@ members = [
   "liquid-compiler",
   "liquid-interpreter",
   "liquid-derive",
+  "liquid-help-md",
   "liquid-bin",
 ]
 
