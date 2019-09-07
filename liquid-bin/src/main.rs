@@ -1,11 +1,10 @@
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 
-extern crate liquid;
-extern crate structopt;
+use liquid;
 
-extern crate serde_json;
-extern crate serde_yaml;
+use serde_json;
+use serde_yaml;
 
 use std::ffi;
 use std::fs;

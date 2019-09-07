@@ -15,12 +15,12 @@ mod registry;
 mod tag;
 mod text;
 
-pub use block::*;
-pub use filter::*;
-pub use filter_chain::*;
-pub use lang::*;
-pub use parser::*;
-pub use registry::*;
-pub use tag::*;
+pub use crate::block::*;
+pub use crate::filter::*;
+pub use crate::filter_chain::*;
+pub use crate::lang::*;
+pub use crate::parser::*;
+pub use crate::registry::*;
+pub use crate::tag::*;
 
-use text::Text;
+use crate::text::Text;

@@ -108,7 +108,7 @@ impl Error {
 const ERROR_DESCRIPTION: &str = "liquid";
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}: {}", ERROR_DESCRIPTION, self.inner.msg)?;
         for trace in &self.inner.user_backtrace {
             if let Some(trace) = trace.get_trace() {

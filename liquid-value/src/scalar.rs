@@ -33,12 +33,12 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// A `Display` for a `Scalar` as source code.
-    pub fn source(&self) -> ScalarSource {
+    pub fn source(&self) -> ScalarSource<'_> {
         ScalarSource(&self.0)
     }
 
     /// A `Display` for a `Scalar` rendered for the user.
-    pub fn render(&self) -> ScalarRendered {
+    pub fn render(&self) -> ScalarRendered<'_> {
         ScalarRendered(&self.0)
     }
 
@@ -62,7 +62,7 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// Interpret as a string.
-    pub fn to_str(&self) -> borrow::Cow<str> {
+    pub fn to_str(&self) -> borrow::Cow<'_, str> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
             ScalarCowEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
@@ -303,7 +303,7 @@ impl<'s> PartialOrd<str> for ScalarCow<'s> {
 pub struct ScalarSource<'s>(&'s ScalarCowEnum<'s>);
 
 impl<'s> fmt::Display for ScalarSource<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
             ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
@@ -319,7 +319,7 @@ impl<'s> fmt::Display for ScalarSource<'s> {
 pub struct ScalarRendered<'s>(&'s ScalarCowEnum<'s>);
 
 impl<'s> fmt::Display for ScalarRendered<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Must match `ScalarCow::to_str`
         match self.0 {
             ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
@@ -404,8 +404,8 @@ fn parse_date(s: &str) -> Option<Date> {
 mod test {
     use super::*;
 
-    static TRUE: ScalarCow = ScalarCow(ScalarCowEnum::Bool(true));
-    static FALSE: ScalarCow = ScalarCow(ScalarCowEnum::Bool(false));
+    static TRUE: ScalarCow<'_> = ScalarCow(ScalarCowEnum::Bool(true));
+    static FALSE: ScalarCow<'_> = ScalarCow(ScalarCowEnum::Bool(false));
 
     #[test]
     fn test_to_str_bool() {
@@ -414,22 +414,22 @@ mod test {
 
     #[test]
     fn test_to_str_integer() {
-        let val: ScalarCow = 42i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
         assert_eq!(val.to_str(), "42");
     }
 
     #[test]
     fn test_to_str_float() {
-        let val: ScalarCow = 42f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
         assert_eq!(val.to_str(), "42");
 
-        let val: ScalarCow = 42.34.into();
+        let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_str(), "42.34");
     }
 
     #[test]
     fn test_to_str_str() {
-        let val: ScalarCow = "foobar".into();
+        let val: ScalarCow<'_> = "foobar".into();
         assert_eq!(val.to_str(), "foobar");
     }
 
@@ -440,28 +440,28 @@ mod test {
 
     #[test]
     fn test_to_integer_integer() {
-        let val: ScalarCow = 42i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
         assert_eq!(val.to_integer(), Some(42i32));
     }
 
     #[test]
     fn test_to_integer_float() {
-        let val: ScalarCow = 42f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
         assert_eq!(val.to_integer(), None);
 
-        let val: ScalarCow = 42.34.into();
+        let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_integer(), None);
     }
 
     #[test]
     fn test_to_integer_str() {
-        let val: ScalarCow = "foobar".into();
+        let val: ScalarCow<'_> = "foobar".into();
         assert_eq!(val.to_integer(), None);
 
-        let val: ScalarCow = "42.34".into();
+        let val: ScalarCow<'_> = "42.34".into();
         assert_eq!(val.to_integer(), None);
 
-        let val: ScalarCow = "42".into();
+        let val: ScalarCow<'_> = "42".into();
         assert_eq!(val.to_integer(), Some(42));
     }
 
@@ -472,28 +472,28 @@ mod test {
 
     #[test]
     fn test_to_float_integer() {
-        let val: ScalarCow = 42i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
         assert_eq!(val.to_float(), Some(42f64));
     }
 
     #[test]
     fn test_to_float_float() {
-        let val: ScalarCow = 42f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
         assert_eq!(val.to_float(), Some(42f64));
 
-        let val: ScalarCow = 42.34.into();
+        let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_float(), Some(42.34));
     }
 
     #[test]
     fn test_to_float_str() {
-        let val: ScalarCow = "foobar".into();
+        let val: ScalarCow<'_> = "foobar".into();
         assert_eq!(val.to_float(), None);
 
-        let val: ScalarCow = "42.34".into();
+        let val: ScalarCow<'_> = "42.34".into();
         assert_eq!(val.to_float(), Some(42.34));
 
-        let val: ScalarCow = "42".into();
+        let val: ScalarCow<'_> = "42".into();
         assert_eq!(val.to_float(), Some(42f64));
     }
 
@@ -504,35 +504,35 @@ mod test {
 
     #[test]
     fn test_to_bool_integer() {
-        let val: ScalarCow = 42i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn test_to_bool_float() {
-        let val: ScalarCow = 42f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
         assert_eq!(val.to_bool(), None);
 
-        let val: ScalarCow = 42.34.into();
+        let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn test_to_bool_str() {
-        let val: ScalarCow = "foobar".into();
+        let val: ScalarCow<'_> = "foobar".into();
         assert_eq!(val.to_bool(), None);
 
-        let val: ScalarCow = "true".into();
+        let val: ScalarCow<'_> = "true".into();
         assert_eq!(val.to_bool(), None);
 
-        let val: ScalarCow = "false".into();
+        let val: ScalarCow<'_> = "false".into();
         assert_eq!(val.to_bool(), None);
     }
 
     #[test]
     fn integer_equality() {
-        let val: ScalarCow = 42i32.into();
-        let zero: ScalarCow = 0i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
+        let zero: ScalarCow<'_> = 0i32.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -541,8 +541,8 @@ mod test {
 
     #[test]
     fn integers_have_ruby_truthiness() {
-        let val: ScalarCow = 42i32.into();
-        let zero: ScalarCow = 0i32.into();
+        let val: ScalarCow<'_> = 42i32.into();
+        let zero: ScalarCow<'_> = 0i32.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.is_truthy());
@@ -554,8 +554,8 @@ mod test {
 
     #[test]
     fn float_equality() {
-        let val: ScalarCow = 42f64.into();
-        let zero: ScalarCow = 0f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
+        let zero: ScalarCow<'_> = 0f64.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -564,8 +564,8 @@ mod test {
 
     #[test]
     fn floats_have_ruby_truthiness() {
-        let val: ScalarCow = 42f64.into();
-        let zero: ScalarCow = 0f64.into();
+        let val: ScalarCow<'_> = 42f64.into();
+        let zero: ScalarCow<'_> = 0f64.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.is_truthy());
@@ -591,9 +591,9 @@ mod test {
 
     #[test]
     fn string_equality() {
-        let alpha: ScalarCow = "alpha".into();
-        let beta: ScalarCow = "beta".into();
-        let empty: ScalarCow = "".into();
+        let alpha: ScalarCow<'_> = "alpha".into();
+        let beta: ScalarCow<'_> = "beta".into();
+        let empty: ScalarCow<'_> = "".into();
         assert_eq!(alpha, alpha);
         assert_eq!(empty, empty);
         assert!(alpha != beta);
@@ -603,8 +603,8 @@ mod test {
     #[test]
     fn strings_have_ruby_truthiness() {
         // all strings in ruby are true
-        let alpha: ScalarCow = "alpha".into();
-        let empty: ScalarCow = "".into();
+        let alpha: ScalarCow<'_> = "alpha".into();
+        let empty: ScalarCow<'_> = "".into();
         assert_eq!(TRUE, alpha);
         assert_eq!(alpha, TRUE);
         assert!(alpha.is_truthy());

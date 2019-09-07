@@ -6,7 +6,7 @@ use serde::{self, Serialize};
 
 use super::Object;
 use super::Value;
-use error;
+use crate::error;
 
 /// Convert a `T` into `liquid_value:Value`.
 ///
@@ -28,7 +28,7 @@ where
 struct SerError(error::Error);
 
 impl fmt::Display for SerError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.0)
     }
 }
@@ -371,7 +371,7 @@ impl serde::ser::SerializeMap for SerializeMap {
             SerializeMap::Map {
                 ref mut next_key, ..
             } => {
-                *next_key = Some(try!(key.serialize(MapKeySerializer)));
+                *next_key = Some(r#try!(key.serialize(MapKeySerializer)));
                 Ok(())
             }
         }
@@ -596,7 +596,7 @@ impl serde::ser::SerializeStruct for SerializeMap {
     {
         match *self {
             SerializeMap::Map { .. } => {
-                try!(serde::ser::SerializeMap::serialize_key(self, key));
+                r#try!(serde::ser::SerializeMap::serialize_key(self, key));
                 serde::ser::SerializeMap::serialize_value(self, value)
             }
         }
