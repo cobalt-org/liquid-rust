@@ -48,6 +48,10 @@ impl ParseTag for BreakTag {
         arguments.expect_nothing()?;
         Ok(Box::new(Break))
     }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -88,6 +92,10 @@ impl ParseTag for ContinueTag {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
         Ok(Box::new(Continue))
+    }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
     }
 }
 

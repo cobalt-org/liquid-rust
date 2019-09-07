@@ -69,6 +69,10 @@ impl ParseTag for IncrementTag {
 
         Ok(Box::new(Increment { id }))
     }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -129,6 +133,10 @@ impl ParseTag for DecrementTag {
         arguments.expect_nothing()?;
 
         Ok(Box::new(Decrement { id }))
+    }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
     }
 }
 

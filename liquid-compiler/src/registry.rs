@@ -39,6 +39,11 @@ impl<P> PluginRegistry<P> {
             iter: self.plugins.keys(),
         }
     }
+
+    /// All plugins
+    pub fn plugins(&self) -> impl Iterator<Item = &P> {
+        self.plugins.values()
+    }
 }
 
 impl<P> Default for PluginRegistry<P> {

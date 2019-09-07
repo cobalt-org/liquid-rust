@@ -10,6 +10,7 @@ use liquid_interpreter as interpreter;
 use super::Template;
 use filters;
 use partials;
+use reflection;
 use tags;
 
 /// Storage for partial-templates.
@@ -155,21 +156,21 @@ where
     /// Inserts a new custom block into the parser
     pub fn block<B: Into<Box<dyn compiler::ParseBlock>>>(mut self, block: B) -> Self {
         let block = block.into();
-        self.blocks.register(block.start_tag(), block);
+        self.blocks.register(block.reflection().start_tag(), block);
         self
     }
 
     /// Inserts a new custom tag into the parser
     pub fn tag<T: Into<Box<dyn compiler::ParseTag>>>(mut self, tag: T) -> Self {
         let tag = tag.into();
-        self.tags.register(tag.tag(), tag);
+        self.tags.register(tag.reflection().tag(), tag);
         self
     }
 
     /// Inserts a new custom filter into the parser
     pub fn filter<F: Into<Box<dyn compiler::ParseFilter>>>(mut self, filter: F) -> Self {
         let filter = filter.into();
-        self.filters.register(filter.name(), filter);
+        self.filters.register(filter.reflection().name(), filter);
         self
     }
 
@@ -223,6 +224,32 @@ where
             filters: Default::default(),
             partials: Default::default(),
         }
+    }
+}
+
+impl<P> reflection::ParserReflection for ParserBuilder<P>
+where
+    P: partials::PartialCompiler,
+{
+    fn blocks<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::BlockReflection> + 'r> {
+        Box::new(self.blocks.plugins().map(|p| p.reflection()))
+    }
+
+    fn tags<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::TagReflection> + 'r> {
+        Box::new(self.tags.plugins().map(|p| p.reflection()))
+    }
+
+    fn filters<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::FilterReflection> + 'r> {
+        Box::new(self.filters.plugins().map(|p| p.reflection()))
+    }
+
+    fn partials<'r>(&'r self) -> Box<Iterator<Item = &str> + 'r> {
+        Box::new(
+            self.partials
+                .as_ref()
+                .into_iter()
+                .flat_map(|s| s.source().names()),
+        )
     }
 }
 
@@ -300,5 +327,23 @@ impl Parser {
             .value_with(|| file.to_string_lossy().into_owned().into())?;
 
         self.parse(&buf)
+    }
+}
+
+impl reflection::ParserReflection for Parser {
+    fn blocks<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::BlockReflection> + 'r> {
+        Box::new(self.options.blocks.plugins().map(|p| p.reflection()))
+    }
+
+    fn tags<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::TagReflection> + 'r> {
+        Box::new(self.options.tags.plugins().map(|p| p.reflection()))
+    }
+
+    fn filters<'r>(&'r self) -> Box<Iterator<Item = &dyn compiler::FilterReflection> + 'r> {
+        Box::new(self.options.filters.plugins().map(|p| p.reflection()))
+    }
+
+    fn partials<'r>(&'r self) -> Box<Iterator<Item = &str> + 'r> {
+        Box::new(self.partials.as_ref().into_iter().flat_map(|s| s.names()))
     }
 }

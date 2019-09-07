@@ -189,6 +189,10 @@ impl ParseBlock for CaseBlock {
             else_block,
         }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 #[cfg(test)]

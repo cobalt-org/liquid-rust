@@ -77,6 +77,10 @@ impl ParseTag for IncludeTag {
 
         Ok(Box::new(Include { partial }))
     }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
+    }
 }
 
 #[cfg(test)]

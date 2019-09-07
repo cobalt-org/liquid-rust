@@ -80,6 +80,10 @@ impl ParseTag for AssignTag {
 
         Ok(Box::new(Assign { dst, src }))
     }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
+    }
 }
 
 #[cfg(test)]

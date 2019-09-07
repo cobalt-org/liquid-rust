@@ -70,6 +70,10 @@ impl ParseBlock for CommentBlock {
         tokens.assert_empty();
         Ok(Box::new(Comment))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 #[cfg(test)]

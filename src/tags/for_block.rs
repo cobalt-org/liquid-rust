@@ -337,6 +337,10 @@ impl ParseBlock for ForBlock {
             reversed,
         }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -536,6 +540,10 @@ impl ParseBlock for TableRowBlock {
             limit,
             offset,
         }))
+    }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
     }
 }
 

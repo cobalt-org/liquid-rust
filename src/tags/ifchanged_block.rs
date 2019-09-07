@@ -76,6 +76,10 @@ impl ParseBlock for IfChangedBlock {
         tokens.assert_empty();
         Ok(Box::new(IfChanged { if_changed }))
     }
+
+    fn reflection(&self) -> &dyn BlockReflection {
+        self
+    }
 }
 
 /// Remembers the content of the last rendered `ifstate` block.
