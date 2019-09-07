@@ -1,4 +1,4 @@
-use test_helper::*;
+use crate::test_helper::*;
 
 #[test]
 fn test_size() {

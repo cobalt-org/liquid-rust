@@ -19,7 +19,7 @@ impl Template {
 }
 
 impl Renderable for Template {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         for el in &self.elements {
             el.render_to(writer, context)?;
 

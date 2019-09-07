@@ -6,10 +6,6 @@
 
 #[macro_use]
 extern crate serde;
-extern crate chrono;
-extern crate itertools;
-extern crate liquid_error;
-extern crate num_traits;
 
 #[macro_use]
 mod macros;
@@ -25,7 +21,7 @@ pub mod error {
     pub use liquid_error::*;
 }
 
-pub use path::*;
-pub use scalar::*;
-pub use ser::*;
-pub use values::*;
+pub use crate::path::*;
+pub use crate::scalar::*;
+pub use crate::ser::*;
+pub use crate::values::*;

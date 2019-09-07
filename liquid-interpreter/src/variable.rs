@@ -30,7 +30,7 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<Path<'c>> {
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
@@ -42,7 +42,7 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate<'c>(&'c self, context: &'c Context) -> Result<Path<'c>> {
+    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
@@ -72,7 +72,7 @@ impl Extend<Expression> for Variable {
 }
 
 impl fmt::Display for Variable {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.variable.render())?;
         for index in self.indexes.iter() {
             write!(f, "[{}]", index)?;

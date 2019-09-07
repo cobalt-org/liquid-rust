@@ -5,7 +5,7 @@ use liquid_value::Scalar;
 use liquid_value::Value;
 
 use super::Context;
-use variable::Variable;
+use crate::variable::Variable;
 
 /// An un-evaluated `Value`.
 #[derive(Debug, Clone, PartialEq)]
@@ -39,7 +39,7 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn try_evaluate<'c>(&'c self, context: &'c Context) -> Option<&'c Value> {
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<&'c Value> {
         let val = match *self {
             Expression::Literal(ref x) => &x,
             Expression::Variable(ref x) => {
@@ -51,7 +51,7 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn evaluate<'c>(&'c self, context: &'c Context) -> Result<&'c Value> {
+    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<&'c Value> {
         let val = match *self {
             Expression::Literal(ref x) => x,
             Expression::Variable(ref x) => {
@@ -64,7 +64,7 @@ impl Expression {
 }
 
 impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Expression::Literal(ref x) => write!(f, "{}", x.source()),
             Expression::Variable(ref x) => write!(f, "{}", x),

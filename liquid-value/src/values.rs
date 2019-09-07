@@ -50,17 +50,17 @@ impl Value {
     }
 
     /// A `Display` for a `Scalar` as source code.
-    pub fn source(&self) -> ValueSource {
+    pub fn source(&self) -> ValueSource<'_> {
         ValueSource(&self)
     }
 
     /// A `Display` for a `Value` rendered for the user.
-    pub fn render(&self) -> ValueRendered {
+    pub fn render(&self) -> ValueRendered<'_> {
         ValueRendered(&self)
     }
 
     /// Interpret as a string.
-    pub fn to_str(&self) -> borrow::Cow<str> {
+    pub fn to_str(&self) -> borrow::Cow<'_, str> {
         match *self {
             Value::Scalar(ref x) => x.to_str(),
             Value::Array(ref x) => {
@@ -282,7 +282,7 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn get<'s>(&'s self, index: &ScalarCow) -> Option<&'s Self> {
+    pub fn get<'s>(&'s self, index: &ScalarCow<'_>) -> Option<&'s Self> {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
@@ -364,7 +364,7 @@ impl PartialOrd<Value> for Value {
 pub struct ValueSource<'s>(&'s Value);
 
 impl<'s> fmt::Display for ValueSource<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             Value::Scalar(ref x) => write!(f, "{}", x.render())?,
             Value::Array(ref x) => {
@@ -394,7 +394,7 @@ impl<'s> fmt::Display for ValueSource<'s> {
 pub struct ValueRendered<'s>(&'s Value);
 
 impl<'s> fmt::Display for ValueRendered<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Must match `Value::to_str`
         match self.0 {
             Value::Scalar(ref x) => write!(f, "{}", x.render())?,

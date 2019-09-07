@@ -33,7 +33,7 @@ impl<'s> Path<'s> {
     }
 
     /// Access the `Value` reference.
-    pub fn iter(&self) -> PathIter {
+    pub fn iter(&self) -> PathIter<'_, '_> {
         PathIter(self.0.iter())
     }
 
@@ -74,7 +74,7 @@ impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
 }
 
 impl<'s> fmt::Display for Path<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let data = itertools::join(self.iter().map(ScalarCow::render), ".");
         write!(f, "{}", data)
     }

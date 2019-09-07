@@ -9,6 +9,7 @@ readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
+edition = "2018"
 
 [badges]
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }

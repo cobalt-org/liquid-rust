@@ -160,7 +160,7 @@ impl<'g> Context<'g> {
     }
 
     /// Access the current `Stack`.
-    pub fn stack(&self) -> &Stack {
+    pub fn stack(&self) -> &Stack<'_> {
         &self.stack
     }
 
@@ -177,7 +177,7 @@ impl<'g> Context<'g> {
     /// to the caller.
     pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
     where
-        FnT: FnOnce(&mut Context) -> RvalT,
+        FnT: FnOnce(&mut Context<'_>) -> RvalT,
     {
         self.stack.push_frame();
         let result = f(self);
@@ -190,7 +190,7 @@ impl<'g> Context<'g> {
     /// to the caller.
     pub fn run_in_named_scope<RvalT, S: Into<String>, FnT>(&mut self, name: S, f: FnT) -> RvalT
     where
-        FnT: FnOnce(&mut Context) -> RvalT,
+        FnT: FnOnce(&mut Context<'_>) -> RvalT,
     {
         self.stack.push_named_frame(name);
         let result = f(self);

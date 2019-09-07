@@ -1,5 +1,5 @@
-extern crate liquid_value;
-extern crate serde_yaml;
+use liquid_value;
+use serde_yaml;
 
 #[macro_use]
 extern crate difference;
