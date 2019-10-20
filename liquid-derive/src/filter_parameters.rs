@@ -332,7 +332,7 @@ enum FilterParameterType {
     Integer,
     Float,
     Bool,
-    Date,
+    DateTime,
     Str,
 }
 
@@ -344,7 +344,8 @@ impl FromStr for FilterParameterType {
             "integer" => Ok(FilterParameterType::Integer),
             "float" => Ok(FilterParameterType::Float),
             "bool" => Ok(FilterParameterType::Bool),
-            "date" => Ok(FilterParameterType::Date),
+            "date_time" => Ok(FilterParameterType::DateTime),
+            "date" => Ok(FilterParameterType::DateTime),
             "str" => Ok(FilterParameterType::Str),
             _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date\" or \"str\". Found \"{}\".", s)),
         }
@@ -502,13 +503,13 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
                     .context("cause", "Boolean expected")
             )?
         },
-        FilterParameterType::Date => quote! {
+        FilterParameterType::DateTime => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_date)
+            .and_then(::liquid::value::Scalar::to_date_time)
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
-                    .context("cause", "Date expected")
+                    .context("cause", "DateTime expected")
             )?
         },
         FilterParameterType::Str => quote! {
@@ -658,7 +659,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
-            FilterParameterType::Date => quote! { ::liquid::value::Date },
+            FilterParameterType::DateTime => quote! { ::liquid::value::DateTime },
             FilterParameterType::Str => quote! { ::std::borrow::Cow<'a, str> },
         };
 

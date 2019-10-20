@@ -42,7 +42,7 @@ impl Filter for DateInTzFilter {
 
         let date = input
             .as_scalar()
-            .and_then(Scalar::to_date)
+            .and_then(Scalar::to_date_time)
             .ok_or_else(|| invalid_input("Invalid date format"))?;
 
         let timezone = FixedOffset::east(args.timezone * 3600);

@@ -31,7 +31,7 @@ impl Filter for DateFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let date = input.as_scalar().and_then(Scalar::to_date);
+        let date = input.as_scalar().and_then(Scalar::to_date_time);
         match date {
             Some(date) if !args.format.is_empty() => {
                 Ok(Value::scalar(date.format(args.format.as_ref()).to_string()))
