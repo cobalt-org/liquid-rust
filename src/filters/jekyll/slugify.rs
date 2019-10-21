@@ -159,5 +159,4 @@ mod tests {
             tos!("the _config.yml file")
         );
     }
-
 }

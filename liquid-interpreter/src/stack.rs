@@ -228,5 +228,4 @@ mod test {
         let indexes = [Scalar::new("post"), Scalar::new("number")];
         assert_eq!(stack.get(&indexes).unwrap(), &Value::scalar(42f64));
     }
-
 }

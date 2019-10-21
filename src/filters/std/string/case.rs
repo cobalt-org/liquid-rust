@@ -109,10 +109,7 @@ mod tests {
         );
 
         // Weird UTF-8 White space is kept – this is a no-break whitespace!
-        assert_eq!(
-            unit!(Capitalize, tos!("hello world​")),
-            tos!("Hello world​")
-        );
+        assert_eq!(unit!(Capitalize, tos!("hello world​")), tos!("Hello world​"));
 
         // The uppercase version of some character are more than one character long
         assert_eq!(unit!(Capitalize, tos!("ßß")), tos!("SSß"));
