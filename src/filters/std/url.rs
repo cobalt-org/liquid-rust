@@ -46,6 +46,10 @@ struct UrlEncodeFilter;
 
 impl Filter for UrlEncodeFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        if input.is_nil() {
+            return Ok(Value::Nil);
+        }
+
         lazy_static! {
             static ref URL_ENCODE_SET: UrlEncodeSet = UrlEncodeSet("".to_owned());
         }
@@ -72,7 +76,11 @@ struct UrlDecodeFilter;
 
 impl Filter for UrlDecodeFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let s = input.to_str();
+        if input.is_nil() {
+            return Ok(Value::Nil);
+        }
+
+        let s = input.to_str().replace("+", " ");
 
         let result = percent_encoding::percent_decode(s.as_bytes())
             .decode_utf8()
