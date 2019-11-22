@@ -91,7 +91,6 @@ fn test_split() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#253
 fn test_escape() {
     assert_eq!(v!("&lt;strong&gt;"), filters!(Escape, v!("<strong>")));
     assert_eq!(v!("1"), filters!(Escape, v!(1)));
@@ -120,7 +119,6 @@ fn test_escape_once() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#253
 fn test_url_encode() {
     assert_eq!(
         v!("foo%2B1%40example.com"),
@@ -132,7 +130,6 @@ fn test_url_encode() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#268
 fn test_url_decode() {
     assert_eq!(v!("foo bar"), filters!(UrlDecode, v!("foo+bar")));
     assert_eq!(v!("foo bar"), filters!(UrlDecode, v!("foo%20bar")));

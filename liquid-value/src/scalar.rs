@@ -4,8 +4,11 @@ use std::fmt;
 
 use chrono;
 
-/// Liquid's native date/time type.
+/// Liquid's native date + time type.
 pub type DateTime = chrono::DateTime<chrono::FixedOffset>;
+
+/// Liquid's native date only type.
+pub type Date = chrono::NaiveDate;
 
 /// A Liquid scalar value
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -23,6 +26,8 @@ enum ScalarCowEnum<'s> {
     Bool(bool),
     #[serde(with = "friendly_date_time")]
     DateTime(DateTime),
+    #[serde(with = "friendly_date")]
+    Date(Date),
     Str(borrow::Cow<'s, str>),
 }
 
@@ -57,6 +62,7 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Float(x) => ScalarCow::new(x),
             ScalarCowEnum::Bool(x) => ScalarCow::new(x),
             ScalarCowEnum::DateTime(x) => ScalarCow::new(x),
+            ScalarCowEnum::Date(x) => ScalarCow::new(x),
             ScalarCowEnum::Str(ref x) => ScalarCow::new(x.as_ref()),
         }
     }
@@ -70,6 +76,7 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::DateTime(ref x) => {
                 borrow::Cow::Owned(x.format(DATE_TIME_FORMAT).to_string())
             }
+            ScalarCowEnum::Date(ref x) => borrow::Cow::Owned(x.format(DATE_FORMAT).to_string()),
             ScalarCowEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
         }
     }
@@ -81,6 +88,7 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Float(x) => x.to_string(),
             ScalarCowEnum::Bool(x) => x.to_string(),
             ScalarCowEnum::DateTime(x) => x.to_string(),
+            ScalarCowEnum::Date(x) => x.format(DATE_FORMAT).to_string(),
             ScalarCowEnum::Str(x) => x.into_owned(),
         }
     }
@@ -112,11 +120,21 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as a date, if possible
+    /// Interpret as a date time, if possible
     pub fn to_date_time(&self) -> Option<DateTime> {
         match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => parse_date_time(x.as_ref()),
+            _ => None,
+        }
+    }
+
+    /// Interpret as a date time, if possible
+    pub fn to_date(&self) -> Option<Date> {
+        match self.0 {
+            ScalarCowEnum::DateTime(ref x) => Some(x.naive_utc().date()),
+            ScalarCowEnum::Date(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => parse_date(x.as_ref()),
             _ => None,
         }
     }
@@ -147,6 +165,7 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Float(_) => "fractional number",
             ScalarCowEnum::Bool(_) => "boolean",
             ScalarCowEnum::DateTime(_) => "date time",
+            ScalarCowEnum::Date(_) => "date",
             ScalarCowEnum::Str(_) => "string",
         }
     }
@@ -180,6 +199,14 @@ impl<'s> From<DateTime> for ScalarCow<'s> {
     fn from(s: DateTime) -> Self {
         ScalarCow {
             0: ScalarCowEnum::DateTime(s),
+        }
+    }
+}
+
+impl<'s> From<Date> for ScalarCow<'s> {
+    fn from(s: Date) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Date(s),
         }
     }
 }
@@ -311,6 +338,7 @@ impl<'s> fmt::Display for ScalarSource<'s> {
             ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
             ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
             ScalarCowEnum::DateTime(ref x) => write!(f, "{}", x.format(DATE_TIME_FORMAT)),
+            ScalarCowEnum::Date(ref x) => write!(f, "{}", x.format(DATE_FORMAT)),
             ScalarCowEnum::Str(ref x) => write!(f, r#""{}""#, x),
         }
     }
@@ -328,6 +356,7 @@ impl<'s> fmt::Display for ScalarRendered<'s> {
             ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
             ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
             ScalarCowEnum::DateTime(ref x) => write!(f, "{}", x.format(DATE_TIME_FORMAT)),
+            ScalarCowEnum::Date(ref x) => write!(f, "{}", x.format(DATE_FORMAT)),
             ScalarCowEnum::Str(ref x) => write!(f, "{}", x),
         }
     }
@@ -341,6 +370,7 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x == y,
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x == y,
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
         (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
         // encode Ruby truthiness: all values except false and nil are true
         (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
@@ -356,6 +386,7 @@ fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> 
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
         _ => None,
     }
@@ -384,9 +415,32 @@ mod friendly_date_time {
     }
 }
 
+const DATE_FORMAT: &str = "%Y-%m-%d";
+
+mod friendly_date {
+    use super::*;
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub(crate) fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = date.format(DATE_FORMAT).to_string();
+        serializer.serialize_str(&s)
+    }
+
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        chrono::NaiveDate::parse_from_str(&s, DATE_FORMAT).map_err(serde::de::Error::custom)
+    }
+}
+
 fn parse_date_time(s: &str) -> Option<DateTime> {
     match s {
-        "now" | "today" => {
+        "now" => {
             use chrono::offset;
             let now = offset::Utc::now();
             let now = now.naive_utc();
@@ -398,6 +452,22 @@ fn parse_date_time(s: &str) -> Option<DateTime> {
             formats
                 .iter()
                 .filter_map(|f| DateTime::parse_from_str(s, f).ok())
+                .next()
+        }
+    }
+}
+
+fn parse_date(s: &str) -> Option<Date> {
+    match s {
+        "today" => {
+            use chrono::offset::Utc;
+            Some(Utc::today().naive_utc())
+        }
+        _ => {
+            let formats = ["%d %B %Y", "%Y-%m-%d"];
+            formats
+                .iter()
+                .filter_map(|f| Date::parse_from_str(s, f).ok())
                 .next()
         }
     }
@@ -618,22 +688,24 @@ mod test {
     }
 
     #[test]
-    fn parse_date_empty_is_bad() {
+    fn parse_date_time_empty_is_bad() {
         assert!(parse_date_time("").is_none());
+        assert!(parse_date("").is_none());
     }
 
     #[test]
-    fn parse_date_bad() {
+    fn parse_date_time_bad() {
         assert!(parse_date_time("aaaaa").is_none());
+        assert!(parse_date("aaaaa").is_none());
     }
 
     #[test]
-    fn parse_date_now() {
+    fn parse_date_time_now() {
         assert!(parse_date_time("now").is_some());
     }
 
     #[test]
     fn parse_date_today() {
-        assert!(parse_date_time("today").is_some());
+        assert!(parse_date("today").is_some());
     }
 }

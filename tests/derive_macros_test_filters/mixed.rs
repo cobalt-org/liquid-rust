@@ -22,14 +22,17 @@ struct TestMixedFilterParameters {
     #[parameter(description = "3", arg_type = "float", mode = "keyword")]
     c: Option<Expression>,
 
-    #[parameter(description = "4", arg_type = "date")]
+    #[parameter(description = "4", arg_type = "date_time")]
     d: Expression,
 
-    #[parameter(description = "5", arg_type = "str")]
-    e: Option<Expression>,
+    #[parameter(description = "5", arg_type = "date")]
+    e: Expression,
 
-    #[parameter(rename = "type", description = "6", arg_type = "any", mode = "keyword")]
-    f: Expression,
+    #[parameter(description = "6", arg_type = "str")]
+    f: Option<Expression>,
+
+    #[parameter(rename = "type", description = "7", arg_type = "any", mode = "keyword")]
+    g: Expression,
 }
 
 #[derive(Clone, ParseFilter, FilterReflection)]
@@ -56,12 +59,13 @@ impl Filter for TestMixedFilter {
         let b = args.b.to_string();
         let c = args.c.map(|i| i.to_string()).unwrap_or("None".to_string());
         let d = args.d.to_string();
-        let e = args.e.map(|i| i.to_string()).unwrap_or("None".to_string());
-        let f = args.f.to_str();
+        let e = args.e.to_string();
+        let f = args.f.map(|i| i.to_string()).unwrap_or("None".to_string());
+        let g = args.g.to_str();
 
         let result = format!(
-            "<a: {}; b: {}; c: {}, d: {}, e: {}, type: {}>",
-            a, b, c, d, e, f
+            "<a: {}; b: {}; c: {}, d: {}, e: {}, f: {}, type: {}>",
+            a, b, c, d, e, f, g
         );
 
         Ok(Value::scalar(result))
