@@ -1,4 +1,4 @@
 pre-release-commit-message = "chore({{crate_name}}): Release {{version}}"
 no-dev-version = true
-tag-message = "{{prefix}}v{{version}}"
+tag-message = "{{tag_name}}"
 tag-name = "{{prefix}}v{{version}}"
