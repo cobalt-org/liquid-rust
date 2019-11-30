@@ -277,6 +277,13 @@ impl<'s> PartialEq<DateTime> for ScalarCow<'s> {
     }
 }
 
+impl<'s> PartialEq<Date> for ScalarCow<'s> {
+    fn eq(&self, other: &Date) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
 impl<'s> PartialEq<str> for ScalarCow<'s> {
     fn eq(&self, other: &str) -> bool {
         let other = other.into();
@@ -315,6 +322,13 @@ impl<'s> PartialOrd<bool> for ScalarCow<'s> {
 
 impl<'s> PartialOrd<DateTime> for ScalarCow<'s> {
     fn partial_cmp(&self, other: &DateTime) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<Date> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
     }
@@ -362,6 +376,14 @@ impl<'s> fmt::Display for ScalarRendered<'s> {
     }
 }
 
+fn date_to_datetime(date: Date, offset: chrono::FixedOffset) -> DateTime {
+    use chrono::{NaiveDateTime, NaiveTime};
+    DateTime::from_utc(
+        NaiveDateTime::new(date, NaiveTime::from_hms(0, 0, 0)),
+        offset,
+    )
+}
+
 fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
     match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
@@ -371,6 +393,12 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x == y,
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
+        (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::Date(y)) => {
+            x == date_to_datetime(y, *x.offset())
+        }
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => {
+            date_to_datetime(x, *y.offset()) == y
+        }
         (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
         // encode Ruby truthiness: all values except false and nil are true
         (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
@@ -387,6 +415,12 @@ fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> 
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
+        (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::Date(y)) => {
+            x.partial_cmp(&date_to_datetime(y, *x.offset()))
+        }
+        (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => {
+            date_to_datetime(x, *y.offset()).partial_cmp(&y)
+        }
         (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
         _ => None,
     }
