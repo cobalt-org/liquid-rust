@@ -6,10 +6,8 @@ pub use liquid::value::Value::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid::value::Value {
-    use chrono;
-    let base = chrono::naive::NaiveDate::from_ymd(y, m, d).and_hms(0, 0, 0);
-    let date = liquid::value::Date::from_utc(base, chrono::FixedOffset::east(0));
-    liquid::value::Value::scalar(date)
+    use liquid::value::{Date, Value};
+    Value::scalar(Date::from_ymd(y, m, d))
 }
 
 #[allow(dead_code)]

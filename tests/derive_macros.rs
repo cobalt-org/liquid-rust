@@ -147,15 +147,15 @@ pub fn test_derive_mixed_filter_ok() {
 
     let template = parser
         .parse(concat!(
-            "{{ 0 | mix: a: 5, false, c: 4.3, \"2019-02-08 15:34:25 -0800\", \"str\", type: 0 }}\n",
-            "{{ 0 | mix: false, \"2019-02-08 15:34:25 -0800\", type: 0 }}\n",
-            "{{ 0 | mix: false, \"2019-02-08 15:34:25 -0800\", c: 4.3, a: 5, type: 0, \"str\" }}"
+            "{{ 0 | mix: a: 5, false, c: 4.3, \"2019-02-08 15:34:25 -0800\", \"2019-02-08\", \"str\", type: 0 }}\n",
+            "{{ 0 | mix: false, \"2019-02-08 15:34:25 -0800\", \"2019-02-08\", type: 0 }}\n",
+            "{{ 0 | mix: false, \"2019-02-08 15:34:25 -0800\", \"2019-02-08\", c: 4.3, a: 5, type: 0, \"str\" }}"
         ))
         .unwrap();
     let expected = concat!(
-        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: str, type: 0>\n",
-        "<a: None; b: false; c: None, d: 2019-02-08 15:34:25 -08:00, e: None, type: 0>\n",
-        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: str, type: 0>"
+        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: str, type: 0>\n",
+        "<a: None; b: false; c: None, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: None, type: 0>\n",
+        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: str, type: 0>"
     );
 
     let globals = liquid::value::Object::new();
@@ -185,6 +185,8 @@ pub fn test_derive_mixed_filter_reflection() {
     assert_eq!(filter.description(), "Mix it all together.");
     let pos_args = filter.positional_parameters();
 
+    assert_eq!(pos_args.len(), 4);
+
     assert_eq!(pos_args[0].name, "b");
     assert_eq!(pos_args[0].description, "2");
     assert_eq!(pos_args[0].is_optional, false);
@@ -195,9 +197,15 @@ pub fn test_derive_mixed_filter_reflection() {
 
     assert_eq!(pos_args[2].name, "e");
     assert_eq!(pos_args[2].description, "5");
-    assert_eq!(pos_args[2].is_optional, true);
+    assert_eq!(pos_args[2].is_optional, false);
+
+    assert_eq!(pos_args[3].name, "f");
+    assert_eq!(pos_args[3].description, "6");
+    assert_eq!(pos_args[3].is_optional, true);
 
     let kw_args = filter.keyword_parameters();
+
+    assert_eq!(kw_args.len(), 3);
 
     assert_eq!(kw_args[0].name, "a");
     assert_eq!(kw_args[0].description, "1");
@@ -208,7 +216,7 @@ pub fn test_derive_mixed_filter_reflection() {
     assert_eq!(kw_args[1].is_optional, true);
 
     assert_eq!(kw_args[2].name, "type");
-    assert_eq!(kw_args[2].description, "6");
+    assert_eq!(kw_args[2].description, "7");
     assert_eq!(kw_args[2].is_optional, false);
 }
 

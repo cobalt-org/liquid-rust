@@ -332,6 +332,7 @@ enum FilterParameterType {
     Integer,
     Float,
     Bool,
+    DateTime,
     Date,
     Str,
 }
@@ -344,9 +345,10 @@ impl FromStr for FilterParameterType {
             "integer" => Ok(FilterParameterType::Integer),
             "float" => Ok(FilterParameterType::Float),
             "bool" => Ok(FilterParameterType::Bool),
+            "date_time" => Ok(FilterParameterType::DateTime),
             "date" => Ok(FilterParameterType::Date),
             "str" => Ok(FilterParameterType::Str),
-            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date\" or \"str\". Found \"{}\".", s)),
+            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date_time\", \"date\" or \"str\". Found \"{}\".", s)),
         }
     }
 }
@@ -500,6 +502,15 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Boolean expected")
+            )?
+        },
+        FilterParameterType::DateTime => quote! {
+            .as_scalar()
+            .and_then(::liquid::value::Scalar::to_date_time)
+            .ok_or_else(||
+                ::liquid::error::Error::with_msg("Invalid argument")
+                    .context("argument", #liquid_name)
+                    .context("cause", "DateTime expected")
             )?
         },
         FilterParameterType::Date => quote! {
@@ -658,6 +669,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
+            FilterParameterType::DateTime => quote! { ::liquid::value::DateTime },
             FilterParameterType::Date => quote! { ::liquid::value::Date },
             FilterParameterType::Str => quote! { ::std::borrow::Cow<'a, str> },
         };
