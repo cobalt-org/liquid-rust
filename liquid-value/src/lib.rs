@@ -10,17 +10,20 @@ extern crate serde;
 #[macro_use]
 mod macros;
 
-pub mod map;
+mod date;
 mod path;
 mod scalar;
 mod ser;
 mod values;
+
+pub mod map;
 
 /// Liquid Processing Errors.
 pub mod error {
     pub use liquid_error::*;
 }
 
+pub use crate::date::*;
 pub use crate::path::*;
 pub use crate::scalar::*;
 pub use crate::ser::*;

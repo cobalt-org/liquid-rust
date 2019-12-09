@@ -153,9 +153,9 @@ pub fn test_derive_mixed_filter_ok() {
         ))
         .unwrap();
     let expected = concat!(
-        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: str, type: 0>\n",
-        "<a: None; b: false; c: None, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: None, type: 0>\n",
-        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -08:00, e: 2019-02-08, f: str, type: 0>"
+        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -0800, e: 2019-02-08, f: str, type: 0>\n",
+        "<a: None; b: false; c: None, d: 2019-02-08 15:34:25 -0800, e: 2019-02-08, f: None, type: 0>\n",
+        "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -0800, e: 2019-02-08, f: str, type: 0>"
     );
 
     let globals = liquid::value::Object::new();
