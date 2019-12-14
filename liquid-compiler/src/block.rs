@@ -6,17 +6,17 @@ use super::TagBlock;
 use super::TagTokenIter;
 
 pub trait BlockReflection {
-    fn start_tag(&self) -> &'static str;
+    fn start_tag(&self) -> &str;
 
-    fn end_tag(&self) -> &'static str;
+    fn end_tag(&self) -> &str;
 
-    fn description(&self) -> &'static str;
+    fn description(&self) -> &str;
 
-    fn example(&self) -> Option<&'static str> {
+    fn example(&self) -> Option<&str> {
         None
     }
 
-    fn spec(&self) -> Option<&'static str> {
+    fn spec(&self) -> Option<&str> {
         None
     }
 }

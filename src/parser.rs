@@ -156,21 +156,23 @@ where
     /// Inserts a new custom block into the parser
     pub fn block<B: Into<Box<dyn compiler::ParseBlock>>>(mut self, block: B) -> Self {
         let block = block.into();
-        self.blocks.register(block.reflection().start_tag(), block);
+        self.blocks
+            .register(block.reflection().start_tag().to_owned(), block);
         self
     }
 
     /// Inserts a new custom tag into the parser
     pub fn tag<T: Into<Box<dyn compiler::ParseTag>>>(mut self, tag: T) -> Self {
         let tag = tag.into();
-        self.tags.register(tag.reflection().tag(), tag);
+        self.tags.register(tag.reflection().tag().to_owned(), tag);
         self
     }
 
     /// Inserts a new custom filter into the parser
     pub fn filter<F: Into<Box<dyn compiler::ParseFilter>>>(mut self, filter: F) -> Self {
         let filter = filter.into();
-        self.filters.register(filter.reflection().name(), filter);
+        self.filters
+            .register(filter.reflection().name().to_owned(), filter);
         self
     }
 

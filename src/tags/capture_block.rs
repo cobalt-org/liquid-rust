@@ -49,15 +49,15 @@ impl CaptureBlock {
 }
 
 impl BlockReflection for CaptureBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "capture"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endcapture"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -102,7 +102,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("capture", CaptureBlock.into());
+        options
+            .blocks
+            .register("capture".to_string(), CaptureBlock.into());
         options
     }
 

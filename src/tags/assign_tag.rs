@@ -97,9 +97,15 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("assign", AssignTag.into());
-        options.blocks.register("if", tags::IfBlock.into());
-        options.blocks.register("for", tags::ForBlock.into());
+        options
+            .tags
+            .register("assign".to_string(), AssignTag.into());
+        options
+            .blocks
+            .register("if".to_string(), tags::IfBlock.into());
+        options
+            .blocks
+            .register("for".to_string(), tags::ForBlock.into());
         options
     }
 

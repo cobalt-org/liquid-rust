@@ -32,15 +32,15 @@ impl RawBlock {
 }
 
 impl BlockReflection for RawBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "raw"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endraw"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -74,7 +74,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("raw", RawBlock.into());
+        options.blocks.register("raw".to_string(), RawBlock.into());
         options
     }
 

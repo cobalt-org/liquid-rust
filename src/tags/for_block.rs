@@ -244,15 +244,15 @@ impl ForBlock {
 }
 
 impl BlockReflection for ForBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "for"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endfor"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -468,15 +468,15 @@ impl TableRowBlock {
 }
 
 impl BlockReflection for TableRowBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "tablerow"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endtablerow"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -571,9 +571,13 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("for", ForBlock.into());
-        options.blocks.register("tablerow", TableRowBlock.into());
-        options.tags.register("assign", tags::AssignTag.into());
+        options.blocks.register("for".to_string(), ForBlock.into());
+        options
+            .blocks
+            .register("tablerow".to_string(), TableRowBlock.into());
+        options
+            .tags
+            .register("assign".to_string(), tags::AssignTag.into());
         options
     }
 
@@ -884,7 +888,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("shout", Box::new(ShoutFilterParser));
+            .register("shout".to_string(), Box::new(ShoutFilterParser));
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();

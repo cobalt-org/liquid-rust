@@ -121,15 +121,15 @@ impl CaseBlock {
 }
 
 impl BlockReflection for CaseBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "case"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endcase"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -203,7 +203,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("case", CaseBlock.into());
+        options
+            .blocks
+            .register("case".to_string(), CaseBlock.into());
         options
     }
 
