@@ -149,9 +149,15 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("assign", tags::AssignTag.into());
-        options.tags.register("increment", IncrementTag.into());
-        options.tags.register("decrement", DecrementTag.into());
+        options
+            .tags
+            .register("assign".to_string(), tags::AssignTag.into());
+        options
+            .tags
+            .register("increment".to_string(), IncrementTag.into());
+        options
+            .tags
+            .register("decrement".to_string(), DecrementTag.into());
         options
     }
 

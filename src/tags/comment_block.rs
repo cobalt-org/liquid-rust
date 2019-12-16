@@ -30,15 +30,15 @@ impl CommentBlock {
 }
 
 impl BlockReflection for CommentBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "comment"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endcomment"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -84,7 +84,9 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("comment", CommentBlock.into());
+        options
+            .blocks
+            .register("comment".to_string(), CommentBlock.into());
         options
     }
 

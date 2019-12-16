@@ -143,7 +143,7 @@ impl fmt::Display for Condition {
 
 #[derive(Debug)]
 struct Conditional {
-    tag_name: &'static str,
+    tag_name: String,
     condition: Condition,
     mode: bool,
     if_true: Template,
@@ -309,15 +309,15 @@ impl UnlessBlock {
 }
 
 impl BlockReflection for UnlessBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "unless"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endunless"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -352,7 +352,7 @@ impl ParseBlock for UnlessBlock {
 
         tokens.assert_empty();
         Ok(Box::new(Conditional {
-            tag_name: self.start_tag(),
+            tag_name: self.start_tag().to_string(),
             condition,
             mode: false,
             if_true,
@@ -366,7 +366,7 @@ impl ParseBlock for UnlessBlock {
 }
 
 fn parse_if(
-    tag_name: &'static str,
+    tag_name: &str,
     arguments: TagTokenIter,
     tokens: &mut TagBlock,
     options: &Language,
@@ -397,7 +397,7 @@ fn parse_if(
     let if_false = if_false.map(Template::new);
 
     Ok(Box::new(Conditional {
-        tag_name,
+        tag_name: tag_name.to_string(),
         condition,
         mode: true,
         if_true,
@@ -415,15 +415,15 @@ impl IfBlock {
 }
 
 impl BlockReflection for IfBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "if"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endif"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -467,8 +467,10 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("if", IfBlock.into());
-        options.blocks.register("unless", UnlessBlock.into());
+        options.blocks.register("if".to_string(), IfBlock.into());
+        options
+            .blocks
+            .register("unless".to_string(), UnlessBlock.into());
         options
     }
 

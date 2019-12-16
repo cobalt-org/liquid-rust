@@ -48,15 +48,15 @@ impl IfChangedBlock {
 }
 
 impl BlockReflection for IfChangedBlock {
-    fn start_tag(&self) -> &'static str {
+    fn start_tag(&self) -> &str {
         "ifchanged"
     }
 
-    fn end_tag(&self) -> &'static str {
+    fn end_tag(&self) -> &str {
         "endifchanged"
     }
 
-    fn description(&self) -> &'static str {
+    fn description(&self) -> &str {
         ""
     }
 }
@@ -112,9 +112,15 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("ifchanged", IfChangedBlock.into());
-        options.blocks.register("for", tags::ForBlock.into());
-        options.blocks.register("if", tags::IfBlock.into());
+        options
+            .blocks
+            .register("ifchanged".to_string(), IfChangedBlock.into());
+        options
+            .blocks
+            .register("for".to_string(), tags::ForBlock.into());
+        options
+            .blocks
+            .register("if".to_string(), tags::IfBlock.into());
         options
     }
 

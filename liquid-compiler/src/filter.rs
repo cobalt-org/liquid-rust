@@ -37,8 +37,8 @@ pub trait FilterParametersReflection {
 /// it is necessary to use the `#[filter(...)]`  helper attribute. See documentation on
 /// `liquid-derive` for more information.
 pub trait FilterReflection {
-    fn name(&self) -> &'static str;
-    fn description(&self) -> &'static str;
+    fn name(&self) -> &str;
+    fn description(&self) -> &str;
 
     fn positional_parameters(&self) -> &'static [ParameterReflection];
     fn keyword_parameters(&self) -> &'static [ParameterReflection];

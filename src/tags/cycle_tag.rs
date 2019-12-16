@@ -169,7 +169,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("cycle", CycleTag.into());
+        options.tags.register("cycle".to_string(), CycleTag.into());
         options
     }
 

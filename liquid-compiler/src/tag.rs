@@ -5,15 +5,15 @@ use super::Language;
 use super::TagTokenIter;
 
 pub trait TagReflection {
-    fn tag(&self) -> &'static str;
+    fn tag(&self) -> &str;
 
-    fn description(&self) -> &'static str;
+    fn description(&self) -> &str;
 
-    fn example(&self) -> Option<&'static str> {
+    fn example(&self) -> Option<&str> {
         None
     }
 
-    fn spec(&self) -> Option<&'static str> {
+    fn spec(&self) -> Option<&str> {
         None
     }
 }

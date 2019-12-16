@@ -122,11 +122,15 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("include", IncludeTag.into());
+        options
+            .tags
+            .register("include".to_string(), IncludeTag.into());
         options
             .blocks
-            .register("comment", tags::CommentBlock.into());
-        options.blocks.register("if", tags::IfBlock.into());
+            .register("comment".to_string(), tags::CommentBlock.into());
+        options
+            .blocks
+            .register("if".to_string(), tags::IfBlock.into());
         options
     }
 
@@ -153,7 +157,9 @@ mod test {
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
         let mut options = options();
-        options.filters.register("size", Box::new(SizeFilterParser));
+        options
+            .filters
+            .register("size".to_string(), Box::new(SizeFilterParser));
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
@@ -178,7 +184,9 @@ mod test {
     fn include_non_string() {
         let text = "{% include example.txt %}";
         let mut options = options();
-        options.filters.register("size", Box::new(SizeFilterParser));
+        options
+            .filters
+            .register("size".to_string(), Box::new(SizeFilterParser));
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
@@ -203,7 +211,9 @@ mod test {
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
         let mut options = options();
-        options.filters.register("size", Box::new(SizeFilterParser));
+        options
+            .filters
+            .register("size".to_string(), Box::new(SizeFilterParser));
         let template = compiler::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();

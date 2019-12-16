@@ -5,7 +5,7 @@ type KeysImpl<'a, K, V> = hash_map::Keys<'a, K, V>;
 
 /// Liquid language plugin registry.
 pub struct PluginRegistry<P> {
-    plugins: MapImpl<&'static str, P>,
+    plugins: MapImpl<String, P>,
 }
 
 impl<P> PluginRegistry<P> {
@@ -21,7 +21,7 @@ impl<P> PluginRegistry<P> {
     /// Generally this is used when setting up the program.
     ///
     /// Returns whether this overrode an existing plugin.
-    pub fn register(&mut self, name: &'static str, plugin: P) -> bool {
+    pub fn register(&mut self, name: String, plugin: P) -> bool {
         let old = self.plugins.insert(name, plugin);
         old.is_some()
     }
@@ -73,7 +73,7 @@ macro_rules! delegate_iterator {
             type Item = $item;
             #[inline]
             fn next(&mut self) -> Option<Self::Item> {
-                self.iter.next().map(|s| *s)
+                self.iter.next().map(|s| s.as_str())
             }
             #[inline]
             fn size_hint(&self) -> (usize, Option<usize>) {
@@ -98,7 +98,7 @@ pub struct PluginNames<'a, P>
 where
     P: 'a,
 {
-    iter: KeysImpl<'a, &'static str, P>,
+    iter: KeysImpl<'a, String, P>,
 }
 
-delegate_iterator!((PluginNames<'a, P>) => &'static str);
+delegate_iterator!((PluginNames<'a, P>) => &'a str);
