@@ -583,12 +583,10 @@ impl<'a> OccupiedEntry<'a> {
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(mut occupied) => {
-    ///         occupied.get_mut().as_array_mut().unwrap().push(liquid_value!(4));
+    ///         occupied.get_mut().as_array().unwrap();
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    ///
-    /// assert_eq!(map["liquid"].as_array().unwrap().len(), 4);
     /// # }
     /// ```
     #[inline]
@@ -612,12 +610,10 @@ impl<'a> OccupiedEntry<'a> {
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(mut occupied) => {
-    ///         occupied.into_mut().as_array_mut().unwrap().push(liquid_value!(4));
+    ///         occupied.into_mut().as_array().unwrap();
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    ///
-    /// assert_eq!(map["liquid"].as_array().unwrap().len(), 4);
     /// # }
     /// ```
     #[inline]

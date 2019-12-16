@@ -62,11 +62,11 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a string.
     pub fn to_str(&self) -> borrow::Cow<'_, str> {
         match self.0 {
-            ScalarCowEnum::Integer(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarCowEnum::Float(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarCowEnum::Bool(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarCowEnum::DateTime(ref x) => borrow::Cow::Owned(x.to_string()),
-            ScalarCowEnum::Date(ref x) => borrow::Cow::Owned(x.to_string()),
+            ScalarCowEnum::Integer(_)
+            | ScalarCowEnum::Float(_)
+            | ScalarCowEnum::Bool(_)
+            | ScalarCowEnum::DateTime(_)
+            | ScalarCowEnum::Date(_) => borrow::Cow::Owned(self.render().to_string()),
             ScalarCowEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
         }
     }

@@ -64,7 +64,16 @@ impl ValueStore for Object {
                 if let Some(parent) = self.try_get_variable(subpath) {
                     let subpath = itertools::join(subpath.iter().map(ScalarCow::render), ".");
                     let requested = &path[subpath_end];
-                    let available: Vec<_> = parent.keys().collect();
+                    let available = if let Some(arr) = parent.as_array() {
+                        let mut available = vec![ScalarCow::new("first"), ScalarCow::new("last")];
+                        if !arr.is_empty() {
+                            available.insert(0, ScalarCow::new(format!("0..{}", arr.len() - 1)));
+                        }
+                        available
+                    } else {
+                        let available: Vec<_> = parent.keys().collect();
+                        available
+                    };
                     let available = itertools::join(available.iter().map(ScalarCow::render), ", ");
                     return Error::with_msg("Unknown index")
                         .context("variable", subpath)
