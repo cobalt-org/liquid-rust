@@ -2,7 +2,7 @@ extern crate chrono;
 extern crate liquid;
 extern crate regex;
 
-pub use liquid::value::Value::Nil;
+pub use liquid::value::ValueCow::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid::value::Value {
