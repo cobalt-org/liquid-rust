@@ -15,7 +15,7 @@ proc-macro = true
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
-syn = "0.15"
+syn = "1.0"
 proc-quote = "0.2"
 proc-macro2 = "0.4.27"
 
