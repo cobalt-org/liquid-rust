@@ -1,5 +1,3 @@
-use std::borrow;
-
 use itertools;
 use liquid_error::{Error, Result};
 use liquid_value::{Object, PathRef, Scalar, Value};
@@ -8,7 +6,7 @@ use super::ValueStore;
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
-    name: Option<String>,
+    name: Option<sstring::SString>,
     data: Object,
 }
 
@@ -17,7 +15,7 @@ impl Frame {
         Default::default()
     }
 
-    fn with_name<S: Into<String>>(name: S) -> Self {
+    fn with_name<S: Into<sstring::SString>>(name: S) -> Self {
         Self {
             name: Some(name.into()),
             data: Object::new(),
@@ -58,7 +56,7 @@ impl<'g> Stack<'g> {
     }
 
     /// Creates a new variable scope chained to a parent scope.
-    pub(crate) fn push_named_frame<S: Into<String>>(&mut self, name: S) {
+    pub(crate) fn push_named_frame<S: Into<sstring::SString>>(&mut self, name: S) {
         self.stack.push(Frame::with_name(name));
     }
 
@@ -77,11 +75,11 @@ impl<'g> Stack<'g> {
     }
 
     /// The name of the currently active template.
-    pub fn frame_name(&self) -> Option<&str> {
+    pub fn frame_name(&self) -> Option<sstring::SStringRef<'_>> {
         self.stack
             .iter()
             .rev()
-            .find_map(|f| f.name.as_ref().map(|s| s.as_str()))
+            .find_map(|f| f.name.as_ref().map(|s| s.as_ref()))
     }
 
     /// Recursively index into the stack.
@@ -101,14 +99,14 @@ impl<'g> Stack<'g> {
                 .unwrap_or_else(|| Scalar::new("nil"));
             let globals = itertools::join(self.globals().iter(), ", ");
             Error::with_msg("Unknown variable")
-                .context("requested variable", key.to_str().into_owned())
+                .context("requested variable", key.to_sstr())
                 .context("available variables", globals)
         })?;
 
         frame.get_variable(path)
     }
 
-    fn globals(&self) -> Vec<&str> {
+    fn globals(&self) -> Vec<sstring::SStringRef<'_>> {
         let mut globals = self.globals.map(|g| g.roots()).unwrap_or_default();
         for frame in self.stack.iter() {
             globals.extend(frame.data.roots());
@@ -120,8 +118,8 @@ impl<'g> Stack<'g> {
 
     fn find_path_frame<'a>(&'a self, path: PathRef<'_, '_>) -> Option<&'a dyn ValueStore> {
         let key = path.iter().next()?;
-        let key = key.to_str();
-        self.find_frame(key.as_ref())
+        let key = key.to_sstr();
+        self.find_frame(key.as_str())
     }
 
     fn find_frame<'a>(&'a self, name: &str) -> Option<&'a dyn ValueStore> {
@@ -145,7 +143,7 @@ impl<'g> Stack<'g> {
     /// Used by increment and decrement tags
     pub fn set_index<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<borrow::Cow<'static, str>>,
+        S: Into<sstring::SString>,
     {
         self.indexes.insert(name.into(), val)
     }
@@ -158,9 +156,10 @@ impl<'g> Stack<'g> {
     /// Sets a value in the global context.
     pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<borrow::Cow<'static, str>>,
+        S: Into<sstring::SString>,
     {
-        self.global_frame().insert(name.into(), val)
+        let name = name.into();
+        self.global_frame().insert(name, val)
     }
 
     /// Sets a value to the rendering context.
@@ -173,7 +172,7 @@ impl<'g> Stack<'g> {
     /// this should never happen in a well-formed program.
     pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<borrow::Cow<'static, str>>,
+        S: Into<sstring::SString>,
     {
         self.current_frame().insert(name.into(), val)
     }

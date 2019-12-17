@@ -1,0 +1,16 @@
+[package]
+name = "sstring"
+version = "0.1.0"
+authors = ["Ed Page <eopage@gmail.com>"]
+description = "String library optimized for static declarations"
+repository = "https://github.com/cobalt-org/liquid-rust"
+documentation = "https://docs.rs/sstring"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+edition = "2018"
+
+[badges]
+azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

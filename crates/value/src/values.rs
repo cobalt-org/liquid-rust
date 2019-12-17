@@ -1,10 +1,11 @@
-use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
 
-use super::map;
-use super::Scalar;
-use super::ScalarCow;
+use sstring::SStringCow;
+
+use crate::map;
+use crate::Scalar;
+use crate::ScalarCow;
 
 /// An enum to represent different value types
 pub type Value = ValueCow<'static>;
@@ -56,20 +57,18 @@ impl<'v> ValueCow<'v> {
     }
 
     /// Interpret as a string.
-    pub fn to_str(&self) -> borrow::Cow<'_, str> {
-        match *self {
-            ValueCow::Scalar(ref x) => x.to_str(),
-            ValueCow::Array(_) | ValueCow::Object(_) => {
-                borrow::Cow::Owned(self.render().to_string())
-            }
-            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => borrow::Cow::Borrowed(""),
+    pub fn to_sstr(&self) -> SStringCow<'_> {
+        match self {
+            ValueCow::Scalar(x) => x.to_sstr(),
+            ValueCow::Array(_) | ValueCow::Object(_) => self.render().to_string().into(),
+            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => SStringCow::default(),
         }
     }
 
     /// Extracts the scalar value if it is a scalar.
     pub fn as_scalar(&self) -> Option<&ScalarCow<'v>> {
-        match *self {
-            ValueCow::Scalar(ref s) => Some(s),
+        match self {
+            ValueCow::Scalar(s) => Some(s),
             _ => None,
         }
     }
@@ -89,7 +88,7 @@ impl<'v> ValueCow<'v> {
 
     /// Extracts the array value if it is an array.
     pub fn as_array(&self) -> Option<&Array> {
-        match *self {
+        match self {
             ValueCow::Array(ref s) => Some(s),
             _ => None,
         }
@@ -110,7 +109,7 @@ impl<'v> ValueCow<'v> {
 
     /// Extracts the object value if it is a object.
     pub fn as_object(&self) -> Option<&Object> {
-        match *self {
+        match self {
             ValueCow::Object(ref s) => Some(s),
             _ => None,
         }
@@ -131,7 +130,7 @@ impl<'v> ValueCow<'v> {
 
     /// Tests whether this value is Nil
     pub fn is_nil(&self) -> bool {
-        match *self {
+        match self {
             ValueCow::Nil => true,
             _ => false,
         }
@@ -139,7 +138,7 @@ impl<'v> ValueCow<'v> {
 
     /// Tests whether this value is Empty
     pub fn is_empty(&self) -> bool {
-        match *self {
+        match self {
             ValueCow::Empty => true,
             _ => false,
         }
@@ -147,7 +146,7 @@ impl<'v> ValueCow<'v> {
 
     /// Tests whether this value is Blank
     pub fn is_blank(&self) -> bool {
-        match *self {
+        match self {
             ValueCow::Blank => true,
             _ => false,
         }
@@ -156,7 +155,7 @@ impl<'v> ValueCow<'v> {
     /// Evaluate using Liquid "truthiness"
     pub fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
-        match *self {
+        match self {
             ValueCow::Scalar(ref x) => x.is_truthy(),
             ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => false,
             ValueCow::Array(_) | ValueCow::Object(_) => true,
@@ -165,7 +164,7 @@ impl<'v> ValueCow<'v> {
 
     /// Whether a default constructed value.
     pub fn is_default(&self) -> bool {
-        match *self {
+        match self {
             ValueCow::Scalar(ref x) => x.is_default(),
             ValueCow::Nil => true,
             ValueCow::Empty => true,
@@ -177,7 +176,7 @@ impl<'v> ValueCow<'v> {
 
     /// Report the data type (generally for error reporting).
     pub fn type_name(&self) -> &'static str {
-        match *self {
+        match self {
             ValueCow::Scalar(ref x) => x.type_name(),
             ValueCow::Nil => "nil",
             ValueCow::Empty => "empty",
@@ -189,39 +188,33 @@ impl<'v> ValueCow<'v> {
 
     /// Access a contained `Value`.
     pub fn contains_key(&self, index: &ScalarCow<'_>) -> bool {
-        match *self {
+        match self {
             ValueCow::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
                     let index = convert_index(index, x.len());
                     index < x.len()
                 } else {
-                    match &*index.to_str() {
+                    match &*index.to_sstr() {
                         "first" | "last" => true,
                         _ => false,
                     }
                 }
             }
-            ValueCow::Object(ref x) => x.contains_key(index.to_str().as_ref()),
+            ValueCow::Object(ref x) => x.contains_key(index.to_sstr().as_str()),
             _ => false,
         }
     }
 
     /// Keys available for lookup.
-    pub fn keys(&self) -> Keys {
-        let v = match *self {
+    pub fn keys(&self) -> Keys<'_> {
+        let v = match self {
             ValueCow::Array(ref x) => {
                 let start: i32 = 0;
                 let end = x.len() as i32;
                 let keys: Vec<_> = (start..end).map(Scalar::new).collect();
                 keys
             }
-            ValueCow::Object(ref x) => x
-                .keys()
-                .map(|s| match *s {
-                    borrow::Cow::Borrowed(s) => Scalar::new(s),
-                    borrow::Cow::Owned(ref s) => Scalar::new(s.to_owned()),
-                })
-                .collect(),
+            ValueCow::Object(x) => x.keys().map(|s| ScalarCow::new(s)).collect(),
             _ => vec![],
         };
         Keys(v.into_iter())
@@ -229,20 +222,20 @@ impl<'v> ValueCow<'v> {
 
     /// Access a contained `Value`.
     pub fn get<'s>(&'s self, index: &ScalarCow<'_>) -> Option<&'s Self> {
-        match *self {
+        match self {
             ValueCow::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
                     let index = convert_index(index, x.len());
                     x.get(index as usize)
                 } else {
-                    match &*index.to_str() {
+                    match &*index.to_sstr() {
                         "first" => x.get(0),
                         "last" => x.get(x.len() - 1),
                         _ => None,
                     }
                 }
             }
-            ValueCow::Object(ref x) => x.get(index.to_str().as_ref()),
+            ValueCow::Object(ref x) => x.get(index.to_sstr().as_str()),
             _ => None,
         }
     }
@@ -250,13 +243,13 @@ impl<'v> ValueCow<'v> {
 
 /// Iterator over a `Value`s keys.
 #[derive(Debug)]
-pub struct Keys(::std::vec::IntoIter<Scalar>);
+pub struct Keys<'s>(::std::vec::IntoIter<ScalarCow<'s>>);
 
-impl Iterator for Keys {
-    type Item = Scalar;
+impl<'s> Iterator for Keys<'s> {
+    type Item = ScalarCow<'s>;
 
     #[inline]
-    fn next(&mut self) -> Option<Scalar> {
+    fn next(&mut self) -> Option<ScalarCow<'s>> {
         self.0.next()
     }
 
@@ -271,7 +264,7 @@ impl Iterator for Keys {
     }
 }
 
-impl ExactSizeIterator for Keys {
+impl<'s> ExactSizeIterator for Keys<'s> {
     #[inline]
     fn len(&self) -> usize {
         self.0.len()
@@ -294,6 +287,72 @@ impl Default for Value {
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
         value_eq(self, other)
+    }
+}
+
+impl PartialEq<i32> for Value {
+    fn eq(&self, other: &i32) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl PartialEq<f64> for Value {
+    fn eq(&self, other: &f64) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl PartialEq<bool> for Value {
+    fn eq(&self, other: &bool) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl PartialEq<crate::DateTime> for Value {
+    fn eq(&self, other: &crate::DateTime) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl PartialEq<crate::Date> for Value {
+    fn eq(&self, other: &crate::Date) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl PartialEq<str> for Value {
+    fn eq(&self, other: &str) -> bool {
+        value_eq(self, &ValueCow::scalar(other))
+    }
+}
+
+impl<'s> PartialEq<&'s str> for Value {
+    fn eq(&self, other: &&str) -> bool {
+        value_eq(self, &ValueCow::scalar(*other))
+    }
+}
+
+impl<'s> PartialEq<String> for Value {
+    fn eq(&self, other: &String) -> bool {
+        value_eq(self, &ValueCow::scalar(other.as_str()))
+    }
+}
+
+impl PartialEq<sstring::SString> for Value {
+    fn eq(&self, other: &sstring::SString) -> bool {
+        value_eq(self, &ValueCow::scalar(other))
+    }
+}
+
+impl<'s> PartialEq<sstring::SStringRef<'s>> for Value {
+    fn eq(&self, other: &sstring::SStringRef<'s>) -> bool {
+        value_eq(self, &ValueCow::scalar(other))
+    }
+}
+
+impl<'s> PartialEq<sstring::SStringCow<'s>> for Value {
+    fn eq(&self, other: &sstring::SStringCow<'s>) -> bool {
+        value_eq(self, &ValueCow::scalar(other))
     }
 }
 
@@ -360,7 +419,7 @@ impl<'s> fmt::Display for ValueRendered<'s> {
     }
 }
 
-fn value_eq(lhs: &Value, rhs: &Value) -> bool {
+fn value_eq<'v>(lhs: &'v ValueCow<'v>, rhs: &'v ValueCow<'v>) -> bool {
     match (lhs, rhs) {
         (&ValueCow::Scalar(ref x), &ValueCow::Scalar(ref y)) => x == y,
         (&ValueCow::Array(ref x), &ValueCow::Array(ref y)) => x == y,
@@ -375,7 +434,7 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
         | (&ValueCow::Blank, &ValueCow::Empty) => true,
 
         (&ValueCow::Empty, &ValueCow::Scalar(ref s))
-        | (&ValueCow::Scalar(ref s), &ValueCow::Empty) => s.to_str().is_empty(),
+        | (&ValueCow::Scalar(ref s), &ValueCow::Empty) => s.to_sstr().is_empty(),
         (&ValueCow::Empty, &ValueCow::Array(ref s))
         | (&ValueCow::Array(ref s), &ValueCow::Empty) => s.is_empty(),
         (&ValueCow::Empty, &ValueCow::Object(ref s))
@@ -384,7 +443,7 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
         (&ValueCow::Nil, &ValueCow::Blank) | (&ValueCow::Blank, &ValueCow::Nil) => true,
         (&ValueCow::Blank, &ValueCow::Scalar(ref s))
         | (&ValueCow::Scalar(ref s), &ValueCow::Blank) => {
-            s.to_str().trim().is_empty() || !s.to_bool().unwrap_or(true)
+            s.to_sstr().trim().is_empty() || !s.to_bool().unwrap_or(true)
         }
         (&ValueCow::Blank, &ValueCow::Array(ref s))
         | (&ValueCow::Array(ref s), &ValueCow::Blank) => s.is_empty(),
@@ -403,7 +462,7 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
     }
 }
 
-fn value_cmp(lhs: &Value, rhs: &Value) -> Option<Ordering> {
+fn value_cmp(lhs: &ValueCow, rhs: &ValueCow) -> Option<Ordering> {
     match (lhs, rhs) {
         (&ValueCow::Scalar(ref x), &ValueCow::Scalar(ref y)) => x.partial_cmp(y),
         (&ValueCow::Array(ref x), &ValueCow::Array(ref y)) => x.iter().partial_cmp(y.iter()),
@@ -420,7 +479,7 @@ mod test {
     fn test_to_string_scalar() {
         let val = ValueCow::scalar(42f64);
         assert_eq!(&val.render().to_string(), "42");
-        assert_eq!(&val.to_str(), "42");
+        assert_eq!(&val.to_sstr(), "42");
     }
 
     #[test]
@@ -431,7 +490,7 @@ mod test {
             ValueCow::scalar(5.3),
         ]);
         assert_eq!(&val.render().to_string(), "3test5.3");
-        assert_eq!(&val.to_str(), "3test5.3");
+        assert_eq!(&val.to_sstr(), "3test5.3");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
@@ -439,7 +498,7 @@ mod test {
     #[test]
     fn test_to_string_nil() {
         assert_eq!(&ValueCow::Nil.render().to_string(), "");
-        assert_eq!(&ValueCow::Nil.to_str(), "");
+        assert_eq!(&ValueCow::Nil.to_sstr(), "");
     }
 
     #[test]

@@ -52,9 +52,9 @@ impl Filter for JoinFilter {
         let input = input
             .as_array()
             .ok_or_else(|| invalid_input("Array of strings expected"))?;
-        let input = input.iter().map(|x| x.to_str());
+        let input = input.iter().map(|x| x.to_sstr());
 
-        Ok(Value::scalar(itertools::join(input, separator.as_ref())))
+        Ok(Value::scalar(itertools::join(input, separator.as_str())))
     }
 }
 
@@ -70,7 +70,7 @@ fn nil_safe_compare(a: &Value, b: &Value) -> Option<cmp::Ordering> {
 fn nil_safe_casecmp_key(value: &Value) -> Option<String> {
     match value {
         Value::Nil => None,
-        value => Some(value.to_str().to_lowercase()),
+        value => Some(value.to_sstr().to_lowercase()),
     }
 }
 
@@ -387,7 +387,7 @@ impl Filter for CompactFilter {
                 .iter()
                 .filter(|v| {
                     !v.as_object()
-                        .and_then(|obj| obj.get(property.as_ref()))
+                        .and_then(|obj| obj.get(property.as_str()))
                         .map_or(true, Value::is_nil)
                 })
                 .cloned()
@@ -460,7 +460,7 @@ impl Filter for FirstFilter {
         match *input {
             Value::Scalar(ref x) => {
                 let c = x
-                    .to_str()
+                    .to_sstr()
                     .chars()
                     .next()
                     .map(|c| c.to_string())
@@ -490,7 +490,7 @@ impl Filter for LastFilter {
         match *input {
             Value::Scalar(ref x) => {
                 let c = x
-                    .to_str()
+                    .to_sstr()
                     .chars()
                     .last()
                     .map(|c| c.to_string())

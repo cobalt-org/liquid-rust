@@ -23,6 +23,11 @@ pub mod error {
     pub use liquid_error::*;
 }
 
+/// String-type optimized for `Value`
+pub mod sstring {
+    pub use sstring::*;
+}
+
 pub use crate::date::*;
 pub use crate::path::*;
 pub use crate::scalar::*;

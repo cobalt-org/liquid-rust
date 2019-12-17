@@ -1,14 +1,12 @@
-use std::borrow;
-
 /// User-visible call trace
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub(crate) struct Trace {
-    trace: Option<borrow::Cow<'static, str>>,
-    context: Vec<(borrow::Cow<'static, str>, borrow::Cow<'static, str>)>,
+    trace: Option<sstring::SString>,
+    context: Vec<(sstring::SString, sstring::SString)>,
 }
 
 impl Trace {
-    pub(crate) fn new(trace: borrow::Cow<'static, str>) -> Self {
+    pub(crate) fn new(trace: sstring::SString) -> Self {
         Self {
             trace: Some(trace),
             context: vec![],
@@ -22,19 +20,15 @@ impl Trace {
         }
     }
 
-    pub(crate) fn append_context(
-        &mut self,
-        key: borrow::Cow<'static, str>,
-        value: borrow::Cow<'static, str>,
-    ) {
+    pub(crate) fn append_context(&mut self, key: sstring::SString, value: sstring::SString) {
         self.context.push((key, value));
     }
 
     pub(crate) fn get_trace(&self) -> Option<&str> {
-        self.trace.as_ref().map(|s| s.as_ref())
+        self.trace.as_ref().map(|s| s.as_str())
     }
 
-    pub(crate) fn get_context(&self) -> &[(borrow::Cow<'static, str>, borrow::Cow<'static, str>)] {
+    pub(crate) fn get_context(&self) -> &[(sstring::SString, sstring::SString)] {
         self.context.as_ref()
     }
 }

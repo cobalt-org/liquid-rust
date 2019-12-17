@@ -36,12 +36,12 @@ impl Filter for ReplaceFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
+        let input = input.to_sstr();
 
         let replace = args.replace.unwrap_or_else(|| "".into());
 
         Ok(Value::scalar(
-            input.replace(args.search.as_ref(), replace.as_ref()),
+            input.replace(args.search.as_str(), replace.as_str()),
         ))
     }
 }
@@ -77,15 +77,15 @@ impl Filter for ReplaceFirstFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
+        let input = input.to_sstr();
 
         let search = args.search;
         let replace = args.replace.unwrap_or_else(|| "".into());
 
         {
-            let tokens: Vec<&str> = input.splitn(2, search.as_ref()).collect();
+            let tokens: Vec<&str> = input.splitn(2, search.as_str()).collect();
             if tokens.len() == 2 {
-                let result = [tokens[0], replace.as_ref(), tokens[1]].join("");
+                let result = [tokens[0], replace.as_str(), tokens[1]].join("");
                 return Ok(Value::scalar(result));
             }
         }
@@ -119,9 +119,9 @@ impl Filter for RemoveFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
+        let input = input.to_sstr();
 
-        Ok(Value::scalar(input.replace(args.search.as_ref(), "")))
+        Ok(Value::scalar(input.replace(args.search.as_str(), "")))
     }
 }
 
@@ -151,10 +151,10 @@ impl Filter for RemoveFirstFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
+        let input = input.to_sstr();
 
         Ok(Value::scalar(
-            input.splitn(2, args.search.as_ref()).collect::<String>(),
+            input.splitn(2, args.search.as_str()).collect::<String>(),
         ))
     }
 }
@@ -185,8 +185,8 @@ impl Filter for AppendFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let mut input = input.to_str().into_owned();
-        input.push_str(args.string.as_ref());
+        let mut input = input.to_sstr().into_mut();
+        input.push_str(args.string.as_str());
 
         Ok(Value::scalar(input))
     }
@@ -218,9 +218,9 @@ impl Filter for PrependFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
-        let mut string = args.string.into_owned();
-        string.push_str(input.as_ref());
+        let input = input.to_sstr();
+        let mut string = args.string.into_mut();
+        string.push_str(input.as_str());
 
         Ok(Value::scalar(string))
     }

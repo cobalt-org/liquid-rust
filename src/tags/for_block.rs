@@ -145,7 +145,7 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
         .and_then(Scalar::to_integer)
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
         .context_key_with(|| arg_name.to_owned().into())
-        .value_with(|| value.to_str().into_owned().into())?;
+        .value_with(|| value.to_sstr().into_owned())?;
 
     Ok(value as isize)
 }
@@ -873,7 +873,7 @@ mod test {
 
     impl Filter for ShoutFilter {
         fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-            Ok(Value::scalar(input.to_str().to_uppercase()))
+            Ok(Value::scalar(input.to_sstr().to_uppercase()))
         }
     }
 

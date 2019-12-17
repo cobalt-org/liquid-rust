@@ -75,7 +75,7 @@ impl Filter for SliceFilter {
                 input.iter().skip(offset).take(length).cloned(),
             ))
         } else {
-            let input = input.to_str();
+            let input = input.to_sstr();
             let (offset, length) = canonicalize_slice(offset, length, input.len());
             Ok(Value::scalar(
                 input.chars().skip(offset).take(length).collect::<String>(),

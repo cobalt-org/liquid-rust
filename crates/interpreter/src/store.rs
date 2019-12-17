@@ -13,7 +13,7 @@ pub trait ValueStore: fmt::Debug {
     fn contains_root(&self, name: &str) -> bool;
 
     /// Enumerate all root variables.
-    fn roots(&self) -> Vec<&str>;
+    fn roots(&self) -> Vec<sstring::SStringRef<'_>>;
 
     /// Check if variable exists.
     ///
@@ -42,7 +42,7 @@ impl ValueStore for Object {
         self.contains_key(name)
     }
 
-    fn roots(&self) -> Vec<&str> {
+    fn roots(&self) -> Vec<sstring::SStringRef<'_>> {
         self.keys().map(|s| s.as_ref()).collect()
     }
 
@@ -86,7 +86,7 @@ impl ValueStore for Object {
             let requested = path
                 .get(0)
                 .expect("`Path` guarantees at least one element")
-                .to_str()
+                .to_sstr()
                 .into_owned();
             let available = itertools::join(self.keys(), ", ");
             return Error::with_msg("Unknown variable")
@@ -100,8 +100,8 @@ impl ValueStore for Object {
 fn get_variable_option<'o>(obj: &'o Object, path: PathRef<'_, '_>) -> Option<&'o Value> {
     let mut indexes = path.iter();
     let key = indexes.next()?;
-    let key = key.to_str();
-    let value = obj.get(key.as_ref())?;
+    let key = key.to_sstr();
+    let value = obj.get(key.as_str())?;
 
     indexes.fold(Some(value), |value, index| {
         let value = value?;

@@ -1,11 +1,16 @@
-use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
+
+use sstring::SString;
+use sstring::SStringCow;
+use sstring::SStringRef;
 
 use crate::{Date, DateTime};
 
 /// A Liquid scalar value
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(transparent)]
+#[repr(transparent)]
 pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
 
 /// A Liquid scalar value
@@ -20,7 +25,7 @@ enum ScalarCowEnum<'s> {
     Bool(bool),
     DateTime(DateTime),
     Date(Date),
-    Str(borrow::Cow<'s, str>),
+    Str(SStringCow<'s>),
 }
 
 impl<'s> ScalarCow<'s> {
@@ -60,25 +65,25 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// Interpret as a string.
-    pub fn to_str(&self) -> borrow::Cow<'_, str> {
+    pub fn to_sstr(&self) -> SStringCow<'_> {
         match self.0 {
             ScalarCowEnum::Integer(_)
             | ScalarCowEnum::Float(_)
             | ScalarCowEnum::Bool(_)
             | ScalarCowEnum::DateTime(_)
-            | ScalarCowEnum::Date(_) => borrow::Cow::Owned(self.render().to_string()),
-            ScalarCowEnum::Str(ref x) => borrow::Cow::Borrowed(x.as_ref()),
+            | ScalarCowEnum::Date(_) => self.render().to_string().into(),
+            ScalarCowEnum::Str(ref x) => x.as_ref().into(),
         }
     }
 
     /// Convert to a string.
-    pub fn into_string(self) -> String {
+    pub fn into_string(self) -> SString {
         match self.0 {
-            ScalarCowEnum::Integer(x) => x.to_string(),
-            ScalarCowEnum::Float(x) => x.to_string(),
-            ScalarCowEnum::Bool(x) => x.to_string(),
-            ScalarCowEnum::DateTime(x) => x.to_string(),
-            ScalarCowEnum::Date(x) => x.to_string(),
+            ScalarCowEnum::Integer(x) => x.to_string().into(),
+            ScalarCowEnum::Float(x) => x.to_string().into(),
+            ScalarCowEnum::Bool(x) => x.to_string().into(),
+            ScalarCowEnum::DateTime(x) => x.to_string().into(),
+            ScalarCowEnum::Date(x) => x.to_string().into(),
             ScalarCowEnum::Str(x) => x.into_owned(),
         }
     }
@@ -114,7 +119,7 @@ impl<'s> ScalarCow<'s> {
     pub fn to_date_time(&self) -> Option<DateTime> {
         match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_ref()),
+            ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_str()),
             _ => None,
         }
     }
@@ -124,7 +129,7 @@ impl<'s> ScalarCow<'s> {
         match self.0 {
             ScalarCowEnum::DateTime(ref x) => Some(x.date()),
             ScalarCowEnum::Date(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => Date::from_str(x.as_ref()),
+            ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
         }
     }
@@ -201,6 +206,54 @@ impl<'s> From<Date> for ScalarCow<'s> {
     }
 }
 
+impl<'s> From<SString> for ScalarCow<'s> {
+    fn from(s: SString) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
+        }
+    }
+}
+
+impl<'s> From<&'s SString> for ScalarCow<'s> {
+    fn from(s: &'s SString) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.as_ref().into()),
+        }
+    }
+}
+
+impl<'s> From<SStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: SStringRef<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
+        }
+    }
+}
+
+impl<'s> From<&'s SStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: &'s SStringRef<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
+        }
+    }
+}
+
+impl<'s> From<SStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: SStringCow<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s),
+        }
+    }
+}
+
+impl<'s> From<&'s SStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: &'s SStringCow<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.clone()),
+        }
+    }
+}
+
 impl<'s> From<String> for ScalarCow<'s> {
     fn from(s: String) -> Self {
         ScalarCow {
@@ -221,14 +274,6 @@ impl<'s> From<&'s str> for ScalarCow<'s> {
     fn from(s: &'s str) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
-        }
-    }
-}
-
-impl<'s> From<borrow::Cow<'s, str>> for ScalarCow<'s> {
-    fn from(s: borrow::Cow<'s, str>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s),
         }
     }
 }
@@ -276,6 +321,41 @@ impl<'s> PartialEq<Date> for ScalarCow<'s> {
 
 impl<'s> PartialEq<str> for ScalarCow<'s> {
     fn eq(&self, other: &str) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<&'s str> for ScalarCow<'s> {
+    fn eq(&self, other: &&str) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<String> for ScalarCow<'s> {
+    fn eq(&self, other: &String) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<SString> for ScalarCow<'s> {
+    fn eq(&self, other: &SString) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<SStringRef<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &SStringRef<'s>) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialEq<SStringCow<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &SStringCow<'s>) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
@@ -409,28 +489,28 @@ mod test {
 
     #[test]
     fn test_to_str_bool() {
-        assert_eq!(TRUE.to_str(), "true");
+        assert_eq!(TRUE.to_sstr(), "true");
     }
 
     #[test]
     fn test_to_str_integer() {
         let val: ScalarCow<'_> = 42i32.into();
-        assert_eq!(val.to_str(), "42");
+        assert_eq!(val.to_sstr(), "42");
     }
 
     #[test]
     fn test_to_str_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_str(), "42");
+        assert_eq!(val.to_sstr(), "42");
 
         let val: ScalarCow<'_> = 42.34.into();
-        assert_eq!(val.to_str(), "42.34");
+        assert_eq!(val.to_sstr(), "42.34");
     }
 
     #[test]
     fn test_to_str_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_str(), "foobar");
+        assert_eq!(val.to_sstr(), "foobar");
     }
 
     #[test]

@@ -3,7 +3,7 @@
 //! This is to abstract the choice of map from the user so it can be changed without breaking
 //! compatibility.
 
-use std::borrow::{Borrow, Cow};
+use std::borrow::Borrow;
 use std::collections::hash_map;
 use std::fmt::{self, Debug};
 use std::hash::Hash;
@@ -19,7 +19,7 @@ pub struct Map {
     map: MapImpl<Key, Value>,
 }
 
-type Key = Cow<'static, str>;
+type Key = sstring::SString;
 
 type MapImpl<K, V> = hash_map::HashMap<K, V>;
 type VacantEntryImpl<'a> = hash_map::VacantEntry<'a, Key, Value>;
@@ -212,9 +212,9 @@ impl Eq for Map {}
 /// # let val = &Value::scalar("");
 /// # let _ =
 /// match *val {
-///     Value::Scalar(ref s) => Some(s.to_str()),
-///     Value::Array(ref arr) => Some(arr[0].to_str()),
-///     Value::Object(ref map) => Some(map["type"].to_str()),
+///     Value::Scalar(ref s) => Some(s.to_sstr()),
+///     Value::Array(ref arr) => Some(arr[0].to_sstr()),
+///     Value::Object(ref map) => Some(map["type"].to_sstr()),
 ///     _ => None,
 /// }
 /// # ;

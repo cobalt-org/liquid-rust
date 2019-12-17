@@ -105,7 +105,7 @@ test_a: ["test"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_str(), "test");
+        assert_eq!(actual, "test");
     }
 
     #[test]
@@ -123,7 +123,7 @@ test_a: ["test1", "test2"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_str(), "test2");
+        assert_eq!(actual, "test2");
     }
 
     #[test]
@@ -142,6 +142,6 @@ test_a:
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual.to_str(), "5");
+        assert_eq!(actual, &5);
     }
 }

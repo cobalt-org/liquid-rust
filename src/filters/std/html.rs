@@ -22,7 +22,7 @@ fn escape(input: &Value, once_p: bool) -> Result<Value> {
     if input.is_nil() {
         return Ok(Value::Nil);
     }
-    let s = input.to_str();
+    let s = input.to_sstr();
     let mut result = String::new();
     let mut last = 0;
     let mut skip = 0;
@@ -122,7 +122,7 @@ static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(
 
 impl Filter for StripHtmlFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_str().into_owned();
+        let input = input.to_sstr().into_mut();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
             matcher.replace_all(&acc, "").into_owned()
@@ -146,7 +146,7 @@ struct NewlineToBrFilter;
 impl Filter for NewlineToBrFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         // TODO handle windows line endings
-        let input = input.to_str();
+        let input = input.to_sstr();
         Ok(Value::scalar(input.replace("\n", "<br />\n")))
     }
 }
