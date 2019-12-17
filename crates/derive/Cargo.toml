@@ -20,7 +20,7 @@ proc-quote = "0.2"
 proc-macro2 = "0.4.27"
 
 # Exposed in API
-liquid-error = { version = "^0.19", path = "../liquid-error" }
-liquid-value = { version = "^0.19", path = "../liquid-value" }
-liquid-interpreter = { version = "^0.19", path = "../liquid-interpreter" }
-liquid-compiler = { version = "^0.19", path = "../liquid-compiler" }
+liquid-error = { version = "^0.19", path = "../error" }
+liquid-value = { version = "^0.19", path = "../value" }
+liquid-interpreter = { version = "^0.19", path = "../interpreter" }
+liquid-compiler = { version = "^0.19", path = "../compiler" }

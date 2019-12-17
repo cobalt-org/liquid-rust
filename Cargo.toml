@@ -1,12 +1,12 @@
 [workspace]
 members = [
-  "liquid-error",
-  "liquid-value",
-  "liquid-compiler",
-  "liquid-interpreter",
-  "liquid-derive",
-  "liquid-help-md",
-  "liquid-bin",
+  "crates/error",
+  "crates/value",
+  "crates/compiler",
+  "crates/interpreter",
+  "crates/derive",
+  "crates/help-md",
+  "crates/bin",
 ]
 
 [package]
@@ -39,11 +39,11 @@ unicode-segmentation = "1.2"
 itertools = "0.8.0"
 url = "1.5"
 doc-comment = "0.3"
-liquid-error = { version = "^0.19", path = "liquid-error" }
-liquid-value = { version = "^0.19", path = "liquid-value" }
-liquid-compiler = { version = "^0.19", path = "liquid-compiler" }
-liquid-interpreter = { version = "^0.19", path = "liquid-interpreter" }
-liquid-derive = { version = "^0.19", path = "liquid-derive" }
+liquid-error = { version = "^0.19", path = "crates/error" }
+liquid-value = { version = "^0.19", path = "crates/value" }
+liquid-compiler = { version = "^0.19", path = "crates/compiler" }
+liquid-interpreter = { version = "^0.19", path = "crates/interpreter" }
+liquid-derive = { version = "^0.19", path = "crates/derive" }
 
 serde = { version = "1.0", optional = true, features = ["derive"] }
 deunicode = "1.0.0"
