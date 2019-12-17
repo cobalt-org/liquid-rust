@@ -2,8 +2,6 @@ use std::borrow;
 use std::cmp::Ordering;
 use std::fmt;
 
-use itertools;
-
 use super::map;
 use super::Scalar;
 use super::ScalarCow;
@@ -44,11 +42,6 @@ impl Value {
         Value::Array(v)
     }
 
-    /// Create as nothing.
-    pub fn nil() -> Self {
-        Value::Nil
-    }
-
     /// A `Display` for a `Scalar` as source code.
     pub fn source(&self) -> ValueSource<'_> {
         ValueSource(&self)
@@ -63,17 +56,7 @@ impl Value {
     pub fn to_str(&self) -> borrow::Cow<'_, str> {
         match *self {
             Value::Scalar(ref x) => x.to_str(),
-            Value::Array(ref x) => {
-                let arr: Vec<_> = x.iter().map(|v| v.render()).collect();
-                borrow::Cow::Owned(itertools::join(arr, ""))
-            }
-            Value::Object(ref x) => {
-                let arr: Vec<_> = x
-                    .iter()
-                    .map(|(k, v)| format!("{}{}", k, v.render()))
-                    .collect();
-                borrow::Cow::Owned(itertools::join(arr, ""))
-            }
+            Value::Array(_) | Value::Object(_) => borrow::Cow::Owned(self.render().to_string()),
             Value::Nil | Value::Empty | Value::Blank => borrow::Cow::Borrowed(""),
         }
     }
@@ -108,14 +91,6 @@ impl Value {
     }
 
     /// Extracts the array value if it is an array.
-    pub fn as_array_mut(&mut self) -> Option<&mut Array> {
-        match *self {
-            Value::Array(ref mut s) => Some(s),
-            _ => None,
-        }
-    }
-
-    /// Extracts the array value if it is an array.
     pub fn into_array(self) -> Option<Array> {
         match self {
             Value::Array(s) => Some(s),
@@ -137,14 +112,6 @@ impl Value {
     }
 
     /// Extracts the object value if it is a object.
-    pub fn as_object_mut(&mut self) -> Option<&mut Object> {
-        match *self {
-            Value::Object(ref mut s) => Some(s),
-            _ => None,
-        }
-    }
-
-    /// Extracts the object value if it is a object.
     pub fn into_object(self) -> Option<Object> {
         match self {
             Value::Object(s) => Some(s),
@@ -157,15 +124,7 @@ impl Value {
         self.as_object().is_some()
     }
 
-    /// Extracts the nil value if it is nil
-    pub fn as_nil(&self) -> Option<()> {
-        match *self {
-            Value::Nil => Some(()),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is nil
+    /// Tests whether this value is Nil
     pub fn is_nil(&self) -> bool {
         match *self {
             Value::Nil => true,
@@ -173,15 +132,7 @@ impl Value {
         }
     }
 
-    /// Extracts the empty value if it is empty
-    pub fn as_empty(&self) -> Option<()> {
-        match *self {
-            Value::Empty => Some(()),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is empty
+    /// Tests whether this value is Empty
     pub fn is_empty(&self) -> bool {
         match *self {
             Value::Empty => true,
@@ -189,15 +140,7 @@ impl Value {
         }
     }
 
-    /// Extracts the blank value if it is blank
-    pub fn as_blank(&self) -> Option<()> {
-        match *self {
-            Value::Blank => Some(()),
-            _ => None,
-        }
-    }
-
-    /// Tests whether this value is blank
+    /// Tests whether this value is Blank
     pub fn is_blank(&self) -> bool {
         match *self {
             Value::Blank => true,
@@ -211,7 +154,7 @@ impl Value {
         match *self {
             Value::Scalar(ref x) => x.is_truthy(),
             Value::Nil | Value::Empty | Value::Blank => false,
-            _ => true,
+            Value::Array(_) | Value::Object(_) => true,
         }
     }
 
@@ -240,7 +183,7 @@ impl Value {
     }
 
     /// Access a contained `Value`.
-    pub fn contains_key(&self, index: &Scalar) -> bool {
+    pub fn contains_key(&self, index: &ScalarCow<'_>) -> bool {
         match *self {
             Value::Array(ref x) => {
                 if let Some(index) = index.to_integer() {
@@ -264,9 +207,7 @@ impl Value {
             Value::Array(ref x) => {
                 let start: i32 = 0;
                 let end = x.len() as i32;
-                let mut keys: Vec<_> = (start..end).map(Scalar::new).collect();
-                keys.push(Scalar::new("first"));
-                keys.push(Scalar::new("last"));
+                let keys: Vec<_> = (start..end).map(Scalar::new).collect();
                 keys
             }
             Value::Object(ref x) => x
@@ -341,7 +282,7 @@ fn convert_index(index: i32, max_size: usize) -> usize {
 
 impl Default for Value {
     fn default() -> Self {
-        Self::nil()
+        Self::Nil
     }
 }
 
@@ -419,14 +360,15 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
         (&Value::Scalar(ref x), &Value::Scalar(ref y)) => x == y,
         (&Value::Array(ref x), &Value::Array(ref y)) => x == y,
         (&Value::Object(ref x), &Value::Object(ref y)) => x == y,
+
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         (&Value::Nil, &Value::Nil)
         | (&Value::Empty, &Value::Empty)
         | (&Value::Blank, &Value::Blank)
         | (&Value::Empty, &Value::Blank)
         | (&Value::Blank, &Value::Empty) => true,
 
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         (&Value::Empty, &Value::Scalar(ref s)) | (&Value::Scalar(ref s), &Value::Empty) => {
             s.to_str().is_empty()
         }
@@ -437,8 +379,6 @@ fn value_eq(lhs: &Value, rhs: &Value) -> bool {
             s.is_empty()
         }
 
-        // encode a best-guess of blank rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         (&Value::Nil, &Value::Blank) | (&Value::Blank, &Value::Nil) => true,
         (&Value::Blank, &Value::Scalar(ref s)) | (&Value::Scalar(ref s), &Value::Blank) => {
             s.to_str().trim().is_empty() || !s.to_bool().unwrap_or(true)
@@ -495,8 +435,8 @@ mod test {
 
     #[test]
     fn test_to_string_nil() {
-        assert_eq!(&Value::nil().render().to_string(), "");
-        assert_eq!(&Value::nil().to_str(), "");
+        assert_eq!(&Value::Nil.render().to_string(), "");
+        assert_eq!(&Value::Nil.to_str(), "");
     }
 
     #[test]

@@ -20,7 +20,7 @@ fn nr_escaped(text: &str) -> usize {
 // Retrieved 2016-11-19.
 fn escape(input: &Value, once_p: bool) -> Result<Value> {
     if input.is_nil() {
-        return Ok(Value::nil());
+        return Ok(Value::Nil);
     }
     let s = input.to_str();
     let mut result = String::new();
