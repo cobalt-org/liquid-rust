@@ -55,7 +55,7 @@ fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle
                 TryMatchToken::Fails(name) => match name.expect_literal() {
                     // This will allow non string literals such as 0 to be parsed as such.
                     // Is this ok or should more specific functions be created?
-                    TryMatchToken::Matches(name) => name.to_str().into_owned(),
+                    TryMatchToken::Matches(name) => name.to_sstr().into_mut(),
                     TryMatchToken::Fails(name) => return name.raise_error().into_err(),
                 },
             };

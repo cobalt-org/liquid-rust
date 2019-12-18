@@ -10,6 +10,7 @@ pub type FixedOffset = chrono::FixedOffset;
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
 )]
 #[serde(transparent)]
+#[repr(transparent)]
 pub struct DateTime {
     #[serde(with = "friendly_date_time")]
     inner: DateTimeImpl,

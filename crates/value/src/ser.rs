@@ -371,7 +371,7 @@ impl serde::ser::SerializeMap for SerializeMap {
             SerializeMap::Map {
                 ref mut next_key, ..
             } => {
-                *next_key = Some(r#try!(key.serialize(MapKeySerializer)));
+                *next_key = Some(key.serialize(MapKeySerializer)?);
                 Ok(())
             }
         }
@@ -596,7 +596,7 @@ impl serde::ser::SerializeStruct for SerializeMap {
     {
         match *self {
             SerializeMap::Map { .. } => {
-                r#try!(serde::ser::SerializeMap::serialize_key(self, key));
+                serde::ser::SerializeMap::serialize_key(self, key)?;
                 serde::ser::SerializeMap::serialize_value(self, value)
             }
         }

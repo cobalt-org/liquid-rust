@@ -7,6 +7,7 @@ members = [
   "crates/derive",
   "crates/help-md",
   "crates/bin",
+  "crates/sstring",
 ]
 
 [package]
@@ -39,6 +40,7 @@ unicode-segmentation = "1.2"
 itertools = "0.8.0"
 url = "1.5"
 doc-comment = "0.3"
+sstring = { version = "0.1.0", path = "crates/sstring" }
 liquid-error = { version = "^0.19", path = "crates/error" }
 liquid-value = { version = "^0.19", path = "crates/value" }
 liquid-compiler = { version = "^0.19", path = "crates/compiler" }

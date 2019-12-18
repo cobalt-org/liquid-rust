@@ -6,7 +6,6 @@ use liquid::error::Result;
 use liquid::interpreter::Context;
 use liquid::interpreter::Expression;
 use liquid::value::Value;
-use std::borrow::Cow;
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
@@ -69,7 +68,7 @@ pub struct AddSmileyFilter {
 impl Filter for AddSmileyFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
-        let smiley = args.smiley.unwrap_or(Cow::from(":-)")).to_string();
+        let smiley = args.smiley.unwrap_or(":-)".into()).to_string();
         Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
     }
 }
@@ -103,8 +102,8 @@ impl Filter for AddTagFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let tag = args.tag.unwrap_or(Cow::from("p")).to_string();
-        let id = args.id.unwrap_or(Cow::from("foo")).to_string();
+        let tag = args.tag.unwrap_or("p".into()).to_string();
+        let id = args.id.unwrap_or("foo".into()).to_string();
         Ok(Value::scalar(format!(
             r#"<{} id="{}">{}</{}>"#,
             tag,
@@ -160,7 +159,7 @@ impl Filter for LinkToFilter {
         let args = self.args.evaluate(context)?;
 
         let name = input;
-        let url = args.url.unwrap_or(Cow::from(":-)")).to_string();
+        let url = args.url.unwrap_or(":-)".into()).to_string();
         Ok(Value::scalar(format!(
             r#"<a href="{}">{}</a>"#,
             url,

@@ -39,12 +39,12 @@ impl Filter for SplitFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_str();
+        let input = input.to_sstr();
 
         // Split and construct resulting Array
         Ok(Value::Array(
             input
-                .split(args.pattern.as_ref())
+                .split(args.pattern.as_str())
                 .map(|s| Value::scalar(s.to_owned()))
                 .collect(),
         ))

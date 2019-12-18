@@ -69,10 +69,10 @@ impl Filter for SlugifyFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let s = input.to_str();
+        let s = input.to_sstr();
         let mode = args
             .mode
-            .map(|mode| SlugifyMode::new(mode.as_ref()))
+            .map(|mode| SlugifyMode::new(mode.as_str()))
             .unwrap_or(SlugifyMode::Def);
 
         let s = if mode == SlugifyMode::Latin {

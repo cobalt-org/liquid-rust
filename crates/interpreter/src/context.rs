@@ -188,7 +188,11 @@ impl<'g> Context<'g> {
     /// Sets up a new stack frame, executes the supplied function and then
     /// tears the stack frame down before returning the function's result
     /// to the caller.
-    pub fn run_in_named_scope<RvalT, S: Into<String>, FnT>(&mut self, name: S, f: FnT) -> RvalT
+    pub fn run_in_named_scope<RvalT, S: Into<sstring::SString>, FnT>(
+        &mut self,
+        name: S,
+        f: FnT,
+    ) -> RvalT
     where
         FnT: FnOnce(&mut Context<'_>) -> RvalT,
     {

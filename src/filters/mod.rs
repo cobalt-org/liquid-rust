@@ -1,5 +1,4 @@
 use liquid_error::Error;
-use std::borrow::Cow;
 
 pub mod std;
 
@@ -11,14 +10,14 @@ pub mod extra;
 
 pub fn invalid_input<S>(cause: S) -> Error
 where
-    S: Into<Cow<'static, str>>,
+    S: Into<sstring::SString>,
 {
     Error::with_msg("Invalid input").context("cause", cause)
 }
 
 pub fn invalid_argument<S>(argument: S, cause: S) -> Error
 where
-    S: Into<Cow<'static, str>>,
+    S: Into<sstring::SString>,
 {
     Error::with_msg("Invalid argument")
         .context("argument", argument)

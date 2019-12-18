@@ -57,7 +57,7 @@ impl fmt::Display for FilterChain {
 impl Renderable for FilterChain {
     fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
         let entry = self.evaluate(context)?;
-        write!(writer, "{}", entry.to_str()).replace("Failed to render")?;
+        write!(writer, "{}", entry.render()).replace("Failed to render")?;
         Ok(())
     }
 }

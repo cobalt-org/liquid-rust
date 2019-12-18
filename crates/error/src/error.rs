@@ -1,4 +1,3 @@
-use std::borrow;
 use std::error;
 use std::fmt;
 use std::result;
@@ -23,18 +22,18 @@ pub struct Error {
 // shouldn't hurt.
 #[derive(Debug, Clone)]
 struct InnerError {
-    msg: borrow::Cow<'static, str>,
+    msg: sstring::SString,
     user_backtrace: Vec<Trace>,
     cause: Option<BoxedError>,
 }
 
 impl Error {
     /// Create a new compiler error with the given message
-    pub fn with_msg<S: Into<borrow::Cow<'static, str>>>(msg: S) -> Self {
+    pub fn with_msg<S: Into<sstring::SString>>(msg: S) -> Self {
         Self::with_msg_cow(msg.into())
     }
 
-    fn with_msg_cow(msg: borrow::Cow<'static, str>) -> Self {
+    fn with_msg_cow(msg: sstring::SString) -> Self {
         let error = InnerError {
             msg,
             user_backtrace: vec![Trace::empty()],
@@ -48,12 +47,12 @@ impl Error {
     /// Add a new call to the user-visible backtrace
     pub fn trace<T>(self, trace: T) -> Self
     where
-        T: Into<borrow::Cow<'static, str>>,
+        T: Into<sstring::SString>,
     {
         self.trace_trace(trace.into())
     }
 
-    fn trace_trace(mut self, trace: borrow::Cow<'static, str>) -> Self {
+    fn trace_trace(mut self, trace: sstring::SString) -> Self {
         let trace = Trace::new(trace);
         self.inner.user_backtrace.push(trace);
         self
@@ -64,17 +63,13 @@ impl Error {
     /// Example context: Value that parameters from the `trace` evaluate to.
     pub fn context<K, V>(self, key: K, value: V) -> Self
     where
-        K: Into<borrow::Cow<'static, str>>,
-        V: Into<borrow::Cow<'static, str>>,
+        K: Into<sstring::SString>,
+        V: Into<sstring::SString>,
     {
         self.context_cow_string(key.into(), value.into())
     }
 
-    fn context_cow_string(
-        mut self,
-        key: borrow::Cow<'static, str>,
-        value: borrow::Cow<'static, str>,
-    ) -> Self {
+    fn context_cow_string(mut self, key: sstring::SString, value: sstring::SString) -> Self {
         self.inner
             .user_backtrace
             .last_mut()

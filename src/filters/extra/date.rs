@@ -47,7 +47,7 @@ impl Filter for DateInTzFilter {
 
         let timezone = FixedOffset::east(args.timezone * 3600);
 
-        let formatter = date.with_timezone(&timezone).format(args.format.as_ref());
+        let formatter = date.with_timezone(&timezone).format(args.format.as_str());
         let date = formatter.to_string();
         Ok(Value::scalar(date))
     }

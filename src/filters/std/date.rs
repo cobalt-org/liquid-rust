@@ -34,7 +34,7 @@ impl Filter for DateFilter {
         let date = input.as_scalar().and_then(Scalar::to_date_time);
         match date {
             Some(date) if !args.format.is_empty() => {
-                Ok(Value::scalar(date.format(args.format.as_ref()).to_string()))
+                Ok(Value::scalar(date.format(args.format.as_str()).to_string()))
             }
             _ => Ok(input.clone()),
         }
