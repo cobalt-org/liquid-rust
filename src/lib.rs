@@ -23,12 +23,11 @@
 extern crate chrono;
 extern crate deunicode;
 extern crate itertools;
+extern crate once_cell;
 extern crate regex;
 extern crate unicode_segmentation;
 extern crate url;
 
-#[macro_use]
-extern crate lazy_static;
 #[cfg(feature = "serde")]
 extern crate serde;
 #[cfg(test)]

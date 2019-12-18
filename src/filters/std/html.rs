@@ -111,18 +111,17 @@ pub struct StripHtml;
 #[name = "strip_html"]
 struct StripHtmlFilter;
 
+static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(|| {
+    [
+        Regex::new(r"(?is)<script.*?</script>").unwrap(),
+        Regex::new(r"(?is)<style.*?</style>").unwrap(),
+        Regex::new(r"(?is)<!--.*?-->").unwrap(),
+        Regex::new(r"(?is)<.*?>").unwrap(),
+    ]
+});
+
 impl Filter for StripHtmlFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        lazy_static! {
-            // regexps taken from https://git.io/vXbgS
-            static ref MATCHERS: [Regex; 4] = [
-                Regex::new(r"(?is)<script.*?</script>").unwrap(),
-                Regex::new(r"(?is)<style.*?</style>").unwrap(),
-                Regex::new(r"(?is)<!--.*?-->").unwrap(),
-                Regex::new(r"(?is)<.*?>").unwrap()
-            ];
-        }
-
         let input = input.to_str().into_owned();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
