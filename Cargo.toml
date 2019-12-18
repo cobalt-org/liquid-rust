@@ -33,7 +33,7 @@ jekyll-filters = []
 
 [dependencies]
 regex = "1.0"
-lazy_static = "1.0"
+once_cell = "1.0"
 chrono = "0.4"
 unicode-segmentation = "1.2"
 itertools = "0.8.0"

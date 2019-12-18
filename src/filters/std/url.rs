@@ -44,14 +44,13 @@ pub struct UrlEncode;
 #[name = "url_encode"]
 struct UrlEncodeFilter;
 
+static URL_ENCODE_SET: once_cell::sync::Lazy<UrlEncodeSet> =
+    once_cell::sync::Lazy::new(|| UrlEncodeSet("".to_owned()));
+
 impl Filter for UrlEncodeFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
-        }
-
-        lazy_static! {
-            static ref URL_ENCODE_SET: UrlEncodeSet = UrlEncodeSet("".to_owned());
         }
 
         let s = input.to_str();
