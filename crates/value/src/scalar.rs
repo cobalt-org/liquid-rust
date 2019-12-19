@@ -153,6 +153,34 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
+    /// Tests whether this value is empty
+    pub fn is_empty(&self) -> bool {
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        match self.0 {
+            ScalarCowEnum::Integer(_)
+            | ScalarCowEnum::Float(_)
+            | ScalarCowEnum::Bool(_)
+            | ScalarCowEnum::DateTime(_)
+            | ScalarCowEnum::Date(_) => false,
+            ScalarCowEnum::Str(ref x) => x.is_empty(),
+        }
+    }
+
+    /// Tests whether this value is blank
+    pub fn is_blank(&self) -> bool {
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        match self.0 {
+            ScalarCowEnum::Integer(_)
+            | ScalarCowEnum::Float(_)
+            | ScalarCowEnum::DateTime(_)
+            | ScalarCowEnum::Date(_) => false,
+            ScalarCowEnum::Bool(ref x) => !x,
+            ScalarCowEnum::Str(ref x) => x.trim().is_empty(),
+        }
+    }
+
     /// Report the data type (generally for error reporting).
     pub fn type_name(&self) -> &'static str {
         match self.0 {

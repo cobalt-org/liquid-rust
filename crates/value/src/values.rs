@@ -136,22 +136,6 @@ impl<'v> ValueCow<'v> {
         }
     }
 
-    /// Tests whether this value is Empty
-    pub fn is_empty(&self) -> bool {
-        match self {
-            ValueCow::Empty => true,
-            _ => false,
-        }
-    }
-
-    /// Tests whether this value is Blank
-    pub fn is_blank(&self) -> bool {
-        match self {
-            ValueCow::Blank => true,
-            _ => false,
-        }
-    }
-
     /// Evaluate using Liquid "truthiness"
     pub fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
@@ -166,6 +150,34 @@ impl<'v> ValueCow<'v> {
     pub fn is_default(&self) -> bool {
         match self {
             ValueCow::Scalar(ref x) => x.is_default(),
+            ValueCow::Nil => true,
+            ValueCow::Empty => true,
+            ValueCow::Blank => true,
+            ValueCow::Array(ref x) => x.is_empty(),
+            ValueCow::Object(ref x) => x.is_empty(),
+        }
+    }
+
+    /// Tests whether this value is empty
+    pub fn is_empty(&self) -> bool {
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        match self {
+            ValueCow::Scalar(ref x) => x.is_empty(),
+            ValueCow::Nil => true,
+            ValueCow::Empty => true,
+            ValueCow::Blank => true,
+            ValueCow::Array(ref x) => x.is_empty(),
+            ValueCow::Object(ref x) => x.is_empty(),
+        }
+    }
+
+    /// Tests whether this value is blank
+    pub fn is_blank(&self) -> bool {
+        // encode a best-guess of empty rules
+        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+        match self {
+            ValueCow::Scalar(ref x) => x.is_blank(),
             ValueCow::Nil => true,
             ValueCow::Empty => true,
             ValueCow::Blank => true,
@@ -431,24 +443,13 @@ fn value_eq<'v>(lhs: &'v ValueCow<'v>, rhs: &'v ValueCow<'v>) -> bool {
         | (&ValueCow::Empty, &ValueCow::Empty)
         | (&ValueCow::Blank, &ValueCow::Blank)
         | (&ValueCow::Empty, &ValueCow::Blank)
-        | (&ValueCow::Blank, &ValueCow::Empty) => true,
+        | (&ValueCow::Blank, &ValueCow::Empty)
+        | (&ValueCow::Nil, &ValueCow::Blank)
+        | (&ValueCow::Blank, &ValueCow::Nil) => true,
 
-        (&ValueCow::Empty, &ValueCow::Scalar(ref s))
-        | (&ValueCow::Scalar(ref s), &ValueCow::Empty) => s.to_sstr().is_empty(),
-        (&ValueCow::Empty, &ValueCow::Array(ref s))
-        | (&ValueCow::Array(ref s), &ValueCow::Empty) => s.is_empty(),
-        (&ValueCow::Empty, &ValueCow::Object(ref s))
-        | (&ValueCow::Object(ref s), &ValueCow::Empty) => s.is_empty(),
+        (&ValueCow::Empty, s) | (s, &ValueCow::Empty) => s.is_empty(),
 
-        (&ValueCow::Nil, &ValueCow::Blank) | (&ValueCow::Blank, &ValueCow::Nil) => true,
-        (&ValueCow::Blank, &ValueCow::Scalar(ref s))
-        | (&ValueCow::Scalar(ref s), &ValueCow::Blank) => {
-            s.to_sstr().trim().is_empty() || !s.to_bool().unwrap_or(true)
-        }
-        (&ValueCow::Blank, &ValueCow::Array(ref s))
-        | (&ValueCow::Array(ref s), &ValueCow::Blank) => s.is_empty(),
-        (&ValueCow::Blank, &ValueCow::Object(ref s))
-        | (&ValueCow::Object(ref s), &ValueCow::Blank) => s.is_empty(),
+        (&ValueCow::Blank, s) | (s, &ValueCow::Blank) => s.is_blank(),
 
         // encode Ruby truthiness: all values except false and nil are true
         (&ValueCow::Nil, &ValueCow::Scalar(ref b)) | (&ValueCow::Scalar(ref b), &ValueCow::Nil) => {
