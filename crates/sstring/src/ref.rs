@@ -20,16 +20,19 @@ pub(crate) enum SStringRefInner<'s> {
 
 impl<'s> SStringRef<'s> {
     /// Create a new empty `SString`.
+    #[inline]
     pub fn new() -> Self {
         Default::default()
     }
 
     /// Create a reference to a borrowed data.
+    #[inline]
     pub fn borrow(other: impl Into<SStringRef<'s>>) -> Self {
         other.into()
     }
 
     /// Create a reference to a `'static` data.
+    #[inline]
     pub fn singleton(other: &'static str) -> Self {
         Self {
             inner: SStringRefInner::Singleton(other),
@@ -37,6 +40,7 @@ impl<'s> SStringRef<'s> {
     }
 
     /// Clone the data into an owned-type.
+    #[inline]
     pub fn to_owned(&self) -> SString {
         match self.inner {
             SStringRefInner::Borrowed(s) => s.to_owned().into(),
@@ -45,6 +49,7 @@ impl<'s> SStringRef<'s> {
     }
 
     /// Extracts a string slice containing the entire `SStringRef`.
+    #[inline]
     pub fn as_str(&self) -> &str {
         match self.inner {
             SStringRefInner::Borrowed(ref s) => s,
@@ -53,6 +58,7 @@ impl<'s> SStringRef<'s> {
     }
 
     /// Convert to a mutable string type, cloning the data if necessary.
+    #[inline]
     pub fn into_mut(self) -> StdString {
         match self.inner {
             SStringRefInner::Borrowed(s) => s.to_owned(),
@@ -101,18 +107,21 @@ impl<'s> PartialEq<String> for SStringRef<'s> {
 }
 
 impl<'s> Ord for SStringRef<'s> {
+    #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
 impl<'s> PartialOrd for SStringRef<'s> {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl<'s> std::hash::Hash for SStringRef<'s> {
+    #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
     }
@@ -140,12 +149,14 @@ impl<'s> AsRef<[u8]> for SStringRef<'s> {
 }
 
 impl<'s> AsRef<std::ffi::OsStr> for SStringRef<'s> {
+    #[inline]
     fn as_ref(&self) -> &std::ffi::OsStr {
         (&**self).as_ref()
     }
 }
 
 impl<'s> AsRef<std::path::Path> for SStringRef<'s> {
+    #[inline]
     fn as_ref(&self) -> &std::path::Path {
         std::path::Path::new(self)
     }
@@ -159,24 +170,28 @@ impl<'s> std::borrow::Borrow<str> for SStringRef<'s> {
 }
 
 impl<'s> Default for SStringRef<'s> {
+    #[inline]
     fn default() -> Self {
         Self::singleton("")
     }
 }
 
 impl<'s> From<&'s SString> for SStringRef<'s> {
+    #[inline]
     fn from(other: &'s SString) -> Self {
         other.as_ref()
     }
 }
 
 impl<'s> From<&'s SStringCow<'s>> for SStringRef<'s> {
+    #[inline]
     fn from(other: &'s SStringCow<'s>) -> Self {
         other.as_ref()
     }
 }
 
 impl<'s> From<&'s StdString> for SStringRef<'s> {
+    #[inline]
     fn from(other: &'s StdString) -> Self {
         SStringRef {
             inner: SStringRefInner::Borrowed(other.as_str()),
@@ -185,6 +200,7 @@ impl<'s> From<&'s StdString> for SStringRef<'s> {
 }
 
 impl<'s> From<&'s str> for SStringRef<'s> {
+    #[inline]
     fn from(other: &'s str) -> Self {
         SStringRef {
             inner: SStringRefInner::Borrowed(other),
