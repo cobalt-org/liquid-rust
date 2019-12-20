@@ -53,7 +53,7 @@ impl Filter for UrlEncodeFilter {
             return Ok(Value::Nil);
         }
 
-        let s = input.to_sstr();
+        let s = input.to_kstr();
 
         let result: String =
             percent_encoding::utf8_percent_encode(s.as_str(), URL_ENCODE_SET.clone()).collect();
@@ -79,7 +79,7 @@ impl Filter for UrlDecodeFilter {
             return Ok(Value::Nil);
         }
 
-        let s = input.to_sstr().replace("+", " ");
+        let s = input.to_kstr().replace("+", " ");
 
         let result = percent_encoding::percent_decode(s.as_bytes())
             .decode_utf8()

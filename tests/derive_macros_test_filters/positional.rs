@@ -38,7 +38,7 @@ impl Filter for TestPositionalFilter {
     fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let pos1 = args.pos1.to_sstr();
+        let pos1 = args.pos1.to_kstr();
         let result = if let Some(pos2) = args.pos2 {
             format!("<pos1: {}; pos2: {}>", pos1, pos2)
         } else {

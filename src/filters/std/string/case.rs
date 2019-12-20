@@ -18,7 +18,7 @@ struct DowncaseFilter;
 
 impl Filter for DowncaseFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let s = input.to_sstr();
+        let s = input.to_kstr();
         Ok(Value::scalar(s.to_lowercase()))
     }
 }
@@ -37,7 +37,7 @@ struct UpcaseFilter;
 
 impl Filter for UpcaseFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let s = input.to_sstr();
+        let s = input.to_kstr();
         Ok(Value::scalar(s.to_uppercase()))
     }
 }
@@ -56,7 +56,7 @@ struct CapitalizeFilter;
 
 impl Filter for CapitalizeFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let s = input.to_sstr().to_owned();
+        let s = input.to_kstr().to_owned();
         let mut chars = s.chars();
         let capitalized = match chars.next() {
             Some(first_char) => first_char.to_uppercase().chain(chars).collect(),

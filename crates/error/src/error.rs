@@ -22,18 +22,18 @@ pub struct Error {
 // shouldn't hurt.
 #[derive(Debug, Clone)]
 struct InnerError {
-    msg: sstring::SString,
+    msg: kstring::KString,
     user_backtrace: Vec<Trace>,
     cause: Option<BoxedError>,
 }
 
 impl Error {
     /// Create a new compiler error with the given message
-    pub fn with_msg<S: Into<sstring::SString>>(msg: S) -> Self {
+    pub fn with_msg<S: Into<kstring::KString>>(msg: S) -> Self {
         Self::with_msg_cow(msg.into())
     }
 
-    fn with_msg_cow(msg: sstring::SString) -> Self {
+    fn with_msg_cow(msg: kstring::KString) -> Self {
         let error = InnerError {
             msg,
             user_backtrace: vec![Trace::empty()],
@@ -47,12 +47,12 @@ impl Error {
     /// Add a new call to the user-visible backtrace
     pub fn trace<T>(self, trace: T) -> Self
     where
-        T: Into<sstring::SString>,
+        T: Into<kstring::KString>,
     {
         self.trace_trace(trace.into())
     }
 
-    fn trace_trace(mut self, trace: sstring::SString) -> Self {
+    fn trace_trace(mut self, trace: kstring::KString) -> Self {
         let trace = Trace::new(trace);
         self.inner.user_backtrace.push(trace);
         self
@@ -63,13 +63,13 @@ impl Error {
     /// Example context: Value that parameters from the `trace` evaluate to.
     pub fn context<K, V>(self, key: K, value: V) -> Self
     where
-        K: Into<sstring::SString>,
-        V: Into<sstring::SString>,
+        K: Into<kstring::KString>,
+        V: Into<kstring::KString>,
     {
         self.context_cow_string(key.into(), value.into())
     }
 
-    fn context_cow_string(mut self, key: sstring::SString, value: sstring::SString) -> Self {
+    fn context_cow_string(mut self, key: kstring::KString, value: kstring::KString) -> Self {
         self.inner
             .user_backtrace
             .last_mut()

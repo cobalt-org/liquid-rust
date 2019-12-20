@@ -75,7 +75,7 @@ impl Filter for TruncateFilter {
 
         let l = cmp::max(lenght - truncate_string.len(), 0);
 
-        let input_string = input.to_sstr();
+        let input_string = input.to_kstr();
 
         let result = if lenght < input_string.len() {
             let result = UnicodeSegmentation::graphemes(input_string.as_str(), true)
@@ -133,7 +133,7 @@ impl Filter for TruncateWordsFilter {
 
         let l = cmp::max(words, 0);
 
-        let input_string = input.to_sstr();
+        let input_string = input.to_kstr();
 
         let word_list: Vec<&str> = input_string.split(' ').collect();
         let result = if words < word_list.len() {

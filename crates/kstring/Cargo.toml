@@ -1,10 +1,10 @@
 [package]
-name = "sstring"
+name = "kstring"
 version = "0.1.0"
 authors = ["Ed Page <eopage@gmail.com>"]
-description = "String library optimized for static declarations"
+description = "Key String: optimized for map keys"
 repository = "https://github.com/cobalt-org/liquid-rust"
-documentation = "https://docs.rs/sstring"
+documentation = "https://docs.rs/kstring"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 edition = "2018"

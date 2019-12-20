@@ -12,7 +12,7 @@
 ///     .to_integer().unwrap();
 /// liquid_value!("foo")
 ///     .as_scalar().unwrap()
-///     .to_sstr();
+///     .to_kstr();
 /// liquid_value!([1, 2, 3])
 ///     .as_array().unwrap();
 /// liquid_value!({"foo": 5})

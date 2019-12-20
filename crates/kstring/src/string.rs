@@ -8,8 +8,8 @@ use crate::FixedString5;
 use crate::FixedString6;
 use crate::FixedString7;
 use crate::FixedString8;
-use crate::SStringCow;
-use crate::SStringRef;
+use crate::KStringCow;
+use crate::KStringRef;
 
 type StdString = std::string::String;
 type BoxedStr = Box<str>;
@@ -18,13 +18,13 @@ type BoxedStr = Box<str>;
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
-pub struct SString {
+pub struct KString {
     #[serde(with = "serde_string")]
-    pub(crate) inner: SStringInner,
+    pub(crate) inner: KStringInner,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum SStringInner {
+pub(crate) enum KStringInner {
     Owned(StdString),
     Singleton(&'static str),
     Fixed1(FixedString1),
@@ -37,14 +37,14 @@ pub(crate) enum SStringInner {
     Fixed8(FixedString8),
 }
 
-impl SString {
-    /// Create a new empty `SString`.
+impl KString {
+    /// Create a new empty `KString`.
     #[inline]
     pub fn new() -> Self {
         Default::default()
     }
 
-    /// Create an owned `SString`.
+    /// Create an owned `KString`.
     #[inline]
     pub fn owned(other: impl Into<StdString>) -> Self {
         // TODO: Used fixed strings
@@ -60,23 +60,23 @@ impl SString {
     #[inline]
     pub(crate) fn from_string(other: String) -> Self {
         Self {
-            inner: SStringInner::Owned(other),
+            inner: KStringInner::Owned(other),
         }
     }
 
     #[inline]
     pub(crate) fn from_ref(other: &str) -> Self {
         let inner = match other.len() {
-            0 => SStringInner::Singleton(""),
-            1 => SStringInner::Fixed1(FixedString1::new(other)),
-            2 => SStringInner::Fixed2(FixedString2::new(other)),
-            3 => SStringInner::Fixed3(FixedString3::new(other)),
-            4 => SStringInner::Fixed4(FixedString4::new(other)),
-            5 => SStringInner::Fixed5(FixedString5::new(other)),
-            6 => SStringInner::Fixed6(FixedString6::new(other)),
-            7 => SStringInner::Fixed7(FixedString7::new(other)),
-            8 => SStringInner::Fixed8(FixedString8::new(other)),
-            _ => SStringInner::Owned(other.to_owned()),
+            0 => KStringInner::Singleton(""),
+            1 => KStringInner::Fixed1(FixedString1::new(other)),
+            2 => KStringInner::Fixed2(FixedString2::new(other)),
+            3 => KStringInner::Fixed3(FixedString3::new(other)),
+            4 => KStringInner::Fixed4(FixedString4::new(other)),
+            5 => KStringInner::Fixed5(FixedString5::new(other)),
+            6 => KStringInner::Fixed6(FixedString6::new(other)),
+            7 => KStringInner::Fixed7(FixedString7::new(other)),
+            8 => KStringInner::Fixed8(FixedString8::new(other)),
+            _ => KStringInner::Owned(other.to_owned()),
         };
         Self { inner }
     }
@@ -84,17 +84,17 @@ impl SString {
     #[inline]
     pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
-            inner: SStringInner::Singleton(other),
+            inner: KStringInner::Singleton(other),
         }
     }
 
-    /// Get a reference to the `SString`.
+    /// Get a reference to the `KString`.
     #[inline]
-    pub fn as_ref(&self) -> SStringRef<'_> {
+    pub fn as_ref(&self) -> KStringRef<'_> {
         self.inner.as_ref()
     }
 
-    /// Extracts a string slice containing the entire `SString`.
+    /// Extracts a string slice containing the entire `KString`.
     #[inline]
     pub fn as_str(&self) -> &str {
         self.inner.as_str()
@@ -107,20 +107,20 @@ impl SString {
     }
 }
 
-impl SStringInner {
+impl KStringInner {
     #[inline]
-    fn as_ref(&self) -> SStringRef<'_> {
+    fn as_ref(&self) -> KStringRef<'_> {
         match self {
-            Self::Owned(ref s) => SStringRef::from_ref(s),
-            Self::Singleton(ref s) => SStringRef::from_static(s),
-            Self::Fixed1(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed2(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed3(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed4(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed5(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed6(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed7(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Fixed8(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Owned(ref s) => KStringRef::from_ref(s),
+            Self::Singleton(ref s) => KStringRef::from_static(s),
+            Self::Fixed1(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed2(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed3(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed4(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed5(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed6(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed7(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed8(ref s) => KStringRef::from_ref(s.as_str()),
         }
     }
 
@@ -157,7 +157,7 @@ impl SStringInner {
     }
 }
 
-impl std::ops::Deref for SString {
+impl std::ops::Deref for KString {
     type Target = str;
 
     #[inline]
@@ -166,135 +166,135 @@ impl std::ops::Deref for SString {
     }
 }
 
-impl Eq for SString {}
+impl Eq for KString {}
 
-impl<'s> PartialEq<SString> for SString {
+impl<'s> PartialEq<KString> for KString {
     #[inline]
-    fn eq(&self, other: &SString) -> bool {
+    fn eq(&self, other: &KString) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
     }
 }
 
-impl<'s> PartialEq<str> for SString {
+impl<'s> PartialEq<str> for KString {
     #[inline]
     fn eq(&self, other: &str) -> bool {
         PartialEq::eq(self.as_str(), other)
     }
 }
 
-impl<'s> PartialEq<&'s str> for SString {
+impl<'s> PartialEq<&'s str> for KString {
     #[inline]
     fn eq(&self, other: &&str) -> bool {
         PartialEq::eq(self.as_str(), *other)
     }
 }
 
-impl<'s> PartialEq<String> for SString {
+impl<'s> PartialEq<String> for KString {
     #[inline]
     fn eq(&self, other: &StdString) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
     }
 }
 
-impl Ord for SString {
+impl Ord for KString {
     #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
-impl PartialOrd for SString {
+impl PartialOrd for KString {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
-impl std::hash::Hash for SString {
+impl std::hash::Hash for KString {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
     }
 }
 
-impl fmt::Display for SString {
+impl fmt::Display for KString {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_str(), f)
     }
 }
 
-impl AsRef<str> for SString {
+impl AsRef<str> for KString {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl AsRef<[u8]> for SString {
+impl AsRef<[u8]> for KString {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
     }
 }
 
-impl AsRef<std::ffi::OsStr> for SString {
+impl AsRef<std::ffi::OsStr> for KString {
     #[inline]
     fn as_ref(&self) -> &std::ffi::OsStr {
         (&**self).as_ref()
     }
 }
 
-impl AsRef<std::path::Path> for SString {
+impl AsRef<std::path::Path> for KString {
     #[inline]
     fn as_ref(&self) -> &std::path::Path {
         std::path::Path::new(self)
     }
 }
 
-impl std::borrow::Borrow<str> for SString {
+impl std::borrow::Borrow<str> for KString {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl Default for SString {
+impl Default for KString {
     #[inline]
     fn default() -> Self {
         Self::from_static("")
     }
 }
 
-impl<'s> From<SStringRef<'s>> for SString {
+impl<'s> From<KStringRef<'s>> for KString {
     #[inline]
-    fn from(other: SStringRef<'s>) -> Self {
+    fn from(other: KStringRef<'s>) -> Self {
         other.to_owned()
     }
 }
 
-impl<'s> From<&'s SStringRef<'s>> for SString {
+impl<'s> From<&'s KStringRef<'s>> for KString {
     #[inline]
-    fn from(other: &'s SStringRef<'s>) -> Self {
+    fn from(other: &'s KStringRef<'s>) -> Self {
         other.to_owned()
     }
 }
 
-impl<'s> From<SStringCow<'s>> for SString {
+impl<'s> From<KStringCow<'s>> for KString {
     #[inline]
-    fn from(other: SStringCow<'s>) -> Self {
+    fn from(other: KStringCow<'s>) -> Self {
         other.into_owned()
     }
 }
 
-impl<'s> From<&'s SStringCow<'s>> for SString {
+impl<'s> From<&'s KStringCow<'s>> for KString {
     #[inline]
-    fn from(other: &'s SStringCow<'s>) -> Self {
+    fn from(other: &'s KStringCow<'s>) -> Self {
         other.clone().into_owned()
     }
 }
 
-impl From<StdString> for SString {
+impl From<StdString> for KString {
     #[inline]
     fn from(other: StdString) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
@@ -302,7 +302,7 @@ impl From<StdString> for SString {
     }
 }
 
-impl From<BoxedStr> for SString {
+impl From<BoxedStr> for KString {
     #[inline]
     fn from(other: BoxedStr) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
@@ -310,14 +310,14 @@ impl From<BoxedStr> for SString {
     }
 }
 
-impl<'s> From<&'s BoxedStr> for SString {
+impl<'s> From<&'s BoxedStr> for KString {
     #[inline]
     fn from(other: &'s BoxedStr) -> Self {
         Self::from_ref(other)
     }
 }
 
-impl From<&'static str> for SString {
+impl From<&'static str> for KString {
     #[inline]
     fn from(other: &'static str) -> Self {
         Self::from_static(other)
@@ -328,22 +328,22 @@ mod serde_string {
     use super::*;
     use serde::{self, Deserialize, Deserializer, Serializer};
 
-    pub(crate) fn serialize<S>(data: &SStringInner, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(data: &KStringInner, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(&data.as_str())
     }
 
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<SStringInner, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<KStringInner, D::Error>
     where
         D: Deserializer<'de>,
     {
         use std::borrow::Cow;
         let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
         let s = match s {
-            Cow::Owned(s) => SString::from_string(s),
-            Cow::Borrowed(s) => SString::from_ref(s),
+            Cow::Owned(s) => KString::from_string(s),
+            Cow::Borrowed(s) => KString::from_ref(s),
         };
         Ok(s.inner)
     }

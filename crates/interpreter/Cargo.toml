@@ -18,7 +18,7 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 itertools = "0.8.0"
 anymap = "0.12"
 # Exposed in API
-sstring = { version = "0.1.0", path = "../sstring" }
+kstring = { version = "0.1.0", path = "../kstring" }
 liquid-error = { version = "^0.19", path = "../error" }
 liquid-value = { version = "^0.19", path = "../value" }
 

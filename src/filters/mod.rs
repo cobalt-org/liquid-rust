@@ -10,14 +10,14 @@ pub mod extra;
 
 pub fn invalid_input<S>(cause: S) -> Error
 where
-    S: Into<sstring::SString>,
+    S: Into<kstring::KString>,
 {
     Error::with_msg("Invalid input").context("cause", cause)
 }
 
 pub fn invalid_argument<S>(argument: S, cause: S) -> Error
 where
-    S: Into<sstring::SString>,
+    S: Into<kstring::KString>,
 {
     Error::with_msg("Invalid argument")
         .context("argument", argument)

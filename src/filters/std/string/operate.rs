@@ -36,7 +36,7 @@ impl Filter for ReplaceFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
 
         let replace = args.replace.unwrap_or_else(|| "".into());
 
@@ -77,7 +77,7 @@ impl Filter for ReplaceFirstFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
 
         let search = args.search;
         let replace = args.replace.unwrap_or_else(|| "".into());
@@ -119,7 +119,7 @@ impl Filter for RemoveFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
 
         Ok(Value::scalar(input.replace(args.search.as_str(), "")))
     }
@@ -151,7 +151,7 @@ impl Filter for RemoveFirstFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
 
         Ok(Value::scalar(
             input.splitn(2, args.search.as_str()).collect::<String>(),
@@ -185,7 +185,7 @@ impl Filter for AppendFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let mut input = input.to_sstr().into_mut();
+        let mut input = input.to_kstr().into_mut();
         input.push_str(args.string.as_str());
 
         Ok(Value::scalar(input))
@@ -218,7 +218,7 @@ impl Filter for PrependFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
         let mut string = args.string.into_mut();
         string.push_str(input.as_str());
 

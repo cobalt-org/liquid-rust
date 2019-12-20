@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use sstring::SStringCow;
+use kstring::KStringCow;
 
 use crate::map;
 use crate::Scalar;
@@ -57,11 +57,11 @@ impl<'v> ValueCow<'v> {
     }
 
     /// Interpret as a string.
-    pub fn to_sstr(&self) -> SStringCow<'_> {
+    pub fn to_kstr(&self) -> KStringCow<'_> {
         match self {
-            ValueCow::Scalar(x) => x.to_sstr(),
+            ValueCow::Scalar(x) => x.to_kstr(),
             ValueCow::Array(_) | ValueCow::Object(_) => self.render().to_string().into(),
-            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => SStringCow::default(),
+            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => KStringCow::default(),
         }
     }
 
@@ -206,13 +206,13 @@ impl<'v> ValueCow<'v> {
                     let index = convert_index(index, x.len());
                     index < x.len()
                 } else {
-                    match &*index.to_sstr() {
+                    match &*index.to_kstr() {
                         "first" | "last" => true,
                         _ => false,
                     }
                 }
             }
-            ValueCow::Object(ref x) => x.contains_key(index.to_sstr().as_str()),
+            ValueCow::Object(ref x) => x.contains_key(index.to_kstr().as_str()),
             _ => false,
         }
     }
@@ -240,14 +240,14 @@ impl<'v> ValueCow<'v> {
                     let index = convert_index(index, x.len());
                     x.get(index as usize)
                 } else {
-                    match &*index.to_sstr() {
+                    match &*index.to_kstr() {
                         "first" => x.get(0),
                         "last" => x.get(x.len() - 1),
                         _ => None,
                     }
                 }
             }
-            ValueCow::Object(ref x) => x.get(index.to_sstr().as_str()),
+            ValueCow::Object(ref x) => x.get(index.to_kstr().as_str()),
             _ => None,
         }
     }
@@ -350,20 +350,20 @@ impl<'s> PartialEq<String> for Value {
     }
 }
 
-impl PartialEq<sstring::SString> for Value {
-    fn eq(&self, other: &sstring::SString) -> bool {
+impl PartialEq<kstring::KString> for Value {
+    fn eq(&self, other: &kstring::KString) -> bool {
         value_eq(self, &ValueCow::scalar(other))
     }
 }
 
-impl<'s> PartialEq<sstring::SStringRef<'s>> for Value {
-    fn eq(&self, other: &sstring::SStringRef<'s>) -> bool {
+impl<'s> PartialEq<kstring::KStringRef<'s>> for Value {
+    fn eq(&self, other: &kstring::KStringRef<'s>) -> bool {
         value_eq(self, &ValueCow::scalar(other))
     }
 }
 
-impl<'s> PartialEq<sstring::SStringCow<'s>> for Value {
-    fn eq(&self, other: &sstring::SStringCow<'s>) -> bool {
+impl<'s> PartialEq<kstring::KStringCow<'s>> for Value {
+    fn eq(&self, other: &kstring::KStringCow<'s>) -> bool {
         value_eq(self, &ValueCow::scalar(other))
     }
 }
@@ -480,7 +480,7 @@ mod test {
     fn test_to_string_scalar() {
         let val = ValueCow::scalar(42f64);
         assert_eq!(&val.render().to_string(), "42");
-        assert_eq!(&val.to_sstr(), "42");
+        assert_eq!(&val.to_kstr(), "42");
     }
 
     #[test]
@@ -491,7 +491,7 @@ mod test {
             ValueCow::scalar(5.3),
         ]);
         assert_eq!(&val.render().to_string(), "3test5.3");
-        assert_eq!(&val.to_sstr(), "3test5.3");
+        assert_eq!(&val.to_kstr(), "3test5.3");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
@@ -499,7 +499,7 @@ mod test {
     #[test]
     fn test_to_string_nil() {
         assert_eq!(&ValueCow::Nil.render().to_string(), "");
-        assert_eq!(&ValueCow::Nil.to_sstr(), "");
+        assert_eq!(&ValueCow::Nil.to_kstr(), "");
     }
 
     #[test]

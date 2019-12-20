@@ -69,7 +69,7 @@ impl Filter for SlugifyFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let s = input.to_sstr();
+        let s = input.to_kstr();
         let mode = args
             .mode
             .map(|mode| SlugifyMode::new(mode.as_str()))

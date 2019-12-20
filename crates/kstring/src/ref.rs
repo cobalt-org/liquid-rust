@@ -1,7 +1,7 @@
 use std::fmt;
 
-use crate::SString;
-use crate::SStringCow;
+use crate::KString;
+use crate::KStringCow;
 
 type StdString = std::string::String;
 type BoxedStr = Box<str>;
@@ -9,18 +9,18 @@ type BoxedStr = Box<str>;
 /// A reference to a UTF-8 encoded, immutable string.
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
-pub struct SStringRef<'s> {
-    pub(crate) inner: SStringRefInner<'s>,
+pub struct KStringRef<'s> {
+    pub(crate) inner: KStringRefInner<'s>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum SStringRefInner<'s> {
+pub(crate) enum KStringRefInner<'s> {
     Borrowed(&'s str),
     Singleton(&'static str),
 }
 
-impl<'s> SStringRef<'s> {
-    /// Create a new empty `SString`.
+impl<'s> KStringRef<'s> {
+    /// Create a new empty `KString`.
     #[inline]
     pub fn new() -> Self {
         Default::default()
@@ -28,7 +28,7 @@ impl<'s> SStringRef<'s> {
 
     /// Create a reference to a borrowed data.
     #[inline]
-    pub fn borrow(other: impl Into<SStringRef<'s>>) -> Self {
+    pub fn borrow(other: impl Into<KStringRef<'s>>) -> Self {
         other.into()
     }
 
@@ -41,24 +41,24 @@ impl<'s> SStringRef<'s> {
     #[inline]
     pub(crate) fn from_ref(other: &'s str) -> Self {
         Self {
-            inner: SStringRefInner::Borrowed(other),
+            inner: KStringRefInner::Borrowed(other),
         }
     }
 
     #[inline]
     pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
-            inner: SStringRefInner::Singleton(other),
+            inner: KStringRefInner::Singleton(other),
         }
     }
 
     /// Clone the data into an owned-type.
     #[inline]
-    pub fn to_owned(&self) -> SString {
+    pub fn to_owned(&self) -> KString {
         self.inner.to_owned()
     }
 
-    /// Extracts a string slice containing the entire `SStringRef`.
+    /// Extracts a string slice containing the entire `KStringRef`.
     #[inline]
     pub fn as_str(&self) -> &str {
         self.inner.as_str()
@@ -71,12 +71,12 @@ impl<'s> SStringRef<'s> {
     }
 }
 
-impl<'s> SStringRefInner<'s> {
+impl<'s> KStringRefInner<'s> {
     #[inline]
-    fn to_owned(&self) -> SString {
+    fn to_owned(&self) -> KString {
         match self {
-            Self::Borrowed(s) => SString::from_ref(s),
-            Self::Singleton(s) => SString::from_static(s),
+            Self::Borrowed(s) => KString::from_ref(s),
+            Self::Singleton(s) => KString::from_static(s),
         }
     }
 
@@ -94,7 +94,7 @@ impl<'s> SStringRefInner<'s> {
     }
 }
 
-impl<'s> std::ops::Deref for SStringRef<'s> {
+impl<'s> std::ops::Deref for KStringRef<'s> {
     type Target = str;
 
     #[inline]
@@ -103,137 +103,137 @@ impl<'s> std::ops::Deref for SStringRef<'s> {
     }
 }
 
-impl<'s> Eq for SStringRef<'s> {}
+impl<'s> Eq for KStringRef<'s> {}
 
-impl<'s> PartialEq<SStringRef<'s>> for SStringRef<'s> {
+impl<'s> PartialEq<KStringRef<'s>> for KStringRef<'s> {
     #[inline]
-    fn eq(&self, other: &SStringRef<'s>) -> bool {
+    fn eq(&self, other: &KStringRef<'s>) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
     }
 }
 
-impl<'s> PartialEq<str> for SStringRef<'s> {
+impl<'s> PartialEq<str> for KStringRef<'s> {
     #[inline]
     fn eq(&self, other: &str) -> bool {
         PartialEq::eq(self.as_str(), other)
     }
 }
 
-impl<'s> PartialEq<&'s str> for SStringRef<'s> {
+impl<'s> PartialEq<&'s str> for KStringRef<'s> {
     #[inline]
     fn eq(&self, other: &&str) -> bool {
         PartialEq::eq(self.as_str(), *other)
     }
 }
 
-impl<'s> PartialEq<String> for SStringRef<'s> {
+impl<'s> PartialEq<String> for KStringRef<'s> {
     #[inline]
     fn eq(&self, other: &StdString) -> bool {
         PartialEq::eq(self.as_str(), other.as_str())
     }
 }
 
-impl<'s> Ord for SStringRef<'s> {
+impl<'s> Ord for KStringRef<'s> {
     #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
-impl<'s> PartialOrd for SStringRef<'s> {
+impl<'s> PartialOrd for KStringRef<'s> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
-impl<'s> std::hash::Hash for SStringRef<'s> {
+impl<'s> std::hash::Hash for KStringRef<'s> {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
     }
 }
 
-impl<'s> fmt::Display for SStringRef<'s> {
+impl<'s> fmt::Display for KStringRef<'s> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_str(), f)
     }
 }
 
-impl<'s> AsRef<str> for SStringRef<'s> {
+impl<'s> AsRef<str> for KStringRef<'s> {
     #[inline]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'s> AsRef<[u8]> for SStringRef<'s> {
+impl<'s> AsRef<[u8]> for KStringRef<'s> {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         self.as_bytes()
     }
 }
 
-impl<'s> AsRef<std::ffi::OsStr> for SStringRef<'s> {
+impl<'s> AsRef<std::ffi::OsStr> for KStringRef<'s> {
     #[inline]
     fn as_ref(&self) -> &std::ffi::OsStr {
         (&**self).as_ref()
     }
 }
 
-impl<'s> AsRef<std::path::Path> for SStringRef<'s> {
+impl<'s> AsRef<std::path::Path> for KStringRef<'s> {
     #[inline]
     fn as_ref(&self) -> &std::path::Path {
         std::path::Path::new(self)
     }
 }
 
-impl<'s> std::borrow::Borrow<str> for SStringRef<'s> {
+impl<'s> std::borrow::Borrow<str> for KStringRef<'s> {
     #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'s> Default for SStringRef<'s> {
+impl<'s> Default for KStringRef<'s> {
     #[inline]
     fn default() -> Self {
         Self::from_static("")
     }
 }
 
-impl<'s> From<&'s SString> for SStringRef<'s> {
+impl<'s> From<&'s KString> for KStringRef<'s> {
     #[inline]
-    fn from(other: &'s SString) -> Self {
+    fn from(other: &'s KString) -> Self {
         other.as_ref()
     }
 }
 
-impl<'s> From<&'s SStringCow<'s>> for SStringRef<'s> {
+impl<'s> From<&'s KStringCow<'s>> for KStringRef<'s> {
     #[inline]
-    fn from(other: &'s SStringCow<'s>) -> Self {
+    fn from(other: &'s KStringCow<'s>) -> Self {
         other.as_ref()
     }
 }
 
-impl<'s> From<&'s StdString> for SStringRef<'s> {
+impl<'s> From<&'s StdString> for KStringRef<'s> {
     #[inline]
     fn from(other: &'s StdString) -> Self {
-        SStringRef::from_ref(other.as_str())
+        KStringRef::from_ref(other.as_str())
     }
 }
 
-impl<'s> From<&'s BoxedStr> for SStringRef<'s> {
+impl<'s> From<&'s BoxedStr> for KStringRef<'s> {
     #[inline]
     fn from(other: &'s BoxedStr) -> Self {
         Self::from_ref(other)
     }
 }
 
-impl<'s> From<&'s str> for SStringRef<'s> {
+impl<'s> From<&'s str> for KStringRef<'s> {
     #[inline]
     fn from(other: &'s str) -> Self {
-        SStringRef::from_ref(other)
+        KStringRef::from_ref(other)
     }
 }

@@ -64,7 +64,7 @@ use proc_macro::TokenStream;
 ///     - "date" -> only `Scalar(Date)` is accepted, `evaluate` will unwrap `Value`
 /// into `Date`.
 ///     - "str" -> only `Scalar(Str)` is accepted, `evaluate` will unwrap `Value`
-/// into `SStringCow`.
+/// into `KStringCow`.
 ///
 /// # Examples
 ///

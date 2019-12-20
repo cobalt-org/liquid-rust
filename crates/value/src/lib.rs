@@ -24,8 +24,8 @@ pub mod error {
 }
 
 /// String-type optimized for `Value`
-pub mod sstring {
-    pub use sstring::*;
+pub mod kstring {
+    pub use kstring::*;
 }
 
 pub use crate::date::*;
