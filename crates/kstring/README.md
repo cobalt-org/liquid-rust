@@ -19,6 +19,7 @@ Ramifications:
 - Preserve `&'static str` across strings (`KString`),
   references (`KStringRef`), and lifetime abstractions (`KStringCow`) to avoid
   allocating for struct field names.
+- Use `Box<str>` rather than `String` to use less memory.
 
 ## License
 

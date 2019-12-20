@@ -51,9 +51,9 @@ impl<'s> KStringCow<'s> {
     }
 
     #[inline]
-    pub(crate) fn from_string(other: String) -> Self {
+    pub(crate) fn from_boxed(other: BoxedStr) -> Self {
         Self {
-            inner: KStringCowInner::Owned(KString::from_string(other)),
+            inner: KStringCowInner::Owned(KString::from_boxed(other)),
         }
     }
 
@@ -271,7 +271,7 @@ impl From<StdString> for KStringCow<'static> {
     #[inline]
     fn from(other: StdString) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
-        Self::from_string(other)
+        Self::from_boxed(other.into_boxed_str())
     }
 }
 
@@ -286,7 +286,7 @@ impl From<BoxedStr> for KStringCow<'static> {
     #[inline]
     fn from(other: BoxedStr) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
-        Self::from_string(String::from(other))
+        Self::from_boxed(other)
     }
 }
 
@@ -322,8 +322,8 @@ mod serde_string_cow {
         use std::borrow::Cow;
         let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
         let s = match s {
-            Cow::Owned(s) => KStringCow::from_string(s),
-            Cow::Borrowed(s) => KStringCow::from_string(s.to_owned()),
+            Cow::Owned(s) => KStringCow::from_boxed(s.into_boxed_str()),
+            Cow::Borrowed(s) => KStringCow::from_boxed(s.to_owned().into_boxed_str()),
         };
         Ok(s.inner)
     }

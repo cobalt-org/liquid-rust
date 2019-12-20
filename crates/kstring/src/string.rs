@@ -25,7 +25,7 @@ pub struct KString {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum KStringInner {
-    Owned(StdString),
+    Owned(BoxedStr),
     Singleton(&'static str),
     Fixed1(FixedString1),
     Fixed2(FixedString2),
@@ -48,7 +48,7 @@ impl KString {
     #[inline]
     pub fn owned(other: impl Into<StdString>) -> Self {
         // TODO: Used fixed strings
-        Self::from_string(other.into())
+        Self::from_boxed(other.into().into_boxed_str())
     }
 
     /// Create a reference to a `'static` data.
@@ -58,7 +58,7 @@ impl KString {
     }
 
     #[inline]
-    pub(crate) fn from_string(other: String) -> Self {
+    pub(crate) fn from_boxed(other: BoxedStr) -> Self {
         Self {
             inner: KStringInner::Owned(other),
         }
@@ -76,7 +76,7 @@ impl KString {
             6 => KStringInner::Fixed6(FixedString6::new(other)),
             7 => KStringInner::Fixed7(FixedString7::new(other)),
             8 => KStringInner::Fixed8(FixedString8::new(other)),
-            _ => KStringInner::Owned(other.to_owned()),
+            _ => KStringInner::Owned(other.to_owned().into_boxed_str()),
         };
         Self { inner }
     }
@@ -127,7 +127,7 @@ impl KStringInner {
     #[inline]
     fn as_str(&self) -> &str {
         match self {
-            Self::Owned(ref s) => s.as_str(),
+            Self::Owned(ref s) => &s,
             Self::Singleton(ref s) => s,
             Self::Fixed1(ref s) => s.as_str(),
             Self::Fixed2(ref s) => s.as_str(),
@@ -143,7 +143,7 @@ impl KStringInner {
     #[inline]
     fn into_mut(self) -> StdString {
         match self {
-            Self::Owned(s) => s,
+            Self::Owned(s) => String::from(s),
             Self::Singleton(s) => s.to_owned(),
             Self::Fixed1(s) => s.into_mut(),
             Self::Fixed2(s) => s.into_mut(),
@@ -298,7 +298,7 @@ impl From<StdString> for KString {
     #[inline]
     fn from(other: StdString) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
-        Self::from_string(other)
+        Self::from_boxed(other.into_boxed_str())
     }
 }
 
@@ -306,7 +306,7 @@ impl From<BoxedStr> for KString {
     #[inline]
     fn from(other: BoxedStr) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
-        Self::from_string(String::from(other))
+        Self::from_boxed(other)
     }
 }
 
@@ -342,7 +342,7 @@ mod serde_string {
         use std::borrow::Cow;
         let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
         let s = match s {
-            Cow::Owned(s) => KString::from_string(s),
+            Cow::Owned(s) => KString::from_boxed(s.into_boxed_str()),
             Cow::Borrowed(s) => KString::from_ref(s),
         };
         Ok(s.inner)
