@@ -5,6 +5,7 @@ use crate::SStringRef;
 use crate::SStringRefInner;
 
 type StdString = std::string::String;
+type BoxedStr = Box<str>;
 
 /// A reference to a UTF-8 encoded, immutable string.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -278,6 +279,21 @@ impl<'s> From<&'s StdString> for SStringCow<'s> {
     #[inline]
     fn from(other: &'s StdString) -> Self {
         Self::from_ref(other.as_str())
+    }
+}
+
+impl From<BoxedStr> for SStringCow<'static> {
+    #[inline]
+    fn from(other: BoxedStr) -> Self {
+        // Since the memory is already allocated, don't bother moving it into a FixedString
+        Self::from_string(String::from(other))
+    }
+}
+
+impl<'s> From<&'s BoxedStr> for SStringCow<'s> {
+    #[inline]
+    fn from(other: &'s BoxedStr) -> Self {
+        Self::from_ref(other)
     }
 }
 

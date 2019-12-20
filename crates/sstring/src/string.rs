@@ -12,6 +12,7 @@ use crate::SStringCow;
 use crate::SStringRef;
 
 type StdString = std::string::String;
+type BoxedStr = Box<str>;
 
 /// A UTF-8 encoded, immutable string.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -298,6 +299,21 @@ impl From<StdString> for SString {
     fn from(other: StdString) -> Self {
         // Since the memory is already allocated, don't bother moving it into a FixedString
         Self::from_string(other)
+    }
+}
+
+impl From<BoxedStr> for SString {
+    #[inline]
+    fn from(other: BoxedStr) -> Self {
+        // Since the memory is already allocated, don't bother moving it into a FixedString
+        Self::from_string(String::from(other))
+    }
+}
+
+impl<'s> From<&'s BoxedStr> for SString {
+    #[inline]
+    fn from(other: &'s BoxedStr) -> Self {
+        Self::from_ref(other)
     }
 }
 

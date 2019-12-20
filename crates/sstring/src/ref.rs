@@ -4,6 +4,7 @@ use crate::SString;
 use crate::SStringCow;
 
 type StdString = std::string::String;
+type BoxedStr = Box<str>;
 
 /// A reference to a UTF-8 encoded, immutable string.
 #[derive(Copy, Clone, Debug)]
@@ -220,6 +221,13 @@ impl<'s> From<&'s StdString> for SStringRef<'s> {
     #[inline]
     fn from(other: &'s StdString) -> Self {
         SStringRef::from_ref(other.as_str())
+    }
+}
+
+impl<'s> From<&'s BoxedStr> for SStringRef<'s> {
+    #[inline]
+    fn from(other: &'s BoxedStr) -> Self {
+        Self::from_ref(other)
     }
 }
 
