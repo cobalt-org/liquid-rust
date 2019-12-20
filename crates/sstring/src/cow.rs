@@ -1,7 +1,6 @@
 use std::fmt;
 
 use crate::SString;
-use crate::SStringInner;
 use crate::SStringRef;
 use crate::SStringRefInner;
 
@@ -18,9 +17,8 @@ pub struct SStringCow<'s> {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum SStringCowInner<'s> {
-    Owned(StdString),
+    Owned(SString),
     Borrowed(&'s str),
-    Singleton(&'static str),
 }
 
 impl<'s> SStringCow<'s> {
@@ -53,7 +51,7 @@ impl<'s> SStringCow<'s> {
     #[inline]
     pub(crate) fn from_string(other: String) -> Self {
         Self {
-            inner: SStringCowInner::Owned(other),
+            inner: SStringCowInner::Owned(SString::from_string(other)),
         }
     }
 
@@ -67,7 +65,7 @@ impl<'s> SStringCow<'s> {
     #[inline]
     pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
-            inner: SStringCowInner::Singleton(other),
+            inner: SStringCowInner::Owned(SString::from_static(other)),
         }
     }
 
@@ -100,18 +98,16 @@ impl<'s> SStringCowInner<'s> {
     #[inline]
     fn as_ref(&self) -> SStringRef<'_> {
         match self {
-            Self::Owned(ref s) => SStringRef::from_ref(s.as_str()),
-            Self::Borrowed(ref s) => SStringRef::from_ref(*s),
-            Self::Singleton(ref s) => SStringRef::from_static(s),
+            Self::Owned(ref s) => s.as_ref(),
+            Self::Borrowed(ref s) => SStringRef::from_ref(s),
         }
     }
 
     #[inline]
     fn into_owned(self) -> SString {
         match self {
-            Self::Owned(s) => SString::from_string(s),
+            Self::Owned(s) => s,
             Self::Borrowed(s) => SString::from_ref(s),
-            Self::Singleton(s) => SString::from_static(s),
         }
     }
 
@@ -120,16 +116,14 @@ impl<'s> SStringCowInner<'s> {
         match self {
             Self::Owned(ref s) => s.as_str(),
             Self::Borrowed(ref s) => s,
-            Self::Singleton(ref s) => s,
         }
     }
 
     #[inline]
     fn into_mut(self) -> StdString {
         match self {
-            Self::Owned(s) => s,
+            Self::Owned(s) => s.into_mut(),
             Self::Borrowed(s) => s.to_owned(),
-            Self::Singleton(s) => s.to_owned(),
         }
     }
 }
@@ -246,10 +240,8 @@ impl<'s> Default for SStringCow<'s> {
 impl<'s> From<SString> for SStringCow<'s> {
     #[inline]
     fn from(other: SString) -> Self {
-        match other.inner {
-            SStringInner::Owned(s) => Self::from_string(s),
-            SStringInner::Singleton(s) => Self::from_static(s),
-        }
+        let inner = SStringCowInner::Owned(other);
+        Self { inner }
     }
 }
 
