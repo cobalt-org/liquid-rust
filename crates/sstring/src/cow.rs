@@ -309,7 +309,12 @@ mod serde_string_cow {
     where
         D: Deserializer<'de>,
     {
-        let s = StdString::deserialize(deserializer)?;
-        Ok(SStringCow::from_string(s).inner)
+        use std::borrow::Cow;
+        let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
+        let s = match s {
+            Cow::Owned(s) => SStringCow::from_string(s),
+            Cow::Borrowed(s) => SStringCow::from_string(s.to_owned()),
+        };
+        Ok(s.inner)
     }
 }

@@ -269,7 +269,12 @@ mod serde_string {
     where
         D: Deserializer<'de>,
     {
-        let s = StdString::deserialize(deserializer)?;
-        Ok(SString::from_string(s).inner)
+        use std::borrow::Cow;
+        let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
+        let s = match s {
+            Cow::Owned(s) => SString::from_string(s),
+            Cow::Borrowed(s) => SString::from_ref(s),
+        };
+        Ok(s.inner)
     }
 }
