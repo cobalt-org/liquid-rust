@@ -1,5 +1,13 @@
 use std::fmt;
 
+use crate::FixedString1;
+use crate::FixedString2;
+use crate::FixedString3;
+use crate::FixedString4;
+use crate::FixedString5;
+use crate::FixedString6;
+use crate::FixedString7;
+use crate::FixedString8;
 use crate::SStringCow;
 use crate::SStringRef;
 
@@ -18,6 +26,14 @@ pub struct SString {
 pub(crate) enum SStringInner {
     Owned(StdString),
     Singleton(&'static str),
+    Fixed1(FixedString1),
+    Fixed2(FixedString2),
+    Fixed3(FixedString3),
+    Fixed4(FixedString4),
+    Fixed5(FixedString5),
+    Fixed6(FixedString6),
+    Fixed7(FixedString7),
+    Fixed8(FixedString8),
 }
 
 impl SString {
@@ -30,6 +46,7 @@ impl SString {
     /// Create an owned `SString`.
     #[inline]
     pub fn owned(other: impl Into<StdString>) -> Self {
+        // TODO: Used fixed strings
         Self::from_string(other.into())
     }
 
@@ -48,7 +65,19 @@ impl SString {
 
     #[inline]
     pub(crate) fn from_ref(other: &str) -> Self {
-        Self::from_string(other.to_owned())
+        let inner = match other.len() {
+            0 => SStringInner::Singleton(""),
+            1 => SStringInner::Fixed1(FixedString1::new(other)),
+            2 => SStringInner::Fixed2(FixedString2::new(other)),
+            3 => SStringInner::Fixed3(FixedString3::new(other)),
+            4 => SStringInner::Fixed4(FixedString4::new(other)),
+            5 => SStringInner::Fixed5(FixedString5::new(other)),
+            6 => SStringInner::Fixed6(FixedString6::new(other)),
+            7 => SStringInner::Fixed7(FixedString7::new(other)),
+            8 => SStringInner::Fixed8(FixedString8::new(other)),
+            _ => SStringInner::Owned(other.to_owned()),
+        };
+        Self { inner }
     }
 
     #[inline]
@@ -81,24 +110,48 @@ impl SStringInner {
     #[inline]
     fn as_ref(&self) -> SStringRef<'_> {
         match self {
-            SStringInner::Owned(ref s) => SStringRef::from_ref(s),
-            SStringInner::Singleton(ref s) => SStringRef::from_static(s),
+            Self::Owned(ref s) => SStringRef::from_ref(s),
+            Self::Singleton(ref s) => SStringRef::from_static(s),
+            Self::Fixed1(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed2(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed3(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed4(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed5(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed6(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed7(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Fixed8(ref s) => SStringRef::from_ref(s.as_str()),
         }
     }
 
     #[inline]
     fn as_str(&self) -> &str {
         match self {
-            SStringInner::Owned(ref s) => s.as_str(),
-            SStringInner::Singleton(ref s) => s,
+            Self::Owned(ref s) => s.as_str(),
+            Self::Singleton(ref s) => s,
+            Self::Fixed1(ref s) => s.as_str(),
+            Self::Fixed2(ref s) => s.as_str(),
+            Self::Fixed3(ref s) => s.as_str(),
+            Self::Fixed4(ref s) => s.as_str(),
+            Self::Fixed5(ref s) => s.as_str(),
+            Self::Fixed6(ref s) => s.as_str(),
+            Self::Fixed7(ref s) => s.as_str(),
+            Self::Fixed8(ref s) => s.as_str(),
         }
     }
 
     #[inline]
     fn into_mut(self) -> StdString {
         match self {
-            SStringInner::Owned(s) => s,
-            SStringInner::Singleton(s) => s.to_owned(),
+            Self::Owned(s) => s,
+            Self::Singleton(s) => s.to_owned(),
+            Self::Fixed1(s) => s.into_mut(),
+            Self::Fixed2(s) => s.into_mut(),
+            Self::Fixed3(s) => s.into_mut(),
+            Self::Fixed4(s) => s.into_mut(),
+            Self::Fixed5(s) => s.into_mut(),
+            Self::Fixed6(s) => s.into_mut(),
+            Self::Fixed7(s) => s.into_mut(),
+            Self::Fixed8(s) => s.into_mut(),
         }
     }
 }
@@ -243,6 +296,7 @@ impl<'s> From<&'s SStringCow<'s>> for SString {
 impl From<StdString> for SString {
     #[inline]
     fn from(other: StdString) -> Self {
+        // Since the memory is already allocated, don't bother moving it into a FixedString
         Self::from_string(other)
     }
 }

@@ -31,6 +31,7 @@ impl<'s> SStringCow<'s> {
     /// Create an owned `SString`.
     #[inline]
     pub fn owned(other: impl Into<SString>) -> Self {
+        // TODO: Used fixed strings
         let other = other.into();
         other.into()
     }
@@ -237,7 +238,7 @@ impl<'s> Default for SStringCow<'s> {
     }
 }
 
-impl<'s> From<SString> for SStringCow<'s> {
+impl From<SString> for SStringCow<'static> {
     #[inline]
     fn from(other: SString) -> Self {
         let inner = SStringCowInner::Owned(other);
@@ -265,9 +266,10 @@ impl<'s> From<&'s SStringRef<'s>> for SStringCow<'s> {
     }
 }
 
-impl<'s> From<StdString> for SStringCow<'s> {
+impl From<StdString> for SStringCow<'static> {
     #[inline]
     fn from(other: StdString) -> Self {
+        // Since the memory is already allocated, don't bother moving it into a FixedString
         Self::from_string(other)
     }
 }
