@@ -237,3 +237,14 @@ impl<'s> From<&'s str> for KStringRef<'s> {
         KStringRef::from_ref(other)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_size() {
+        println!("str: {}", std::mem::size_of::<&'static str>());
+        println!("KStringRef: {}", std::mem::size_of::<KStringRef<'static>>());
+    }
+}

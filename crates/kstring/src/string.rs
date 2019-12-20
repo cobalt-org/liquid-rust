@@ -348,3 +348,16 @@ mod serde_string {
         Ok(s.inner)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_size() {
+        println!("String: {}", std::mem::size_of::<StdString>());
+        println!("Box<str>: {}", std::mem::size_of::<BoxedStr>());
+        println!("Box<Box<str>>: {}", std::mem::size_of::<Box<BoxedStr>>());
+        println!("KString: {}", std::mem::size_of::<KString>());
+    }
+}
