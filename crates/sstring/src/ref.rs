@@ -34,6 +34,18 @@ impl<'s> SStringRef<'s> {
     /// Create a reference to a `'static` data.
     #[inline]
     pub fn singleton(other: &'static str) -> Self {
+        Self::from_static(other)
+    }
+
+    #[inline]
+    pub(crate) fn from_ref(other: &'s str) -> Self {
+        Self {
+            inner: SStringRefInner::Borrowed(other),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
             inner: SStringRefInner::Singleton(other),
         }
@@ -42,28 +54,42 @@ impl<'s> SStringRef<'s> {
     /// Clone the data into an owned-type.
     #[inline]
     pub fn to_owned(&self) -> SString {
-        match self.inner {
-            SStringRefInner::Borrowed(s) => s.to_owned().into(),
-            SStringRefInner::Singleton(s) => s.into(),
-        }
+        self.inner.to_owned()
     }
 
     /// Extracts a string slice containing the entire `SStringRef`.
     #[inline]
     pub fn as_str(&self) -> &str {
-        match self.inner {
-            SStringRefInner::Borrowed(ref s) => s,
-            SStringRefInner::Singleton(ref s) => s,
-        }
+        self.inner.as_str()
     }
 
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
     pub fn into_mut(self) -> StdString {
-        match self.inner {
-            SStringRefInner::Borrowed(s) => s.to_owned(),
-            SStringRefInner::Singleton(s) => s.to_owned(),
+        self.inner.into_mut()
+    }
+}
+
+impl<'s> SStringRefInner<'s> {
+    #[inline]
+    fn to_owned(&self) -> SString {
+        match self {
+            Self::Borrowed(s) => SString::from_ref(s),
+            Self::Singleton(s) => SString::from_static(s),
         }
+    }
+
+    #[inline]
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Borrowed(ref s) => s,
+            Self::Singleton(ref s) => s,
+        }
+    }
+
+    #[inline]
+    fn into_mut(self) -> StdString {
+        self.as_str().to_owned()
     }
 }
 
@@ -172,7 +198,7 @@ impl<'s> std::borrow::Borrow<str> for SStringRef<'s> {
 impl<'s> Default for SStringRef<'s> {
     #[inline]
     fn default() -> Self {
-        Self::singleton("")
+        Self::from_static("")
     }
 }
 
@@ -193,17 +219,13 @@ impl<'s> From<&'s SStringCow<'s>> for SStringRef<'s> {
 impl<'s> From<&'s StdString> for SStringRef<'s> {
     #[inline]
     fn from(other: &'s StdString) -> Self {
-        SStringRef {
-            inner: SStringRefInner::Borrowed(other.as_str()),
-        }
+        SStringRef::from_ref(other.as_str())
     }
 }
 
 impl<'s> From<&'s str> for SStringRef<'s> {
     #[inline]
     fn from(other: &'s str) -> Self {
-        SStringRef {
-            inner: SStringRefInner::Borrowed(other),
-        }
+        SStringRef::from_ref(other)
     }
 }

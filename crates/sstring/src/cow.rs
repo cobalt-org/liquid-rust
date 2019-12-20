@@ -47,6 +47,25 @@ impl<'s> SStringCow<'s> {
     /// Create a reference to a `'static` data.
     #[inline]
     pub fn singleton(other: &'static str) -> Self {
+        Self::from_static(other)
+    }
+
+    #[inline]
+    pub(crate) fn from_string(other: String) -> Self {
+        Self {
+            inner: SStringCowInner::Owned(other),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn from_ref(other: &'s str) -> Self {
+        Self {
+            inner: SStringCowInner::Borrowed(other),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
             inner: SStringCowInner::Singleton(other),
         }
@@ -55,40 +74,62 @@ impl<'s> SStringCow<'s> {
     /// Get a reference to the `SString`.
     #[inline]
     pub fn as_ref(&self) -> SStringRef<'_> {
-        match self.inner {
-            SStringCowInner::Owned(ref s) => SStringRef::borrow(s),
-            SStringCowInner::Borrowed(ref s) => SStringRef::borrow(*s),
-            SStringCowInner::Singleton(ref s) => SStringRef::singleton(s),
-        }
+        self.inner.as_ref()
     }
 
     /// Clone the data into an owned-type.
     #[inline]
     pub fn into_owned(self) -> SString {
-        match self.inner {
-            SStringCowInner::Owned(s) => s.into(),
-            SStringCowInner::Borrowed(s) => s.to_owned().into(),
-            SStringCowInner::Singleton(s) => s.into(),
-        }
+        self.inner.into_owned()
     }
 
     /// Extracts a string slice containing the entire `SStringCow`.
     #[inline]
     pub fn as_str(&self) -> &str {
-        match self.inner {
-            SStringCowInner::Owned(ref s) => s.as_str(),
-            SStringCowInner::Borrowed(ref s) => s,
-            SStringCowInner::Singleton(ref s) => s,
-        }
+        self.inner.as_str()
     }
 
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
     pub fn into_mut(self) -> StdString {
-        match self.inner {
-            SStringCowInner::Owned(s) => s,
-            SStringCowInner::Borrowed(s) => s.to_owned(),
-            SStringCowInner::Singleton(s) => s.to_owned(),
+        self.inner.into_mut()
+    }
+}
+
+impl<'s> SStringCowInner<'s> {
+    #[inline]
+    fn as_ref(&self) -> SStringRef<'_> {
+        match self {
+            Self::Owned(ref s) => SStringRef::from_ref(s.as_str()),
+            Self::Borrowed(ref s) => SStringRef::from_ref(*s),
+            Self::Singleton(ref s) => SStringRef::from_static(s),
+        }
+    }
+
+    #[inline]
+    fn into_owned(self) -> SString {
+        match self {
+            Self::Owned(s) => SString::from_string(s),
+            Self::Borrowed(s) => SString::from_ref(s),
+            Self::Singleton(s) => SString::from_static(s),
+        }
+    }
+
+    #[inline]
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Owned(ref s) => s.as_str(),
+            Self::Borrowed(ref s) => s,
+            Self::Singleton(ref s) => s,
+        }
+    }
+
+    #[inline]
+    fn into_mut(self) -> StdString {
+        match self {
+            Self::Owned(s) => s,
+            Self::Borrowed(s) => s.to_owned(),
+            Self::Singleton(s) => s.to_owned(),
         }
     }
 }
@@ -198,7 +239,7 @@ impl<'s> std::borrow::Borrow<str> for SStringCow<'s> {
 impl<'s> Default for SStringCow<'s> {
     #[inline]
     fn default() -> Self {
-        Self::singleton("")
+        Self::from_static("")
     }
 }
 
@@ -206,8 +247,8 @@ impl<'s> From<SString> for SStringCow<'s> {
     #[inline]
     fn from(other: SString) -> Self {
         match other.inner {
-            SStringInner::Owned(s) => s.into(),
-            SStringInner::Singleton(s) => SStringCow::singleton(s),
+            SStringInner::Owned(s) => Self::from_string(s),
+            SStringInner::Singleton(s) => Self::from_static(s),
         }
     }
 }
@@ -216,8 +257,8 @@ impl<'s> From<SStringRef<'s>> for SStringCow<'s> {
     #[inline]
     fn from(other: SStringRef<'s>) -> Self {
         match other.inner {
-            SStringRefInner::Borrowed(s) => s.into(),
-            SStringRefInner::Singleton(s) => SStringCow::singleton(s),
+            SStringRefInner::Borrowed(s) => Self::from_ref(s),
+            SStringRefInner::Singleton(s) => Self::from_static(s),
         }
     }
 }
@@ -226,8 +267,8 @@ impl<'s> From<&'s SStringRef<'s>> for SStringCow<'s> {
     #[inline]
     fn from(other: &'s SStringRef<'s>) -> Self {
         match other.inner {
-            SStringRefInner::Borrowed(s) => s.into(),
-            SStringRefInner::Singleton(s) => SStringCow::singleton(s),
+            SStringRefInner::Borrowed(s) => Self::from_ref(s),
+            SStringRefInner::Singleton(s) => Self::from_static(s),
         }
     }
 }
@@ -235,27 +276,21 @@ impl<'s> From<&'s SStringRef<'s>> for SStringCow<'s> {
 impl<'s> From<StdString> for SStringCow<'s> {
     #[inline]
     fn from(other: StdString) -> Self {
-        SStringCow {
-            inner: SStringCowInner::Owned(other),
-        }
+        Self::from_string(other)
     }
 }
 
 impl<'s> From<&'s StdString> for SStringCow<'s> {
     #[inline]
     fn from(other: &'s StdString) -> Self {
-        SStringCow {
-            inner: SStringCowInner::Borrowed(other.as_str()),
-        }
+        Self::from_ref(other.as_str())
     }
 }
 
 impl<'s> From<&'s str> for SStringCow<'s> {
     #[inline]
     fn from(other: &'s str) -> Self {
-        SStringCow {
-            inner: SStringCowInner::Borrowed(other),
-        }
+        Self::from_ref(other)
     }
 }
 
@@ -267,12 +302,7 @@ mod serde_string_cow {
     where
         S: Serializer,
     {
-        let s = match data {
-            SStringCowInner::Owned(ref s) => s.as_str(),
-            SStringCowInner::Borrowed(ref s) => s,
-            SStringCowInner::Singleton(ref s) => s,
-        };
-        serializer.serialize_str(&s)
+        serializer.serialize_str(&data.as_str())
     }
 
     pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<SStringCowInner<'static>, D::Error>
@@ -280,6 +310,6 @@ mod serde_string_cow {
         D: Deserializer<'de>,
     {
         let s = StdString::deserialize(deserializer)?;
-        Ok(SStringCowInner::Owned(s))
+        Ok(SStringCow::from_string(s).inner)
     }
 }

@@ -30,14 +30,29 @@ impl SString {
     /// Create an owned `SString`.
     #[inline]
     pub fn owned(other: impl Into<StdString>) -> Self {
-        Self {
-            inner: SStringInner::Owned(other.into()),
-        }
+        Self::from_string(other.into())
     }
 
     /// Create a reference to a `'static` data.
     #[inline]
     pub fn singleton(other: &'static str) -> Self {
+        Self::from_static(other)
+    }
+
+    #[inline]
+    pub(crate) fn from_string(other: String) -> Self {
+        Self {
+            inner: SStringInner::Owned(other),
+        }
+    }
+
+    #[inline]
+    pub(crate) fn from_ref(other: &str) -> Self {
+        Self::from_string(other.to_owned())
+    }
+
+    #[inline]
+    pub(crate) fn from_static(other: &'static str) -> Self {
         Self {
             inner: SStringInner::Singleton(other),
         }
@@ -46,25 +61,42 @@ impl SString {
     /// Get a reference to the `SString`.
     #[inline]
     pub fn as_ref(&self) -> SStringRef<'_> {
-        match self.inner {
-            SStringInner::Owned(ref s) => SStringRef::borrow(s),
-            SStringInner::Singleton(ref s) => SStringRef::singleton(s),
-        }
+        self.inner.as_ref()
     }
 
     /// Extracts a string slice containing the entire `SString`.
     #[inline]
     pub fn as_str(&self) -> &str {
-        match self.inner {
-            SStringInner::Owned(ref s) => s.as_str(),
-            SStringInner::Singleton(ref s) => s,
-        }
+        self.inner.as_str()
     }
 
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
     pub fn into_mut(self) -> StdString {
-        match self.inner {
+        self.inner.into_mut()
+    }
+}
+
+impl SStringInner {
+    #[inline]
+    fn as_ref(&self) -> SStringRef<'_> {
+        match self {
+            SStringInner::Owned(ref s) => SStringRef::from_ref(s),
+            SStringInner::Singleton(ref s) => SStringRef::from_static(s),
+        }
+    }
+
+    #[inline]
+    fn as_str(&self) -> &str {
+        match self {
+            SStringInner::Owned(ref s) => s.as_str(),
+            SStringInner::Singleton(ref s) => s,
+        }
+    }
+
+    #[inline]
+    fn into_mut(self) -> StdString {
+        match self {
             SStringInner::Owned(s) => s,
             SStringInner::Singleton(s) => s.to_owned(),
         }
@@ -176,7 +208,7 @@ impl std::borrow::Borrow<str> for SString {
 impl Default for SString {
     #[inline]
     fn default() -> Self {
-        "".into()
+        Self::from_static("")
     }
 }
 
@@ -211,18 +243,14 @@ impl<'s> From<&'s SStringCow<'s>> for SString {
 impl From<StdString> for SString {
     #[inline]
     fn from(other: StdString) -> Self {
-        SString {
-            inner: SStringInner::Owned(other),
-        }
+        Self::from_string(other)
     }
 }
 
 impl From<&'static str> for SString {
     #[inline]
     fn from(other: &'static str) -> Self {
-        SString {
-            inner: SStringInner::Singleton(other),
-        }
+        Self::from_static(other)
     }
 }
 
@@ -234,11 +262,7 @@ mod serde_string {
     where
         S: Serializer,
     {
-        let s = match data {
-            SStringInner::Owned(ref s) => s.as_str(),
-            SStringInner::Singleton(ref s) => s,
-        };
-        serializer.serialize_str(&s)
+        serializer.serialize_str(&data.as_str())
     }
 
     pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<SStringInner, D::Error>
@@ -246,6 +270,6 @@ mod serde_string {
         D: Deserializer<'de>,
     {
         let s = StdString::deserialize(deserializer)?;
-        Ok(SStringInner::Owned(s))
+        Ok(SString::from_string(s).inner)
     }
 }
