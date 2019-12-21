@@ -122,7 +122,7 @@ static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(
 
 impl Filter for StripHtmlFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_kstr().into_mut();
+        let input = input.to_kstr().into_string();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
             matcher.replace_all(&acc, "").into_owned()

@@ -28,25 +28,15 @@ impl<'s> KStringRef<'s> {
 
     /// Create a reference to a borrowed data.
     #[inline]
-    pub fn borrow(other: impl Into<KStringRef<'s>>) -> Self {
-        other.into()
-    }
-
-    /// Create a reference to a `'static` data.
-    #[inline]
-    pub fn singleton(other: &'static str) -> Self {
-        Self::from_static(other)
-    }
-
-    #[inline]
-    pub(crate) fn from_ref(other: &'s str) -> Self {
+    pub fn from_ref(other: &'s str) -> Self {
         Self {
             inner: KStringRefInner::Borrowed(other),
         }
     }
 
+    /// Create a reference to a `'static` data.
     #[inline]
-    pub(crate) fn from_static(other: &'static str) -> Self {
+    pub fn from_static(other: &'static str) -> Self {
         Self {
             inner: KStringRefInner::Singleton(other),
         }

@@ -185,7 +185,7 @@ impl Filter for AppendFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let mut input = input.to_kstr().into_mut();
+        let mut input = input.to_kstr().into_string();
         input.push_str(args.string.as_str());
 
         Ok(Value::scalar(input))
@@ -219,7 +219,7 @@ impl Filter for PrependFilter {
         let args = self.args.evaluate(context)?;
 
         let input = input.to_kstr();
-        let mut string = args.string.into_mut();
+        let mut string = args.string.into_string();
         string.push_str(input.as_str());
 
         Ok(Value::scalar(string))

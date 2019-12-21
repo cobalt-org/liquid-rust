@@ -46,26 +46,21 @@ impl KString {
 
     /// Create an owned `KString`.
     #[inline]
-    pub fn owned(other: impl Into<StdString>) -> Self {
-        // TODO: Used fixed strings
-        Self::from_boxed(other.into().into_boxed_str())
-    }
-
-    /// Create a reference to a `'static` data.
-    #[inline]
-    pub fn singleton(other: &'static str) -> Self {
-        Self::from_static(other)
-    }
-
-    #[inline]
-    pub(crate) fn from_boxed(other: BoxedStr) -> Self {
+    pub fn from_boxed(other: BoxedStr) -> Self {
         Self {
             inner: KStringInner::Owned(other),
         }
     }
 
+    /// Create an owned `KString`.
     #[inline]
-    pub(crate) fn from_ref(other: &str) -> Self {
+    pub fn from_string(other: StdString) -> Self {
+        Self::from_boxed(other.into_boxed_str())
+    }
+
+    /// Create an owned `KString` optimally from a reference.
+    #[inline]
+    pub fn from_ref(other: &str) -> Self {
         let inner = match other.len() {
             0 => KStringInner::Singleton(""),
             1 => KStringInner::Fixed1(FixedString1::new(other)),
@@ -76,13 +71,14 @@ impl KString {
             6 => KStringInner::Fixed6(FixedString6::new(other)),
             7 => KStringInner::Fixed7(FixedString7::new(other)),
             8 => KStringInner::Fixed8(FixedString8::new(other)),
-            _ => KStringInner::Owned(other.to_owned().into_boxed_str()),
+            _ => KStringInner::Owned(BoxedStr::from(other)),
         };
         Self { inner }
     }
 
+    /// Create a reference to a `'static` data.
     #[inline]
-    pub(crate) fn from_static(other: &'static str) -> Self {
+    pub fn from_static(other: &'static str) -> Self {
         Self {
             inner: KStringInner::Singleton(other),
         }
@@ -102,8 +98,14 @@ impl KString {
 
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
-    pub fn into_mut(self) -> StdString {
-        self.inner.into_mut()
+    pub fn into_string(self) -> StdString {
+        String::from(self.into_boxed_str())
+    }
+
+    /// Convert to a mutable string type, cloning the data if necessary.
+    #[inline]
+    pub fn into_boxed_str(self) -> BoxedStr {
+        self.inner.into_boxed_str()
     }
 }
 
@@ -141,18 +143,18 @@ impl KStringInner {
     }
 
     #[inline]
-    fn into_mut(self) -> StdString {
+    fn into_boxed_str(self) -> BoxedStr {
         match self {
-            Self::Owned(s) => String::from(s),
-            Self::Singleton(s) => s.to_owned(),
-            Self::Fixed1(s) => s.into_mut(),
-            Self::Fixed2(s) => s.into_mut(),
-            Self::Fixed3(s) => s.into_mut(),
-            Self::Fixed4(s) => s.into_mut(),
-            Self::Fixed5(s) => s.into_mut(),
-            Self::Fixed6(s) => s.into_mut(),
-            Self::Fixed7(s) => s.into_mut(),
-            Self::Fixed8(s) => s.into_mut(),
+            Self::Owned(s) => s,
+            Self::Singleton(s) => BoxedStr::from(s),
+            Self::Fixed1(s) => s.into_boxed_str(),
+            Self::Fixed2(s) => s.into_boxed_str(),
+            Self::Fixed3(s) => s.into_boxed_str(),
+            Self::Fixed4(s) => s.into_boxed_str(),
+            Self::Fixed5(s) => s.into_boxed_str(),
+            Self::Fixed6(s) => s.into_boxed_str(),
+            Self::Fixed7(s) => s.into_boxed_str(),
+            Self::Fixed8(s) => s.into_boxed_str(),
         }
     }
 }

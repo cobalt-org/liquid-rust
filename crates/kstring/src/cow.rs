@@ -23,49 +23,37 @@ pub(crate) enum KStringCowInner<'s> {
 }
 
 impl<'s> KStringCow<'s> {
-    /// Create a new empty `KString`.
+    /// Create a new empty `KStringCow`.
     #[inline]
     pub fn new() -> Self {
         Default::default()
     }
 
-    /// Create an owned `KString`.
+    /// Create an owned `KStringCow`.
     #[inline]
-    pub fn owned(other: impl Into<KString>) -> Self {
-        // TODO: Used fixed strings
-        let other = other.into();
-        other.into()
-    }
-
-    /// Create a reference to a borrowed data.
-    #[inline]
-    pub fn borrow(other: impl Into<KStringRef<'s>>) -> Self {
-        let other = other.into();
-        other.into()
-    }
-
-    /// Create a reference to a `'static` data.
-    #[inline]
-    pub fn singleton(other: &'static str) -> Self {
-        Self::from_static(other)
-    }
-
-    #[inline]
-    pub(crate) fn from_boxed(other: BoxedStr) -> Self {
+    pub fn from_boxed(other: BoxedStr) -> Self {
         Self {
             inner: KStringCowInner::Owned(KString::from_boxed(other)),
         }
     }
 
+    /// Create an owned `KStringCow`.
     #[inline]
-    pub(crate) fn from_ref(other: &'s str) -> Self {
+    pub fn from_string(other: StdString) -> Self {
+        Self::from_boxed(other.into_boxed_str())
+    }
+
+    /// Create a reference to a borrowed data.
+    #[inline]
+    pub fn from_ref(other: &'s str) -> Self {
         Self {
             inner: KStringCowInner::Borrowed(other),
         }
     }
 
+    /// Create a reference to a `'static` data.
     #[inline]
-    pub(crate) fn from_static(other: &'static str) -> Self {
+    pub fn from_static(other: &'static str) -> Self {
         Self {
             inner: KStringCowInner::Owned(KString::from_static(other)),
         }
@@ -91,8 +79,14 @@ impl<'s> KStringCow<'s> {
 
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
-    pub fn into_mut(self) -> StdString {
-        self.inner.into_mut()
+    pub fn into_string(self) -> StdString {
+        String::from(self.into_boxed_str())
+    }
+
+    /// Convert to a mutable string type, cloning the data if necessary.
+    #[inline]
+    pub fn into_boxed_str(self) -> BoxedStr {
+        self.inner.into_boxed_str()
     }
 }
 
@@ -122,10 +116,10 @@ impl<'s> KStringCowInner<'s> {
     }
 
     #[inline]
-    fn into_mut(self) -> StdString {
+    fn into_boxed_str(self) -> BoxedStr {
         match self {
-            Self::Owned(s) => s.into_mut(),
-            Self::Borrowed(s) => s.to_owned(),
+            Self::Owned(s) => s.into_boxed_str(),
+            Self::Borrowed(s) => BoxedStr::from(s),
         }
     }
 }
