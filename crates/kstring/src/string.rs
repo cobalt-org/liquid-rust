@@ -15,11 +15,9 @@ type StdString = std::string::String;
 type BoxedStr = Box<str>;
 
 /// A UTF-8 encoded, immutable string.
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-#[serde(transparent)]
+#[derive(Clone, Debug)]
 #[repr(transparent)]
 pub struct KString {
-    #[serde(with = "serde_string")]
     pub(crate) inner: KStringInner,
 }
 
@@ -326,20 +324,20 @@ impl From<&'static str> for KString {
     }
 }
 
-mod serde_string {
-    use super::*;
-    use serde::{self, Deserialize, Deserializer, Serializer};
-
-    pub(crate) fn serialize<S>(data: &KStringInner, serializer: S) -> Result<S::Ok, S::Error>
+impl serde::Serialize for KString {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
-        serializer.serialize_str(&data.as_str())
+        serializer.serialize_str(self.as_str())
     }
+}
 
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<KStringInner, D::Error>
+impl<'de> serde::Deserialize<'de> for KString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         use std::borrow::Cow;
         let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
@@ -347,7 +345,7 @@ mod serde_string {
             Cow::Owned(s) => KString::from_boxed(s.into_boxed_str()),
             Cow::Borrowed(s) => KString::from_ref(s),
         };
-        Ok(s.inner)
+        Ok(s)
     }
 }
 

@@ -15,4 +15,4 @@ edition = "2018"
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = "1.0"

@@ -228,6 +228,27 @@ impl<'s> From<&'s str> for KStringRef<'s> {
     }
 }
 
+impl<'s> serde::Serialize for KStringRef<'s> {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de: 's, 's> serde::Deserialize<'de> for KStringRef<'s> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: &'s str = serde::Deserialize::deserialize(deserializer)?;
+        let s = KStringRef::from_ref(s);
+        Ok(s)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
