@@ -384,8 +384,10 @@ fn test_cycle() {
         r#"{%cycle "one", "two"%} {%cycle "one", "two"%} {%cycle "one", "two"%}"#
     );
 
-    assert_template_result!("text-align: left text-align: right",
-      r#"{%cycle "text-align: left", "text-align: right" %} {%cycle "text-align: left", "text-align: right"%}"#);
+    assert_template_result!(
+        "text-align: left text-align: right",
+        r#"{%cycle "text-align: left", "text-align: right" %} {%cycle "text-align: left", "text-align: right"%}"#
+    );
 }
 
 #[test]
@@ -396,15 +398,20 @@ fn test_multiple_cycles() {
 
 #[test]
 fn test_multiple_named_cycles() {
-    assert_template_result!("one one two two one one",
-      r#"{%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %} {%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %} {%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %}"#);
+    assert_template_result!(
+        "one one two two one one",
+        r#"{%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %} {%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %} {%cycle 1: "one", "two" %} {%cycle 2: "one", "two" %}"#
+    );
 }
 
 #[test]
 fn test_multiple_named_cycles_with_names_from_context() {
     let assigns = v!({ "var1": 1, "var2": 2 });
-    assert_template_result!("one one two two one one",
-      r#"{%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %} {%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %} {%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %}"#, assigns);
+    assert_template_result!(
+        "one one two two one one",
+        r#"{%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %} {%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %} {%cycle var1: "one", "two" %} {%cycle var2: "one", "two" %}"#,
+        assigns
+    );
 }
 
 #[test]

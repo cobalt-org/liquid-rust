@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use sstring::SString;
-use sstring::SStringCow;
-use sstring::SStringRef;
+use kstring::KString;
+use kstring::KStringCow;
+use kstring::KStringRef;
 
 use crate::{Date, DateTime};
 
@@ -25,7 +25,7 @@ enum ScalarCowEnum<'s> {
     Bool(bool),
     DateTime(DateTime),
     Date(Date),
-    Str(SStringCow<'s>),
+    Str(KStringCow<'s>),
 }
 
 impl<'s> ScalarCow<'s> {
@@ -65,7 +65,7 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// Interpret as a string.
-    pub fn to_sstr(&self) -> SStringCow<'_> {
+    pub fn to_kstr(&self) -> KStringCow<'_> {
         match self.0 {
             ScalarCowEnum::Integer(_)
             | ScalarCowEnum::Float(_)
@@ -77,7 +77,7 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// Convert to a string.
-    pub fn into_string(self) -> SString {
+    pub fn into_string(self) -> KString {
         match self.0 {
             ScalarCowEnum::Integer(x) => x.to_string().into(),
             ScalarCowEnum::Float(x) => x.to_string().into(),
@@ -234,48 +234,48 @@ impl<'s> From<Date> for ScalarCow<'s> {
     }
 }
 
-impl<'s> From<SString> for ScalarCow<'s> {
-    fn from(s: SString) -> Self {
+impl<'s> From<KString> for ScalarCow<'s> {
+    fn from(s: KString) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'s> From<&'s SString> for ScalarCow<'s> {
-    fn from(s: &'s SString) -> Self {
+impl<'s> From<&'s KString> for ScalarCow<'s> {
+    fn from(s: &'s KString) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.as_ref().into()),
         }
     }
 }
 
-impl<'s> From<SStringRef<'s>> for ScalarCow<'s> {
-    fn from(s: SStringRef<'s>) -> Self {
+impl<'s> From<KStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: KStringRef<'s>) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'s> From<&'s SStringRef<'s>> for ScalarCow<'s> {
-    fn from(s: &'s SStringRef<'s>) -> Self {
+impl<'s> From<&'s KStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: &'s KStringRef<'s>) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'s> From<SStringCow<'s>> for ScalarCow<'s> {
-    fn from(s: SStringCow<'s>) -> Self {
+impl<'s> From<KStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: KStringCow<'s>) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s),
         }
     }
 }
 
-impl<'s> From<&'s SStringCow<'s>> for ScalarCow<'s> {
-    fn from(s: &'s SStringCow<'s>) -> Self {
+impl<'s> From<&'s KStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: &'s KStringCow<'s>) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.clone()),
         }
@@ -368,22 +368,22 @@ impl<'s> PartialEq<String> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialEq<SString> for ScalarCow<'s> {
-    fn eq(&self, other: &SString) -> bool {
+impl<'s> PartialEq<KString> for ScalarCow<'s> {
+    fn eq(&self, other: &KString) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialEq<SStringRef<'s>> for ScalarCow<'s> {
-    fn eq(&self, other: &SStringRef<'s>) -> bool {
+impl<'s> PartialEq<KStringRef<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &KStringRef<'s>) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialEq<SStringCow<'s>> for ScalarCow<'s> {
-    fn eq(&self, other: &SStringCow<'s>) -> bool {
+impl<'s> PartialEq<KStringCow<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &KStringCow<'s>) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
@@ -517,28 +517,28 @@ mod test {
 
     #[test]
     fn test_to_str_bool() {
-        assert_eq!(TRUE.to_sstr(), "true");
+        assert_eq!(TRUE.to_kstr(), "true");
     }
 
     #[test]
     fn test_to_str_integer() {
         let val: ScalarCow<'_> = 42i32.into();
-        assert_eq!(val.to_sstr(), "42");
+        assert_eq!(val.to_kstr(), "42");
     }
 
     #[test]
     fn test_to_str_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_sstr(), "42");
+        assert_eq!(val.to_kstr(), "42");
 
         let val: ScalarCow<'_> = 42.34.into();
-        assert_eq!(val.to_sstr(), "42.34");
+        assert_eq!(val.to_kstr(), "42.34");
     }
 
     #[test]
     fn test_to_str_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_sstr(), "foobar");
+        assert_eq!(val.to_kstr(), "foobar");
     }
 
     #[test]

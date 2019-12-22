@@ -170,7 +170,7 @@ impl Filter for ArrayToSentenceStringFilter {
 
         let mut sentence = array
             .next()
-            .map(|v| v.to_sstr().into_mut())
+            .map(|v| v.to_kstr().into_string())
             .unwrap_or_else(|| "".to_string());
 
         let last = array.next_back();

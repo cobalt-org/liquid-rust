@@ -523,7 +523,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             )?
         },
         FilterParameterType::Str => quote! {
-            .to_sstr()
+            .to_kstr()
         },
     };
 
@@ -671,7 +671,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
             FilterParameterType::Bool => quote! { bool },
             FilterParameterType::DateTime => quote! { ::liquid::value::DateTime },
             FilterParameterType::Date => quote! { ::liquid::value::Date },
-            FilterParameterType::Str => quote! { ::liquid::value::sstring::SStringCow<'a> },
+            FilterParameterType::Str => quote! { ::liquid::value::kstring::KStringCow<'a> },
         };
 
         if field.is_optional() {

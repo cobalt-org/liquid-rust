@@ -19,7 +19,7 @@ pub struct Map {
     map: MapImpl<Key, Value>,
 }
 
-type Key = sstring::SString;
+type Key = kstring::KString;
 
 type MapImpl<K, V> = hash_map::HashMap<K, V>;
 type VacantEntryImpl<'a> = hash_map::VacantEntry<'a, Key, Value>;
@@ -212,9 +212,9 @@ impl Eq for Map {}
 /// # let val = &Value::scalar("");
 /// # let _ =
 /// match *val {
-///     Value::Scalar(ref s) => Some(s.to_sstr()),
-///     Value::Array(ref arr) => Some(arr[0].to_sstr()),
-///     Value::Object(ref map) => Some(map["type"].to_sstr()),
+///     Value::Scalar(ref s) => Some(s.to_kstr()),
+///     Value::Array(ref arr) => Some(arr[0].to_kstr()),
+///     Value::Object(ref map) => Some(map["type"].to_kstr()),
 ///     _ => None,
 /// }
 /// # ;

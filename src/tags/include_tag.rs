@@ -65,8 +65,8 @@ impl ParseTag for IncludeTag {
         // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.
         // Those inputs would fail anyway by there being not a path with those names so they are not a big concern.
         let name = match name.expect_literal() {
-            // Using `to_sstr()` on literals ensures `Strings` will have their quotes trimmed.
-            TryMatchToken::Matches(name) => name.to_sstr().to_string(),
+            // Using `to_kstr()` on literals ensures `Strings` will have their quotes trimmed.
+            TryMatchToken::Matches(name) => name.to_kstr().to_string(),
             TryMatchToken::Fails(name) => name.as_str().to_string(),
         };
 
@@ -145,7 +145,7 @@ mod test {
     impl Filter for SizeFilter {
         fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
             match *input {
-                Value::Scalar(ref x) => Ok(Value::scalar(x.to_sstr().len() as i32)),
+                Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
                 Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
                 Value::Object(ref x) => Ok(Value::scalar(x.len() as i32)),
                 _ => Ok(Value::scalar(0i32)),

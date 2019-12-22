@@ -16,4 +16,4 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
 # Exposed in API
-sstring = { version = "0.1.0", path = "../sstring" }
+kstring = { version = "0.1.0", path = "../kstring" }

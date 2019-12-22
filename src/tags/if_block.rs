@@ -153,8 +153,8 @@ struct Conditional {
 fn contains_check(a: &Value, b: &Value) -> Result<bool> {
     match *a {
         Value::Scalar(ref val) => {
-            let b = b.to_sstr();
-            Ok(val.to_sstr().contains(b.as_str()))
+            let b = b.to_kstr();
+            Ok(val.to_kstr().contains(b.as_str()))
         }
         Value::Object(_) => {
             let b = b.as_scalar();

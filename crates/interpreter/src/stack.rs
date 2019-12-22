@@ -6,7 +6,7 @@ use super::ValueStore;
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
-    name: Option<sstring::SString>,
+    name: Option<kstring::KString>,
     data: Object,
 }
 
@@ -15,7 +15,7 @@ impl Frame {
         Default::default()
     }
 
-    fn with_name<S: Into<sstring::SString>>(name: S) -> Self {
+    fn with_name<S: Into<kstring::KString>>(name: S) -> Self {
         Self {
             name: Some(name.into()),
             data: Object::new(),
@@ -56,7 +56,7 @@ impl<'g> Stack<'g> {
     }
 
     /// Creates a new variable scope chained to a parent scope.
-    pub(crate) fn push_named_frame<S: Into<sstring::SString>>(&mut self, name: S) {
+    pub(crate) fn push_named_frame<S: Into<kstring::KString>>(&mut self, name: S) {
         self.stack.push(Frame::with_name(name));
     }
 
@@ -75,7 +75,7 @@ impl<'g> Stack<'g> {
     }
 
     /// The name of the currently active template.
-    pub fn frame_name(&self) -> Option<sstring::SStringRef<'_>> {
+    pub fn frame_name(&self) -> Option<kstring::KStringRef<'_>> {
         self.stack
             .iter()
             .rev()
@@ -99,14 +99,14 @@ impl<'g> Stack<'g> {
                 .unwrap_or_else(|| Scalar::new("nil"));
             let globals = itertools::join(self.globals().iter(), ", ");
             Error::with_msg("Unknown variable")
-                .context("requested variable", key.to_sstr())
+                .context("requested variable", key.to_kstr())
                 .context("available variables", globals)
         })?;
 
         frame.get_variable(path)
     }
 
-    fn globals(&self) -> Vec<sstring::SStringRef<'_>> {
+    fn globals(&self) -> Vec<kstring::KStringRef<'_>> {
         let mut globals = self.globals.map(|g| g.roots()).unwrap_or_default();
         for frame in self.stack.iter() {
             globals.extend(frame.data.roots());
@@ -118,7 +118,7 @@ impl<'g> Stack<'g> {
 
     fn find_path_frame<'a>(&'a self, path: PathRef<'_, '_>) -> Option<&'a dyn ValueStore> {
         let key = path.iter().next()?;
-        let key = key.to_sstr();
+        let key = key.to_kstr();
         self.find_frame(key.as_str())
     }
 
@@ -143,7 +143,7 @@ impl<'g> Stack<'g> {
     /// Used by increment and decrement tags
     pub fn set_index<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         self.indexes.insert(name.into(), val)
     }
@@ -156,7 +156,7 @@ impl<'g> Stack<'g> {
     /// Sets a value in the global context.
     pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         let name = name.into();
         self.global_frame().insert(name, val)
@@ -172,7 +172,7 @@ impl<'g> Stack<'g> {
     /// this should never happen in a well-formed program.
     pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         self.current_frame().insert(name.into(), val)
     }

@@ -44,7 +44,7 @@ struct SizeFilter;
 impl Filter for SizeFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         match *input {
-            Value::Scalar(ref x) => Ok(Value::scalar(x.to_sstr().len() as i32)),
+            Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
             Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
             Value::Object(ref x) => Ok(Value::scalar(x.len() as i32)),
             _ => Ok(Value::scalar(0i32)),

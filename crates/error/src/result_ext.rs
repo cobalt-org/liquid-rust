@@ -10,13 +10,13 @@ use super::Result;
 pub trait ResultLiquidChainExt<T> {
     /// Create an `Error` with `E` as the cause.
     #[must_use]
-    fn chain<S: Into<sstring::SString>>(self, msg: S) -> Result<T>;
+    fn chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` with `E` as the cause.
     #[must_use]
     fn chain_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString;
+        F: FnOnce() -> kstring::KString;
 }
 
 /// `Result` extension methods for adapting third party errors to `Error`.
@@ -34,7 +34,7 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error: Result<i32> = error.lossy_chain("Missing liquid partial");
     /// ```
     #[must_use]
-    fn lossy_chain<S: Into<sstring::SString>>(self, msg: S) -> Result<T>;
+    fn lossy_chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` ignoring `E` as the cause.
     ///
@@ -53,7 +53,7 @@ pub trait ResultLiquidReplaceExt<T> {
     #[must_use]
     fn lossy_chain_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString;
+        F: FnOnce() -> kstring::KString;
 
     /// Create an `Error` ignoring `E` as the cause.
     ///
@@ -68,7 +68,7 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error: Result<i32> = error.replace("Missing liquid partial");
     /// ```
     #[must_use]
-    fn replace<S: Into<sstring::SString>>(self, msg: S) -> Result<T>;
+    fn replace<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` ignoring `E` as the cause.
     ///
@@ -87,20 +87,20 @@ pub trait ResultLiquidReplaceExt<T> {
     #[must_use]
     fn replace_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString;
+        F: FnOnce() -> kstring::KString;
 }
 
 impl<T, E> ResultLiquidChainExt<T> for result::Result<T, E>
 where
     E: ErrorClone,
 {
-    fn chain<S: Into<sstring::SString>>(self, msg: S) -> Result<T> {
+    fn chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T> {
         self.map_err(|err| Error::with_msg(msg).cause(err))
     }
 
     fn chain_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         self.map_err(|err| Error::with_msg(msg()).cause(err))
     }
@@ -110,24 +110,24 @@ impl<T, E> ResultLiquidReplaceExt<T> for result::Result<T, E>
 where
     E: error::Error + Send + Sync + 'static,
 {
-    fn lossy_chain<S: Into<sstring::SString>>(self, msg: S) -> Result<T> {
+    fn lossy_chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T> {
         self.map_err(|err| Error::with_msg(msg).cause(CloneableError::new(err)))
     }
 
     fn lossy_chain_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         self.map_err(|err| Error::with_msg(msg()).cause(CloneableError::new(err)))
     }
 
-    fn replace<S: Into<sstring::SString>>(self, msg: S) -> Result<T> {
+    fn replace<S: Into<kstring::KString>>(self, msg: S) -> Result<T> {
         self.map_err(|_| Error::with_msg(msg))
     }
 
     fn replace_with<F>(self, msg: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         self.map_err(|_| Error::with_msg(msg()))
     }
@@ -153,7 +153,7 @@ where
     #[must_use]
     fn trace<S>(self, trace: S) -> Result<T>
     where
-        S: Into<sstring::SString>;
+        S: Into<kstring::KString>;
 
     /// Add a new stack frame to the `liquid_error::Error`.
     ///
@@ -171,7 +171,7 @@ where
     #[must_use]
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString;
+        F: FnOnce() -> kstring::KString;
 
     /// Add state the current stack frame.
     ///
@@ -194,7 +194,7 @@ where
     #[must_use]
     fn context_key<S>(self, key: S) -> Key<T>
     where
-        S: Into<sstring::SString>;
+        S: Into<kstring::KString>;
 
     /// Add state the current stack frame.
     ///
@@ -217,34 +217,34 @@ where
     #[must_use]
     fn context_key_with<F>(self, key: F) -> FnKey<T, F>
     where
-        F: FnOnce() -> sstring::SString;
+        F: FnOnce() -> kstring::KString;
 }
 
 impl<T> ResultLiquidExt<T> for Result<T> {
     fn trace<S>(self, trace: S) -> Result<T>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         self.map_err(|err| err.trace(trace))
     }
 
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         self.map_err(|err| err.trace(trace()))
     }
 
     fn context_key<S>(self, key: S) -> Key<T>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         Key::new(self, key)
     }
 
     fn context_key_with<F>(self, key: F) -> FnKey<T, F>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         FnKey::new(self, key)
     }
@@ -254,7 +254,7 @@ impl<T> ResultLiquidExt<T> for Result<T> {
 #[allow(missing_debug_implementations)]
 pub struct Key<T> {
     builder: Result<T>,
-    key: sstring::SString,
+    key: kstring::KString,
 }
 
 impl<T> Key<T> {
@@ -262,7 +262,7 @@ impl<T> Key<T> {
     #[must_use]
     pub fn new<S>(builder: Result<T>, key: S) -> Self
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         Self {
             builder,
@@ -274,7 +274,7 @@ impl<T> Key<T> {
     #[must_use]
     pub fn value<S>(self, value: S) -> Result<T>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         let builder = self.builder;
         let key = self.key;
@@ -285,7 +285,7 @@ impl<T> Key<T> {
     #[must_use]
     pub fn value_with<F>(self, value: F) -> Result<T>
     where
-        F: FnOnce() -> sstring::SString,
+        F: FnOnce() -> kstring::KString,
     {
         let builder = self.builder;
         let key = self.key;
@@ -297,7 +297,7 @@ impl<T> Key<T> {
 #[allow(missing_debug_implementations)]
 pub struct FnKey<T, F>
 where
-    F: FnOnce() -> sstring::SString,
+    F: FnOnce() -> kstring::KString,
 {
     builder: Result<T>,
     key: F,
@@ -305,7 +305,7 @@ where
 
 impl<T, F> FnKey<T, F>
 where
-    F: FnOnce() -> sstring::SString,
+    F: FnOnce() -> kstring::KString,
 {
     /// Save off a key for a context that will be added to `builder`.
     #[must_use]
@@ -317,7 +317,7 @@ where
     #[must_use]
     pub fn value<S>(self, value: S) -> Result<T>
     where
-        S: Into<sstring::SString>,
+        S: Into<kstring::KString>,
     {
         let builder = self.builder;
         let key = self.key;
@@ -328,7 +328,7 @@ where
     #[must_use]
     pub fn value_with<V>(self, value: V) -> Result<T>
     where
-        V: FnOnce() -> sstring::SString,
+        V: FnOnce() -> kstring::KString,
     {
         let builder = self.builder;
         let key = self.key;

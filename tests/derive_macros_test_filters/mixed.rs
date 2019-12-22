@@ -61,7 +61,7 @@ impl Filter for TestMixedFilter {
         let d = args.d.to_string();
         let e = args.e.to_string();
         let f = args.f.map(|i| i.to_string()).unwrap_or("None".to_string());
-        let g = args.g.to_sstr();
+        let g = args.g.to_kstr();
 
         let result = format!(
             "<a: {}; b: {}; c: {}, d: {}, e: {}, f: {}, type: {}>",

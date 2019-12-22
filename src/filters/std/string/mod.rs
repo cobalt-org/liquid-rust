@@ -39,7 +39,7 @@ impl Filter for SplitFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let input = input.to_sstr();
+        let input = input.to_kstr();
 
         // Split and construct resulting Array
         Ok(Value::Array(

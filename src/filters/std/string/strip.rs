@@ -25,7 +25,7 @@ struct StripFilter;
 
 impl Filter for StripFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_sstr();
+        let input = input.to_kstr();
         Ok(Value::scalar(input.trim().to_owned()))
     }
 }
@@ -50,7 +50,7 @@ struct LstripFilter;
 
 impl Filter for LstripFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_sstr();
+        let input = input.to_kstr();
         Ok(Value::scalar(input.trim_start().to_owned()))
     }
 }
@@ -75,7 +75,7 @@ struct RstripFilter;
 
 impl Filter for RstripFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_sstr();
+        let input = input.to_kstr();
         Ok(Value::scalar(input.trim_end().to_owned()))
     }
 }
@@ -94,7 +94,7 @@ struct StripNewlinesFilter;
 
 impl Filter for StripNewlinesFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let input = input.to_sstr();
+        let input = input.to_kstr();
         Ok(Value::scalar(
             input
                 .chars()
