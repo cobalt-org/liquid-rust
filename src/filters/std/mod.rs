@@ -78,7 +78,7 @@ impl Filter for DefaultFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        if input.is_default() {
+        if input.query_state(liquid_value::State::DefaultValue) {
             Ok(args.default.clone())
         } else {
             Ok(input.clone())
