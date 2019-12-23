@@ -240,7 +240,7 @@ impl Filter for WhereFilter {
                     .filter(|object| {
                         object
                             .get(property)
-                            .map_or(false, |v| v.is_state(liquid_value::State::Truthy))
+                            .map_or(false, |v| v.query_state(liquid_value::State::Truthy))
                     })
                     .map(|object| Value::Object(object.clone()))
                     .collect(),

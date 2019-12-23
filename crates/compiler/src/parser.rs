@@ -95,8 +95,8 @@ fn parse_literal(literal: Pair) -> Value {
 
     match literal.as_rule() {
         Rule::NilLiteral => Value::Nil,
-        Rule::EmptyLiteral => Value::Empty,
-        Rule::BlankLiteral => Value::Blank,
+        Rule::EmptyLiteral => Value::State(liquid_value::State::Empty),
+        Rule::BlankLiteral => Value::State(liquid_value::State::Blank),
         Rule::StringLiteral => {
             let literal = literal.as_str();
             let trim_quotes = &literal[1..literal.len() - 1];
@@ -1053,13 +1053,19 @@ mod test {
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(blank), Value::Blank);
+        assert_eq!(
+            parse_literal(blank),
+            Value::State(liquid_value::State::Blank)
+        );
 
         let empty = LiquidParser::parse(Rule::Literal, "empty")
             .unwrap()
             .next()
             .unwrap();
-        assert_eq!(parse_literal(empty), Value::Empty);
+        assert_eq!(
+            parse_literal(empty),
+            Value::State(liquid_value::State::Empty)
+        );
 
         let integer = LiquidParser::parse(Rule::Literal, "42")
             .unwrap()

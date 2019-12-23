@@ -23,10 +23,8 @@ pub enum ValueCow<'v> {
     Object(Object),
     /// Nothing.
     Nil,
-    /// No content.
-    Empty,
-    /// Evaluates to empty string.
-    Blank,
+    /// Query symbol.
+    State(State),
 }
 
 /// Type representing a Liquid array, payload of the `Value::Array` variant
@@ -62,7 +60,8 @@ impl<'v> ValueCow<'v> {
         match self {
             ValueCow::Scalar(x) => x.to_kstr(),
             ValueCow::Array(_) | ValueCow::Object(_) => self.render().to_string().into(),
-            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => KStringCow::default(),
+            ValueCow::State(x) => x.to_kstr(),
+            ValueCow::Nil => KStringCow::default(),
         }
     }
 
@@ -137,9 +136,30 @@ impl<'v> ValueCow<'v> {
         }
     }
 
+    /// Extracts the state if it is one
+    pub fn as_state(&self) -> Option<State> {
+        match self {
+            ValueCow::State(s) => Some(*s),
+            _ => None,
+        }
+    }
+
+    /// Extracts the state if it is one
+    pub fn into_state(self) -> Option<State> {
+        match self {
+            ValueCow::State(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Tests whether this value is state
+    pub fn is_state(&self) -> bool {
+        self.as_state().is_some()
+    }
+
     /// Query the value's state
     #[inline]
-    pub fn is_state(&self, state: State) -> bool {
+    pub fn query_state(&self, state: State) -> bool {
         match state {
             State::Truthy => self.is_truthy(),
             State::DefaultValue => self.is_default(),
@@ -149,46 +169,39 @@ impl<'v> ValueCow<'v> {
     }
 
     fn is_truthy(&self) -> bool {
-        // encode Ruby truthiness: all values except false and nil are true
         match self {
-            ValueCow::Scalar(ref x) => x.is_state(State::Truthy),
-            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => false,
+            ValueCow::Scalar(ref x) => x.query_state(State::Truthy),
+            ValueCow::Nil => false,
+            ValueCow::State(s) => s.query_state(State::Truthy),
             ValueCow::Array(_) | ValueCow::Object(_) => true,
         }
     }
 
     fn is_default(&self) -> bool {
         match self {
-            ValueCow::Scalar(ref x) => x.is_state(State::DefaultValue),
+            ValueCow::Scalar(ref x) => x.query_state(State::DefaultValue),
             ValueCow::Nil => true,
-            ValueCow::Empty => true,
-            ValueCow::Blank => true,
+            ValueCow::State(s) => s.query_state(State::DefaultValue),
             ValueCow::Array(ref x) => x.is_empty(),
             ValueCow::Object(ref x) => x.is_empty(),
         }
     }
 
     fn is_empty(&self) -> bool {
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         match self {
-            ValueCow::Scalar(ref x) => x.is_state(State::Empty),
+            ValueCow::Scalar(ref x) => x.query_state(State::Empty),
             ValueCow::Nil => true,
-            ValueCow::Empty => true,
-            ValueCow::Blank => true,
+            ValueCow::State(s) => s.query_state(State::Empty),
             ValueCow::Array(ref x) => x.is_empty(),
             ValueCow::Object(ref x) => x.is_empty(),
         }
     }
 
     fn is_blank(&self) -> bool {
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         match self {
-            ValueCow::Scalar(ref x) => x.is_state(State::Blank),
+            ValueCow::Scalar(ref x) => x.query_state(State::Blank),
             ValueCow::Nil => true,
-            ValueCow::Empty => true,
-            ValueCow::Blank => true,
+            ValueCow::State(s) => s.query_state(State::Blank),
             ValueCow::Array(ref x) => x.is_empty(),
             ValueCow::Object(ref x) => x.is_empty(),
         }
@@ -199,8 +212,7 @@ impl<'v> ValueCow<'v> {
         match self {
             ValueCow::Scalar(ref x) => x.type_name(),
             ValueCow::Nil => "nil",
-            ValueCow::Empty => "empty",
-            ValueCow::Blank => "blank",
+            ValueCow::State(s) => s.type_name(),
             ValueCow::Array(_) => "array",
             ValueCow::Object(_) => "object",
         }
@@ -407,8 +419,7 @@ impl<'s> fmt::Display for ValueSource<'s> {
                 write!(f, "}}")?;
             }
             ValueCow::Nil => write!(f, "nil")?,
-            ValueCow::Empty => write!(f, "empty")?,
-            ValueCow::Blank => write!(f, "blank")?,
+            ValueCow::State(x) => write!(f, "{}", x.source())?,
         }
         Ok(())
     }
@@ -433,7 +444,8 @@ impl<'s> fmt::Display for ValueRendered<'s> {
                     write!(f, "{}{}", k, v.render())?;
                 }
             }
-            ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => (),
+            ValueCow::Nil => (),
+            ValueCow::State(x) => write!(f, "{}", x.render())?,
         }
         Ok(())
     }
@@ -445,19 +457,8 @@ fn value_eq<'v>(lhs: &'v ValueCow<'v>, rhs: &'v ValueCow<'v>) -> bool {
         (&ValueCow::Array(ref x), &ValueCow::Array(ref y)) => x == y,
         (&ValueCow::Object(ref x), &ValueCow::Object(ref y)) => x == y,
 
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
-        (&ValueCow::Nil, &ValueCow::Nil)
-        | (&ValueCow::Empty, &ValueCow::Empty)
-        | (&ValueCow::Blank, &ValueCow::Blank)
-        | (&ValueCow::Empty, &ValueCow::Blank)
-        | (&ValueCow::Blank, &ValueCow::Empty)
-        | (&ValueCow::Nil, &ValueCow::Blank)
-        | (&ValueCow::Blank, &ValueCow::Nil) => true,
-
-        (&ValueCow::Empty, s) | (s, &ValueCow::Empty) => s.is_empty(),
-
-        (&ValueCow::Blank, s) | (s, &ValueCow::Blank) => s.is_blank(),
+        (&ValueCow::Nil, &ValueCow::Nil) => true,
+        (&ValueCow::State(s), v) | (v, &ValueCow::State(s)) => v.query_state(s),
 
         // encode Ruby truthiness: all values except false and nil are true
         (&ValueCow::Nil, &ValueCow::Scalar(ref b)) | (&ValueCow::Scalar(ref b), &ValueCow::Nil) => {
@@ -597,32 +598,36 @@ mod test {
 
     #[test]
     fn empty_equality() {
+        let blank = ValueCow::State(State::Blank);
+        let empty = ValueCow::State(State::Empty);
         // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
-        assert_eq!(ValueCow::Empty, ValueCow::Empty);
-        assert_eq!(ValueCow::Empty, ValueCow::Blank);
-        assert_eq!(ValueCow::Empty, liquid_value!(""));
-        assert_ne!(ValueCow::Empty, liquid_value!(" "));
-        assert_eq!(ValueCow::Empty, liquid_value!([]));
-        assert_ne!(ValueCow::Empty, liquid_value!([nil]));
-        assert_eq!(ValueCow::Empty, liquid_value!({}));
-        assert_ne!(ValueCow::Empty, liquid_value!({ "a": nil }));
+        assert_eq!(empty, empty);
+        assert_eq!(empty, blank);
+        assert_eq!(empty, liquid_value!(""));
+        assert_ne!(empty, liquid_value!(" "));
+        assert_eq!(empty, liquid_value!([]));
+        assert_ne!(empty, liquid_value!([nil]));
+        assert_eq!(empty, liquid_value!({}));
+        assert_ne!(empty, liquid_value!({ "a": nil }));
     }
 
     #[test]
     fn blank_equality() {
+        let blank = ValueCow::State(State::Blank);
+        let empty = ValueCow::State(State::Empty);
         // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
-        assert_eq!(ValueCow::Blank, ValueCow::Blank);
-        assert_eq!(ValueCow::Blank, ValueCow::Empty);
-        assert_eq!(ValueCow::Blank, liquid_value!(nil));
-        assert_eq!(ValueCow::Blank, liquid_value!(false));
-        assert_ne!(ValueCow::Blank, liquid_value!(true));
-        assert_ne!(ValueCow::Blank, liquid_value!(0));
-        assert_ne!(ValueCow::Blank, liquid_value!(1));
-        assert_eq!(ValueCow::Blank, liquid_value!(""));
-        assert_eq!(ValueCow::Blank, liquid_value!(" "));
-        assert_eq!(ValueCow::Blank, liquid_value!([]));
-        assert_ne!(ValueCow::Blank, liquid_value!([nil]));
-        assert_eq!(ValueCow::Blank, liquid_value!({}));
-        assert_ne!(ValueCow::Blank, liquid_value!({ "a": nil }));
+        assert_eq!(blank, blank);
+        assert_eq!(blank, empty);
+        assert_eq!(blank, liquid_value!(nil));
+        assert_eq!(blank, liquid_value!(false));
+        assert_ne!(blank, liquid_value!(true));
+        assert_ne!(blank, liquid_value!(0));
+        assert_ne!(blank, liquid_value!(1));
+        assert_eq!(blank, liquid_value!(""));
+        assert_eq!(blank, liquid_value!(" "));
+        assert_eq!(blank, liquid_value!([]));
+        assert_ne!(blank, liquid_value!([nil]));
+        assert_eq!(blank, liquid_value!({}));
+        assert_ne!(blank, liquid_value!({ "a": nil }));
     }
 }

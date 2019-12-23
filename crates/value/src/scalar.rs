@@ -136,7 +136,7 @@ impl<'s> ScalarCow<'s> {
 
     /// Query the value's state
     #[inline]
-    pub fn is_state(&self, state: State) -> bool {
+    pub fn query_state(&self, state: State) -> bool {
         match state {
             State::Truthy => self.is_truthy(),
             State::DefaultValue => self.is_default(),

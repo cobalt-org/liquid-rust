@@ -97,7 +97,7 @@ struct ExistenceCondition {
 impl ExistenceCondition {
     pub fn evaluate(&self, context: &Context) -> Result<bool> {
         let a = self.lh.try_evaluate(context).cloned().unwrap_or_default();
-        Ok(a.is_state(liquid_value::State::Truthy))
+        Ok(a.query_state(liquid_value::State::Truthy))
     }
 }
 
