@@ -237,7 +237,11 @@ impl Filter for WhereFilter {
             let array: Vec<_> = match target_value {
                 None => input
                     .filter_map(Value::as_object)
-                    .filter(|object| object.get(property).map_or(false, Value::is_truthy))
+                    .filter(|object| {
+                        object
+                            .get(property)
+                            .map_or(false, |v| v.is_state(liquid_value::State::Truthy))
+                    })
                     .map(|object| Value::Object(object.clone()))
                     .collect(),
                 Some(target_value) => input

@@ -6,6 +6,7 @@ use kstring::KStringCow;
 use crate::map;
 use crate::Scalar;
 use crate::ScalarCow;
+use crate::State;
 
 /// An enum to represent different value types
 pub type Value = ValueCow<'static>;
@@ -136,20 +137,29 @@ impl<'v> ValueCow<'v> {
         }
     }
 
-    /// Evaluate using Liquid "truthiness"
-    pub fn is_truthy(&self) -> bool {
+    /// Query the value's state
+    #[inline]
+    pub fn is_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => self.is_truthy(),
+            State::DefaultValue => self.is_default(),
+            State::Empty => self.is_empty(),
+            State::Blank => self.is_blank(),
+        }
+    }
+
+    fn is_truthy(&self) -> bool {
         // encode Ruby truthiness: all values except false and nil are true
         match self {
-            ValueCow::Scalar(ref x) => x.is_truthy(),
+            ValueCow::Scalar(ref x) => x.is_state(State::Truthy),
             ValueCow::Nil | ValueCow::Empty | ValueCow::Blank => false,
             ValueCow::Array(_) | ValueCow::Object(_) => true,
         }
     }
 
-    /// Whether a default constructed value.
-    pub fn is_default(&self) -> bool {
+    fn is_default(&self) -> bool {
         match self {
-            ValueCow::Scalar(ref x) => x.is_default(),
+            ValueCow::Scalar(ref x) => x.is_state(State::DefaultValue),
             ValueCow::Nil => true,
             ValueCow::Empty => true,
             ValueCow::Blank => true,
@@ -158,12 +168,11 @@ impl<'v> ValueCow<'v> {
         }
     }
 
-    /// Tests whether this value is empty
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         // encode a best-guess of empty rules
         // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         match self {
-            ValueCow::Scalar(ref x) => x.is_empty(),
+            ValueCow::Scalar(ref x) => x.is_state(State::Empty),
             ValueCow::Nil => true,
             ValueCow::Empty => true,
             ValueCow::Blank => true,
@@ -172,12 +181,11 @@ impl<'v> ValueCow<'v> {
         }
     }
 
-    /// Tests whether this value is blank
-    pub fn is_blank(&self) -> bool {
+    fn is_blank(&self) -> bool {
         // encode a best-guess of empty rules
         // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         match self {
-            ValueCow::Scalar(ref x) => x.is_blank(),
+            ValueCow::Scalar(ref x) => x.is_state(State::Blank),
             ValueCow::Nil => true,
             ValueCow::Empty => true,
             ValueCow::Blank => true,

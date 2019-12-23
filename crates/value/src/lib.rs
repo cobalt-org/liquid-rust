@@ -14,6 +14,7 @@ mod date;
 mod path;
 mod scalar;
 mod ser;
+mod state;
 mod values;
 
 pub mod map;
@@ -32,4 +33,5 @@ pub use crate::date::*;
 pub use crate::path::*;
 pub use crate::scalar::*;
 pub use crate::ser::*;
+pub use crate::state::*;
 pub use crate::values::*;
