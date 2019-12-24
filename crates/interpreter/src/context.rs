@@ -3,11 +3,11 @@ use std::sync;
 use anymap;
 use liquid_error::Error;
 use liquid_error::Result;
+use liquid_value::ObjectView;
 
 use super::PartialStore;
 use super::Renderable;
 use super::Stack;
-use super::ValueStore;
 
 /// Block processing interrupt state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,7 +70,7 @@ impl PartialStore for NullPartials {
 
 /// Create processing context for a template.
 pub struct ContextBuilder<'g> {
-    globals: Option<&'g dyn ValueStore>,
+    globals: Option<&'g dyn ObjectView>,
     partials: Option<&'g dyn PartialStore>,
 }
 
@@ -84,7 +84,7 @@ impl<'g> ContextBuilder<'g> {
     }
 
     /// Initialize the stack with the given globals.
-    pub fn set_globals(mut self, values: &'g dyn ValueStore) -> Self {
+    pub fn set_globals(mut self, values: &'g dyn ObjectView) -> Self {
         self.globals = Some(values);
         self
     }
@@ -220,6 +220,7 @@ mod test {
 
     use liquid_value::Scalar;
     use liquid_value::Value;
+    use liquid_value::ValueViewCmp;
 
     #[test]
     fn scoped_variables() {
@@ -228,20 +229,23 @@ mod test {
 
         let mut ctx = Context::new();
         ctx.stack_mut().set_global("test", Value::scalar(42f64));
-        assert_eq!(ctx.stack().get(&test_path).unwrap(), &Value::scalar(42f64));
+        assert_eq!(
+            &ValueViewCmp::new(ctx.stack().get(&test_path).unwrap()),
+            &ValueViewCmp::new(&42f64)
+        );
 
         ctx.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(
-                new_scope.stack().get(&test_path).unwrap(),
-                &Value::scalar(42f64)
+                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &ValueViewCmp::new(&42f64)
             );
 
             // set a new local value, and assert that it overrides the previous value
             new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
-                new_scope.stack().get(&test_path).unwrap(),
-                &Value::scalar(3.14f64)
+                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &ValueViewCmp::new(&3.14f64)
             );
 
             // sat a new val that we will pick up outside the scope
@@ -251,10 +255,13 @@ mod test {
         });
 
         // assert that the value has reverted to the old one
-        assert_eq!(ctx.stack().get(&test_path).unwrap(), &Value::scalar(42f64));
         assert_eq!(
-            ctx.stack().get(&global_path).unwrap(),
-            &Value::scalar("some value")
+            &ValueViewCmp::new(ctx.stack().get(&test_path).unwrap()),
+            &ValueViewCmp::new(&42f64)
+        );
+        assert_eq!(
+            &ValueViewCmp::new(ctx.stack().get(&global_path).unwrap()),
+            &ValueViewCmp::new(&"some value")
         );
     }
 }

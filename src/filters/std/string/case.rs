@@ -2,7 +2,7 @@ use liquid_compiler::Filter;
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(

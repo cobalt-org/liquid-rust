@@ -116,41 +116,37 @@ impl chrono::Datelike for DateTime {
 
     #[inline]
     fn with_year(&self, year: i32) -> Option<Self> {
-        self.inner.with_year(year).map(|d| Self::with_chrono(d))
+        self.inner.with_year(year).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_month(&self, month: u32) -> Option<Self> {
-        self.inner.with_month(month).map(|d| Self::with_chrono(d))
+        self.inner.with_month(month).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<Self> {
-        self.inner.with_month0(month0).map(|d| Self::with_chrono(d))
+        self.inner.with_month0(month0).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_day(&self, day: u32) -> Option<Self> {
-        self.inner.with_day(day).map(|d| Self::with_chrono(d))
+        self.inner.with_day(day).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<Self> {
-        self.inner.with_day(day0).map(|d| Self::with_chrono(d))
+        self.inner.with_day(day0).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
-        self.inner
-            .with_ordinal(ordinal)
-            .map(|d| Self::with_chrono(d))
+        self.inner.with_ordinal(ordinal).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
-        self.inner
-            .with_ordinal0(ordinal0)
-            .map(|d| Self::with_chrono(d))
+        self.inner.with_ordinal0(ordinal0).map(Self::with_chrono)
     }
 }
 
@@ -174,24 +170,22 @@ impl chrono::Timelike for DateTime {
 
     #[inline]
     fn with_hour(&self, hour: u32) -> Option<Self> {
-        self.inner.with_hour(hour).map(|d| Self::with_chrono(d))
+        self.inner.with_hour(hour).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_minute(&self, min: u32) -> Option<Self> {
-        self.inner.with_minute(min).map(|d| Self::with_chrono(d))
+        self.inner.with_minute(min).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_second(&self, sec: u32) -> Option<Self> {
-        self.inner.with_second(sec).map(|d| Self::with_chrono(d))
+        self.inner.with_second(sec).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<Self> {
-        self.inner
-            .with_nanosecond(nano)
-            .map(|d| Self::with_chrono(d))
+        self.inner.with_nanosecond(nano).map(Self::with_chrono)
     }
 }
 
@@ -313,41 +307,37 @@ impl chrono::Datelike for Date {
 
     #[inline]
     fn with_year(&self, year: i32) -> Option<Self> {
-        self.inner.with_year(year).map(|d| Self::with_chrono(d))
+        self.inner.with_year(year).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_month(&self, month: u32) -> Option<Self> {
-        self.inner.with_month(month).map(|d| Self::with_chrono(d))
+        self.inner.with_month(month).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<Self> {
-        self.inner.with_month0(month0).map(|d| Self::with_chrono(d))
+        self.inner.with_month0(month0).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_day(&self, day: u32) -> Option<Self> {
-        self.inner.with_day(day).map(|d| Self::with_chrono(d))
+        self.inner.with_day(day).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<Self> {
-        self.inner.with_day(day0).map(|d| Self::with_chrono(d))
+        self.inner.with_day(day0).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
-        self.inner
-            .with_ordinal(ordinal)
-            .map(|d| Self::with_chrono(d))
+        self.inner.with_ordinal(ordinal).map(Self::with_chrono)
     }
 
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
-        self.inner
-            .with_ordinal0(ordinal0)
-            .map(|d| Self::with_chrono(d))
+        self.inner.with_ordinal0(ordinal0).map(Self::with_chrono)
     }
 }
 

@@ -1,8 +1,6 @@
 use itertools;
 use liquid_error::{Error, Result};
-use liquid_value::{Object, PathRef, Scalar, Value};
-
-use super::ValueStore;
+use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueView};
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
@@ -26,7 +24,7 @@ impl Frame {
 /// Stack of variables.
 #[derive(Debug, Clone)]
 pub struct Stack<'g> {
-    globals: Option<&'g dyn ValueStore>,
+    globals: Option<&'g dyn ObjectView>,
     stack: Vec<Frame>,
     // State of variables created through increment or decrement tags.
     indexes: Object,
@@ -43,8 +41,8 @@ impl<'g> Stack<'g> {
         }
     }
 
-    /// Create a stack initialized with read-only `ValueStore`.
-    pub fn with_globals(globals: &'g dyn ValueStore) -> Self {
+    /// Create a stack initialized with read-only `ObjectView`.
+    pub fn with_globals(globals: &'g dyn ObjectView) -> Self {
         let mut stack = Self::empty();
         stack.globals = Some(globals);
         stack
@@ -83,57 +81,60 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<&Value> {
+    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<&dyn ValueView> {
         let frame = self.find_path_frame(path)?;
 
-        frame.try_get_variable(path)
+        frame.try_find(path)
     }
 
     /// Recursively index into the stack.
-    pub fn get(&self, path: PathRef<'_, '_>) -> Result<&Value> {
+    pub fn get(&self, path: PathRef<'_, '_>) -> Result<&dyn ValueView> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path
                 .iter()
                 .next()
                 .cloned()
                 .unwrap_or_else(|| Scalar::new("nil"));
-            let globals = itertools::join(self.globals().iter(), ", ");
+            let globals = itertools::join(self.roots().iter(), ", ");
             Error::with_msg("Unknown variable")
                 .context("requested variable", key.to_kstr())
                 .context("available variables", globals)
         })?;
 
-        frame.get_variable(path)
+        frame.find(path)
     }
 
-    fn globals(&self) -> Vec<kstring::KStringRef<'_>> {
-        let mut globals = self.globals.map(|g| g.roots()).unwrap_or_default();
-        for frame in self.stack.iter() {
-            globals.extend(frame.data.roots());
+    fn roots(&self) -> Vec<kstring::KStringCow<'_>> {
+        let mut roots = Vec::new();
+        if let Some(globals) = self.globals {
+            roots.extend(globals.keys().map(|k| kstring::KStringCow::from(k)));
         }
-        globals.sort();
-        globals.dedup();
-        globals
+        for frame in self.stack.iter() {
+            roots.extend(frame.data.keys().map(|k| kstring::KStringCow::from(k)));
+        }
+        roots.sort();
+        roots.dedup();
+        roots
     }
 
-    fn find_path_frame<'a>(&'a self, path: PathRef<'_, '_>) -> Option<&'a dyn ValueStore> {
+    fn find_path_frame<'a>(&'a self, path: PathRef<'_, '_>) -> Option<&'a dyn ObjectView> {
         let key = path.iter().next()?;
         let key = key.to_kstr();
         self.find_frame(key.as_str())
     }
 
-    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a dyn ValueStore> {
+    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a dyn ObjectView> {
         for frame in self.stack.iter().rev() {
-            if frame.data.contains_root(name) {
+            if frame.data.contains_key(name) {
                 return Some(&frame.data);
             }
         }
 
-        if self.globals.map(|g| g.contains_root(name)).unwrap_or(false) {
+        if self.globals.map(|g| g.contains_key(name)).unwrap_or(false) {
             return self.globals;
         }
 
-        if self.indexes.contains_root(name) {
+        if self.indexes.contains_key(name) {
             return Some(&self.indexes);
         }
 
@@ -202,6 +203,8 @@ impl<'g> Default for Stack<'g> {
 mod test {
     use super::*;
 
+    use liquid_value::ValueViewCmp;
+
     #[test]
     fn stack_find_frame() {
         let mut stack = Stack::empty();
@@ -225,6 +228,9 @@ mod test {
         post.insert("number".into(), Value::scalar(42f64));
         stack.set_global("post", Value::Object(post));
         let indexes = [Scalar::new("post"), Scalar::new("number")];
-        assert_eq!(stack.get(&indexes).unwrap(), &Value::scalar(42f64));
+        assert_eq!(
+            &ValueViewCmp::new(stack.get(&indexes).unwrap()),
+            &ValueViewCmp::new(&42f64)
+        );
     }
 }

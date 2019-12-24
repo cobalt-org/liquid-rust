@@ -3,7 +3,8 @@ use std::slice;
 
 use itertools;
 
-use super::ScalarCow;
+use crate::ScalarCow;
+use crate::ValueView;
 
 /// Path to a value in an `Object`.
 ///
@@ -75,7 +76,7 @@ impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
 
 impl<'s> fmt::Display for Path<'s> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let data = itertools::join(self.iter().map(ScalarCow::render), ".");
+        let data = itertools::join(self.iter().map(ValueView::render), ".");
         write!(f, "{}", data)
     }
 }

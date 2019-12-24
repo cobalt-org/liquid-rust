@@ -99,6 +99,7 @@ mod test {
     use compiler;
     use interpreter;
     use value::Scalar;
+    use value::ValueViewCmp;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -126,8 +127,8 @@ mod test {
 
         let output = template.render(&mut ctx).unwrap();
         assert_eq!(
-            ctx.stack().get(&[Scalar::new("attribute_name")]).unwrap(),
-            &Value::scalar("potato-42-color")
+            ValueViewCmp::new(ctx.stack().get(&[Scalar::new("attribute_name")]).unwrap()),
+            "potato-42-color"
         );
         assert_eq!(output, "");
     }

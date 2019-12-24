@@ -4,7 +4,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
@@ -407,7 +407,7 @@ impl Filter for RoundFilter {
 
         let input = input
             .as_scalar()
-            .and_then(Scalar::to_float)
+            .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
 
         if n == 0 {
@@ -440,7 +440,7 @@ impl Filter for CeilFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let n = input
             .as_scalar()
-            .and_then(Scalar::to_float)
+            .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
         Ok(Value::scalar(n.ceil() as i32))
     }
@@ -462,7 +462,7 @@ impl Filter for FloorFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let n = input
             .as_scalar()
-            .and_then(Scalar::to_float)
+            .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
         Ok(Value::scalar(n.floor() as i32))
     }

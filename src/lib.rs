@@ -71,11 +71,11 @@ pub mod filters;
 pub mod partials;
 pub mod tags;
 
-pub use interpreter::ValueStore;
 pub use liquid_error::Error;
 pub use parser::*;
 pub use reflection::*;
 pub use template::*;
+pub use value::ObjectView;
 
 #[macro_use]
 extern crate doc_comment;

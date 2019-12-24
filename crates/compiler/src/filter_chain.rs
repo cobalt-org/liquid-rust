@@ -8,7 +8,7 @@ use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 
 /// A `Value` expression.
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl FilterChain {
     /// Process `Value` expression within `context`'s stack.
     pub fn evaluate(&self, context: &Context) -> Result<Value> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(context)?.to_owned();
+        let mut entry = self.entry.evaluate(context)?.to_value();
 
         // apply all specified filters
         for filter in &self.filters {

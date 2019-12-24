@@ -94,6 +94,7 @@ mod test {
     use tags;
     use value::Scalar;
     use value::Value;
+    use value::ValueViewCmp;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -200,8 +201,8 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get(&[Scalar::new("freestyle")]).unwrap(),
-                &Value::scalar(false)
+                ValueViewCmp::new(context.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                false
             );
             assert_eq!(output, "");
         }
@@ -221,8 +222,8 @@ mod test {
 
             let output = template.render(&mut context).unwrap();
             assert_eq!(
-                context.stack().get(&[Scalar::new("freestyle")]).unwrap(),
-                &Value::scalar(true)
+                ValueViewCmp::new(context.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                true
             );
             assert_eq!(output, "<p>Freestyle!</p>");
         }

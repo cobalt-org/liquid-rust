@@ -3,7 +3,7 @@ use std::io::Write;
 
 use itertools;
 use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_value::{Object, Scalar, Value};
+use liquid_value::{Object, Value};
 
 use compiler::BlockElement;
 use compiler::BlockReflection;
@@ -89,7 +89,7 @@ fn evaluate_attr(attr: &Option<Expression>, context: &mut Context) -> Result<Opt
             let value = attr.evaluate(context)?;
             let value = value
                 .as_scalar()
-                .and_then(Scalar::to_integer)
+                .and_then(|s| s.to_integer())
                 .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
                 as usize;
             Ok(Some(value))
@@ -123,17 +123,22 @@ impl For {
 
 fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
-    match array {
-        Value::State(_) => Ok(vec![]),
-        Value::Array(x) => Ok(x.to_owned()),
-        Value::Object(x) => {
-            let x = x
-                .iter()
-                .map(|(k, v)| Value::Array(vec![Value::scalar(k.clone()), v.to_owned()]))
-                .collect();
-            Ok(x)
-        }
-        x => Err(unexpected_value_error("array", Some(x.type_name()))),
+    if let Some(x) = array.as_array() {
+        Ok(x.values().map(|v| v.to_value()).collect())
+    } else if let Some(x) = array.as_object() {
+        let x = x
+            .iter()
+            .map(|(k, v)| {
+                let k = k.into_owned();
+                let arr = vec![Value::scalar(k), v.to_value()];
+                Value::Array(arr)
+            })
+            .collect();
+        Ok(x)
+    } else if array.is_state() {
+        Ok(vec![])
+    } else {
+        Err(unexpected_value_error("array", Some(array.type_name())))
     }
 }
 
@@ -142,7 +147,7 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
 
     let value = value
         .as_scalar()
-        .and_then(Scalar::to_integer)
+        .and_then(|v| v.to_integer())
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
         .context_key_with(|| arg_name.to_owned().into())
         .value_with(|| value.to_kstr().into_owned())?;
@@ -565,6 +570,7 @@ mod test {
     use derive::*;
     use interpreter;
     use interpreter::ContextBuilder;
+    use liquid::value::ValueView;
     use tags;
 
     use super::*;

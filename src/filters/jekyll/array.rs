@@ -1,11 +1,13 @@
-use filters::invalid_input;
+use std::fmt::Write;
+
 use liquid_compiler::{Filter, FilterParameters};
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::Value;
-use std::fmt::Write;
+use liquid_value::{Value, ValueView};
+
+use filters::invalid_input;
 
 #[derive(Debug, FilterParameters)]
 struct PushArgs {
@@ -33,14 +35,14 @@ impl Filter for PushFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let element = args.element.clone();
+        let element = args.element.to_value();
         let mut array = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?
-            .clone();
+            .to_value()
+            .into_array()
+            .ok_or_else(|| invalid_input("Array expected"))?;
         array.push(element);
 
-        Ok(Value::array(array))
+        Ok(Value::Array(array))
     }
 }
 
@@ -59,12 +61,12 @@ struct PopFilter;
 impl Filter for PopFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let mut array = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?
-            .clone();
+            .to_value()
+            .into_array()
+            .ok_or_else(|| invalid_input("Array expected"))?;
         array.pop();
 
-        Ok(Value::array(array))
+        Ok(Value::Array(array))
     }
 }
 
@@ -94,14 +96,14 @@ impl Filter for UnshiftFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let element = args.element.clone();
+        let element = args.element.to_value();
         let mut array = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?
-            .clone();
+            .to_value()
+            .into_array()
+            .ok_or_else(|| invalid_input("Array expected"))?;
         array.insert(0, element);
 
-        Ok(Value::array(array))
+        Ok(Value::Array(array))
     }
 }
 
@@ -120,15 +122,15 @@ struct ShiftFilter;
 impl Filter for ShiftFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
         let mut array = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?
-            .clone();
+            .to_value()
+            .into_array()
+            .ok_or_else(|| invalid_input("Array expected"))?;
 
         if !array.is_empty() {
             array.remove(0);
         }
 
-        Ok(Value::array(array))
+        Ok(Value::Array(array))
     }
 }
 
@@ -166,23 +168,22 @@ impl Filter for ArrayToSentenceStringFilter {
         let mut array = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?
-            .iter();
+            .values();
 
         let mut sentence = array
             .next()
             .map(|v| v.to_kstr().into_string())
             .unwrap_or_else(|| "".to_string());
 
-        let last = array.next_back();
-
-        for value in array {
-            write!(sentence, ", {}", value.render())
-                .expect("It should be safe to write to a string.");
-        }
-
-        if let Some(last) = last {
-            write!(sentence, ", {} {}", connector, last.render())
-                .expect("It should be safe to write to a string.");
+        let mut iter = array.peekable();
+        while let Some(value) = iter.next() {
+            if iter.peek().is_some() {
+                write!(sentence, ", {}", value.render())
+                    .expect("It should be safe to write to a string.");
+            } else {
+                write!(sentence, ", {} {}", connector, value.render())
+                    .expect("It should be safe to write to a string.");
+            }
         }
 
         Ok(Value::scalar(sentence))

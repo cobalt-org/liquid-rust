@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 
 use liquid_error::{Error, Result, ResultLiquidExt};
-use liquid_value::Value;
+use liquid_value::{Value, ValueView, ValueViewCmp};
 
 use compiler::BlockElement;
 use compiler::BlockReflection;
@@ -67,16 +67,18 @@ struct BinaryCondition {
 impl BinaryCondition {
     pub fn evaluate(&self, context: &Context) -> Result<bool> {
         let a = self.lh.evaluate(context)?;
+        let ca = ValueViewCmp::new(a);
         let b = self.rh.evaluate(context)?;
+        let cb = ValueViewCmp::new(b);
 
         let result = match self.comparison {
-            ComparisonOperator::Equals => a == b,
-            ComparisonOperator::NotEquals => a != b,
-            ComparisonOperator::LessThan => a < b,
-            ComparisonOperator::GreaterThan => a > b,
-            ComparisonOperator::LessThanEquals => a <= b,
-            ComparisonOperator::GreaterThanEquals => a >= b,
-            ComparisonOperator::Contains => contains_check(&a, &b)?,
+            ComparisonOperator::Equals => ca == cb,
+            ComparisonOperator::NotEquals => ca != cb,
+            ComparisonOperator::LessThan => ca < cb,
+            ComparisonOperator::GreaterThan => ca > cb,
+            ComparisonOperator::LessThanEquals => ca <= cb,
+            ComparisonOperator::GreaterThanEquals => ca >= cb,
+            ComparisonOperator::Contains => contains_check(a, b)?,
         };
 
         Ok(result)
@@ -94,9 +96,11 @@ struct ExistenceCondition {
     lh: Expression,
 }
 
+static NIL: Value = Value::Nil;
+
 impl ExistenceCondition {
     pub fn evaluate(&self, context: &Context) -> Result<bool> {
-        let a = self.lh.try_evaluate(context).cloned().unwrap_or_default();
+        let a = self.lh.try_evaluate(context).unwrap_or(&NIL);
         Ok(a.query_state(liquid_value::State::Truthy))
     }
 }
@@ -150,29 +154,28 @@ struct Conditional {
     if_false: Option<Template>,
 }
 
-fn contains_check(a: &Value, b: &Value) -> Result<bool> {
-    match *a {
-        Value::Scalar(ref val) => {
-            let b = b.to_kstr();
-            Ok(val.to_kstr().contains(b.as_str()))
-        }
-        Value::Object(_) => {
-            let b = b.as_scalar();
-            let check = b.map(|b| a.contains_key(b)).unwrap_or(false);
-            Ok(check)
-        }
-        Value::Array(ref arr) => {
-            for elem in arr {
-                if elem == b {
-                    return Ok(true);
-                }
+fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
+    if let Some(a) = a.as_scalar() {
+        let b = b.to_kstr();
+        Ok(a.to_kstr().contains(b.as_str()))
+    } else if let Some(a) = a.as_object() {
+        let b = b.as_scalar();
+        let check = b
+            .map(|b| a.contains_key(b.to_kstr().as_str()))
+            .unwrap_or(false);
+        Ok(check)
+    } else if let Some(a) = a.as_array() {
+        for elem in a.values() {
+            if ValueViewCmp::new(elem) == ValueViewCmp::new(b) {
+                return Ok(true);
             }
-            Ok(false)
         }
-        _ => Err(unexpected_value_error(
+        Ok(false)
+    } else {
+        Err(unexpected_value_error(
             "string | array | object",
             Some(a.type_name()),
-        )),
+        ))
     }
 }
 

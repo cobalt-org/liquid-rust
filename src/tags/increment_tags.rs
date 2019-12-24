@@ -8,7 +8,7 @@ use compiler::TagReflection;
 use compiler::TagTokenIter;
 use interpreter::Context;
 use interpreter::Renderable;
-use value::Value;
+use value::{Value, ValueView};
 
 #[derive(Clone, Debug)]
 struct Increment {

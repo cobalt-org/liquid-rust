@@ -1,4 +1,4 @@
-use liquid;
+use liquid::value::ValueView;
 
 #[test]
 #[should_panic]

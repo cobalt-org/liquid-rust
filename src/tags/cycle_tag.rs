@@ -13,6 +13,7 @@ use compiler::TryMatchToken;
 use interpreter::Context;
 use interpreter::Expression;
 use interpreter::Renderable;
+use value::ValueView;
 
 #[derive(Clone, Debug)]
 struct Cycle {

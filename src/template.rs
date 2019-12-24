@@ -13,7 +13,7 @@ pub struct Template {
 
 impl Template {
     /// Renders an instance of the Template, using the given globals.
-    pub fn render(&self, globals: &dyn interpreter::ValueStore) -> Result<String> {
+    pub fn render(&self, globals: &dyn liquid_value::ObjectView) -> Result<String> {
         const BEST_GUESS: usize = 10_000;
         let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
@@ -25,7 +25,7 @@ impl Template {
     pub fn render_to(
         &self,
         writer: &mut dyn Write,
-        globals: &dyn interpreter::ValueStore,
+        globals: &dyn liquid_value::ObjectView,
     ) -> Result<()> {
         let context = interpreter::ContextBuilder::new().set_globals(globals);
         let context = match self.partials {

@@ -208,6 +208,7 @@ impl Eq for Map {}
 ///
 /// ```rust
 /// # use liquid_value::Value;
+/// # use liquid_value::ValueView;
 /// #
 /// # let val = &Value::scalar("");
 /// # let _ =
@@ -574,6 +575,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # #[macro_use]
     /// # extern crate liquid_value;
+    /// # use liquid_value::ValueView;
     /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
@@ -601,6 +603,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # #[macro_use]
     /// # extern crate liquid_value;
+    /// # use liquid_value::ValueView;
     /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
