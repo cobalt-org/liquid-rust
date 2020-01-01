@@ -5,32 +5,29 @@ schedules:
     include:
     - master
 
-stages:
+jobs:
 - template: default.yml@templates
   parameters:
     minrust: 1.37.0
     # Crashes for some reason. Note: does not run in PRs, so needs to be tested
     # in `master`.
     #codecov_token: $(CODECOV_TOKEN_SECRET)
-- stage: committed
+- job: "Committed"
   displayName: Lint History
-  dependsOn: []
-  jobs:
-  - job: "Committed"
-    pool:
-      vmImage: 'ubuntu-16.04'
-    steps:
-    - checkout: self
-    - template: v1/azdo-step.yml@gh-install
-      parameters:
-        git: crate-ci/committed
-        target: 'x86_64-unknown-linux-gnu'
-        to: $(Build.StagingDirectory)/tools
-    - script: |
-        echo "This project uses Conventional style, see https://www.conventionalcommits.org"
-        $(Build.StagingDirectory)/tools/committed HEAD~..HEAD^2 --no-merge-commit -vv
-      displayName: Committed
-    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - checkout: self
+  - template: v1/azdo-step.yml@gh-install
+    parameters:
+      git: crate-ci/committed
+      target: 'x86_64-unknown-linux-gnu'
+      to: $(Build.StagingDirectory)/tools
+  - script: |
+      echo "This project uses Conventional style, see https://www.conventionalcommits.org"
+      $(Build.StagingDirectory)/tools/committed HEAD~..HEAD^2 --no-merge-commit -vv
+    displayName: Committed
+  condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
 
 resources:
   repositories:
