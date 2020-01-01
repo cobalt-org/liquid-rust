@@ -6,7 +6,7 @@ schedules:
     - master
 
 stages:
-- template: azure/stages.yml@templates
+- template: default.yml@templates
   parameters:
     minrust: 1.37.0
     # Crashes for some reason. Note: does not run in PRs, so needs to be tested
