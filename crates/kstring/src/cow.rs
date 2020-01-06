@@ -239,6 +239,14 @@ impl From<KString> for KStringCow<'static> {
     }
 }
 
+impl<'s> From<&'s KString> for KStringCow<'s> {
+    #[inline]
+    fn from(other: &'s KString) -> Self {
+        let other = other.as_ref();
+        other.into()
+    }
+}
+
 impl<'s> From<KStringRef<'s>> for KStringCow<'s> {
     #[inline]
     fn from(other: KStringRef<'s>) -> Self {
