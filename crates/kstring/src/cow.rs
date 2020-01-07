@@ -326,13 +326,7 @@ impl<'de, 's> serde::Deserialize<'de> for KStringCow<'s> {
     where
         D: serde::Deserializer<'de>,
     {
-        use std::borrow::Cow;
-        let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
-        let s = match s {
-            Cow::Owned(s) => KStringCow::from_boxed(s.into_boxed_str()),
-            Cow::Borrowed(s) => KStringCow::from_ref(s),
-        };
-        Ok(s)
+        KString::deserialize(deserializer).map(|s| s.into())
     }
 }
 

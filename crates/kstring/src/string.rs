@@ -346,13 +346,57 @@ impl<'de> serde::Deserialize<'de> for KString {
     where
         D: serde::Deserializer<'de>,
     {
-        use std::borrow::Cow;
-        let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
-        let s = match s {
-            Cow::Owned(s) => KString::from_boxed(s.into_boxed_str()),
-            Cow::Borrowed(s) => KString::from_ref(s),
-        };
-        Ok(s)
+        deserializer.deserialize_string(StringVisitor)
+    }
+}
+
+struct StringVisitor;
+
+impl<'de> serde::de::Visitor<'de> for StringVisitor {
+    type Value = KString;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(KString::from_ref(v))
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(KString::from_string(v))
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match std::str::from_utf8(v) {
+            Ok(s) => Ok(KString::from_ref(s)),
+            Err(_) => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Bytes(v),
+                &self,
+            )),
+        }
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match String::from_utf8(v) {
+            Ok(s) => Ok(KString::from_string(s)),
+            Err(e) => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Bytes(&e.into_bytes()),
+                &self,
+            )),
+        }
     }
 }
 
