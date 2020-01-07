@@ -9,7 +9,7 @@ use crate::{Date, DateTime, DisplayCow, State};
 use crate::{Value, ValueView};
 
 /// A Liquid scalar value
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
@@ -127,6 +127,12 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
         }
+    }
+}
+
+impl<'s> fmt::Debug for ScalarCow<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
     }
 }
 
