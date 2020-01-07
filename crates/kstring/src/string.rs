@@ -15,7 +15,7 @@ type StdString = std::string::String;
 type BoxedStr = Box<str>;
 
 /// A UTF-8 encoded, immutable string.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct KString {
     pub(crate) inner: KStringInner,
@@ -214,6 +214,13 @@ impl std::hash::Hash for KString {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
+    }
+}
+
+impl fmt::Debug for KString {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.inner, f)
     }
 }
 

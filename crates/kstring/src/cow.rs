@@ -8,7 +8,7 @@ type StdString = std::string::String;
 type BoxedStr = Box<str>;
 
 /// A reference to a UTF-8 encoded, immutable string.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct KStringCow<'s> {
     pub(crate) inner: KStringCowInner<'s>,
@@ -179,6 +179,13 @@ impl<'s> std::hash::Hash for KStringCow<'s> {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
+    }
+}
+
+impl<'s> fmt::Debug for KStringCow<'s> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.inner, f)
     }
 }
 

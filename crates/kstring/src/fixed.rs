@@ -1,6 +1,8 @@
+use std::fmt;
+
 macro_rules! fixed_string {
     ($name:ident, $len:literal) => {
-        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub(crate) struct $name {
             array: [u8; $len],
         }
@@ -21,6 +23,13 @@ macro_rules! fixed_string {
             #[inline]
             pub(crate) fn as_str(&self) -> &str {
                 unsafe { std::str::from_utf8_unchecked(&self.array) }
+            }
+        }
+
+        impl fmt::Debug for $name {
+            #[inline]
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Debug::fmt(self.as_str(), f)
             }
         }
     };
