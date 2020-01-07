@@ -2,7 +2,7 @@ use std::fmt;
 
 macro_rules! fixed_string {
     ($name:ident, $len:literal) => {
-        #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Clone)]
         pub(crate) struct $name {
             array: [u8; $len],
         }

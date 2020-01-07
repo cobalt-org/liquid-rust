@@ -14,7 +14,7 @@ pub struct KStringCow<'s> {
     pub(crate) inner: KStringCowInner<'s>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) enum KStringCowInner<'s> {
     Owned(KString),
     Borrowed(&'s str),

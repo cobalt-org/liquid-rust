@@ -21,7 +21,7 @@ pub struct KString {
     pub(crate) inner: KStringInner,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) enum KStringInner {
     Owned(BoxedStr),
     Singleton(&'static str),

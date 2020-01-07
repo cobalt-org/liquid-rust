@@ -13,7 +13,7 @@ pub struct KStringRef<'s> {
     pub(crate) inner: KStringRefInner<'s>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) enum KStringRefInner<'s> {
     Borrowed(&'s str),
     Singleton(&'static str),
