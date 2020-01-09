@@ -115,6 +115,14 @@ impl<'v> ValueCow<'v> {
         }
     }
 
+    /// Extracts the object value as mutable if it is a object.
+    pub fn as_object_mut(&mut self) -> Option<&mut Object> {
+        match *self {
+            ValueCow::Object(ref mut s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Extracts the object value if it is a object.
     pub fn into_object(self) -> Option<Object> {
         match self {
