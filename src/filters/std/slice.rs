@@ -1,11 +1,12 @@
+use std::cmp;
+
 use filters::invalid_argument;
 use liquid_compiler::{Filter, FilterParameters};
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::Value;
-use std::cmp;
+use liquid_value::{Value, ValueView};
 
 fn canonicalize_slice(
     slice_offset: isize,

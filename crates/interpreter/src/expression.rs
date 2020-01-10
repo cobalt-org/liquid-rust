@@ -3,6 +3,7 @@ use std::fmt;
 use liquid_error::Result;
 use liquid_value::Scalar;
 use liquid_value::Value;
+use liquid_value::ValueView;
 
 use super::Context;
 use crate::variable::Variable;
@@ -39,20 +40,19 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<&'c Value> {
-        let val = match *self {
-            Expression::Literal(ref x) => &x,
+    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<&'c dyn ValueView> {
+        match self {
+            Expression::Literal(ref x) => Some(x),
             Expression::Variable(ref x) => {
                 let path = x.try_evaluate(context)?;
-                context.stack().try_get(&path)?
+                context.stack().try_get(&path)
             }
-        };
-        Some(val)
+        }
     }
 
     /// Convert to a `Value`.
-    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<&'c Value> {
-        let val = match *self {
+    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<&'c dyn ValueView> {
+        let val = match self {
             Expression::Literal(ref x) => x,
             Expression::Variable(ref x) => {
                 let path = x.evaluate(context)?;
@@ -65,7 +65,7 @@ impl Expression {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
+        match self {
             Expression::Literal(ref x) => write!(f, "{}", x.source()),
             Expression::Variable(ref x) => write!(f, "{}", x),
         }

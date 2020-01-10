@@ -3,7 +3,7 @@ use liquid_compiler::Filter;
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 use url::percent_encoding;
 use url::percent_encoding::EncodeSet;
 

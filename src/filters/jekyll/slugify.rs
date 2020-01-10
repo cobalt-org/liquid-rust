@@ -4,7 +4,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 use regex::Regex;
 
 #[derive(PartialEq)]

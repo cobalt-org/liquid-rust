@@ -5,10 +5,11 @@ use kstring::KString;
 use kstring::KStringCow;
 use kstring::KStringRef;
 
-use crate::{Date, DateTime, State};
+use crate::{Date, DateTime, DisplayCow, State};
+use crate::{Value, ValueView};
 
 /// A Liquid scalar value
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
@@ -34,21 +35,15 @@ impl<'s> ScalarCow<'s> {
         value.into()
     }
 
-    /// A `Display` for a `Scalar` as source code.
-    pub fn source(&self) -> ScalarSource<'_> {
-        ScalarSource(&self.0)
-    }
-
-    /// A `Display` for a `Scalar` rendered for the user.
-    pub fn render(&self) -> ScalarRendered<'_> {
-        ScalarRendered(&self.0)
-    }
-
     /// Create an owned version of the value.
-    pub fn into_owned(self) -> Self {
+    pub fn into_owned(self) -> Scalar {
         match self.0 {
+            ScalarCowEnum::Integer(x) => Scalar::new(x),
+            ScalarCowEnum::Float(x) => Scalar::new(x),
+            ScalarCowEnum::Bool(x) => Scalar::new(x),
+            ScalarCowEnum::DateTime(x) => Scalar::new(x),
+            ScalarCowEnum::Date(x) => Scalar::new(x),
             ScalarCowEnum::Str(x) => Scalar::new(x.into_owned()),
-            _ => self,
         }
     }
 
@@ -64,15 +59,15 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as a string.
-    pub fn to_kstr(&self) -> KStringCow<'_> {
+    /// Create a reference to the value.
+    pub fn as_view<'r: 's>(&'r self) -> &'s dyn ValueView {
         match self.0 {
-            ScalarCowEnum::Integer(_)
-            | ScalarCowEnum::Float(_)
-            | ScalarCowEnum::Bool(_)
-            | ScalarCowEnum::DateTime(_)
-            | ScalarCowEnum::Date(_) => self.render().to_string().into(),
-            ScalarCowEnum::Str(ref x) => x.as_ref().into(),
+            ScalarCowEnum::Integer(ref x) => x,
+            ScalarCowEnum::Float(ref x) => x,
+            ScalarCowEnum::Bool(ref x) => x,
+            ScalarCowEnum::DateTime(ref x) => x,
+            ScalarCowEnum::Date(ref x) => x,
+            ScalarCowEnum::Str(ref x) => x,
         }
     }
 
@@ -133,71 +128,80 @@ impl<'s> ScalarCow<'s> {
             _ => None,
         }
     }
+}
 
-    /// Query the value's state
-    #[inline]
-    pub fn query_state(&self, state: State) -> bool {
+impl<'s> fmt::Debug for ScalarCow<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
+impl<'s> ValueView for ScalarCow<'s> {
+    fn render(&self) -> DisplayCow<'_> {
+        self.as_view().render()
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        self.as_view().source()
+    }
+    fn type_name(&self) -> &'static str {
+        self.as_view().type_name()
+    }
+    fn query_state(&self, state: State) -> bool {
+        self.as_view().query_state(state)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.as_view().to_kstr()
+    }
+    fn to_value(&self) -> Value {
+        self.as_view().to_value()
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(self.as_ref())
+    }
+}
+
+impl<'s> PartialEq<ScalarCow<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &Self) -> bool {
+        scalar_eq(self, other)
+    }
+}
+
+impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        scalar_cmp(self, other)
+    }
+}
+
+impl ValueView for i32 {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn type_name(&self) -> &'static str {
+        "whole number"
+    }
+    fn query_state(&self, state: State) -> bool {
         match state {
-            State::Truthy => self.is_truthy(),
-            State::DefaultValue => self.is_default(),
-            State::Empty => self.is_empty(),
-            State::Blank => self.is_blank(),
+            State::Truthy => true,
+            State::DefaultValue => false,
+            State::Empty => false,
+            State::Blank => false,
         }
     }
 
-    fn is_truthy(&self) -> bool {
-        // encode Ruby truthiness: all values except false and nil are true
-        match self.0 {
-            ScalarCowEnum::Bool(ref x) => *x,
-            _ => true,
-        }
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.render().to_string().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(*self)
     }
 
-    fn is_default(&self) -> bool {
-        // encode Ruby truthiness: all values except false and nil are true
-        match self.0 {
-            ScalarCowEnum::Bool(ref x) => !*x,
-            ScalarCowEnum::Str(ref x) => x.is_empty(),
-            _ => false,
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
-        match self.0 {
-            ScalarCowEnum::Integer(_)
-            | ScalarCowEnum::Float(_)
-            | ScalarCowEnum::Bool(_)
-            | ScalarCowEnum::DateTime(_)
-            | ScalarCowEnum::Date(_) => false,
-            ScalarCowEnum::Str(ref x) => x.is_empty(),
-        }
-    }
-
-    fn is_blank(&self) -> bool {
-        // encode a best-guess of empty rules
-        // See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
-        match self.0 {
-            ScalarCowEnum::Integer(_)
-            | ScalarCowEnum::Float(_)
-            | ScalarCowEnum::DateTime(_)
-            | ScalarCowEnum::Date(_) => false,
-            ScalarCowEnum::Bool(ref x) => !x,
-            ScalarCowEnum::Str(ref x) => x.trim().is_empty(),
-        }
-    }
-
-    /// Report the data type (generally for error reporting).
-    pub fn type_name(&self) -> &'static str {
-        match self.0 {
-            ScalarCowEnum::Integer(_) => "whole number",
-            ScalarCowEnum::Float(_) => "fractional number",
-            ScalarCowEnum::Bool(_) => "boolean",
-            ScalarCowEnum::DateTime(_) => "date time",
-            ScalarCowEnum::Date(_) => "date",
-            ScalarCowEnum::Str(_) => "string",
-        }
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
     }
 }
 
@@ -209,11 +213,101 @@ impl<'s> From<i32> for ScalarCow<'s> {
     }
 }
 
+impl<'s> PartialEq<i32> for ScalarCow<'s> {
+    fn eq(&self, other: &i32) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<i32> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl ValueView for f64 {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn type_name(&self) -> &'static str {
+        "fractional number"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue => false,
+            State::Empty => false,
+            State::Blank => false,
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.render().to_string().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(*self)
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
+    }
+}
+
 impl<'s> From<f64> for ScalarCow<'s> {
     fn from(s: f64) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Float(s),
         }
+    }
+}
+
+impl<'s> PartialEq<f64> for ScalarCow<'s> {
+    fn eq(&self, other: &f64) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<f64> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl ValueView for bool {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn type_name(&self) -> &'static str {
+        "boolean"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => *self,
+            State::DefaultValue => !self,
+            State::Empty => false,
+            State::Blank => !self,
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.render().to_string().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(*self)
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
     }
 }
 
@@ -225,11 +319,101 @@ impl<'s> From<bool> for ScalarCow<'s> {
     }
 }
 
+impl<'s> PartialEq<bool> for ScalarCow<'s> {
+    fn eq(&self, other: &bool) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<bool> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &bool) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl ValueView for DateTime {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn type_name(&self) -> &'static str {
+        "date time"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue => false,
+            State::Empty => false,
+            State::Blank => false,
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.render().to_string().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(*self)
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
+    }
+}
+
 impl<'s> From<DateTime> for ScalarCow<'s> {
     fn from(s: DateTime) -> Self {
         ScalarCow {
             0: ScalarCowEnum::DateTime(s),
         }
+    }
+}
+
+impl<'s> PartialEq<DateTime> for ScalarCow<'s> {
+    fn eq(&self, other: &DateTime) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<DateTime> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &DateTime) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl ValueView for Date {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn type_name(&self) -> &'static str {
+        "date"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue => false,
+            State::Empty => false,
+            State::Blank => false,
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.render().to_string().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(*self)
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
     }
 }
 
@@ -241,51 +425,113 @@ impl<'s> From<Date> for ScalarCow<'s> {
     }
 }
 
-impl<'s> From<KString> for ScalarCow<'s> {
-    fn from(s: KString) -> Self {
+impl<'s> PartialEq<Date> for ScalarCow<'s> {
+    fn eq(&self, other: &Date) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<Date> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
+        let other = (*other).into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> ValueView for &'s str {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(StrSource { s: self }))
+    }
+    fn type_name(&self) -> &'static str {
+        "string"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue => self.is_empty(),
+            State::Empty => self.is_empty(),
+            State::Blank => self.trim().is_empty(),
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        (*self).into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(ScalarCow::new(KString::from_ref(self)))
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(*self))
+    }
+}
+
+struct StrSource<'s> {
+    s: &'s str,
+}
+
+impl<'s> fmt::Display for StrSource<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, r#""{}""#, self.s)
+    }
+}
+
+impl<'s> From<&'s str> for ScalarCow<'s> {
+    fn from(s: &'s str) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'s> From<&'s KString> for ScalarCow<'s> {
-    fn from(s: &'s KString) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.as_ref().into()),
-        }
+impl<'s> PartialEq<str> for ScalarCow<'s> {
+    fn eq(&self, other: &str) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
     }
 }
 
-impl<'s> From<KStringRef<'s>> for ScalarCow<'s> {
-    fn from(s: KStringRef<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+impl<'s> PartialEq<&'s str> for ScalarCow<'s> {
+    fn eq(&self, other: &&str) -> bool {
+        let other = (*other).into();
+        scalar_eq(self, &other)
     }
 }
 
-impl<'s> From<&'s KStringRef<'s>> for ScalarCow<'s> {
-    fn from(s: &'s KStringRef<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+impl<'s> PartialOrd<str> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &str) -> Option<Ordering> {
+        let other = other.into();
+        scalar_cmp(self, &other)
     }
 }
 
-impl<'s> From<KStringCow<'s>> for ScalarCow<'s> {
-    fn from(s: KStringCow<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s),
-        }
+impl ValueView for String {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
     }
-}
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(StrSource { s: self.as_str() }))
+    }
+    fn type_name(&self) -> &'static str {
+        ValueView::type_name(&self.as_str())
+    }
+    fn query_state(&self, state: State) -> bool {
+        ValueView::query_state(&self.as_str(), state)
+    }
 
-impl<'s> From<&'s KStringCow<'s>> for ScalarCow<'s> {
-    fn from(s: &'s KStringCow<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.clone()),
-        }
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.as_str().into()
+    }
+    fn to_value(&self) -> Value {
+        ValueView::to_value(&self.as_str())
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(self.as_str()))
     }
 }
 
@@ -305,73 +551,59 @@ impl<'s> From<&'s String> for ScalarCow<'s> {
     }
 }
 
-impl<'s> From<&'s str> for ScalarCow<'s> {
-    fn from(s: &'s str) -> Self {
+impl<'s> PartialEq<String> for ScalarCow<'s> {
+    fn eq(&self, other: &String) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<String> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &String) -> Option<Ordering> {
+        let other = other.into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl ValueView for KString {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(StrSource { s: self.as_str() }))
+    }
+    fn type_name(&self) -> &'static str {
+        ValueView::type_name(&self.as_str())
+    }
+    fn query_state(&self, state: State) -> bool {
+        ValueView::query_state(&self.as_str(), state)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.as_ref().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(Scalar::new(self.clone()))
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(self))
+    }
+}
+
+impl<'s> From<KString> for ScalarCow<'s> {
+    fn from(s: KString) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Str(s.into()),
         }
     }
 }
 
-impl<'s> PartialEq<ScalarCow<'s>> for ScalarCow<'s> {
-    fn eq(&self, other: &Self) -> bool {
-        scalar_eq(self, other)
-    }
-}
-
-impl<'s> PartialEq<i32> for ScalarCow<'s> {
-    fn eq(&self, other: &i32) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<f64> for ScalarCow<'s> {
-    fn eq(&self, other: &f64) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<bool> for ScalarCow<'s> {
-    fn eq(&self, other: &bool) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<DateTime> for ScalarCow<'s> {
-    fn eq(&self, other: &DateTime) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<Date> for ScalarCow<'s> {
-    fn eq(&self, other: &Date) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<str> for ScalarCow<'s> {
-    fn eq(&self, other: &str) -> bool {
-        let other = other.into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<&'s str> for ScalarCow<'s> {
-    fn eq(&self, other: &&str) -> bool {
-        let other = (*other).into();
-        scalar_eq(self, &other)
-    }
-}
-
-impl<'s> PartialEq<String> for ScalarCow<'s> {
-    fn eq(&self, other: &String) -> bool {
-        let other = other.into();
-        scalar_eq(self, &other)
+impl<'s> From<&'s KString> for ScalarCow<'s> {
+    fn from(s: &'s KString) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.as_ref().into()),
+        }
     }
 }
 
@@ -382,10 +614,52 @@ impl<'s> PartialEq<KString> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialEq<KStringRef<'s>> for ScalarCow<'s> {
-    fn eq(&self, other: &KStringRef<'s>) -> bool {
+impl<'s> PartialOrd<KString> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &KString) -> Option<Ordering> {
         let other = other.into();
-        scalar_eq(self, &other)
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> ValueView for KStringCow<'s> {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(StrSource { s: self.as_str() }))
+    }
+    fn type_name(&self) -> &'static str {
+        ValueView::type_name(&self.as_str())
+    }
+    fn query_state(&self, state: State) -> bool {
+        ValueView::query_state(&self.as_str(), state)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.clone()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(Scalar::new(self.clone().into_owned()))
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(self))
+    }
+}
+
+impl<'s> From<KStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: KStringCow<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s),
+        }
+    }
+}
+
+impl<'s> From<&'s KStringCow<'s>> for ScalarCow<'s> {
+    fn from(s: &'s KStringCow<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.clone()),
+        }
     }
 }
 
@@ -396,55 +670,70 @@ impl<'s> PartialEq<KStringCow<'s>> for ScalarCow<'s> {
     }
 }
 
-impl<'s> Eq for ScalarCow<'s> {}
-
-impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        scalar_cmp(self, other)
-    }
-}
-
-impl<'s> PartialOrd<i32> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
-        let other = (*other).into();
-        scalar_cmp(self, &other)
-    }
-}
-
-impl<'s> PartialOrd<f64> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
-        let other = (*other).into();
-        scalar_cmp(self, &other)
-    }
-}
-
-impl<'s> PartialOrd<bool> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &bool) -> Option<Ordering> {
-        let other = (*other).into();
-        scalar_cmp(self, &other)
-    }
-}
-
-impl<'s> PartialOrd<DateTime> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &DateTime) -> Option<Ordering> {
-        let other = (*other).into();
-        scalar_cmp(self, &other)
-    }
-}
-
-impl<'s> PartialOrd<Date> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
-        let other = (*other).into();
-        scalar_cmp(self, &other)
-    }
-}
-
-impl<'s> PartialOrd<str> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &str) -> Option<Ordering> {
+impl<'s> PartialOrd<KStringCow<'s>> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &KStringCow<'s>) -> Option<Ordering> {
         let other = other.into();
         scalar_cmp(self, &other)
     }
 }
+
+impl<'s> ValueView for KStringRef<'s> {
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Borrowed(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(StrSource { s: self.as_str() }))
+    }
+    fn type_name(&self) -> &'static str {
+        ValueView::type_name(&self.as_str())
+    }
+    fn query_state(&self, state: State) -> bool {
+        ValueView::query_state(&self.as_str(), state)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        self.clone().into()
+    }
+    fn to_value(&self) -> Value {
+        Value::scalar(Scalar::new(self.to_owned()))
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        Some(ScalarCow::new(self))
+    }
+}
+
+impl<'s> From<KStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: KStringRef<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
+        }
+    }
+}
+
+impl<'s> From<&'s KStringRef<'s>> for ScalarCow<'s> {
+    fn from(s: &'s KStringRef<'s>) -> Self {
+        ScalarCow {
+            0: ScalarCowEnum::Str(s.into()),
+        }
+    }
+}
+
+impl<'s> PartialEq<KStringRef<'s>> for ScalarCow<'s> {
+    fn eq(&self, other: &KStringRef<'s>) -> bool {
+        let other = other.into();
+        scalar_eq(self, &other)
+    }
+}
+
+impl<'s> PartialOrd<KStringRef<'s>> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &KStringRef<'s>) -> Option<Ordering> {
+        let other = other.into();
+        scalar_cmp(self, &other)
+    }
+}
+
+impl<'s> Eq for ScalarCow<'s> {}
 
 /// A `Display` for a `Scalar` as source code.
 #[derive(Debug)]
@@ -660,11 +949,11 @@ mod test {
         let zero: ScalarCow<'_> = 0i32.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
-        assert!(val.is_truthy());
+        assert!(val.query_state(State::Truthy));
 
         assert_eq!(TRUE, zero);
         assert_eq!(zero, TRUE);
-        assert!(zero.is_truthy());
+        assert!(zero.query_state(State::Truthy));
     }
 
     #[test]
@@ -683,11 +972,11 @@ mod test {
         let zero: ScalarCow<'_> = 0f64.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
-        assert!(val.is_truthy());
+        assert!(val.query_state(State::Truthy));
 
         assert_eq!(TRUE, zero);
         assert_eq!(zero, TRUE);
-        assert!(zero.is_truthy());
+        assert!(zero.query_state(State::Truthy));
     }
 
     #[test]
@@ -700,8 +989,8 @@ mod test {
 
     #[test]
     fn booleans_have_ruby_truthiness() {
-        assert!(TRUE.is_truthy());
-        assert!(!FALSE.is_truthy());
+        assert!(TRUE.query_state(State::Truthy));
+        assert!(!FALSE.query_state(State::Truthy));
     }
 
     #[test]
@@ -722,10 +1011,10 @@ mod test {
         let empty: ScalarCow<'_> = "".into();
         assert_eq!(TRUE, alpha);
         assert_eq!(alpha, TRUE);
-        assert!(alpha.is_truthy());
+        assert!(alpha.query_state(State::Truthy));
 
         assert_eq!(TRUE, empty);
         assert_eq!(empty, TRUE);
-        assert!(empty.is_truthy());
+        assert!(empty.query_state(State::Truthy));
     }
 }

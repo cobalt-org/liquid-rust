@@ -3,7 +3,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 
 mod array;
 mod date;
@@ -79,7 +79,7 @@ impl Filter for DefaultFilter {
         let args = self.args.evaluate(context)?;
 
         if input.query_state(liquid_value::State::DefaultValue) {
-            Ok(args.default.clone())
+            Ok(args.default.to_value())
         } else {
             Ok(input.clone())
         }

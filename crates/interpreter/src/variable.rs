@@ -3,6 +3,7 @@ use std::fmt;
 use liquid_error::{Error, Result};
 use liquid_value::Path;
 use liquid_value::Scalar;
+use liquid_value::ValueView;
 
 use super::Context;
 use super::Expression;
@@ -35,7 +36,7 @@ impl Variable {
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.try_evaluate(context)?;
-            let s = v.as_scalar()?.as_ref();
+            let s = v.as_scalar()?;
             path.push(s);
         }
         Some(path)
@@ -47,10 +48,9 @@ impl Variable {
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.evaluate(context)?;
-            let s = v
-                .as_scalar()
-                .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", v.source())))?
-                .as_ref();
+            let s = v.as_scalar().ok_or_else(|| {
+                Error::with_msg(format!("Expected scalar, found `{}`", v.source()))
+            })?;
             path.push(s);
         }
         Ok(path)
@@ -86,6 +86,7 @@ mod test {
     use super::*;
 
     use liquid_value::Object;
+    use liquid_value::ValueViewCmp;
     use serde_yaml;
 
     use super::super::ContextBuilder;
@@ -105,7 +106,7 @@ test_a: ["test"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual, "test");
+        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test"));
     }
 
     #[test]
@@ -123,7 +124,7 @@ test_a: ["test1", "test2"]
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual, "test2");
+        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test2"));
     }
 
     #[test]
@@ -142,6 +143,6 @@ test_a:
         let context = ContextBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&context).unwrap();
         let actual = context.stack().get(&actual).unwrap();
-        assert_eq!(actual, &5);
+        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&5));
     }
 }

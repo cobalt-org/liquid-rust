@@ -2,7 +2,7 @@ use liquid_compiler::Filter;
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 use regex::Regex;
 
 /// Returns the number of already escaped characters.

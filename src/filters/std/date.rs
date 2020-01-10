@@ -3,7 +3,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Value, ValueView};
 
 #[derive(Debug, FilterParameters)]
 struct DateArgs {
@@ -31,7 +31,7 @@ impl Filter for DateFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        let date = input.as_scalar().and_then(Scalar::to_date_time);
+        let date = input.as_scalar().and_then(|s| s.to_date_time());
         match date {
             Some(date) if !args.format.is_empty() => {
                 Ok(Value::scalar(date.format(args.format.as_str()).to_string()))

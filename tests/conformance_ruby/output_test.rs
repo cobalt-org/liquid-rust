@@ -1,4 +1,3 @@
-use liquid;
 use liquid::compiler::Filter;
 use liquid::compiler::FilterParameters;
 use liquid::derive::*;
@@ -6,6 +5,7 @@ use liquid::error::Result;
 use liquid::interpreter::Context;
 use liquid::interpreter::Expression;
 use liquid::value::Value;
+use liquid::value::ValueView;
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(

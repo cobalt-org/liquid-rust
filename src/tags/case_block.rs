@@ -2,7 +2,7 @@ use std::io::Write;
 
 use itertools;
 use liquid_error::{Result, ResultLiquidExt};
-use liquid_value::Value;
+use liquid_value::{ValueView, ValueViewCmp};
 
 use compiler::BlockElement;
 use compiler::BlockReflection;
@@ -27,10 +27,10 @@ impl CaseOption {
         CaseOption { args, template }
     }
 
-    fn evaluate(&self, value: &Value, context: &Context) -> Result<bool> {
+    fn evaluate(&self, value: &dyn ValueView, context: &Context) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(context)?;
-            if *v == *value {
+            if ValueViewCmp::new(v) == ValueViewCmp::new(value) {
                 return Ok(true);
             }
         }
@@ -57,7 +57,7 @@ impl Case {
 
 impl Renderable for Case {
     fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
-        let value = self.target.evaluate(context)?.to_owned();
+        let value = self.target.evaluate(context)?.to_value();
         for case in &self.cases {
             if case.evaluate(&value, context)? {
                 return case
@@ -200,6 +200,7 @@ mod test {
     use super::*;
     use compiler;
     use interpreter;
+    use liquid_value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

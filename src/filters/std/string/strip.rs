@@ -2,7 +2,7 @@ use liquid_compiler::Filter;
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
 /// string.

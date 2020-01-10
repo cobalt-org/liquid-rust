@@ -5,6 +5,7 @@
 /// ```rust
 /// # #[macro_use]
 /// # extern crate liquid_value;
+/// # use liquid_value::ValueView;
 /// #
 /// # fn main() {
 /// liquid_value!(5)

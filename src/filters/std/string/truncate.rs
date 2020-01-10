@@ -1,11 +1,12 @@
+use std::cmp;
+
 use itertools;
 use liquid_compiler::{Filter, FilterParameters};
 use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::Value;
-use std::cmp;
+use liquid_value::{Value, ValueView};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, FilterParameters)]

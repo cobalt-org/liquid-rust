@@ -1,4 +1,4 @@
-use liquid;
+use liquid::value::ValueView;
 
 #[test]
 fn test_no_transform() {

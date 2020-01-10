@@ -4,18 +4,17 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Value, ValueView, ValueViewCmp};
 use std::cmp;
 
-macro_rules! as_sequence {
-    ($value: expr, |$c:ident| $e:expr) => {
-        #[allow(clippy::redundant_closure_call)] // Clippy is angry about IIFE
-        match &$value {
-            Value::Array(array) => (|$c: std::slice::Iter<'_, Value>| $e)(array.iter()),
-            Value::Nil => (|$c: std::iter::Empty<&Value>| $e)(std::iter::empty()),
-            value => (|$c: std::iter::Once<&Value>| $e)(std::iter::once(value)),
-        }
-    };
+fn as_sequence<'k>(input: &'k dyn ValueView) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+    if let Some(array) = input.as_array() {
+        array.values()
+    } else if input.is_nil() {
+        Box::new(vec![].into_iter())
+    } else {
+        Box::new(std::iter::once(input))
+    }
 }
 
 #[derive(Debug, FilterParameters)]
@@ -52,25 +51,29 @@ impl Filter for JoinFilter {
         let input = input
             .as_array()
             .ok_or_else(|| invalid_input("Array of strings expected"))?;
-        let input = input.iter().map(|x| x.to_kstr());
+        let input = input.values().map(|x| x.to_kstr());
 
         Ok(Value::scalar(itertools::join(input, separator.as_str())))
     }
 }
 
-fn nil_safe_compare(a: &Value, b: &Value) -> Option<cmp::Ordering> {
-    match (a, b) {
-        (Value::Nil, Value::Nil) => Some(cmp::Ordering::Equal),
-        (Value::Nil, _) => Some(cmp::Ordering::Greater),
-        (_, Value::Nil) => Some(cmp::Ordering::Less),
-        (a, b) => a.partial_cmp(b),
+fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Ordering> {
+    if a.is_nil() && b.is_nil() {
+        Some(cmp::Ordering::Equal)
+    } else if a.is_nil() {
+        Some(cmp::Ordering::Greater)
+    } else if b.is_nil() {
+        Some(cmp::Ordering::Less)
+    } else {
+        ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
     }
 }
 
-fn nil_safe_casecmp_key(value: &Value) -> Option<String> {
-    match value {
-        Value::Nil => None,
-        value => Some(value.to_kstr().to_lowercase()),
+fn nil_safe_casecmp_key(value: &dyn ValueView) -> Option<String> {
+    if value.is_nil() {
+        None
+    } else {
+        Some(value.to_kstr().to_lowercase())
     }
 }
 
@@ -105,7 +108,7 @@ struct SortFilter {
     args: PropertyArgs,
 }
 
-fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a Value {
+fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
     value
         .as_object()
         .and_then(|obj| obj.get(property))
@@ -116,26 +119,25 @@ impl Filter for SortFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        as_sequence!(input, |input| {
-            if args.property.is_some() && !input.clone().all(Value::is_object) {
-                return Err(invalid_input("Array of objects expected"));
-            }
+        let input: Vec<_> = as_sequence(input).collect();
+        if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
+            return Err(invalid_input("Array of objects expected"));
+        }
 
-            let mut sorted: Vec<Value> = input.cloned().collect();
-            if let Some(property) = &args.property {
-                // Using unwrap is ok since all of the elements are objects
-                sorted.sort_by(|a, b| {
-                    nil_safe_compare(
-                        safe_property_getter(a, property),
-                        safe_property_getter(b, property),
-                    )
-                    .unwrap_or(cmp::Ordering::Equal)
-                });
-            } else {
-                sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
-            }
-            Ok(Value::array(sorted))
-        })
+        let mut sorted: Vec<Value> = input.iter().map(|v| v.to_value()).collect();
+        if let Some(property) = &args.property {
+            // Using unwrap is ok since all of the elements are objects
+            sorted.sort_by(|a, b| {
+                nil_safe_compare(
+                    safe_property_getter(a, property),
+                    safe_property_getter(b, property),
+                )
+                .unwrap_or(cmp::Ordering::Equal)
+            });
+        } else {
+            sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+        }
+        Ok(Value::array(sorted))
     }
 }
 
@@ -159,29 +161,32 @@ impl Filter for SortNaturalFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
-        as_sequence!(input, |input| {
-            if args.property.is_some() && !input.clone().all(Value::is_object) {
-                return Err(invalid_input("Array of objects expected"));
-            }
+        let input: Vec<_> = as_sequence(input).collect();
+        if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
+            return Err(invalid_input("Array of objects expected"));
+        }
 
-            let mut sorted: Vec<_> = if let Some(property) = &args.property {
-                input
-                    .map(|v| {
-                        (
-                            nil_safe_casecmp_key(safe_property_getter(v, property)),
-                            v.clone(),
-                        )
-                    })
-                    .collect()
-            } else {
-                input
-                    .map(|v| (nil_safe_casecmp_key(v), v.clone()))
-                    .collect()
-            };
-            sorted.sort_by(|a, b| nil_safe_casecmp(&a.0, &b.0).unwrap_or(cmp::Ordering::Equal));
-            let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
-            Ok(Value::array(result))
-        })
+        let mut sorted: Vec<_> = if let Some(property) = &args.property {
+            input
+                .iter()
+                .map(|v| v.to_value())
+                .map(|v| {
+                    (
+                        nil_safe_casecmp_key(&safe_property_getter(&v, property).to_value()),
+                        v,
+                    )
+                })
+                .collect()
+        } else {
+            input
+                .iter()
+                .map(|v| v.to_value())
+                .map(|v| (nil_safe_casecmp_key(&v), v))
+                .collect()
+        };
+        sorted.sort_by(|a, b| nil_safe_casecmp(&a.0, &b.0).unwrap_or(cmp::Ordering::Equal));
+        let result: Vec<_> = sorted.into_iter().map(|(_, v)| v).collect();
+        Ok(Value::array(result))
     }
 }
 
@@ -217,7 +222,7 @@ impl Filter for WhereFilter {
     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
         let args = self.args.evaluate(context)?;
         let property: &str = &args.property;
-        let target_value: Option<&Value> = args.target_value;
+        let target_value: Option<&dyn ValueView> = args.target_value;
 
         match &input {
             Value::Array(array) => {
@@ -233,30 +238,30 @@ impl Filter for WhereFilter {
             }
         };
 
-        as_sequence!(input, |input| {
-            let array: Vec<_> = match target_value {
-                None => input
-                    .filter_map(Value::as_object)
-                    .filter(|object| {
-                        object
-                            .get(property)
-                            .map_or(false, |v| v.query_state(liquid_value::State::Truthy))
+        let input = as_sequence(input);
+        let array: Vec<_> = match target_value {
+            None => input
+                .filter_map(|v| v.as_object())
+                .filter(|object| {
+                    object
+                        .get(property)
+                        .map_or(false, |v| v.query_state(liquid_value::State::Truthy))
+                })
+                .map(|object| object.to_value())
+                .collect(),
+            Some(target_value) => input
+                .filter_map(|v| v.as_object())
+                .filter(|object| {
+                    object.get(property).map_or(false, |value| {
+                        let value = ValueViewCmp::new(value);
+                        let target_value = ValueViewCmp::new(target_value);
+                        value == target_value
                     })
-                    .map(|object| Value::Object(object.clone()))
-                    .collect(),
-                Some(target_value) => input
-                    .filter_map(Value::as_object)
-                    .filter(|object| {
-                        object
-                            .get(property)
-                            .as_ref()
-                            .map_or(false, |value| value == &target_value)
-                    })
-                    .map(|object| Value::Object(object.clone()))
-                    .collect(),
-            };
-            Ok(Value::array(array))
-        })
+                })
+                .map(|object| object.to_value())
+                .collect(),
+        };
+        Ok(Value::array(array))
     }
 }
 
@@ -282,10 +287,14 @@ impl Filter for UniqFilter {
         let array = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
-        let mut deduped: Vec<Value> = Vec::new();
-        for x in array.iter() {
-            if !deduped.contains(x) {
-                deduped.push(x.clone())
+        let mut deduped: Vec<Value> = Vec::with_capacity(array.size() as usize);
+        for x in array.values() {
+            if deduped
+                .iter()
+                .find(|v| ValueViewCmp::new(v.as_value()) == ValueViewCmp::new(x))
+                .is_none()
+            {
+                deduped.push(x.to_value())
             }
         }
         Ok(Value::array(deduped))
@@ -306,12 +315,14 @@ struct ReverseFilter;
 
 impl Filter for ReverseFilter {
     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
-        let array = input
+        let mut array: Vec<_> = input
             .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?;
-        let mut reversed = array.clone();
-        reversed.reverse();
-        Ok(Value::array(reversed))
+            .ok_or_else(|| invalid_input("Array expected"))?
+            .values()
+            .map(|v| v.to_value())
+            .collect();
+        array.reverse();
+        Ok(Value::array(array))
     }
 }
 
@@ -348,11 +359,13 @@ impl Filter for MapFilter {
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
 
-        let property = Scalar::new(args.property.into_owned());
-
         let result: Vec<_> = array
-            .iter()
-            .filter_map(|v| v.get(&property).cloned())
+            .values()
+            .filter_map(|v| {
+                v.as_object()
+                    .and_then(|v| v.get(&args.property))
+                    .map(|v| v.to_value())
+            })
             .collect();
         Ok(Value::array(result))
     }
@@ -383,21 +396,25 @@ impl Filter for CompactFilter {
             .ok_or_else(|| invalid_input("Array expected"))?;
 
         let result: Vec<_> = if let Some(property) = &args.property {
-            if !array.iter().all(Value::is_object) {
+            if !array.values().all(|v| v.is_object()) {
                 return Err(invalid_input("Array of objects expected"));
             }
             // Reject non objects that don't have the required property
             array
-                .iter()
+                .values()
                 .filter(|v| {
                     !v.as_object()
                         .and_then(|obj| obj.get(property.as_str()))
-                        .map_or(true, Value::is_nil)
+                        .map_or(true, |v| v.is_nil())
                 })
-                .cloned()
+                .map(|v| v.to_value())
                 .collect()
         } else {
-            array.iter().filter(|v| !v.is_nil()).cloned().collect()
+            array
+                .values()
+                .filter(|v| !v.is_nil())
+                .map(|v| v.to_value())
+                .collect()
         };
 
         Ok(Value::array(result))
@@ -433,13 +450,13 @@ impl Filter for ConcatFilter {
         let input = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?;
-        let input = input.iter().cloned();
+        let input = input.values().map(|v| v.to_value());
 
         let array = args
             .array
             .as_array()
             .ok_or_else(|| invalid_argument("array", "Array expected"))?;
-        let array = array.iter().cloned();
+        let array = array.values().map(|v| v.to_value());
 
         let result = input.chain(array);
         let result: Vec<_> = result.collect();

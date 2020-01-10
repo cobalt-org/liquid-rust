@@ -5,7 +5,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Value, ValueView};
 
 // liquid-rust proprietary
 
@@ -42,7 +42,7 @@ impl Filter for DateInTzFilter {
 
         let date = input
             .as_scalar()
-            .and_then(Scalar::to_date_time)
+            .and_then(|s| s.to_date_time())
             .ok_or_else(|| invalid_input("Invalid date format"))?;
 
         let timezone = FixedOffset::east(args.timezone * 3600);

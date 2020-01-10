@@ -4,7 +4,7 @@ use liquid_derive::*;
 use liquid_error::Result;
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
-use liquid_value::{Scalar, Value};
+use liquid_value::{Value, ValueView};
 
 // shopify-specific
 
@@ -38,13 +38,13 @@ impl Filter for PluralizeFilter {
 
         let n = input
             .as_scalar()
-            .and_then(Scalar::to_integer)
+            .and_then(|s| s.to_integer())
             .ok_or_else(|| invalid_input("Whole number expected"))?;
 
         if (n as isize) == 1 {
-            Ok(args.singular.clone())
+            Ok(args.singular.to_value())
         } else {
-            Ok(args.plural.clone())
+            Ok(args.plural.to_value())
         }
     }
 }

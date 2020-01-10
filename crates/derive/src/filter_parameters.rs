@@ -479,7 +479,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
         FilterParameterType::Value => quote! {},
         FilterParameterType::Integer => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_integer)
+            .and_then(|s| s.to_integer())
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -488,7 +488,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
         },
         FilterParameterType::Float => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_float)
+            .and_then(|s| s.to_float())
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -497,7 +497,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
         },
         FilterParameterType::Bool => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_bool)
+            .and_then(|s| s.to_bool())
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -506,7 +506,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
         },
         FilterParameterType::DateTime => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_date_time)
+            .and_then(|s| s.to_date_time())
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -515,7 +515,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
         },
         FilterParameterType::Date => quote! {
             .as_scalar()
-            .and_then(::liquid::value::Scalar::to_date)
+            .and_then(|s| s.to_date())
             .ok_or_else(||
                 ::liquid::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -665,7 +665,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
 
     let field_types = fields.parameters.iter().map(|field| {
         let ty = match &field.meta.ty {
-            FilterParameterType::Value => quote! {&'a ::liquid::value::Value},
+            FilterParameterType::Value => quote! {&'a ::liquid::value::ValueView},
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },

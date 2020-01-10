@@ -2,7 +2,7 @@ extern crate chrono;
 extern crate liquid;
 extern crate regex;
 
-pub use liquid::value::ValueCow::Nil;
+pub use liquid::value::Value::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid::value::Value {
@@ -46,7 +46,9 @@ macro_rules! assert_template_result {
     };
     ($expected:expr, $template:expr, $assigns: expr, $liquid: expr) => {
         let template = $liquid.parse($template.as_ref()).unwrap();
-        let rendered = template.render($assigns.as_object().unwrap()).unwrap();
+        let rendered = template
+            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
+            .unwrap();
         assert_eq!($expected, rendered);
     };
 }
@@ -70,7 +72,9 @@ macro_rules! assert_template_matches {
             .unwrap()
             .parse($template.as_ref())
             .unwrap();
-        let rendered = template.render($assigns.as_object().unwrap()).unwrap();
+        let rendered = template
+            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
+            .unwrap();
 
         let expected = $expected;
         println!("pattern={}", expected);
@@ -119,7 +123,9 @@ macro_rules! assert_render_error {
             .unwrap()
             .parse($template.as_ref())
             .unwrap();
-        template.render($assigns.as_object().unwrap()).unwrap_err();
+        template
+            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
+            .unwrap_err();
     };
 }
 
