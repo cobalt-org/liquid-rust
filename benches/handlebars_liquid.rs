@@ -77,12 +77,10 @@ fn large_loop_helper(b: &mut test::Bencher) {
             .map(|i| format!("n={}", i))
             .map(liquid::value::Value::scalar),
     );
-    let row_wrapper: liquid::value::Object = vec![
-        ("real".into(), data_wrapper.clone()),
-        ("dummy".into(), data_wrapper.clone()),
-    ]
-    .into_iter()
-    .collect();
+    let row_wrapper = liquid::value::object!({
+        "real": data_wrapper.clone(),
+        "dummy": data_wrapper.clone(),
+    });
 
     template.render(&row_wrapper).unwrap();
     b.iter(|| template.render(&row_wrapper));
