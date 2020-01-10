@@ -33,6 +33,14 @@ macro_rules! o {
 
 #[allow(unused_macros)]
 #[macro_export]
+macro_rules! a {
+    ($($value:tt)+) => {
+        array!($($value)+)
+    };
+}
+
+#[allow(unused_macros)]
+#[macro_export]
 macro_rules! assert_template_result {
     ($expected:expr, $template:expr, ) => {
         assert_template_result!($expected, $template);
