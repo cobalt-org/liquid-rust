@@ -310,23 +310,6 @@ struct SerializeVec {
     vec: Vec<Value>,
 }
 
-struct SerializeTupleVariant {
-    name: String,
-    vec: Vec<Value>,
-}
-
-enum SerializeMap {
-    Map {
-        map: Object,
-        next_key: Option<String>,
-    },
-}
-
-struct SerializeStructVariant {
-    name: String,
-    map: Object,
-}
-
 impl serde::ser::SerializeSeq for SerializeVec {
     type Ok = Value;
     type Error = SerError;
@@ -376,6 +359,11 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
     }
 }
 
+struct SerializeTupleVariant {
+    name: String,
+    vec: Vec<Value>,
+}
+
 impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
     type Ok = Value;
     type Error = SerError;
@@ -394,6 +382,36 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
         object.insert(self.name.into(), Value::Array(self.vec));
 
         Ok(Value::Object(object))
+    }
+}
+
+enum SerializeMap {
+    Map {
+        map: Object,
+        next_key: Option<String>,
+    },
+}
+
+impl serde::ser::SerializeStruct for SerializeMap {
+    type Ok = Value;
+    type Error = SerError;
+
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
+    where
+        T: Serialize,
+    {
+        match *self {
+            SerializeMap::Map { .. } => {
+                serde::ser::SerializeMap::serialize_key(self, key)?;
+                serde::ser::SerializeMap::serialize_value(self, value)
+            }
+        }
+    }
+
+    fn end(self) -> Result<Value, SerError> {
+        match self {
+            SerializeMap::Map { .. } => serde::ser::SerializeMap::end(self),
+        }
     }
 }
 
@@ -624,27 +642,9 @@ impl serde::Serializer for MapKeySerializer {
     }
 }
 
-impl serde::ser::SerializeStruct for SerializeMap {
-    type Ok = Value;
-    type Error = SerError;
-
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
-    where
-        T: Serialize,
-    {
-        match *self {
-            SerializeMap::Map { .. } => {
-                serde::ser::SerializeMap::serialize_key(self, key)?;
-                serde::ser::SerializeMap::serialize_value(self, value)
-            }
-        }
-    }
-
-    fn end(self) -> Result<Value, SerError> {
-        match self {
-            SerializeMap::Map { .. } => serde::ser::SerializeMap::end(self),
-        }
-    }
+struct SerializeStructVariant {
+    name: String,
+    map: Object,
 }
 
 impl serde::ser::SerializeStructVariant for SerializeStructVariant {
