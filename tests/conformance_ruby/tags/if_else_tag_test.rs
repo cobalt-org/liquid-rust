@@ -35,7 +35,7 @@ fn test_if_else() {
 
 #[test]
 fn test_if_boolean() {
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": true}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": true}));
 }
 
 #[test]
@@ -43,33 +43,33 @@ fn test_if_or() {
     assert_template_result!(
         " YES ",
         "{% if a or b %} YES {% endif %}",
-        v!({"a": true, "b": true})
+        o!({"a": true, "b": true})
     );
     assert_template_result!(
         " YES ",
         "{% if a or b %} YES {% endif %}",
-        v!({"a": true, "b": false})
+        o!({"a": true, "b": false})
     );
     assert_template_result!(
         " YES ",
         "{% if a or b %} YES {% endif %}",
-        v!({"a": false, "b": true})
+        o!({"a": false, "b": true})
     );
     assert_template_result!(
         "",
         "{% if a or b %} YES {% endif %}",
-        v!({"a": false, "b": false})
+        o!({"a": false, "b": false})
     );
 
     assert_template_result!(
         " YES ",
         "{% if a or b or c %} YES {% endif %}",
-        v!({"a": false, "b": false, "c": true})
+        o!({"a": false, "b": false, "c": true})
     );
     assert_template_result!(
         "",
         "{% if a or b or c %} YES {% endif %}",
-        v!({"a": false, "b": false, "c": false})
+        o!({"a": false, "b": false, "c": false})
     );
 }
 
@@ -78,17 +78,17 @@ fn test_if_or_with_operators() {
     assert_template_result!(
         " YES ",
         "{% if a == true or b == true %} YES {% endif %}",
-        v!({"a": true, "b": true})
+        o!({"a": true, "b": true})
     );
     assert_template_result!(
         " YES ",
         "{% if a == true or b == false %} YES {% endif %}",
-        v!({"a": true, "b": true})
+        o!({"a": true, "b": true})
     );
     assert_template_result!(
         "",
         "{% if a == false or b == false %} YES {% endif %}",
-        v!({"a": true, "b": true})
+        o!({"a": true, "b": true})
     );
 }
 
@@ -98,13 +98,13 @@ fn test_comparison_of_strings_containing_and_or_or() {
     awful_markup.push_str(r#"a == "and" and b == "or" and c == "foo and bar" and d == "bar or baz" and e == "foo" and foo and bar"#);
     awful_markup.push_str(" %}");
     awful_markup.push_str(" YES {% endif %}");
-    let assigns = v!({ "a": "and", "b": "or", "c": "foo and bar", "d": "bar or baz", "e": "foo", "foo": true, "bar": true });
+    let assigns = o!({ "a": "and", "b": "or", "c": "foo and bar", "d": "bar or baz", "e": "foo", "foo": true, "bar": true });
     assert_template_result!(" YES ", awful_markup, assigns);
 }
 
 #[test]
 fn test_comparison_of_expressions_starting_with_and_or_or() {
-    let assigns = v!({ "order": { "items_count": 0 }, "android": { "name": "Roy" } });
+    let assigns = o!({ "order": { "items_count": 0 }, "android": { "name": "Roy" } });
     assert_template_result!(
         "YES",
         r#"{% if android.name == "Roy" %}YES{% endif %}"#,
@@ -126,104 +126,104 @@ fn test_if_and() {
 
 #[test]
 fn test_hash_miss_generates_false() {
-    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", v!({"foo": {}}));
+    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", o!({"foo": {}}));
 }
 
 #[test]
 fn test_if_from_variable() {
-    assert_template_result!("", "{% if var %} NO {% endif %}", v!({"var": false}));
-    assert_template_result!("", "{% if var %} NO {% endif %}", v!({ "var": nil }));
+    assert_template_result!("", "{% if var %} NO {% endif %}", o!({"var": false}));
+    assert_template_result!("", "{% if var %} NO {% endif %}", o!({ "var": nil }));
     assert_template_result!(
         "",
         "{% if foo.bar %} NO {% endif %}",
-        v!({"foo": { "bar": false }})
+        o!({"foo": { "bar": false }})
     );
-    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", v!({"foo": {}}));
-    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", v!({ "foo": nil }));
-    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", v!({"foo": true}));
+    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", o!({"foo": {}}));
+    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", o!({ "foo": nil }));
+    assert_template_result!("", "{% if foo.bar %} NO {% endif %}", o!({"foo": true}));
 
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": "text"}));
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": true}));
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": 1}));
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": {}}));
-    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", v!({"var": []}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": "text"}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": true}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": 1}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": {}}));
+    assert_template_result!(" YES ", "{% if var %} YES {% endif %}", o!({"var": []}));
     assert_template_result!(" YES ", r#"{% if "foo" %} YES {% endif %}"#);
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% endif %}",
-        v!({"foo": { "bar": true }})
+        o!({"foo": { "bar": true }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% endif %}",
-        v!({"foo": { "bar": "text" }})
+        o!({"foo": { "bar": "text" }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% endif %}",
-        v!({"foo": { "bar": 1 }})
+        o!({"foo": { "bar": 1 }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% endif %}",
-        v!({"foo": { "bar": {} }})
+        o!({"foo": { "bar": {} }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% endif %}",
-        v!({"foo": { "bar": [] }})
+        o!({"foo": { "bar": [] }})
     );
 
     assert_template_result!(
         " YES ",
         "{% if var %} NO {% else %} YES {% endif %}",
-        v!({"var": false})
+        o!({"var": false})
     );
     assert_template_result!(
         " YES ",
         "{% if var %} NO {% else %} YES {% endif %}",
-        v!({ "var": nil })
+        o!({ "var": nil })
     );
     assert_template_result!(
         " YES ",
         "{% if var %} YES {% else %} NO {% endif %}",
-        v!({"var": true})
+        o!({"var": true})
     );
     assert_template_result!(
         " YES ",
         r#"{% if "foo" %} YES {% else %} NO {% endif %}"#,
-        v!({"var": "text"})
+        o!({"var": "text"})
     );
 
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} NO {% else %} YES {% endif %}",
-        v!({"foo": { "bar": false }})
+        o!({"foo": { "bar": false }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% else %} NO {% endif %}",
-        v!({"foo": { "bar": true }})
+        o!({"foo": { "bar": true }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} YES {% else %} NO {% endif %}",
-        v!({"foo": { "bar": "text" }})
+        o!({"foo": { "bar": "text" }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} NO {% else %} YES {% endif %}",
-        v!({"foo": { "notbar": true }})
+        o!({"foo": { "notbar": true }})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} NO {% else %} YES {% endif %}",
-        v!({"foo": {}})
+        o!({"foo": {}})
     );
     assert_template_result!(
         " YES ",
         "{% if foo.bar %} NO {% else %} YES {% endif %}",
-        v!({"notfoo": { "bar": true }})
+        o!({"notfoo": { "bar": true }})
     );
 }
 
@@ -336,7 +336,7 @@ fn test_multiple_conditions() {
 
     for (vals, expected) in tests {
         let (a, b, c) = vals;
-        let assigns = v!({ "a": a, "b": b, "c": c });
+        let assigns = o!({ "a": a, "b": b, "c": c });
         assert_template_result!(expected, tpl, assigns);
     }
 }

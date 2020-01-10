@@ -54,7 +54,7 @@ fn test_include_tag_with() {
     assert_template_result!(
         "Product: Draft 151cm ",
         "{% include 'product' with products[0] %}",
-        v!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
+        o!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
         liquid()
     );
 }
@@ -64,7 +64,7 @@ fn test_include_tag_with_default_name() {
     assert_template_result!(
         "Product: Draft 151cm ",
         "{% include 'product' %}",
-        v!({"product": { "title": "Draft 151cm" }}),
+        o!({"product": { "title": "Draft 151cm" }}),
         liquid()
     );
 }
@@ -75,7 +75,7 @@ fn test_include_tag_for() {
     assert_template_result!(
         "Product: Draft 151cm Product: Element 155cm ",
         "{% include 'product' for products %}",
-        v!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
+        o!({"products": [ { "title": "Draft 151cm" }, { "title": "Element 155cm" } ]}),
         liquid()
     );
 }
@@ -86,7 +86,7 @@ fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123 ",
         "{% include 'locale_variables' echo1: 'test123' %}",
-        v!({}),
+        o!({}),
         liquid()
     );
 }
@@ -97,7 +97,7 @@ fn test_include_tag_with_multiple_local_variables() {
     assert_template_result!(
         "Locale: test123 test321",
         "{% include 'locale_variables' echo1: 'test123', echo2: 'test321' %}",
-        v!({}),
+        o!({}),
         liquid()
     );
 }
@@ -108,7 +108,7 @@ fn test_include_tag_with_multiple_local_variables_from_context() {
     assert_template_result!(
         "Locale: test123 test321",
         "{% include 'locale_variables' echo1: echo1, echo2: more_echos.echo2 %}",
-        v!({"echo1": "test123", "more_echos": { "echo2": "test321" }}),
+        o!({"echo1": "test123", "more_echos": { "echo2": "test321" }}),
         liquid()
     );
 }
@@ -118,19 +118,19 @@ fn test_included_templates_assigns_variables() {
     assert_template_result!(
         "bar",
         "{% include 'assignments' %}{{ foo }}",
-        v!({}),
+        o!({}),
         liquid()
     );
 }
 
 #[test]
 fn test_nested_include_tag() {
-    assert_template_result!("body body_detail", "{% include 'body' %}", v!({}), liquid());
+    assert_template_result!("body body_detail", "{% include 'body' %}", o!({}), liquid());
 
     assert_template_result!(
         "header body body_detail footer",
         "{% include 'nested_template' %}",
-        v!({}),
+        o!({}),
         liquid()
     );
 }
@@ -141,14 +141,14 @@ fn test_nested_include_with_variable() {
     assert_template_result!(
         "Product: Draft 151cm details ",
         "{% include 'nested_product_template' with product %}",
-        v!({"product": { "title": "Draft 151cm" }}),
+        o!({"product": { "title": "Draft 151cm" }}),
         liquid()
     );
 
     assert_template_result!(
         "Product: Draft 151cm details Product: Element 155cm details ",
         "{% include 'nested_product_template' for products %}",
-        v!({"products": [{ "title": "Draft 151cm" }, { "title": "Element 155cm" }]}),
+        o!({"products": [{ "title": "Draft 151cm" }, { "title": "Element 155cm" }]}),
         liquid()
     );
 }
@@ -189,20 +189,20 @@ fn test_dynamically_choosen_template() {
     assert_template_result!(
         "Test123",
         "{% include template %}",
-        v!({"template": "Test123"}),
+        o!({"template": "Test123"}),
         liquid()
     );
     assert_template_result!(
         "Test321",
         "{% include template %}",
-        v!({"template": "Test321"}),
+        o!({"template": "Test321"}),
         liquid()
     );
 
     assert_template_result!(
         "Product: Draft 151cm ",
         "{% include template for product %}",
-        v!({"template": "product", "product": { "title": "Draft 151cm" }}),
+        o!({"template": "product", "product": { "title": "Draft 151cm" }}),
         liquid()
     );
 }
@@ -224,7 +224,7 @@ fn test_include_tag_within_if_statement() {
     assert_template_result!(
         "foo_if_true",
         "{% if true %}{% include 'foo_if_true' %}{% endif %}",
-        v!({}),
+        o!({}),
         liquid()
     );
 }
@@ -246,7 +246,7 @@ fn test_does_not_add_error_in_strict_mode_for_missing_variable() {
     let template = liquid()
         .parse(r#" {% include "nested_template" %}"#)
         .unwrap();
-    template.render(v!({}).as_object().unwrap()).unwrap();
+    template.render(o!({}).as_object().unwrap()).unwrap();
 }
 
 #[test]
@@ -268,21 +268,21 @@ fn test_including_via_variable_value() {
     assert_template_result!(
         "from TestFileSystem",
         "{% assign page = 'pick_a_source' %}{% include page %}",
-        v!({}),
+        o!({}),
         liquid()
     );
 
     assert_template_result!(
         "Product: Draft 151cm ",
         "{% assign page = 'product' %}{% include page %}",
-        v!({"product": { "title": "Draft 151cm" }}),
+        o!({"product": { "title": "Draft 151cm" }}),
         liquid()
     );
 
     assert_template_result!(
         "Product: Draft 151cm ",
         "{% assign page = 'product' %}{% include page for foo %}",
-        v!({"foo": { "title": "Draft 151cm" }}),
+        o!({"foo": { "title": "Draft 151cm" }}),
         liquid()
     );
 }
@@ -290,5 +290,5 @@ fn test_including_via_variable_value() {
 #[test]
 fn test_including_with_strict_variables() {
     let template = liquid().parse("{% include 'simple' %}").unwrap();
-    template.render(v!({}).as_object().unwrap()).unwrap();
+    template.render(&o!({})).unwrap();
 }

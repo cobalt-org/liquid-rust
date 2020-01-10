@@ -21,13 +21,13 @@ fn test_assigned_variable() {
     assert_template_result!(
         r#".foo."#,
         r#"{% assign foo = values %}.{{ foo[0] }}."#,
-        v!({"values": ["foo", "bar", "baz"]}),
+        o!({"values": ["foo", "bar", "baz"]}),
     );
 
     assert_template_result!(
         r#".bar."#,
         r#"{% assign foo = values %}.{{ foo[1] }}."#,
-        v!({"values": ["foo", "bar", "baz"]}),
+        o!({"values": ["foo", "bar", "baz"]}),
     );
 }
 
@@ -36,7 +36,7 @@ fn test_assign_with_filter() {
     assert_template_result!(
         r#".bar."#,
         r#"{% assign foo = values | split: "," %}.{{ foo[1] }}."#,
-        v!({"values": "foo,bar,baz"}),
+        o!({"values": "foo,bar,baz"}),
     );
 }
 

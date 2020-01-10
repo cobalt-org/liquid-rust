@@ -54,7 +54,7 @@ fn test_new_tags_are_not_blank_by_default() {
     assert_template_result!(
         repeat(" ", N),
         wrap_in_for("{{ foobar }}"),
-        v!({"foobar": " "}),
+        o!({"foobar": " "}),
     );
 }
 
@@ -132,7 +132,7 @@ fn test_increment_is_not_blank() {
     assert_template_result!(
         repeat(" 0", 2 * (N + 1)),
         wrap("{% assign foo = 0 %} {% increment foo %} {% decrement foo %}"),
-        v!({}),
+        o!({}),
     );
 }
 
@@ -143,7 +143,7 @@ fn test_cycle_is_not_blank() {
 
 #[test]
 fn test_raw_is_not_blank() {
-    assert_template_result!(repeat("  ", N + 1), wrap(" {% raw %} {% endraw %}"), v!({}),);
+    assert_template_result!(repeat("  ", N + 1), wrap(" {% raw %} {% endraw %}"), o!({}),);
 }
 
 #[test]
@@ -156,19 +156,19 @@ fn test_include_is_blank() {
     assert_template_result!(
         repeat("foobar", N + 1),
         wrap("{% include 'foobar' %}"),
-        v!({}),
+        o!({}),
         liquid
     );
     assert_template_result!(
         repeat(" foobar ", N + 1),
         wrap("{% include ' foobar ' %}"),
-        v!({}),
+        o!({}),
         liquid
     );
     assert_template_result!(
         repeat("   ", N + 1),
         wrap(" {% include ' ' %} "),
-        v!({}),
+        o!({}),
         liquid
     );
 }

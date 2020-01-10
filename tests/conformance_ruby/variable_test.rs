@@ -2,12 +2,12 @@ use liquid::value::ValueView;
 
 #[test]
 fn test_simple_variable() {
-    assert_template_result!(r#"worked"#, r#"{{test}}"#, v!({"test": "worked"}));
+    assert_template_result!(r#"worked"#, r#"{{test}}"#, o!({"test": "worked"}));
 
     assert_template_result!(
         r#"worked wonderfully"#,
         r#"{{test}}"#,
-        v!({"test": "worked wonderfully"}),
+        o!({"test": "worked wonderfully"}),
     );
 }
 
@@ -19,12 +19,12 @@ fn test_variable_render_calls_to_liquid() {
 
 #[test]
 fn test_simple_with_whitespaces() {
-    assert_template_result!(r#"  worked  "#, r#"  {{ test }}  "#, v!({"test": "worked"}));
+    assert_template_result!(r#"  worked  "#, r#"  {{ test }}  "#, o!({"test": "worked"}));
 
     assert_template_result!(
         r#"  worked wonderfully  "#,
         r#"  {{ test }}  "#,
-        v!({"test": "worked wonderfully"}),
+        o!({"test": "worked wonderfully"}),
     );
 }
 
@@ -50,13 +50,13 @@ fn test_hash_scoping() {
     assert_template_result!(
         r#"worked"#,
         r#"{{ test.test }}"#,
-        v!({"test": {"test": "worked"}}),
+        o!({"test": {"test": "worked"}}),
     );
 }
 
 #[test]
 fn test_false_renders_as_false() {
-    assert_template_result!(r#"false"#, r#"{{ foo }}"#, v!({"foo": false}));
+    assert_template_result!(r#"false"#, r#"{{ foo }}"#, o!({"foo": false}));
 
     assert_template_result!(r#"false"#, r#"{{ false }}"#);
 }
@@ -82,16 +82,16 @@ fn test_reuse_parsed_template() {
         .parse(r#"{{ greeting }} {{ name }}"#)
         .unwrap();
 
-    let globals = v!({"greeting": "Hello", "name": "Tobi"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"greeting": "Hello", "name": "Tobi"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("Hello Tobi", rendered);
 
     // Modified due to strict_variables: true
-    let globals = v!({"greeting": "Hello", "unknown": "Tobi"});
+    let globals = o!({"greeting": "Hello", "unknown": "Tobi"});
     template.render(globals.as_object().unwrap()).unwrap_err();
 
-    let globals = v!({"greeting": "Hello", "name": "Brian"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"greeting": "Hello", "name": "Brian"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("Hello Brian", rendered);
 
     // Preset assign cases ("Goodbye")( are implementation specific
@@ -107,20 +107,20 @@ fn test_assigns_not_polluted_from_template() {
 
     // All modified due to strict_variables: true
 
-    let globals = v!({"test": "baz"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"test": "baz"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("bazbar", rendered);
 
-    let globals = v!({"test": "baz"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"test": "baz"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("bazbar", rendered);
 
-    let globals = v!({"test": "foo"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"test": "foo"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("foobar", rendered);
 
-    let globals = v!({"test": "baz"});
-    let rendered = template.render(globals.as_object().unwrap()).unwrap();
+    let globals = o!({"test": "baz"});
+    let rendered = template.render(&globals).unwrap();
     assert_eq!("bazbar", rendered);
 }
 
@@ -132,7 +132,7 @@ fn test_hash_with_default_proc() {
 
 #[test]
 fn test_multiline_variable() {
-    assert_template_result!(r#"worked"#, "{{\ntest\n}}", v!({"test": "worked"}));
+    assert_template_result!(r#"worked"#, "{{\ntest\n}}", o!({"test": "worked"}));
 }
 
 #[test]
