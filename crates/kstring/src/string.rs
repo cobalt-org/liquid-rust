@@ -145,14 +145,14 @@ impl KStringInner {
         match self {
             Self::Owned(s) => s,
             Self::Singleton(s) => BoxedStr::from(s),
-            Self::Fixed1(s) => s.into_boxed_str(),
-            Self::Fixed2(s) => s.into_boxed_str(),
-            Self::Fixed3(s) => s.into_boxed_str(),
-            Self::Fixed4(s) => s.into_boxed_str(),
-            Self::Fixed5(s) => s.into_boxed_str(),
-            Self::Fixed6(s) => s.into_boxed_str(),
-            Self::Fixed7(s) => s.into_boxed_str(),
-            Self::Fixed8(s) => s.into_boxed_str(),
+            Self::Fixed1(s) => s.to_boxed_str(),
+            Self::Fixed2(s) => s.to_boxed_str(),
+            Self::Fixed3(s) => s.to_boxed_str(),
+            Self::Fixed4(s) => s.to_boxed_str(),
+            Self::Fixed5(s) => s.to_boxed_str(),
+            Self::Fixed6(s) => s.to_boxed_str(),
+            Self::Fixed7(s) => s.to_boxed_str(),
+            Self::Fixed8(s) => s.to_boxed_str(),
         }
     }
 }

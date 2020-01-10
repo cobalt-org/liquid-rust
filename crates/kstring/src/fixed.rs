@@ -16,7 +16,7 @@ macro_rules! fixed_string {
             }
 
             #[inline]
-            pub(crate) fn into_boxed_str(&self) -> Box<str> {
+            pub(crate) fn to_boxed_str(&self) -> Box<str> {
                 Box::from(self.as_str())
             }
 
