@@ -35,11 +35,11 @@ fn test_unless_in_loop() {
     assert_template_result!(
         "23",
         "{% for i in choices %}{% unless i %}{{ forloop.index }}{% endunless %}{% endfor %}",
-        v!({"choices": [1, nil, false]})
+        o!({"choices": [1, nil, false]})
     );
 }
 
 #[test]
 fn test_unless_else_in_loop() {
-    assert_template_result!(" TRUE  2  3 ", "{% for i in choices %}{% unless i %} {{ forloop.index }} {% else %} TRUE {% endunless %}{% endfor %}", v!({"choices": [1, nil, false]}));
+    assert_template_result!(" TRUE  2  3 ", "{% for i in choices %}{% unless i %} {{ forloop.index }} {% else %} TRUE {% endunless %}{% endfor %}", o!({"choices": [1, nil, false]}));
 }

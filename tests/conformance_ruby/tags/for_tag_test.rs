@@ -3,19 +3,19 @@ fn test_for() {
     assert_template_result!(
         " yo  yo  yo  yo ",
         "{%for item in array%} yo {%endfor%}",
-        v!({"array": [1, 2, 3, 4]}),
+        o!({"array": [1, 2, 3, 4]}),
     );
     assert_template_result!(
         "yoyo",
         "{%for item in array%}yo{%endfor%}",
-        v!({"array": [1, 2]}),
+        o!({"array": [1, 2]}),
     );
     assert_template_result!(
         " yo ",
         "{%for item in array%} yo {%endfor%}",
-        v!({"array": [1]}),
+        o!({"array": [1]}),
     );
-    assert_template_result!("", "{%for item in array%}{%endfor%}", v!({"array": [1, 2]}));
+    assert_template_result!("", "{%for item in array%}{%endfor%}", o!({"array": [1, 2]}));
     let expected = r#"
 
   yo
@@ -30,12 +30,12 @@ fn test_for() {
   yo
 {%endfor%}
 "#;
-    assert_template_result!(expected, template, v!({"array": [1, 2, 3]}));
+    assert_template_result!(expected, template, o!({"array": [1, 2, 3]}));
 }
 
 #[test]
 fn test_for_reversed() {
-    let assigns = v!({ "array": [ 1, 2, 3] });
+    let assigns = o!({ "array": [ 1, 2, 3] });
     assert_template_result!(
         "321",
         "{%for item in array reversed %}{{item}}{%endfor%}",
@@ -49,15 +49,15 @@ fn test_for_with_range() {
     assert_template_result!(
         " 1  2  3 ",
         "{%for item in (1..3) %} {{item}} {%endfor%}",
-        v!({}),
+        o!({}),
     );
 
-    assert_render_error!("{% for i in (a..2) %}{% endfor %}", v!({"a": [1, 2]}));
+    assert_render_error!("{% for i in (a..2) %}{% endfor %}", o!({"a": [1, 2]}));
 
     assert_template_result!(
         " 0  1  2  3 ",
         "{% for item in (a..3) %} {{item}} {% endfor %}",
-        v!({"a": "invalid integer"}),
+        o!({"a": "invalid integer"}),
     );
 }
 
@@ -66,17 +66,17 @@ fn test_for_with_variable_range() {
     assert_template_result!(
         " 1  2  3 ",
         "{%for item in (1..foobar) %} {{item}} {%endfor%}",
-        v!({"foobar": 3}),
+        o!({"foobar": 3}),
     );
 }
 
 #[test]
 fn test_for_with_hash_value_range() {
-    let foobar = v!({ "value": 3 });
+    let foobar = o!({ "value": 3 });
     assert_template_result!(
         " 1  2  3 ",
         "{%for item in (1..foobar.value) %} {{item}} {%endfor%}",
-        v!({ "foobar": foobar }),
+        o!({ "foobar": foobar }),
     );
 }
 
@@ -91,38 +91,38 @@ fn test_for_with_variable() {
     assert_template_result!(
         " 1  2  3 ",
         "{%for item in array%} {{item}} {%endfor%}",
-        v!({"array": [1, 2, 3]}),
+        o!({"array": [1, 2, 3]}),
     );
     assert_template_result!(
         "123",
         "{%for item in array%}{{item}}{%endfor%}",
-        v!({"array": [1, 2, 3]}),
+        o!({"array": [1, 2, 3]}),
     );
     assert_template_result!(
         "123",
         "{% for item in array %}{{item}}{% endfor %}",
-        v!({"array": [1, 2, 3]}),
+        o!({"array": [1, 2, 3]}),
     );
     assert_template_result!(
         "abcd",
         "{%for item in array%}{{item}}{%endfor%}",
-        v!({"array": ["a", "b", "c", "d"]}),
+        o!({"array": ["a", "b", "c", "d"]}),
     );
     assert_template_result!(
         "a b c",
         "{%for item in array%}{{item}}{%endfor%}",
-        v!({"array": ["a", " ", "b", " ", "c"]}),
+        o!({"array": ["a", " ", "b", " ", "c"]}),
     );
     assert_template_result!(
         "abc",
         "{%for item in array%}{{item}}{%endfor%}",
-        v!({"array": ["a", "", "b", "", "c"]}),
+        o!({"array": ["a", "", "b", "", "c"]}),
     );
 }
 
 #[test]
 fn test_for_helpers() {
-    let assigns = v!({ "array": [1, 2, 3] });
+    let assigns = o!({ "array": [1, 2, 3] });
     assert_template_result!(
         " 1/3  2/3  3/3 ",
         "{%for item in array%} {{forloop.index}}/{{forloop.length}} {%endfor%}",
@@ -162,7 +162,7 @@ fn test_for_helpers() {
 
 #[test]
 fn test_for_and_if() {
-    let assigns = v!({ "array": [1, 2, 3] });
+    let assigns = o!({ "array": [1, 2, 3] });
     assert_template_result!(
         "+--",
         "{%for item in array%}{% if forloop.first %}+{% else %}-{% endif %}{%endfor%}",
@@ -176,23 +176,23 @@ fn test_for_else() {
     assert_template_result!(
         "+++",
         "{%for item in array%}+{%else%}-{%endfor%}",
-        v!({"array": [1, 2, 3]}),
+        o!({"array": [1, 2, 3]}),
     );
     assert_template_result!(
         "-",
         "{%for item in array%}+{%else%}-{%endfor%}",
-        v!({"array": []}),
+        o!({"array": []}),
     );
     assert_template_result!(
         "-",
         "{%for item in array%}+{%else%}-{%endfor%}",
-        v!({ "array": nil }),
+        o!({ "array": nil }),
     );
 }
 
 #[test]
 fn test_limiting() {
-    let assigns = v!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] });
+    let assigns = o!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] });
     assert_template_result!(
         "12",
         "{%for i in array limit:2 %}{{ i }}{%endfor%}",
@@ -217,7 +217,7 @@ fn test_limiting() {
 
 #[test]
 fn test_dynamic_variable_limiting() {
-    let assigns = v!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], "limit": 2, "offset": 2 });
+    let assigns = o!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], "limit": 2, "offset": 2 });
 
     assert_template_result!(
         "34",
@@ -228,7 +228,7 @@ fn test_dynamic_variable_limiting() {
 
 #[test]
 fn test_nested_for() {
-    let assigns = v!({ "array": [[1, 2], [3, 4], [5, 6]] });
+    let assigns = o!({ "array": [[1, 2], [3, 4], [5, 6]] });
     assert_template_result!(
         "123456",
         "{%for item in array%}{%for i in item%}{{ i }}{%endfor%}{%endfor%}",
@@ -238,7 +238,7 @@ fn test_nested_for() {
 
 #[test]
 fn test_offset_only() {
-    let assigns = v!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] });
+    let assigns = o!({ "array": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] });
     assert_template_result!(
         "890",
         "{%for i in array offset:7 %}{{ i }}{%endfor%}",
@@ -249,7 +249,7 @@ fn test_offset_only() {
 #[test]
 #[should_panic] // liquid-rust#274
 fn test_pause_resume() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
       {%for i in array.items limit: 3 %}{{i}}{%endfor%}
       next
@@ -270,7 +270,7 @@ fn test_pause_resume() {
 #[test]
 #[should_panic] // liquid-rust#274
 fn test_pause_resume_limit() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
       {%for i in array.items limit:3 %}{{i}}{%endfor%}
       next
@@ -291,7 +291,7 @@ fn test_pause_resume_limit() {
 #[test]
 #[should_panic] // liquid-rust#274
 fn test_pause_resume_big_limit() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
       {%for i in array.items limit:3 %}{{i}}{%endfor%}
       next
@@ -312,7 +312,7 @@ fn test_pause_resume_big_limit() {
 #[test]
 #[should_panic] // liquid-rust#274
 fn test_pause_resume_big_offset() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = "{%for i in array.items limit:3 %}{{i}}{%endfor%}
       next
       {%for i in array.items offset:continue limit:3 %}{{i}}{%endfor%}
@@ -328,7 +328,7 @@ fn test_pause_resume_big_offset() {
 
 #[test]
 fn test_for_with_break() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] } });
 
     let markup = "{% for i in array.items %}{% break %}{% endfor %}";
     let expected = "";
@@ -349,7 +349,7 @@ fn test_for_with_break() {
 
     // tests to ensure it only breaks out of the local for loop
     // and not all of them.
-    let assigns = v!({ "array": [[1, 2], [3, 4], [5, 6]] });
+    let assigns = o!({ "array": [[1, 2], [3, 4], [5, 6]] });
     let markup = concat!(
         "{% for item in array %}",
         "{% for i in item %}",
@@ -364,7 +364,7 @@ fn test_for_with_break() {
     assert_template_result!(expected, markup, assigns);
 
     // test break does nothing when unreached
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5] } });
     let markup =
         "{% for i in array.items %}{% if i == 9999 %}{% break %}{% endif %}{{ i }}{% endfor %}";
     let expected = "12345";
@@ -373,7 +373,7 @@ fn test_for_with_break() {
 
 #[test]
 fn test_for_with_continue() {
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5] } });
 
     let markup = "{% for i in array.items %}{% continue %}{% endfor %}";
     let expected = "";
@@ -397,7 +397,7 @@ fn test_for_with_continue() {
     assert_template_result!(expected, markup, assigns);
 
     // tests to ensure it only continues the local for loop and not all of them.
-    let assigns = v!({ "array": [[1, 2], [3, 4], [5, 6]] });
+    let assigns = o!({ "array": [[1, 2], [3, 4], [5, 6]] });
     let markup = concat!(
         "{% for item in array %}",
         "{% for i in item %}",
@@ -412,7 +412,7 @@ fn test_for_with_continue() {
     assert_template_result!(expected, markup, assigns);
 
     // test continue does nothing when unreached
-    let assigns = v!({ "array": { "items": [1, 2, 3, 4, 5] } });
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5] } });
     let markup =
         "{% for i in array.items %}{% if i == 9999 %}{% continue %}{% endif %}{{ i }}{% endfor %}";
     let expected = "12345";
@@ -429,13 +429,13 @@ fn test_for_tag_string() {
     assert_template_result!(
         "test string",
         "{%for val in string%}{{val}}{%endfor%}",
-        v!({"string": "test string"}),
+        o!({"string": "test string"}),
     );
 
     assert_template_result!(
         "test string",
         "{%for val in string limit:1%}{{val}}{%endfor%}",
-        v!({"string": "test string"}),
+        o!({"string": "test string"}),
     );
 
     assert_template_result!(
@@ -452,7 +452,7 @@ fn test_for_tag_string() {
             "{{forloop.last}}-",
             "{{val}}{%endfor%}"
         ),
-        v!({"string": "test string"}),
+        o!({"string": "test string"}),
     );
 }
 
@@ -466,7 +466,7 @@ fn test_for_parentloop_references_parent_loop() {
             "{{ forloop.parentloop.index }}.{{ forloop.index }} ",
             "{% endfor %}{% endfor %}"
         ),
-        v!({"outer": [[1, 1, 1], [1, 1, 1]]}),
+        o!({"outer": [[1, 1, 1], [1, 1, 1]]}),
     );
 }
 
@@ -480,7 +480,7 @@ fn test_for_parentloop_nil_when_not_present() {
             "{{ forloop.parentloop.index }}.{{ forloop.index }} ",
             "{% endfor %}"
         ),
-        v!({"outer": [[1, 1, 1], [1, 1, 1]]}),
+        o!({"outer": [[1, 1, 1], [1, 1, 1]]}),
     );
 }
 
@@ -489,7 +489,7 @@ fn test_inner_for_over_empty_input() {
     assert_template_result!(
         "oo",
         "{% for a in (1..2) %}o{% for b in empty %}{% endfor %}{% endfor %}",
-        v!({}),
+        o!({}),
     );
 }
 
@@ -499,7 +499,7 @@ fn test_blank_string_not_iterable() {
     assert_template_result!(
         "",
         "{% for char in characters %}I WILL NOT BE OUTPUT{% endfor %}",
-        v!({"characters": ""}),
+        o!({"characters": ""}),
     );
 }
 
@@ -512,7 +512,7 @@ fn test_bad_variable_naming_in_for_loop() {
 fn test_spacing_with_variable_naming_in_for_loop() {
     let expected = "12345";
     let template = "{% for       item   in   items %}{{item}}{% endfor %}";
-    let assigns = v!({ "items": [1, 2, 3, 4, 5] });
+    let assigns = o!({ "items": [1, 2, 3, 4, 5] });
     assert_template_result!(expected, template, assigns);
 }
 

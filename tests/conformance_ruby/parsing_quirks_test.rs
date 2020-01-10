@@ -86,6 +86,6 @@ fn test_contains_in_id() {
     assert_template_result!(
         " YES ",
         "{% if containsallshipments == true %} YES {% endif %}",
-        v!({"containsallshipments": true}),
+        o!({"containsallshipments": true}),
     );
 }

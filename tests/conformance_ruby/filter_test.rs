@@ -75,14 +75,14 @@ fn liquid_sub() -> liquid::Parser {
 
 #[test]
 fn test_local_filter() {
-    let assigns = v!({"var": 1000});
+    let assigns = o!({"var": 1000});
 
     assert_template_result!(" 1000$ ", "{{var | money}}", assigns, liquid_money());
 }
 
 #[test]
 fn test_underscore_in_filter_name() {
-    let assigns = v!({"var": 1000});
+    let assigns = o!({"var": 1000});
 
     assert_template_result!(
         " 1000$ ",
@@ -100,21 +100,21 @@ fn test_second_filter_overwrites_first() {
 
 #[test]
 fn test_size() {
-    let assigns = v!({"var": "abcd"});
+    let assigns = o!({"var": "abcd"});
 
     assert_template_result!("4", "{{var | size}}", assigns);
 }
 
 #[test]
 fn test_join() {
-    let assigns = v!({"var": [1, 2, 3, 4]});
+    let assigns = o!({"var": [1, 2, 3, 4]});
 
     assert_template_result!("1 2 3 4", "{{var | join}}", assigns);
 }
 
 #[test]
 fn test_sort() {
-    let assigns = v!({
+    let assigns = o!({
         "value": 3,
         "numbers": [2, 1, 4, 3],
         "words": ["expected", "as", "alphabetic"],
@@ -135,7 +135,7 @@ fn test_sort() {
 
 #[test]
 fn test_sort_natural() {
-    let assigns = v!({
+    let assigns = o!({
         "words": ["case", "Assert", "Insensitive"],
         "hashes": [{ "a": "A" }, { "a": "b" }, { "a": "C" }],
     });
@@ -160,7 +160,7 @@ fn test_sort_natural() {
 
 #[test]
 fn test_compact() {
-    let assigns = v!({
+    let assigns = o!({
         "words": ["a", nil, "b", nil, "c"],
         "hashes": [{ "a": "A" }, { "a": nil }, { "a": "C" }],
     });
@@ -181,21 +181,21 @@ fn test_compact() {
 
 #[test]
 fn test_strip_html() {
-    let assigns = v!({"var": "<b>bla blub</a>"});
+    let assigns = o!({"var": "<b>bla blub</a>"});
 
     assert_template_result!("bla blub", "{{var | strip_html }}", assigns);
 }
 
 #[test]
 fn test_strip_html_ignore_comments_with_html() {
-    let assigns = v!({"var": "<!-- split and some <ul> tag --><b>bla blub</a>"});
+    let assigns = o!({"var": "<!-- split and some <ul> tag --><b>bla blub</a>"});
 
     assert_template_result!("bla blub", "{{var | strip_html }}", assigns);
 }
 
 #[test]
 fn test_capitalize() {
-    let assigns = v!({"var": "blub"});
+    let assigns = o!({"var": "blub"});
 
     assert_template_result!("Blub", "{{var | capitalize }}", assigns);
 }
@@ -209,7 +209,7 @@ fn test_nonexistent_filter_is_ignored() {
 #[test]
 #[should_panic] // liquid-rust#92
 fn test_filter_with_keyword_arguments() {
-    let assigns = v!({
+    let assigns = o!({
         "surname": "john",
         "input": "hello %{first_name}, %{last_name}",
     });

@@ -25,12 +25,20 @@ macro_rules! v {
 
 #[allow(unused_macros)]
 #[macro_export]
+macro_rules! o {
+    ($($value:tt)+) => {
+        object!($($value)+)
+    };
+}
+
+#[allow(unused_macros)]
+#[macro_export]
 macro_rules! assert_template_result {
     ($expected:expr, $template:expr, ) => {
         assert_template_result!($expected, $template);
     };
     ($expected:expr, $template:expr) => {
-        let assigns = ::liquid::value::Value::Object(Default::default());
+        let assigns = ::liquid::value::Object::default();
         assert_template_result!($expected, $template, assigns);
     };
     ($expected:expr, $template:expr, $assigns: expr, ) => {
@@ -46,9 +54,7 @@ macro_rules! assert_template_result {
     };
     ($expected:expr, $template:expr, $assigns: expr, $liquid: expr) => {
         let template = $liquid.parse($template.as_ref()).unwrap();
-        let rendered = template
-            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
-            .unwrap();
+        let rendered = template.render(&$assigns).unwrap();
         assert_eq!($expected, rendered);
     };
 }
@@ -72,9 +78,7 @@ macro_rules! assert_template_matches {
             .unwrap()
             .parse($template.as_ref())
             .unwrap();
-        let rendered = template
-            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
-            .unwrap();
+        let rendered = template.render(&$assigns).unwrap();
 
         let expected = $expected;
         println!("pattern={}", expected);
@@ -111,7 +115,7 @@ macro_rules! assert_render_error {
         assert_render_error!($template);
     };
     ($template:expr) => {
-        let assigns = ::liquid::value::Value::Object(Default::default());
+        let assigns = ::liquid::value::Object::default();
         assert_render_error!($template, assigns);
     };
     ($template:expr, $assigns: expr, ) => {
@@ -123,9 +127,7 @@ macro_rules! assert_render_error {
             .unwrap()
             .parse($template.as_ref())
             .unwrap();
-        template
-            .render(::liquid_value::ValueView::as_object(&$assigns).unwrap())
-            .unwrap_err();
+        template.render(&$assigns).unwrap_err();
     };
 }
 

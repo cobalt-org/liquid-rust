@@ -447,7 +447,7 @@ fn test_map() {
     assert_template_result!(
         "abc",
         r#"{{ ary | map:"foo" | map:"bar" }}"#,
-        v!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}),
+        o!({"ary": [{ "foo": { "bar": "a" } }, { "foo": { "bar": "b" } }, { "foo": { "bar": "c" } }]}),
     );
 }
 
@@ -469,7 +469,7 @@ fn test_map_on_hashes() {
     assert_template_result!(
         "4217",
         r#"{{ thing | map: "foo" | map: "bar" }}"#,
-        v!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}),
+        o!({"thing": { "foo": [ { "bar": 42 }, { "bar": 17 } ] }}),
     );
 }
 
@@ -477,8 +477,8 @@ fn test_map_on_hashes() {
 #[should_panic] // liquid-rust#255
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
-    let hash = v!({ "foo": { "bar": 42 } });
-    assert_template_result!("42", template, v!({ "thing": hash }));
+    let hash = o!({ "foo": { "bar": 42 } });
+    assert_template_result!("42", template, o!({ "thing": hash }));
 }
 
 #[test]
@@ -635,7 +635,7 @@ fn test_replace() {
     assert_template_result!(
         "2 1 1 1",
         r#"{{ "1 1 1 1" | replace_first: "1", 2 }}"#,
-        v!({}),
+        o!({}),
     );
 }
 
@@ -655,31 +655,31 @@ fn test_pipes_in_string_arguments() {
 
 #[test]
 fn test_strip() {
-    assert_template_result!("ab c", "{{ source | strip }}", v!({"source": " ab c  "}));
+    assert_template_result!("ab c", "{{ source | strip }}", o!({"source": " ab c  "}));
     assert_template_result!(
         "ab c",
         "{{ source | strip }}",
-        v!({"source": " \tab c  \n \t"}),
+        o!({"source": " \tab c  \n \t"}),
     );
 }
 
 #[test]
 fn test_lstrip() {
-    assert_template_result!("ab c  ", "{{ source | lstrip }}", v!({"source": " ab c  "}));
+    assert_template_result!("ab c  ", "{{ source | lstrip }}", o!({"source": " ab c  "}));
     assert_template_result!(
         "ab c  \n \t",
         "{{ source | lstrip }}",
-        v!({"source": " \tab c  \n \t"}),
+        o!({"source": " \tab c  \n \t"}),
     );
 }
 
 #[test]
 fn test_rstrip() {
-    assert_template_result!(" ab c", "{{ source | rstrip }}", v!({"source": " ab c  "}));
+    assert_template_result!(" ab c", "{{ source | rstrip }}", o!({"source": " ab c  "}));
     assert_template_result!(
         " \tab c",
         "{{ source | rstrip }}",
-        v!({"source": " \tab c  \n \t"}),
+        o!({"source": " \tab c  \n \t"}),
     );
 }
 
@@ -688,12 +688,12 @@ fn test_strip_newlines() {
     assert_template_result!(
         "abc",
         "{{ source | strip_newlines }}",
-        v!({"source": "a\nb\nc"}),
+        o!({"source": "a\nb\nc"}),
     );
     assert_template_result!(
         "abc",
         "{{ source | strip_newlines }}",
-        v!({"source": "a\r\nb\nc"}),
+        o!({"source": "a\r\nb\nc"}),
     );
 }
 
@@ -702,7 +702,7 @@ fn test_newlines_to_br() {
     assert_template_result!(
         "a<br />\nb<br />\nc",
         "{{ source | newline_to_br }}",
-        v!({"source": "a\nb\nc"}),
+        o!({"source": "a\nb\nc"}),
     );
 }
 
@@ -720,7 +720,7 @@ fn test_minus() {
     assert_template_result!(
         "4",
         r#"{{ input | minus:operand }}"#,
-        v!({"input": 5, "operand": 1}),
+        o!({"input": 5, "operand": 1}),
     );
     assert_template_result!("2.3", r#"{{ "4.3" | minus:"2" }}"#);
 
@@ -749,7 +749,7 @@ fn test_times() {
     assert_template_result!(
         "6",
         r#"{{ "2.1" | times:3 | replace: ".","-" | plus:0}}"#,
-        v!({}),
+        o!({}),
     );
     assert_template_result!("7.25", r#"{{ 0.0725 | times:100 }}"#);
     assert_template_result!("-7.25", r#"{{ "-0.0725" | times:100 }}"#);
@@ -784,9 +784,9 @@ fn test_modulo() {
 #[test]
 #[should_panic] // liquid-rust#251
 fn test_round() {
-    assert_template_result!("5", r#"{{ input | round }}"#, v!({"input": 4.6}));
+    assert_template_result!("5", r#"{{ input | round }}"#, o!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | round }}"#);
-    assert_template_result!("4.56", r#"{{ input | round: 2 }}"#, v!({"input": 4.5612}));
+    assert_template_result!("4.56", r#"{{ input | round: 2 }}"#, o!({"input": 4.5612}));
     assert_render_error!("{{ 1.0 | divided_by: 0.0 | round }}");
 
     // Implementation specific: use of drops
@@ -795,7 +795,7 @@ fn test_round() {
 #[test]
 #[should_panic] // liquid-rust#251
 fn test_ceil() {
-    assert_template_result!("5", r#"{{ input | ceil }}"#, v!({"input": 4.6}));
+    assert_template_result!("5", r#"{{ input | ceil }}"#, o!({"input": 4.6}));
     assert_template_result!("5", r#"{{ "4.3" | ceil }}"#);
     assert_render_error!("{{ 1.0 | divided_by: 0.0 | ceil }}");
 
@@ -805,7 +805,7 @@ fn test_ceil() {
 #[test]
 #[should_panic] // liquid-rust#251
 fn test_floor() {
-    assert_template_result!("4", r#"{{ input | floor }}"#, v!({"input": 4.6}));
+    assert_template_result!("4", r#"{{ input | floor }}"#, o!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | floor }}"#);
     assert_render_error!("{{ 1.0 | divided_by: 0.0 | floor }}");
 
@@ -834,7 +834,7 @@ fn test_at_least() {
 
 #[test]
 fn test_append() {
-    let assigns = v!({ "a": "bc", "b": "d" });
+    let assigns = o!({ "a": "bc", "b": "d" });
     assert_template_result!("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
     assert_template_result!("bcd", r#"{{ a | append: b}}"#, assigns);
 }
@@ -850,7 +850,7 @@ fn test_concat() {
 
 #[test]
 fn test_prepend() {
-    let assigns = v!({ "a": "bc", "b": "a" });
+    let assigns = o!({ "a": "bc", "b": "a" });
     assert_template_result!("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
     assert_template_result!("abc", r#"{{ a | prepend: b}}"#, assigns);
 }

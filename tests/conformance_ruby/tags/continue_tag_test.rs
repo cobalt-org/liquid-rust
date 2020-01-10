@@ -2,7 +2,7 @@
 // block
 #[test]
 fn test_break_with_no_block() {
-    let assigns = v!({});
+    let assigns = o!({});
     let markup = "{% continue %}";
     let expected = "";
 

@@ -180,8 +180,8 @@ fn liquid() -> liquid::Parser {
         .unwrap()
 }
 
-fn assigns() -> liquid::value::Value {
-    v!({
+fn assigns() -> liquid::value::Object {
+    o!({
       "best_cars": "bmw",
       "car": { "bmw": "good", "gm": "bad" }
     })
@@ -201,7 +201,7 @@ fn test_variable_traversing_with_two_brackets() {
     assert_template_result!(
         "it works!",
         text,
-        v!({
+        o!({
           "site": { "data": { "menu": { "foo": { "bar": "it works!" } } } },
           "include": { "menu": "foo", "locale": "bar" }
         })

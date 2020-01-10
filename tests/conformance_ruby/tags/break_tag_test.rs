@@ -2,7 +2,7 @@
 // block
 #[test]
 fn test_break_with_no_block() {
-    let assigns = v!({ "i": 1 });
+    let assigns = o!({ "i": 1 });
     let markup = "{% break %}";
     let expected = "";
 
