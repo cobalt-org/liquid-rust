@@ -25,6 +25,37 @@ macro_rules! value {
     };
 }
 
+/// A value::Scalar literal.
+///
+/// # Example
+///
+/// ```rust
+/// # use liquid_value::ValueView;
+/// #
+/// # fn main() {
+/// liquid_value::scalar!(5)
+///     .to_integer().unwrap();
+/// liquid_value::scalar!("foo")
+///     .to_kstr();
+/// # }
+/// ```
+#[macro_export(local_inner_macros)]
+macro_rules! scalar {
+    ($value:literal) => {
+        $crate::Scalar::new($value)
+    };
+
+    ($other:ident) => {
+        $other
+    };
+
+    // Any Serialize type: numbers, strings, struct literals, variables etc.
+    // Must be below every other rule.
+    ($other:expr) => {
+        $crate::to_scalar($other).unwrap()
+    };
+}
+
 #[macro_export(local_inner_macros)]
 #[doc(hidden)]
 macro_rules! value_internal {
