@@ -1,14 +1,16 @@
 use std::fmt;
 
+use kstring::KString;
 use num_traits;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
 use super::Object;
+use super::Scalar;
 use super::Value;
 use crate::error;
 
-/// Convert a `T` into `liquid_value:Value`.
+/// Convert a `T` into `liquid_value::Value`.
 ///
 /// # Examples
 ///
@@ -21,7 +23,23 @@ pub fn to_value<T>(value: T) -> Result<Value, error::Error>
 where
     T: Serialize,
 {
-    value.serialize(Serializer).map_err(|e| e.0)
+    value.serialize(ValueSerializer).map_err(|e| e.0)
+}
+
+/// Convert a `T` into `liquid_value::Scalar`.
+///
+/// # Examples
+///
+/// ```rust
+/// let s = "foo";
+/// let value = liquid_value::to_scalar(s).unwrap();
+/// assert_eq!(value, liquid_value::Scalar::new(s));
+/// ```
+pub fn to_scalar<T>(value: T) -> Result<Scalar, error::Error>
+where
+    T: Serialize,
+{
+    value.serialize(ScalarSerializer).map_err(|e| e.0)
 }
 
 #[derive(Debug)]
@@ -52,18 +70,9 @@ impl serde::ser::Error for SerError {
     }
 }
 
-struct Serializer;
+struct ValueSerializer;
 
-impl Serializer {
-    #[inline]
-    fn serialize_as_i32<T: num_traits::cast::NumCast>(self, value: T) -> Result<Value, SerError> {
-        let value = num_traits::cast::cast::<T, i32>(value)
-            .ok_or_else(|| SerError(error::Error::with_msg("Cannot fit number")))?;
-        Ok(Value::scalar(value))
-    }
-}
-
-impl serde::Serializer for Serializer {
+impl serde::Serializer for ValueSerializer {
     type Ok = Value;
     type Error = SerError;
 
@@ -77,68 +86,92 @@ impl serde::Serializer for Serializer {
 
     #[inline]
     fn serialize_bool(self, value: bool) -> Result<Value, SerError> {
-        Ok(Value::scalar(value))
+        ScalarSerializer
+            .serialize_bool(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_i8(self, value: i8) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_i8(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_i16(self, value: i16) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_i16(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_i32(self, value: i32) -> Result<Value, SerError> {
-        Ok(Value::scalar(value))
+        ScalarSerializer
+            .serialize_i32(value)
+            .map(|s| Value::Scalar(s))
     }
 
     fn serialize_i64(self, value: i64) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_i64(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_u8(self, value: u8) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_u8(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_u16(self, value: u16) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_u16(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_u32(self, value: u32) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_u32(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_u64(self, value: u64) -> Result<Value, SerError> {
-        self.serialize_as_i32(value)
+        ScalarSerializer
+            .serialize_u64(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<Value, SerError> {
-        self.serialize_f64(f64::from(value))
+        ScalarSerializer
+            .serialize_f32(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<Value, SerError> {
-        Ok(Value::scalar(value))
+        ScalarSerializer
+            .serialize_f64(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_char(self, value: char) -> Result<Value, SerError> {
-        let mut s = String::new();
-        s.push(value);
-        self.serialize_str(&s)
+        ScalarSerializer
+            .serialize_char(value)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
     fn serialize_str(self, value: &str) -> Result<Value, SerError> {
-        Ok(Value::scalar(value.to_owned()))
+        ScalarSerializer
+            .serialize_str(value)
+            .map(|s| Value::Scalar(s))
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Value, SerError> {
@@ -159,11 +192,13 @@ impl serde::Serializer for Serializer {
     #[inline]
     fn serialize_unit_variant(
         self,
-        _name: &'static str,
-        _variant_index: u32,
+        name: &'static str,
+        variant_index: u32,
         variant: &'static str,
     ) -> Result<Value, SerError> {
-        self.serialize_str(variant)
+        ScalarSerializer
+            .serialize_unit_variant(name, variant_index, variant)
+            .map(|s| Value::Scalar(s))
     }
 
     #[inline]
@@ -175,7 +210,7 @@ impl serde::Serializer for Serializer {
     where
         T: Serialize,
     {
-        value.serialize(Serializer)
+        value.serialize(ValueSerializer)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -189,7 +224,10 @@ impl serde::Serializer for Serializer {
         T: Serialize,
     {
         let mut values = Object::new();
-        values.insert(String::from(variant).into(), value.serialize(Serializer)?);
+        values.insert(
+            String::from(variant).into(),
+            value.serialize(ValueSerializer)?,
+        );
         Ok(Value::Object(values))
     }
 
@@ -203,7 +241,7 @@ impl serde::Serializer for Serializer {
     where
         T: Serialize,
     {
-        value.serialize(Serializer)
+        value.serialize(ValueSerializer)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, SerError> {
@@ -297,7 +335,7 @@ impl serde::ser::SerializeSeq for SerializeVec {
     where
         T: Serialize,
     {
-        self.vec.push(value.serialize(Serializer)?);
+        self.vec.push(value.serialize(ValueSerializer)?);
         Ok(())
     }
 
@@ -346,7 +384,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
     where
         T: Serialize,
     {
-        self.vec.push(value.serialize(Serializer)?);
+        self.vec.push(value.serialize(ValueSerializer)?);
         Ok(())
     }
 
@@ -390,7 +428,7 @@ impl serde::ser::SerializeMap for SerializeMap {
                 // Panic because this indicates a bug in the program rather than an
                 // expected failure.
                 let key = key.expect("serialize_value called before serialize_key");
-                map.insert(key.into(), value.serialize(Serializer)?);
+                map.insert(key.into(), value.serialize(ValueSerializer)?);
                 Ok(())
             }
         }
@@ -618,7 +656,7 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
         T: Serialize,
     {
         self.map
-            .insert(String::from(key).into(), value.serialize(Serializer)?);
+            .insert(String::from(key).into(), value.serialize(ValueSerializer)?);
         Ok(())
     }
 
@@ -629,4 +667,200 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
 
         Ok(Value::Object(object))
     }
+}
+
+struct ScalarSerializer;
+
+fn scalar_must_be_a_string() -> SerError {
+    SerError(error::Error::with_msg("Scalar must be a string."))
+}
+
+impl serde::Serializer for ScalarSerializer {
+    type Ok = Scalar;
+    type Error = SerError;
+
+    type SerializeSeq = Impossible<Scalar, SerError>;
+    type SerializeTuple = Impossible<Scalar, SerError>;
+    type SerializeTupleStruct = Impossible<Scalar, SerError>;
+    type SerializeTupleVariant = Impossible<Scalar, SerError>;
+    type SerializeMap = Impossible<Scalar, SerError>;
+    type SerializeStruct = Impossible<Scalar, SerError>;
+    type SerializeStructVariant = Impossible<Scalar, SerError>;
+
+    #[inline]
+    fn serialize_bool(self, value: bool) -> Result<Scalar, SerError> {
+        Ok(Scalar::new(value))
+    }
+
+    #[inline]
+    fn serialize_i8(self, value: i8) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_i16(self, value: i16) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_i32(self, value: i32) -> Result<Scalar, SerError> {
+        Ok(Scalar::new(value))
+    }
+
+    fn serialize_i64(self, value: i64) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_u8(self, value: u8) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_u16(self, value: u16) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_u32(self, value: u32) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_u64(self, value: u64) -> Result<Scalar, SerError> {
+        serialize_as_i32(value)
+    }
+
+    #[inline]
+    fn serialize_f32(self, value: f32) -> Result<Scalar, SerError> {
+        self.serialize_f64(f64::from(value))
+    }
+
+    #[inline]
+    fn serialize_f64(self, value: f64) -> Result<Scalar, SerError> {
+        Ok(Scalar::new(value))
+    }
+
+    #[inline]
+    fn serialize_char(self, value: char) -> Result<Scalar, SerError> {
+        let mut s = String::new();
+        s.push(value);
+        self.serialize_str(&s)
+    }
+
+    #[inline]
+    fn serialize_str(self, value: &str) -> Result<Scalar, SerError> {
+        Ok(Scalar::new(KString::from_ref(value)))
+    }
+
+    fn serialize_bytes(self, _value: &[u8]) -> Result<Self::Ok, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+    ) -> Result<Scalar, SerError> {
+        self.serialize_str(variant)
+    }
+
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<Scalar, SerError>
+    where
+        T: Serialize,
+    {
+        value.serialize(ScalarSerializer)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_some<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(scalar_must_be_a_string())
+    }
+}
+
+#[inline]
+fn serialize_as_i32<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
+    let value = num_traits::cast::cast::<T, i32>(value)
+        .ok_or_else(|| SerError(error::Error::with_msg("Cannot fit number")))?;
+    Ok(Scalar::new(value))
 }
