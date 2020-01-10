@@ -8,13 +8,13 @@ type StdString = std::string::String;
 type BoxedStr = Box<str>;
 
 /// A reference to a UTF-8 encoded, immutable string.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct KStringCow<'s> {
     pub(crate) inner: KStringCowInner<'s>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) enum KStringCowInner<'s> {
     Owned(KString),
     Borrowed(&'s str),
@@ -182,6 +182,13 @@ impl<'s> std::hash::Hash for KStringCow<'s> {
     }
 }
 
+impl<'s> fmt::Debug for KStringCow<'s> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.inner, f)
+    }
+}
+
 impl<'s> fmt::Display for KStringCow<'s> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -236,6 +243,14 @@ impl From<KString> for KStringCow<'static> {
     fn from(other: KString) -> Self {
         let inner = KStringCowInner::Owned(other);
         Self { inner }
+    }
+}
+
+impl<'s> From<&'s KString> for KStringCow<'s> {
+    #[inline]
+    fn from(other: &'s KString) -> Self {
+        let other = other.as_ref();
+        other.into()
     }
 }
 
@@ -311,13 +326,7 @@ impl<'de, 's> serde::Deserialize<'de> for KStringCow<'s> {
     where
         D: serde::Deserializer<'de>,
     {
-        use std::borrow::Cow;
-        let s: Cow<'_, str> = Cow::deserialize(deserializer)?;
-        let s = match s {
-            Cow::Owned(s) => KStringCow::from_boxed(s.into_boxed_str()),
-            Cow::Borrowed(s) => KStringCow::from_ref(s),
-        };
-        Ok(s)
+        KString::deserialize(deserializer).map(|s| s.into())
     }
 }
 
