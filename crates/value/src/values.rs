@@ -196,6 +196,30 @@ impl ValueView for Value {
     }
 }
 
+impl From<Scalar> for Value {
+    fn from(other: Scalar) -> Self {
+        Value::Scalar(other)
+    }
+}
+
+impl From<Array> for Value {
+    fn from(other: Array) -> Self {
+        Value::Array(other)
+    }
+}
+
+impl From<Object> for Value {
+    fn from(other: Object) -> Self {
+        Value::Object(other)
+    }
+}
+
+impl From<State> for Value {
+    fn from(other: State) -> Self {
+        Value::State(other)
+    }
+}
+
 /// Iterator over a `Value`s keys.
 #[derive(Debug)]
 pub struct Keys<'s>(::std::vec::IntoIter<ScalarCow<'s>>);

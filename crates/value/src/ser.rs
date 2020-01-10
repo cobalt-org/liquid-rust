@@ -26,6 +26,14 @@ where
     value.serialize(ValueSerializer).map_err(|e| e.0)
 }
 
+/// Convert a `T` into `liquid_value::Object`.
+pub fn to_object<T>(value: T) -> Result<Object, error::Error>
+where
+    T: Serialize,
+{
+    value.serialize(ObjectSerializer).map_err(|e| e.0)
+}
+
 /// Convert a `T` into `liquid_value::Scalar`.
 ///
 /// # Examples
@@ -79,10 +87,10 @@ impl serde::Serializer for ValueSerializer {
     type SerializeSeq = SerializeVec;
     type SerializeTuple = SerializeVec;
     type SerializeTupleStruct = SerializeVec;
-    type SerializeTupleVariant = SerializeTupleVariant;
-    type SerializeMap = SerializeMap;
-    type SerializeStruct = SerializeMap;
-    type SerializeStructVariant = SerializeStructVariant;
+    type SerializeTupleVariant = SerializeTupleVariant<Value>;
+    type SerializeMap = SerializeMap<Value>;
+    type SerializeStruct = SerializeMap<Value>;
+    type SerializeStructVariant = SerializeStructVariant<Value>;
 
     #[inline]
     fn serialize_bool(self, value: bool) -> Result<Value, SerError> {
@@ -274,6 +282,7 @@ impl serde::Serializer for ValueSerializer {
         Ok(SerializeTupleVariant {
             name: KString::from_static(variant),
             vec: Vec::with_capacity(len),
+            other: std::marker::PhantomData,
         })
     }
 
@@ -281,6 +290,7 @@ impl serde::Serializer for ValueSerializer {
         Ok(SerializeMap::Map {
             map: Object::new(),
             next_key: None,
+            other: std::marker::PhantomData,
         })
     }
 
@@ -302,6 +312,7 @@ impl serde::Serializer for ValueSerializer {
         Ok(SerializeStructVariant {
             name: KString::from_static(variant),
             map: Object::new(),
+            other: std::marker::PhantomData,
         })
     }
 }
@@ -359,13 +370,228 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
     }
 }
 
-struct SerializeTupleVariant {
-    name: KString,
-    vec: Vec<Value>,
+struct ObjectSerializer;
+
+fn object_cannot_be_a_scalar() -> SerError {
+    SerError(error::Error::with_msg("Object cannot be a scalar."))
 }
 
-impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
-    type Ok = Value;
+fn object_cannot_be_an_array() -> SerError {
+    SerError(error::Error::with_msg("Object cannot be an array."))
+}
+
+impl serde::Serializer for ObjectSerializer {
+    type Ok = Object;
+    type Error = SerError;
+
+    type SerializeSeq = Impossible<Object, SerError>;
+    type SerializeTuple = Impossible<Object, SerError>;
+    type SerializeTupleStruct = Impossible<Object, SerError>;
+    type SerializeTupleVariant = SerializeTupleVariant<Object>;
+    type SerializeMap = SerializeMap<Object>;
+    type SerializeStruct = SerializeMap<Object>;
+    type SerializeStructVariant = SerializeStructVariant<Object>;
+
+    #[inline]
+    fn serialize_bool(self, _value: bool) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_i8(self, _value: i8) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_i16(self, _value: i16) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_i32(self, _value: i32) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    fn serialize_i64(self, _value: i64) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_u8(self, _value: u8) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_u16(self, _value: u16) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_u32(self, _value: u32) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_u64(self, _value: u64) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_f32(self, _value: f32) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_f64(self, _value: f64) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_char(self, _value: char) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_str(self, _value: &str) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    fn serialize_bytes(self, _value: &[u8]) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_unit(self) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+    ) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        _name: &'static str,
+        value: &T,
+    ) -> Result<Object, SerError>
+    where
+        T: Serialize,
+    {
+        value.serialize(ObjectSerializer)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<Object, SerError>
+    where
+        T: Serialize,
+    {
+        let mut values = Object::new();
+        values.insert(
+            KString::from_static(variant),
+            value.serialize(ValueSerializer)?,
+        );
+        Ok(values)
+    }
+
+    #[inline]
+    fn serialize_none(self) -> Result<Object, SerError> {
+        Err(object_cannot_be_a_scalar())
+    }
+
+    #[inline]
+    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Object, SerError>
+    where
+        T: Serialize,
+    {
+        value.serialize(ObjectSerializer)
+    }
+
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, SerError> {
+        Err(object_cannot_be_an_array())
+    }
+
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, SerError> {
+        Err(object_cannot_be_an_array())
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct, SerError> {
+        Err(object_cannot_be_an_array())
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant, SerError> {
+        Ok(SerializeTupleVariant {
+            name: KString::from_static(variant),
+            vec: Vec::with_capacity(len),
+            other: std::marker::PhantomData,
+        })
+    }
+
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, SerError> {
+        Ok(SerializeMap::Map {
+            map: Object::new(),
+            next_key: None,
+            other: std::marker::PhantomData,
+        })
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStruct, SerError> {
+        self.serialize_map(Some(len))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant, SerError> {
+        Ok(SerializeStructVariant {
+            name: KString::from_static(variant),
+            map: Object::new(),
+            other: std::marker::PhantomData,
+        })
+    }
+}
+
+struct SerializeTupleVariant<O> {
+    name: KString,
+    vec: Vec<Value>,
+    other: std::marker::PhantomData<O>,
+}
+
+impl<O: From<Object>> serde::ser::SerializeTupleVariant for SerializeTupleVariant<O> {
+    type Ok = O;
     type Error = SerError;
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
@@ -376,24 +602,25 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
         Ok(())
     }
 
-    fn end(self) -> Result<Value, SerError> {
+    fn end(self) -> Result<O, SerError> {
         let mut object = Object::new();
 
         object.insert(self.name, Value::Array(self.vec));
 
-        Ok(Value::Object(object))
+        Ok(From::from(object))
     }
 }
 
-enum SerializeMap {
+enum SerializeMap<O> {
     Map {
         map: Object,
         next_key: Option<KString>,
+        other: std::marker::PhantomData<O>,
     },
 }
 
-impl serde::ser::SerializeStruct for SerializeMap {
-    type Ok = Value;
+impl<O: From<Object>> serde::ser::SerializeStruct for SerializeMap<O> {
+    type Ok = O;
     type Error = SerError;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
@@ -410,15 +637,15 @@ impl serde::ser::SerializeStruct for SerializeMap {
         }
     }
 
-    fn end(self) -> Result<Value, SerError> {
+    fn end(self) -> Result<O, SerError> {
         match self {
             SerializeMap::Map { .. } => serde::ser::SerializeMap::end(self),
         }
     }
 }
 
-impl serde::ser::SerializeMap for SerializeMap {
-    type Ok = Value;
+impl<O: From<Object>> serde::ser::SerializeMap for SerializeMap<O> {
+    type Ok = O;
     type Error = SerError;
 
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), SerError>
@@ -443,6 +670,7 @@ impl serde::ser::SerializeMap for SerializeMap {
             SerializeMap::Map {
                 ref mut map,
                 ref mut next_key,
+                ..
             } => {
                 let key = next_key.take();
                 // Panic because this indicates a bug in the program rather than an
@@ -454,9 +682,9 @@ impl serde::ser::SerializeMap for SerializeMap {
         }
     }
 
-    fn end(self) -> Result<Value, SerError> {
+    fn end(self) -> Result<O, SerError> {
         match self {
-            SerializeMap::Map { map, .. } => Ok(Value::Object(map)),
+            SerializeMap::Map { map, .. } => Ok(From::from(map)),
         }
     }
 }
@@ -644,13 +872,14 @@ impl serde::Serializer for MapKeySerializer {
     }
 }
 
-struct SerializeStructVariant {
+struct SerializeStructVariant<O> {
     name: KString,
     map: Object,
+    other: std::marker::PhantomData<O>,
 }
 
-impl serde::ser::SerializeStructVariant for SerializeStructVariant {
-    type Ok = Value;
+impl<O: From<Object>> serde::ser::SerializeStructVariant for SerializeStructVariant<O> {
+    type Ok = O;
     type Error = SerError;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
@@ -662,12 +891,12 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
         Ok(())
     }
 
-    fn end(self) -> Result<Value, SerError> {
+    fn end(self) -> Result<O, SerError> {
         let mut object = Object::new();
 
         object.insert(self.name, Value::Object(self.map));
 
-        Ok(Value::Object(object))
+        Ok(From::from(object))
     }
 }
 
