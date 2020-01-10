@@ -225,7 +225,7 @@ impl serde::Serializer for ValueSerializer {
     {
         let mut values = Object::new();
         values.insert(
-            String::from(variant).into(),
+            KString::from_static(variant),
             value.serialize(ValueSerializer)?,
         );
         Ok(Value::Object(values))
@@ -272,7 +272,7 @@ impl serde::Serializer for ValueSerializer {
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, SerError> {
         Ok(SerializeTupleVariant {
-            name: String::from(variant),
+            name: KString::from_static(variant),
             vec: Vec::with_capacity(len),
         })
     }
@@ -300,7 +300,7 @@ impl serde::Serializer for ValueSerializer {
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, SerError> {
         Ok(SerializeStructVariant {
-            name: String::from(variant),
+            name: KString::from_static(variant),
             map: Object::new(),
         })
     }
@@ -360,7 +360,7 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
 }
 
 struct SerializeTupleVariant {
-    name: String,
+    name: KString,
     vec: Vec<Value>,
 }
 
@@ -379,7 +379,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
     fn end(self) -> Result<Value, SerError> {
         let mut object = Object::new();
 
-        object.insert(self.name.into(), Value::Array(self.vec));
+        object.insert(self.name, Value::Array(self.vec));
 
         Ok(Value::Object(object))
     }
@@ -388,7 +388,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
 enum SerializeMap {
     Map {
         map: Object,
-        next_key: Option<String>,
+        next_key: Option<KString>,
     },
 }
 
@@ -401,8 +401,10 @@ impl serde::ser::SerializeStruct for SerializeMap {
         T: Serialize,
     {
         match *self {
-            SerializeMap::Map { .. } => {
-                serde::ser::SerializeMap::serialize_key(self, key)?;
+            SerializeMap::Map {
+                ref mut next_key, ..
+            } => {
+                *next_key = Some(KString::from_static(key));
                 serde::ser::SerializeMap::serialize_value(self, value)
             }
         }
@@ -446,7 +448,7 @@ impl serde::ser::SerializeMap for SerializeMap {
                 // Panic because this indicates a bug in the program rather than an
                 // expected failure.
                 let key = key.expect("serialize_value called before serialize_key");
-                map.insert(key.into(), value.serialize(ValueSerializer)?);
+                map.insert(key, value.serialize(ValueSerializer)?);
                 Ok(())
             }
         }
@@ -466,16 +468,16 @@ fn key_must_be_a_string() -> SerError {
 }
 
 impl serde::Serializer for MapKeySerializer {
-    type Ok = String;
+    type Ok = KString;
     type Error = SerError;
 
-    type SerializeSeq = Impossible<String, SerError>;
-    type SerializeTuple = Impossible<String, SerError>;
-    type SerializeTupleStruct = Impossible<String, SerError>;
-    type SerializeTupleVariant = Impossible<String, SerError>;
-    type SerializeMap = Impossible<String, SerError>;
-    type SerializeStruct = Impossible<String, SerError>;
-    type SerializeStructVariant = Impossible<String, SerError>;
+    type SerializeSeq = Impossible<KString, SerError>;
+    type SerializeTuple = Impossible<KString, SerError>;
+    type SerializeTupleStruct = Impossible<KString, SerError>;
+    type SerializeTupleVariant = Impossible<KString, SerError>;
+    type SerializeMap = Impossible<KString, SerError>;
+    type SerializeStruct = Impossible<KString, SerError>;
+    type SerializeStructVariant = Impossible<KString, SerError>;
 
     #[inline]
     fn serialize_unit_variant(
@@ -484,7 +486,7 @@ impl serde::Serializer for MapKeySerializer {
         _variant_index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        Ok(variant.to_owned())
+        Ok(KString::from_static(variant))
     }
 
     #[inline]
@@ -504,35 +506,35 @@ impl serde::Serializer for MapKeySerializer {
     }
 
     fn serialize_i8(self, value: i8) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_i16(self, value: i16) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_i32(self, value: i32) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_i64(self, value: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_u8(self, value: u8) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_u16(self, value: u16) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_u32(self, value: u32) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_u64(self, value: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_string())
+        Ok(value.to_string().into())
     }
 
     fn serialize_f32(self, _value: f32) -> Result<Self::Ok, Self::Error> {
@@ -548,13 +550,13 @@ impl serde::Serializer for MapKeySerializer {
         Ok({
             let mut s = String::new();
             s.push(value);
-            s
+            s.into()
         })
     }
 
     #[inline]
     fn serialize_str(self, value: &str) -> Result<Self::Ok, Self::Error> {
-        Ok(value.to_owned())
+        Ok(KString::from_ref(value))
     }
 
     fn serialize_bytes(self, _value: &[u8]) -> Result<Self::Ok, Self::Error> {
@@ -643,7 +645,7 @@ impl serde::Serializer for MapKeySerializer {
 }
 
 struct SerializeStructVariant {
-    name: String,
+    name: KString,
     map: Object,
 }
 
@@ -656,14 +658,14 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant {
         T: Serialize,
     {
         self.map
-            .insert(String::from(key).into(), value.serialize(ValueSerializer)?);
+            .insert(KString::from_static(key), value.serialize(ValueSerializer)?);
         Ok(())
     }
 
     fn end(self) -> Result<Value, SerError> {
         let mut object = Object::new();
 
-        object.insert(self.name.into(), Value::Object(self.map));
+        object.insert(self.name, Value::Object(self.map));
 
         Ok(Value::Object(object))
     }
