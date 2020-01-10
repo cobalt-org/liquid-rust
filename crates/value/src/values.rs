@@ -438,12 +438,12 @@ mod test {
         // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         assert_eq!(empty, empty);
         assert_eq!(empty, blank);
-        assert_eq!(empty, liquid_value!(""));
-        assert_ne!(empty, liquid_value!(" "));
-        assert_eq!(empty, liquid_value!([]));
-        assert_ne!(empty, liquid_value!([nil]));
-        assert_eq!(empty, liquid_value!({}));
-        assert_ne!(empty, liquid_value!({ "a": nil }));
+        assert_eq!(empty, value!(""));
+        assert_ne!(empty, value!(" "));
+        assert_eq!(empty, value!([]));
+        assert_ne!(empty, value!([nil]));
+        assert_eq!(empty, value!({}));
+        assert_ne!(empty, value!({ "a": nil }));
     }
 
     #[test]
@@ -453,16 +453,16 @@ mod test {
         // Truth table from https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
         assert_eq!(blank, blank);
         assert_eq!(blank, empty);
-        assert_eq!(blank, liquid_value!(nil));
-        assert_eq!(blank, liquid_value!(false));
-        assert_ne!(blank, liquid_value!(true));
-        assert_ne!(blank, liquid_value!(0));
-        assert_ne!(blank, liquid_value!(1));
-        assert_eq!(blank, liquid_value!(""));
-        assert_eq!(blank, liquid_value!(" "));
-        assert_eq!(blank, liquid_value!([]));
-        assert_ne!(blank, liquid_value!([nil]));
-        assert_eq!(blank, liquid_value!({}));
-        assert_ne!(blank, liquid_value!({ "a": nil }));
+        assert_eq!(blank, value!(nil));
+        assert_eq!(blank, value!(false));
+        assert_ne!(blank, value!(true));
+        assert_ne!(blank, value!(0));
+        assert_ne!(blank, value!(1));
+        assert_eq!(blank, value!(""));
+        assert_eq!(blank, value!(" "));
+        assert_eq!(blank, value!([]));
+        assert_ne!(blank, value!([nil]));
+        assert_eq!(blank, value!({}));
+        assert_ne!(blank, value!({ "a": nil }));
     }
 }

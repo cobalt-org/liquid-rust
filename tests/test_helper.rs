@@ -19,7 +19,7 @@ pub fn with_time(_time: &str) -> liquid::value::Value {
 #[macro_export]
 macro_rules! v {
     ($($value:tt)+) => {
-        liquid_value!($($value)+)
+        value!($($value)+)
     };
 }
 

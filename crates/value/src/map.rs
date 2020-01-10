@@ -236,14 +236,11 @@ where
 /// present in the map.
 ///
 /// ```rust
-/// # #[macro_use]
-/// # extern crate liquid_value;
-/// #
 /// # fn main() {
 /// #     let mut map = liquid_value::map::Map::new();
 /// #     map.insert("key".into(), liquid_value::Value::Nil);
 /// #
-/// map["key"] = liquid_value!("value");
+/// map["key"] = liquid_value::value!("value");
 /// # }
 /// ```
 impl<'a, Q: ?Sized> ops::IndexMut<&'a Q> for Map
@@ -417,14 +414,11 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// let mut map = liquid_value::map::Map::new();
-    /// map.entry("liquid").or_insert(liquid_value!(12));
+    /// map.entry("liquid").or_insert(liquid_value::value!(12));
     ///
-    /// assert_eq!(map["liquid"], liquid_value!(12));
+    /// assert_eq!(map["liquid"], liquid_value::value!(12));
     /// # }
     /// ```
     pub fn or_insert(self, default: Value) -> &'a mut Value {
@@ -441,14 +435,11 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// let mut map = liquid_value::map::Map::new();
-    /// map.entry("liquid").or_insert_with(|| liquid_value!("hoho"));
+    /// map.entry("liquid").or_insert_with(|| liquid_value::value!("hoho"));
     ///
-    /// assert_eq!(map["liquid"], liquid_value!("hoho"));
+    /// assert_eq!(map["liquid"], liquid_value::value!("hoho"));
     /// # }
     /// ```
     pub fn or_insert_with<F>(self, default: F) -> &'a mut Value
@@ -491,9 +482,6 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
@@ -501,7 +489,7 @@ impl<'a> VacantEntry<'a> {
     ///
     /// match map.entry("liquid") {
     ///     Entry::Vacant(vacant) => {
-    ///         vacant.insert(liquid_value!("hoho"));
+    ///         vacant.insert(liquid_value::value!("hoho"));
     ///     }
     ///     Entry::Occupied(_) => unimplemented!(),
     /// }
@@ -519,14 +507,11 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!(12));
+    /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(occupied) => {
@@ -546,18 +531,15 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!(12));
+    /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(occupied) => {
-    ///         assert_eq!(occupied.get(), &liquid_value!(12));
+    ///         assert_eq!(occupied.get(), &liquid_value::value!(12));
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
@@ -573,15 +555,13 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
     /// # use liquid_value::ValueView;
     /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!([1, 2, 3]));
+    /// map.insert("liquid".into(), liquid_value::value!([1, 2, 3]));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(mut occupied) => {
@@ -601,15 +581,13 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
     /// # use liquid_value::ValueView;
     /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!([1, 2, 3]));
+    /// map.insert("liquid".into(), liquid_value::value!([1, 2, 3]));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(mut occupied) => {
@@ -630,19 +608,16 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!(12));
+    /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(mut occupied) => {
-    ///         assert_eq!(occupied.insert(liquid_value!(13)), liquid_value!(12));
-    ///         assert_eq!(occupied.get(), &liquid_value!(13));
+    ///         assert_eq!(occupied.insert(liquid_value::value!(13)), liquid_value::value!(12));
+    ///         assert_eq!(occupied.get(), &liquid_value::value!(13));
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
@@ -658,18 +633,15 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # #[macro_use]
-    /// # extern crate liquid_value;
-    /// #
     /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
-    /// map.insert("liquid".into(), liquid_value!(12));
+    /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
     ///     Entry::Occupied(occupied) => {
-    ///         assert_eq!(occupied.remove(), liquid_value!(12));
+    ///         assert_eq!(occupied.remove(), liquid_value::value!(12));
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }

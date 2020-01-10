@@ -1,27 +1,25 @@
-/// A liquid_value::Value literal.
+/// A value::Value literal.
 ///
 /// # Example
 ///
 /// ```rust
-/// # #[macro_use]
-/// # extern crate liquid_value;
 /// # use liquid_value::ValueView;
 /// #
 /// # fn main() {
-/// liquid_value!(5)
+/// liquid_value::value!(5)
 ///     .as_scalar().unwrap()
 ///     .to_integer().unwrap();
-/// liquid_value!("foo")
+/// liquid_value::value!("foo")
 ///     .as_scalar().unwrap()
 ///     .to_kstr();
-/// liquid_value!([1, 2, 3])
+/// liquid_value::value!([1, 2, 3])
 ///     .as_array().unwrap();
-/// liquid_value!({"foo": 5})
+/// liquid_value::value!({"foo": 5})
 ///     .as_object().unwrap();
 /// # }
 /// ```
 #[macro_export(local_inner_macros)]
-macro_rules! liquid_value {
+macro_rules! value {
     ($($value:tt)+) => {
         value_internal!($($value)+)
     };
