@@ -28,9 +28,7 @@ pub fn big_table(b: &mut test::Bencher) {
         .parse(BIG_TABLE_TEMPLATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::value::Object = vec![("table".into(), liquid::value::Value::array(table))]
-        .into_iter()
-        .collect();
+    let data = liquid::value::object!({ "table": table });
 
     template.render(&data).unwrap();
     b.iter(|| template.render(&data));
