@@ -98,7 +98,7 @@ impl ParseFilterMeta {
         })?;
 
         let meta = match meta {
-            Meta::Word(meta) => return Err(Error::new_spanned(
+            Meta::Path(meta) => return Err(Error::new_spanned(
                 meta,
                 "Found filter without name or description. Meta information is necessary in order to properly generate ParameterReflection.",
             )),
@@ -117,7 +117,7 @@ impl ParseFilterMeta {
         for meta in meta.nested.into_iter() {
             match meta {
                 NestedMeta::Meta(Meta::NameValue(meta)) => {
-                    let key = &meta.ident;
+                    let key = &meta.path.get_ident().expect("Single element path");
                     let value = &meta.lit;
 
                     match key.to_string().as_str() {
@@ -135,15 +135,23 @@ impl ParseFilterMeta {
                 }
 
                 NestedMeta::Meta(Meta::List(meta)) => {
-                    let attr = &meta.ident;
+                    let attr = &meta.path.get_ident().expect("Single element path");
 
                     let mut meta = meta.nested.into_iter();
                     match (meta.next(), meta.next()) {
                         (Some(meta), None) => {
-                            if let NestedMeta::Meta(Meta::Word(meta)) = meta {
+                            if let NestedMeta::Meta(Meta::Path(meta)) = meta {
                                 match attr.to_string().as_str() {
-                                    "parameters" => assign_ident(&mut parameters, attr, meta)?,
-                                    "parsed" => assign_ident(&mut parsed, attr, meta)?,
+                                    "parameters" => assign_ident(
+                                        &mut parameters,
+                                        attr,
+                                        meta.get_ident().expect("Single element path").clone(),
+                                    )?,
+                                    "parsed" => assign_ident(
+                                        &mut parsed,
+                                        attr,
+                                        meta.get_ident().expect("Single element path").clone(),
+                                    )?,
                                     _ => {
                                         return Err(Error::new_spanned(
                                             attr,

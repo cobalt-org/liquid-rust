@@ -20,7 +20,7 @@ impl<'a> FilterParameters<'a> {
         let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path.is_ident("evaluated"));
 
         match (evaluated_attrs.next(), evaluated_attrs.next()) {
-            (Some(attr), None) => Ok(Some(Self::parse_evaluated_attr(attr)?)),
+            (Some(attr), None) => Ok(Self::parse_evaluated_attr(attr)?.get_ident().cloned()),
 
             (_, Some(attr)) => Err(Error::new_spanned(
                 attr,
@@ -32,7 +32,7 @@ impl<'a> FilterParameters<'a> {
     }
 
     /// Parses `#[evaluated(...)]` attribute.
-    fn parse_evaluated_attr(attr: &Attribute) -> Result<Ident> {
+    fn parse_evaluated_attr(attr: &Attribute) -> Result<Path> {
         let meta = attr.parse_meta().map_err(|err| {
             Error::new(
                 err.span(),
@@ -41,7 +41,7 @@ impl<'a> FilterParameters<'a> {
         })?;
 
         match meta {
-            Meta::Word(meta) => Err(Error::new_spanned(
+            Meta::Path(meta) => Err(Error::new_spanned(
                 meta,
                 "Couldn't parse evaluated attribute. Have you tried `#[evaluated(\"...\")]`?",
             )),
@@ -55,7 +55,7 @@ impl<'a> FilterParameters<'a> {
 
                 match (inner.next(), inner.next()) {
                     (Some(inner), None) => {
-                        if let NestedMeta::Meta(Meta::Word(ident)) = inner {
+                        if let NestedMeta::Meta(Meta::Path(ident)) = inner {
                             Ok(ident)
                         } else {
                             Err(Error::new_spanned(inner, "Expected ident."))
@@ -200,7 +200,7 @@ impl<'a> FilterParameter<'a> {
         match ty {
             Type::Path(ty) => {
                 let path = match ty.path.segments.last() {
-                    Some(path) => path.into_value(),
+                    Some(path) => path,
                     None => return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
                 };
 
@@ -225,7 +225,7 @@ impl<'a> FilterParameter<'a> {
                         return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE));
                     }
                     let arg = match args.last() {
-                        Some(arg) => arg.into_value(),
+                        Some(arg) => arg,
                         None => return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
                     };
 
@@ -372,7 +372,7 @@ impl FilterParameterMeta {
         })?;
 
         let meta = match meta {
-            Meta::Word(meta) => return Err(Error::new_spanned(
+            Meta::Path(meta) => return Err(Error::new_spanned(
                 meta,
                 "Found parameter without description. Description is necessary in order to properly generate ParameterReflection.",
             )),
@@ -390,7 +390,7 @@ impl FilterParameterMeta {
 
         for meta in meta.nested.into_iter() {
             if let NestedMeta::Meta(Meta::NameValue(meta)) = meta {
-                let key = &meta.ident;
+                let key = &meta.path.get_ident().expect("Single element path");
                 let value = &meta.lit;
 
                 match key.to_string().as_str() {
