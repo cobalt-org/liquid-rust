@@ -1,9 +1,7 @@
-use liquid::compiler::Filter;
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::value::Value;
-use liquid::value::ValueView;
+use liquid_core::Context;
+use liquid_core::Result;
+use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(name = "money", description = "tests helper", parsed(MoneyFilter))]

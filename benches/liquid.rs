@@ -26,7 +26,7 @@ fn bench_render_text(b: &mut test::Bencher) {
         .parse(TEXT_ONLY)
         .expect("Benchmark template parsing failed");
 
-    let data = liquid::value::Object::new();
+    let data = liquid::Object::new();
 
     template.render(&data).unwrap();
     b.iter(|| template.render(&data));

@@ -1,13 +1,11 @@
 use std::io::Write;
 
-use liquid_error::Result;
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use interpreter::Renderable;
-use interpreter::{Context, Interrupt};
+use liquid_core::interpreter::Interrupt;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
@@ -102,9 +100,11 @@ impl ParseTag for ContinueTag {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

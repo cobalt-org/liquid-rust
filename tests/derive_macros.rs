@@ -1,7 +1,9 @@
+extern crate kstring;
 extern crate liquid;
+extern crate liquid_core;
 
-use liquid::compiler::FilterReflection;
 use liquid::{Parser, ParserBuilder};
+use liquid_core::compiler::FilterReflection;
 
 mod derive_macros_test_filters;
 
@@ -32,7 +34,7 @@ pub fn test_derive_positional_filter_ok() {
         "<pos1: true; pos2: 0>"
     );
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
     let rendered = template.render(&globals).unwrap();
 
     assert_eq!(rendered, expected);
@@ -47,7 +49,7 @@ pub fn test_derive_positional_filter_err() {
     assert!(parser.parse("{{ 0 | pos:named:4 }}\n").is_err());
     assert!(parser.parse("{{ 0 | pos:32, pos2:42 }}\n").is_err());
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
 
     assert!(parser
         .parse("{{ 0 | pos: \"str\", \"str\" }}\n")
@@ -95,7 +97,7 @@ pub fn test_derive_keyword_filter_ok() {
         "<required: false>"
     );
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
     let rendered = template.render(&globals).unwrap();
 
     assert_eq!(rendered, expected);
@@ -111,7 +113,7 @@ pub fn test_derive_keyword_filter_err() {
         .parse("{{ 0 | kw: required: true, optional:\"str\", 5 }}\n")
         .is_err());
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
 
     assert!(parser
         .parse("{{ 0 | kw: required:\"str\" }}\n")
@@ -158,7 +160,7 @@ pub fn test_derive_mixed_filter_ok() {
         "<a: 5; b: false; c: 4.3, d: 2019-02-08 15:34:25 -0800, e: 2019-02-08, f: str, type: 0>"
     );
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
     let rendered = template.render(&globals).unwrap();
 
     assert_eq!(rendered, expected);
@@ -227,7 +229,7 @@ pub fn test_derive_parameterless_filter_ok() {
     let template = parser.parse("{{ 0 | no_args }}").unwrap();
     let expected = "<>";
 
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
     let rendered = template.render(&globals).unwrap();
 
     assert_eq!(rendered, expected);
@@ -254,7 +256,7 @@ pub fn test_derive_parameterless_filter_reflection() {
 
 #[test]
 pub fn test_derive_stateful_filter() {
-    let globals = liquid::value::Object::new();
+    let globals = liquid::Object::new();
 
     let filter = derive_macros_test_filters::TestStatefulFilterParser::new();
 

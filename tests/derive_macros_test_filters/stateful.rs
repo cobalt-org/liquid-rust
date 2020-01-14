@@ -1,10 +1,9 @@
-extern crate liquid;
-use liquid::compiler::{Filter, FilterArguments, FilterParameters, ParseFilter};
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::interpreter::Expression;
-use liquid::value::Value;
+use liquid_core::compiler::FilterArguments;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::Value;
+use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
 
 #[derive(Clone, Copy, Debug)]
 enum Mood {
@@ -53,7 +52,7 @@ impl ParseFilter for TestStatefulFilterParser {
         Ok(Box::new(TestStatefulFilter { args, state }))
     }
 
-    fn reflection(&self) -> &dyn liquid::compiler::FilterReflection {
+    fn reflection(&self) -> &dyn liquid_core::FilterReflection {
         self
     }
 }

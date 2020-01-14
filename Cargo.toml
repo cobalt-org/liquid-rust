@@ -5,6 +5,7 @@ members = [
   "crates/compiler",
   "crates/interpreter",
   "crates/derive",
+  "crates/core",
   "crates/help-md",
   "crates/bin",
   "crates/kstring",
@@ -41,11 +42,7 @@ itertools = "0.8.0"
 url = "1.5"
 doc-comment = "0.3"
 kstring = { version = "0.1.0", path = "crates/kstring" }
-liquid-error = { version = "^0.19", path = "crates/error" }
-liquid-value = { version = "^0.19", path = "crates/value" }
-liquid-compiler = { version = "^0.19", path = "crates/compiler" }
-liquid-interpreter = { version = "^0.19", path = "crates/interpreter" }
-liquid-derive = { version = "^0.19", path = "crates/derive" }
+liquid-core = { version = "^0.19", path = "crates/core" }
 
 serde = { version = "1.0", optional = true, features = ["derive"] }
 deunicode = "1.0.0"

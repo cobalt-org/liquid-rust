@@ -1,20 +1,17 @@
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Result, ResultLiquidExt};
-use liquid_value::{ValueView, ValueViewCmp};
-
-use compiler::BlockElement;
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use compiler::TryMatchToken;
-use interpreter::Context;
-use interpreter::Expression;
-use interpreter::Renderable;
-use interpreter::Template;
+use liquid_core::compiler::BlockElement;
+use liquid_core::compiler::TryMatchToken;
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::value::{ValueView, ValueViewCmp};
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::Template;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Debug)]
 struct CaseOption {
@@ -198,9 +195,10 @@ impl ParseBlock for CaseBlock {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use liquid_value::Value;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

@@ -1,15 +1,11 @@
 use std::io::Write;
 
-use liquid_error::Result;
-
-use compiler::BlockElement;
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
+use liquid_core::compiler::BlockElement;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;
@@ -79,8 +75,9 @@ impl ParseBlock for CommentBlock {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
 
     fn options() -> Language {
         let mut options = Language::default();

@@ -1,15 +1,12 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
-
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
+use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::Template;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Debug)]
 struct IfChanged {
@@ -106,9 +103,11 @@ impl State {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

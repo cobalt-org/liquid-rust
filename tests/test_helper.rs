@@ -1,17 +1,18 @@
 extern crate chrono;
 extern crate liquid;
+extern crate liquid_core;
 extern crate regex;
 
-pub use liquid::value::Value::Nil;
+pub use liquid_core::Value::Nil;
 
 #[allow(dead_code)]
-pub fn date(y: i32, m: u32, d: u32) -> liquid::value::Value {
-    use liquid::value::{Date, Value};
+pub fn date(y: i32, m: u32, d: u32) -> liquid_core::Value {
+    use liquid_core::value::{Date, Value};
     Value::scalar(Date::from_ymd(y, m, d))
 }
 
 #[allow(dead_code)]
-pub fn with_time(_time: &str) -> liquid::value::Value {
+pub fn with_time(_time: &str) -> liquid_core::Value {
     Nil
 }
 
@@ -19,7 +20,7 @@ pub fn with_time(_time: &str) -> liquid::value::Value {
 #[macro_export]
 macro_rules! v {
     ($($value:tt)+) => {
-        value!($($value)+)
+        ::liquid_core::value::value!($($value)+)
     };
 }
 
@@ -27,7 +28,7 @@ macro_rules! v {
 #[macro_export]
 macro_rules! o {
     ($($value:tt)+) => {
-        object!($($value)+)
+        ::liquid_core::object!($($value)+)
     };
 }
 
@@ -35,7 +36,7 @@ macro_rules! o {
 #[macro_export]
 macro_rules! a {
     ($($value:tt)+) => {
-        array!($($value)+)
+        ::liquid_core::value::array!($($value)+)
     };
 }
 
@@ -46,7 +47,7 @@ macro_rules! assert_template_result {
         assert_template_result!($expected, $template);
     };
     ($expected:expr, $template:expr) => {
-        let assigns = ::liquid::value::Object::default();
+        let assigns = ::liquid_core::Object::default();
         assert_template_result!($expected, $template, assigns);
     };
     ($expected:expr, $template:expr, $assigns: expr, ) => {
@@ -123,7 +124,7 @@ macro_rules! assert_render_error {
         assert_render_error!($template);
     };
     ($template:expr) => {
-        let assigns = ::liquid::value::Object::default();
+        let assigns = ::liquid::Object::default();
         assert_render_error!($template, assigns);
     };
     ($template:expr, $assigns: expr, ) => {
@@ -146,14 +147,14 @@ macro_rules! filters {
         filters!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let positional = Box::new(vec![$(::liquid_core::Expression::Literal($c)),*].into_iter());
         let keyword = Box::new(Vec::new().into_iter());
-        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+        let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-        let context = ::liquid::interpreter::Context::default();
+        let context = ::liquid_core::Context::default();
 
-        let filter = ::liquid::compiler::ParseFilter::parse(&::liquid::filters::std::$a, args).unwrap();
-        ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+        let filter = ::liquid_core::ParseFilter::parse(&::liquid::filters::std::$a, args).unwrap();
+        ::liquid_core::Filter::evaluate(&*filter, &$b, &context).unwrap()
     }};
 }
 
@@ -164,14 +165,14 @@ macro_rules! filters_fail {
         filters_fail!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let positional = Box::new(vec![$(::liquid_core::Expression::Literal($c)),*].into_iter());
         let keyword = Box::new(Vec::new().into_iter());
-        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+        let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-        let context = ::liquid::interpreter::Context::default();
+        let context = ::liquid_core::Context::default();
 
-        ::liquid::compiler::ParseFilter::parse(&::liquid::filters::std::$a, args)
-            .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+        ::liquid_core::ParseFilter::parse(&::liquid::filters::std::$a, args)
+            .and_then(|filter| ::liquid_core::Filter::evaluate(&*filter, &$b, &context))
             .unwrap_err()
     }};
 }
@@ -184,14 +185,14 @@ macro_rules! jekyll_filters {
         jekyll_filters!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let positional = Box::new(vec![$(::liquid_core::Expression::Literal($c)),*].into_iter());
         let keyword = Box::new(Vec::new().into_iter());
-        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+        let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-        let context = ::liquid::interpreter::Context::default();
+        let context = ::liquid_core::Context::default();
 
-        let filter = ::liquid::compiler::ParseFilter::parse(&::liquid::filters::jekyll::$a, args).unwrap();
-        ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+        let filter = ::liquid_core::ParseFilter::parse(&::liquid::filters::jekyll::$a, args).unwrap();
+        ::liquid_core::Filter::evaluate(&*filter, &$b, &context).unwrap()
     }};
 }
 
@@ -203,14 +204,14 @@ macro_rules! jekyll_filters_fail {
         jekyll_filters_fail!($a, $b, )
     }};
     ($a:ident, $b:expr, $($c:expr),*) => {{
-        let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+        let positional = Box::new(vec![$(::liquid_core::Expression::Literal($c)),*].into_iter());
         let keyword = Box::new(Vec::new().into_iter());
-        let args = ::liquid::compiler::FilterArguments { positional, keyword };
+        let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-        let context = ::liquid::interpreter::Context::default();
+        let context = ::liquid_core::Context::default();
 
-        ::liquid::compiler::ParseFilter::parse(&::liquid::filters::jekyll::$a, args)
-            .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+        ::liquid_core::ParseFilter::parse(&::liquid::filters::jekyll::$a, args)
+            .and_then(|filter| ::liquid_core::Filter::evaluate(&*filter, &$b, &context))
             .unwrap_err()
     }};
 }

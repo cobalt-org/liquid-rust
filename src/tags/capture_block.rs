@@ -1,16 +1,13 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt};
-use liquid_value::Value;
-
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
-use interpreter::Template;
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::value::Value;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::Template;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Debug)]
 struct Capture {
@@ -96,10 +93,11 @@ impl ParseBlock for CaptureBlock {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use value::Scalar;
-    use value::ValueViewCmp;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Scalar;
+    use liquid_core::value::ValueViewCmp;
 
     fn options() -> Language {
         let mut options = Language::default();

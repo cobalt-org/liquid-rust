@@ -53,7 +53,7 @@ fn render_template(b: &mut test::Bencher) {
         .parse(ITERATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::value::Object =
+    let data: liquid::Object =
         serde_yaml::from_str(ITERATE_OBJECT).expect("Benchmark object parsing failed");
 
     template.render(&data).unwrap();
@@ -72,12 +72,8 @@ fn large_loop_helper(b: &mut test::Bencher) {
         .parse(LOOP)
         .expect("Benchmark template parsing failed");
 
-    let data_wrapper = liquid::value::Value::array(
-        (1..1000)
-            .map(|i| format!("n={}", i))
-            .map(liquid::value::Value::scalar),
-    );
-    let row_wrapper = liquid::value::object!({
+    let data_wrapper: Vec<_> = (1..1000).map(|i| format!("n={}", i)).collect();
+    let row_wrapper = liquid::object!({
         "real": data_wrapper.clone(),
         "dummy": data_wrapper.clone(),
     });

@@ -2,18 +2,16 @@ use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagToken;
-use compiler::TagTokenIter;
-use compiler::TryMatchToken;
-use interpreter::Context;
-use interpreter::Expression;
-use interpreter::Renderable;
-use value::ValueView;
+use liquid_core::compiler::TagToken;
+use liquid_core::compiler::TryMatchToken;
+use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::ValueView;
+use liquid_core::{Error, Result};
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -164,9 +162,10 @@ impl State {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use value::Value;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

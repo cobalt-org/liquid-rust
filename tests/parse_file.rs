@@ -7,7 +7,7 @@ use liquid::*;
 use std::fs::File;
 use std::io::Read;
 
-fn compare_by_file(name: &str, globals: &value::Object) {
+fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
@@ -41,12 +41,9 @@ pub fn error_on_nonexistent_file() {
 
 #[test]
 pub fn example_by_file() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-num: 5
-numTwo: 6
-"#,
-    )
-    .unwrap();
+    let globals = object!({
+        "num": 5,
+        "numTwo": 6
+    });
     compare_by_file("example", &globals);
 }

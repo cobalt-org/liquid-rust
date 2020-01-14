@@ -1,14 +1,12 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidReplaceExt};
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
-use value::{Value, ValueView};
+use liquid_core::error::ResultLiquidReplaceExt;
+use liquid_core::value::{Value, ValueView};
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Clone, Debug)]
 struct Increment {
@@ -143,9 +141,11 @@ impl ParseTag for DecrementTag {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

@@ -15,7 +15,7 @@ fn compare(input: &str, expected: &str) {
         .parse(&input)
         .unwrap();
 
-    let output = template.render(&value::Object::default()).unwrap();
+    let output = template.render(&Object::default()).unwrap();
 
     assert_diff!(&expected, &output, " ", 0);
 }

@@ -1,11 +1,8 @@
-use liquid::compiler::Filter;
-use liquid::compiler::FilterParameters;
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::interpreter::Expression;
-use liquid::value::Value;
-use liquid::value::ValueView;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
@@ -180,7 +177,7 @@ fn liquid() -> liquid::Parser {
         .unwrap()
 }
 
-fn assigns() -> liquid::value::Object {
+fn assigns() -> liquid::Object {
     o!({
       "best_cars": "bmw",
       "car": { "bmw": "good", "gm": "bad" }

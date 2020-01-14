@@ -8,7 +8,7 @@ use std::io::Read;
 
 use liquid::*;
 
-fn compare_by_file(name: &str, globals: &value::Object) {
+fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
@@ -42,42 +42,34 @@ fn compare_by_file(name: &str, globals: &value::Object) {
 
 #[test]
 pub fn chained_filters() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-foo: foofoo
-"#,
-    )
-    .unwrap();
+    let globals = object!({
+        "foo": "foofoo",
+    });
     compare_by_file("chained_filters", &globals);
 }
 
 #[test]
 pub fn example() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-num: 5
-numTwo: 6
-"#,
-    )
-    .unwrap();
+    let globals = object!({
+        "num": 5,
+        "numTwo": 6
+    });
     compare_by_file("example", &globals);
 }
 
 #[test]
 pub fn include() {
-    let mut globals: value::Object = Default::default();
-    globals.insert("num".into(), value::Value::scalar(5f64));
-    globals.insert("numTwo".into(), value::Value::scalar(10f64));
+    let globals = object!({
+        "num": 5f64,
+        "numTwo": 10f64,
+    });
     compare_by_file("include", &globals);
 }
 
 #[test]
 pub fn include_with_context() {
-    let globals: value::Object = serde_yaml::from_str(
-        r#"
-content: "hello, world!"
-"#,
-    )
-    .unwrap();
+    let globals = object!({
+        "content": "hello, world!",
+    });
     compare_by_file("include_with_context", &globals);
 }

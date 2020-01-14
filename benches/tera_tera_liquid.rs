@@ -51,7 +51,7 @@ fn bench_rendering_only_variable(b: &mut test::Bencher) {
         .parse(VARIABLE_ONLY)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::value::Object =
+    let data: liquid::Object =
         serde_yaml::from_str(PRODUCTS).expect("Benchmark object parsing failed");
 
     template.render(&data).unwrap();
@@ -68,46 +68,43 @@ fn bench_rendering_basic_template(b: &mut test::Bencher) {
         .parse(SIMPLE_TEMPLATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::value::Object =
+    let data: liquid::Object =
         serde_yaml::from_str(PRODUCTS).expect("Benchmark object parsing failed");
 
     template.render(&data).unwrap();
     b.iter(|| template.render(&data));
 }
 
-fn deep_object() -> liquid::value::Object {
-    let data = r#"{
-                    "foo": {
-                        "bar": {
-                            "goo": {
-                                "moo": {
-                                    "cows": [
-                                        {
-                                            "name": "betsy",
-                                            "age" : 2,
-                                            "temperament": "calm"
-                                        },
-                                        {
-                                            "name": "elsie",
-                                            "age": 3,
-                                            "temperament": "calm"
-                                        },
-                                        {
-                                            "name": "veal",
-                                            "age": 1,
-                                            "temperament": "ornery"
-                                        }
-                                    ]
+fn deep_object() -> liquid::Object {
+    liquid::object!({
+        "deep_object": {
+            "foo": {
+                "bar": {
+                    "goo": {
+                        "moo": {
+                            "cows": [
+                                {
+                                    "name": "betsy",
+                                    "age" : 2,
+                                    "temperament": "calm"
+                                },
+                                {
+                                    "name": "elsie",
+                                    "age": 3,
+                                    "temperament": "calm"
+                                },
+                                {
+                                    "name": "veal",
+                                    "age": 1,
+                                    "temperament": "ornery"
                                 }
-                            }
+                            ]
                         }
                     }
-                  }"#;
-
-    let data = serde_json::from_str(data).unwrap();
-    vec![("deep_object".into(), liquid::value::Value::Object(data))]
-        .into_iter()
-        .collect()
+                }
+            }
+        }
+    })
 }
 
 #[bench]
