@@ -6,7 +6,7 @@ use super::ErrorClone;
 use super::Trace;
 
 /// Convenience type alias for Liquid compiler errors
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T, E = Error> = result::Result<T, E>;
 
 type BoxedError = Box<dyn ErrorClone>;
 

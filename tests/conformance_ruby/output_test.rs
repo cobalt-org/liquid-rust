@@ -1,11 +1,8 @@
-use liquid::compiler::Filter;
-use liquid::compiler::FilterParameters;
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::interpreter::Expression;
-use liquid::value::Value;
-use liquid::value::ValueView;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
@@ -20,7 +17,7 @@ pub struct MakeFunnyFilterParser;
 pub struct MakeFunnyFilter;
 
 impl Filter for MakeFunnyFilter {
-    fn evaluate(&self, _input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, _context: &Context<'_>) -> Result<Value> {
         Ok(Value::scalar("LOL"))
     }
 }
@@ -38,7 +35,7 @@ pub struct CiteFunnyFilterParser;
 pub struct CiteFunnyFilter;
 
 impl Filter for CiteFunnyFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         Ok(Value::scalar(format!("LOL: {}", input.render())))
     }
 }
@@ -66,7 +63,7 @@ pub struct AddSmileyFilter {
 }
 
 impl Filter for AddSmileyFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
         let smiley = args.smiley.unwrap_or(":-)".into()).to_string();
         Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
@@ -99,7 +96,7 @@ pub struct AddTagFilter {
 }
 
 impl Filter for AddTagFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let tag = args.tag.unwrap_or("p".into()).to_string();
@@ -127,7 +124,7 @@ pub struct ParagraphFilterParser;
 pub struct ParagraphFilter;
 
 impl Filter for ParagraphFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         Ok(Value::scalar(format!("<p>{}</p>", input.render())))
     }
 }
@@ -155,7 +152,7 @@ pub struct LinkToFilter {
 }
 
 impl Filter for LinkToFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let name = input;
@@ -180,7 +177,7 @@ fn liquid() -> liquid::Parser {
         .unwrap()
 }
 
-fn assigns() -> liquid::value::Object {
+fn assigns() -> liquid::Object {
     o!({
       "best_cars": "bmw",
       "car": { "bmw": "good", "gm": "bad" }

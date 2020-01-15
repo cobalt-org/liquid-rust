@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync;
 
-use liquid_compiler;
-use liquid_compiler::Language;
-use liquid_error::Result;
-use liquid_interpreter;
-use liquid_interpreter::PartialStore;
-use liquid_interpreter::Renderable;
+use liquid_core::compiler;
+use liquid_core::compiler::Language;
+use liquid_core::error::Result;
+use liquid_core::interpreter;
+use liquid_core::interpreter::PartialStore;
+use liquid_core::interpreter::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;
@@ -97,7 +97,7 @@ where
 struct LazyStore<S: PartialSource> {
     language: sync::Arc<Language>,
     source: S,
-    cache: sync::Mutex<HashMap<String, Result<sync::Arc<dyn liquid_interpreter::Renderable>>>>,
+    cache: sync::Mutex<HashMap<String, Result<sync::Arc<dyn interpreter::Renderable>>>>,
 }
 
 impl<S> LazyStore<S>
@@ -111,8 +111,8 @@ where
         } else {
             let s = self.source.try_get(name)?;
             let s = s.as_ref();
-            let template = liquid_compiler::parse(s, &self.language)
-                .map(liquid_interpreter::Template::new)
+            let template = compiler::parse(s, &self.language)
+                .map(interpreter::Template::new)
                 .map(sync::Arc::new)
                 .ok()?;
             Some(template)
@@ -126,8 +126,8 @@ where
         } else {
             let s = self.source.get(name)?;
             let s = s.as_ref();
-            let template = liquid_compiler::parse(s, &self.language)
-                .map(liquid_interpreter::Template::new)
+            let template = compiler::parse(s, &self.language)
+                .map(interpreter::Template::new)
                 .map(sync::Arc::new)?;
             Ok(template)
         }
@@ -159,7 +159,7 @@ impl<S> fmt::Debug for LazyStore<S>
 where
     S: PartialSource,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.source.fmt(f)
     }
 }

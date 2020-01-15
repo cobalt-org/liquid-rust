@@ -1,14 +1,11 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidReplaceExt};
-
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
+use liquid_core::error::ResultLiquidReplaceExt;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Clone, Debug)]
 struct RawT {
@@ -16,7 +13,7 @@ struct RawT {
 }
 
 impl Renderable for RawT {
-    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context<'_>) -> Result<()> {
         write!(writer, "{}", self.content).replace("Failed to render")?;
         Ok(())
     }
@@ -48,8 +45,8 @@ impl BlockReflection for RawBlock {
 impl ParseBlock for RawBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
@@ -69,8 +66,9 @@ impl ParseBlock for RawBlock {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
 
     fn options() -> Language {
         let mut options = Language::default();

@@ -1,19 +1,17 @@
 use std::io::Write;
 
-use liquid_error::Result;
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use interpreter::Renderable;
-use interpreter::{Context, Interrupt};
+use liquid_core::interpreter::Interrupt;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Copy, Clone, Debug)]
 struct Break;
 
 impl Renderable for Break {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Break);
         Ok(())
     }
@@ -41,7 +39,7 @@ impl TagReflection for BreakTag {
 impl ParseTag for BreakTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
@@ -58,7 +56,7 @@ impl ParseTag for BreakTag {
 struct Continue;
 
 impl Renderable for Continue {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Continue);
         Ok(())
     }
@@ -86,7 +84,7 @@ impl TagReflection for ContinueTag {
 impl ParseTag for ContinueTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
@@ -102,9 +100,11 @@ impl ParseTag for ContinueTag {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

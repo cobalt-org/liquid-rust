@@ -2,18 +2,16 @@ use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidExt, ResultLiquidReplaceExt};
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagToken;
-use compiler::TagTokenIter;
-use compiler::TryMatchToken;
-use interpreter::Context;
-use interpreter::Expression;
-use interpreter::Renderable;
-use value::ValueView;
+use liquid_core::compiler::TagToken;
+use liquid_core::compiler::TryMatchToken;
+use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::ValueView;
+use liquid_core::{Error, Result};
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Clone, Debug)]
 struct Cycle {
@@ -31,7 +29,7 @@ impl Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let expr = context
             .get_register_mut::<State>()
             .cycle(&self.name, &self.values)
@@ -43,7 +41,7 @@ impl Renderable for Cycle {
 }
 
 /// Internal implementation of cycle, to allow easier testing.
-fn parse_cycle(mut arguments: TagTokenIter, _options: &Language) -> Result<Cycle> {
+fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<Cycle> {
     let mut name = String::new();
     let mut values = Vec::new();
 
@@ -123,7 +121,11 @@ impl TagReflection for CycleTag {
 }
 
 impl ParseTag for CycleTag {
-    fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>> {
+    fn parse(
+        &self,
+        arguments: TagTokenIter<'_>,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
         parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
     }
 
@@ -164,9 +166,10 @@ impl State {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use value::Value;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

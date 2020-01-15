@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate difference;
-extern crate liquid;
-extern crate serde_yaml;
+use liquid;
 
 use std::fs::File;
 use std::io::Read;
@@ -26,14 +25,10 @@ pub fn pass_between_threads() {
         let template = Arc::clone(&template);
         let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter + 1);
         handles.push(thread::spawn(move || {
-            let globals: liquid::value::Object = serde_yaml::from_str(&format!(
-                r#"
-num: {}
-numTwo: {}
-"#,
-                num1, num2
-            ))
-            .unwrap();
+            let globals = liquid::object!({
+                "num": num1,
+                "numTwo": num2,
+            });
             let output = template.render(&globals).unwrap();
 
             let mut comp = String::new();

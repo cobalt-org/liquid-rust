@@ -1,4 +1,4 @@
-use helpers::*;
+use crate::helpers::*;
 use proc_macro2::*;
 use proc_quote::*;
 use std::str::FromStr;
@@ -134,7 +134,7 @@ impl<'a> FilterParametersFields<'a> {
     ///
     /// All optional positional parameters must appear after every required positional parameter.
     /// If this function returns `Some`, the macro is supposed to fail to compile.
-    fn required_after_optional(&self) -> Option<&FilterParameter> {
+    fn required_after_optional(&self) -> Option<&FilterParameter<'_>> {
         self.parameters
             .iter()
             .filter(|parameter| parameter.is_positional())
@@ -195,7 +195,7 @@ impl<'a> FilterParameter<'a> {
     const ERROR_INVALID_TYPE: &'static str = "Invalid type. All fields in FilterParameters must be either of type `Expression` or `Option<Expression>`";
 
     /// Helper function for `validate_filter_parameter_fields()`.
-    /// Given `::liquid::interpreter::Expression`, returns `Expression`.
+    /// Given `::liquid_core::interpreter::Expression`, returns `Expression`.
     fn get_type_name(ty: &Type) -> Result<&PathSegment> {
         match ty {
             Type::Path(ty) => {
@@ -451,7 +451,10 @@ impl FilterParameterMeta {
 }
 
 /// Generates the statement that assigns the next positional argument.
-fn generate_construct_positional_field(field: &FilterParameter, required: usize) -> TokenStream {
+fn generate_construct_positional_field(
+    field: &FilterParameter<'_>,
+    required: usize,
+) -> TokenStream {
     let name = &field.name;
 
     if field.is_optional() {
@@ -462,7 +465,7 @@ fn generate_construct_positional_field(field: &FilterParameter, required: usize)
         let plural = if required == 1 { None } else { Some("s") };
         quote! {
             let #name = args.positional.next().ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid number of arguments")
+                ::liquid_core::error::Error::with_msg("Invalid number of arguments")
                     .context("cause", concat!("expected at least ", #required, " positional argument", #plural))
             )?;
         }
@@ -470,7 +473,7 @@ fn generate_construct_positional_field(field: &FilterParameter, required: usize)
 }
 
 /// Generates the statement that evaluates the `Expression`
-fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
+fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
     let name = &field.name;
     let liquid_name = field.liquid_name();
     let ty = &field.meta.ty;
@@ -481,7 +484,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             .as_scalar()
             .and_then(|s| s.to_integer())
             .ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid argument")
+                ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Whole number expected")
             )?
@@ -490,7 +493,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             .as_scalar()
             .and_then(|s| s.to_float())
             .ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid argument")
+                ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Fractional number expected")
             )?
@@ -499,7 +502,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             .as_scalar()
             .and_then(|s| s.to_bool())
             .ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid argument")
+                ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Boolean expected")
             )?
@@ -508,7 +511,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             .as_scalar()
             .and_then(|s| s.to_date_time())
             .ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid argument")
+                ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "DateTime expected")
             )?
@@ -517,7 +520,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
             .as_scalar()
             .and_then(|s| s.to_date())
             .ok_or_else(||
-                ::liquid::error::Error::with_msg("Invalid argument")
+                ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Date expected")
             )?
@@ -542,7 +545,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
 }
 
 /// Generates the match arm that assigns the given keyword argument.
-fn generate_keyword_match_arm(field: &FilterParameter) -> TokenStream {
+fn generate_keyword_match_arm(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
     let liquid_name = field.liquid_name();
 
@@ -550,13 +553,13 @@ fn generate_keyword_match_arm(field: &FilterParameter) -> TokenStream {
         #liquid_name => if #rust_name.is_none() {
             #rust_name = ::std::option::Option::Some(arg.1);
         } else {
-            return ::std::result::Result::Err(::liquid::error::Error::with_msg(concat!("Multiple definitions of `", #liquid_name, "`")));
+            return ::std::result::Result::Err(::liquid_core::error::Error::with_msg(concat!("Multiple definitions of `", #liquid_name, "`")));
         },
     }
 }
 
 /// Generates implementation of `FilterParameters`.
-fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters {
         name,
         evaluated_name,
@@ -583,7 +586,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
             Some("s")
         };
         quote! {
-            ::liquid::error::Error::with_msg("Invalid number of positional arguments")
+            ::liquid_core::error::Error::with_msg("Invalid number of positional arguments")
                 .context("cause", concat!("expected at most ", #num_max_positional, " positional argument", #plural))
         }
     };
@@ -619,14 +622,14 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
         .filter(|parameter| parameter.is_keyword() && parameter.is_required())
         .map(|field| {
             let liquid_name = field.liquid_name();
-            quote!{ let #field = #field.ok_or_else(|| ::liquid::error::Error::with_msg(concat!("Expected named argument `", #liquid_name, "`")))?; }
+            quote!{ let #field = #field.ok_or_else(|| ::liquid_core::error::Error::with_msg(concat!("Expected named argument `", #liquid_name, "`")))?; }
         });
 
     quote! {
-        impl<'a> ::liquid::compiler::FilterParameters<'a> for #name {
+        impl<'a> ::liquid_core::compiler::FilterParameters<'a> for #name {
             type EvaluatedFilterParameters = #evaluated_name<'a>;
 
-            fn from_args(mut args: ::liquid::compiler::FilterArguments) -> ::liquid::error::Result<Self> {
+            fn from_args(mut args: ::liquid_core::compiler::FilterArguments) -> ::liquid_core::error::Result<Self> {
                 #(#construct_positional_fields)*
                 if let ::std::option::Option::Some(arg) = args.positional.next() {
                     return ::std::result::Result::Err(#too_many_args);
@@ -637,7 +640,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
                 while let ::std::option::Option::Some(arg) = args.keyword.next() {
                     match arg.0 {
                         #(#match_keyword_parameters_arms)*
-                        keyword => return ::std::result::Result::Err(::liquid::error::Error::with_msg(format!("Unexpected named argument `{}`", keyword))),
+                        keyword => return ::std::result::Result::Err(::liquid_core::error::Error::with_msg(format!("Unexpected named argument `{}`", keyword))),
                     }
                 }
                 #(#unwrap_required_keyword_fields)*
@@ -645,7 +648,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
                 Ok( #name { #comma_separated_field_names } )
             }
 
-            fn evaluate(&'a self, context: &'a ::liquid::interpreter::Context) -> ::liquid::error::Result<Self::EvaluatedFilterParameters> {
+            fn evaluate(&'a self, context: &'a ::liquid_core::interpreter::Context) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
                #(#evaluate_fields)*
 
                 Ok( #evaluated_name { #comma_separated_field_names __phantom_data: ::std::marker::PhantomData } )
@@ -655,7 +658,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
 }
 
 /// Generates `EvaluatedFilterParameters` struct.
-fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters {
         evaluated_name,
         fields,
@@ -665,13 +668,13 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
 
     let field_types = fields.parameters.iter().map(|field| {
         let ty = match &field.meta.ty {
-            FilterParameterType::Value => quote! {&'a ::liquid::value::ValueView},
+            FilterParameterType::Value => quote! {&'a ::liquid_core::value::ValueView},
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
-            FilterParameterType::DateTime => quote! { ::liquid::value::DateTime },
-            FilterParameterType::Date => quote! { ::liquid::value::Date },
-            FilterParameterType::Str => quote! { ::liquid::value::kstring::KStringCow<'a> },
+            FilterParameterType::DateTime => quote! { ::liquid_core::value::DateTime },
+            FilterParameterType::Date => quote! { ::liquid_core::value::Date },
+            FilterParameterType::Str => quote! { ::kstring::KStringCow<'a> },
         };
 
         if field.is_optional() {
@@ -692,13 +695,13 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
 }
 
 /// Constructs `ParameterReflection` for the given parameter.
-fn generate_parameter_reflection(field: &FilterParameter) -> TokenStream {
+fn generate_parameter_reflection(field: &FilterParameter<'_>) -> TokenStream {
     let name = field.liquid_name();
     let description = &field.meta.description.to_string();
     let is_optional = field.is_optional();
 
     quote! {
-        ::liquid::compiler::ParameterReflection {
+        ::liquid_core::compiler::ParameterReflection {
             name: #name,
             description: #description,
             is_optional: #is_optional,
@@ -707,7 +710,7 @@ fn generate_parameter_reflection(field: &FilterParameter) -> TokenStream {
 }
 
 /// Generates implementation of `FilterParametersReflection`.
-fn generate_impl_reflection(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters { name, fields, .. } = filter_parameters;
 
     let kw_params_reflection = fields
@@ -723,12 +726,12 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters) -> TokenStream
         .map(generate_parameter_reflection);
 
     quote! {
-        impl ::liquid::compiler::FilterParametersReflection for #name {
-            fn positional_parameters() -> &'static [::liquid::compiler::ParameterReflection] {
+        impl ::liquid_core::compiler::FilterParametersReflection for #name {
+            fn positional_parameters() -> &'static [::liquid_core::compiler::ParameterReflection] {
                 &[ #(#pos_params_reflection)* ]
             }
 
-            fn keyword_parameters() -> &'static [::liquid::compiler::ParameterReflection] {
+            fn keyword_parameters() -> &'static [::liquid_core::compiler::ParameterReflection] {
                 &[ #(#kw_params_reflection)* ]
             }
         }
@@ -736,7 +739,7 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters) -> TokenStream
 }
 
 /// Helper function for `generate_impl_display`
-fn generate_access_positional_field_for_display(field: &FilterParameter) -> TokenStream {
+fn generate_access_positional_field_for_display(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
 
     if field.is_optional() {
@@ -751,7 +754,7 @@ fn generate_access_positional_field_for_display(field: &FilterParameter) -> Toke
 }
 
 /// Helper function for `generate_impl_display`
-fn generate_access_keyword_field_for_display(field: &FilterParameter) -> TokenStream {
+fn generate_access_keyword_field_for_display(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
     let liquid_name = field.liquid_name();
 
@@ -767,7 +770,7 @@ fn generate_access_keyword_field_for_display(field: &FilterParameter) -> TokenSt
 }
 
 /// Generates implementation of `Display`.
-fn generate_impl_display(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters { name, fields, .. } = filter_parameters;
 
     let positional_fields = fields
@@ -790,9 +793,9 @@ fn generate_impl_display(filter_parameters: &FilterParameters) -> TokenStream {
 
                 let positional = positional
                     .iter()
-                    .filter_map(|p: &::std::option::Option<&::liquid::interpreter::Expression>| p.as_ref())
+                    .filter_map(|p: &::std::option::Option<&::liquid_core::interpreter::Expression>| p.as_ref())
                     .map(|p| p.to_string());
-                let keyword = keyword.iter().filter_map(|p: &(&str, ::std::option::Option<&::liquid::interpreter::Expression>)| match p.1 {
+                let keyword = keyword.iter().filter_map(|p: &(&str, ::std::option::Option<&::liquid_core::interpreter::Expression>)| match p.1 {
                     ::std::option::Option::Some(p1) => ::std::option::Option::Some(format!("{}: {}", p.0, p1)),
                     ::std::option::Option::None => ::std::option::Option::None,
                 });

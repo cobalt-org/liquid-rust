@@ -1,11 +1,8 @@
 //! Derive macros to aid in filter creation.
 
-extern crate liquid_compiler;
-extern crate liquid_error;
 extern crate proc_macro;
-extern crate proc_macro2;
-extern crate proc_quote;
-extern crate syn;
+
+use syn;
 
 mod filter;
 mod filter_parameters;
@@ -32,7 +29,7 @@ use proc_macro::TokenStream;
 ///
 /// `TYPE` will be either `Expression` or `Option<Expression>`, marking the
 /// parameter, respectively, as either required or optional. Note `Expression`
-/// here is the type `::liquid::interpreter::Expression`.
+/// here is the type `::liquid_core::interpreter::Expression`.
 ///
 /// Inside the `#[parameter(...)]` attribute there may be some information
 /// about the parameter, such as:

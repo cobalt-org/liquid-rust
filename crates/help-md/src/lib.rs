@@ -7,7 +7,7 @@ pub trait Renderable {
     fn render(&self, stream: &mut dyn std::io::Write) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-impl Renderable for dyn liquid::compiler::FilterReflection {
+impl Renderable for dyn liquid_core::FilterReflection {
     fn render_summary(
         &self,
         stream: &mut dyn std::io::Write,
@@ -55,7 +55,7 @@ impl Renderable for dyn liquid::compiler::FilterReflection {
     }
 }
 
-impl Renderable for dyn liquid::compiler::TagReflection {
+impl Renderable for dyn liquid_core::TagReflection {
     fn render_summary(
         &self,
         stream: &mut dyn std::io::Write,
@@ -81,7 +81,7 @@ impl Renderable for dyn liquid::compiler::TagReflection {
     }
 }
 
-impl Renderable for dyn liquid::compiler::BlockReflection {
+impl Renderable for dyn liquid_core::BlockReflection {
     fn render_summary(
         &self,
         stream: &mut dyn std::io::Write,

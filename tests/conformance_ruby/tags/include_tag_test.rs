@@ -1,6 +1,6 @@
 use std::borrow;
 
-use liquid::value::ValueView;
+use liquid::ValueView;
 
 #[derive(Default, Debug, Clone, Copy)]
 struct TestFileSystem;

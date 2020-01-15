@@ -1,16 +1,14 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidExt};
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use compiler::TryMatchToken;
-use interpreter::Context;
-use interpreter::Expression;
-use interpreter::Renderable;
-use value::ValueView;
+use liquid_core::compiler::TryMatchToken;
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::ValueView;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
 struct Include {
@@ -18,7 +16,7 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let name = self.partial.evaluate(context)?.render().to_string();
         context.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
             let partial = scope
@@ -58,7 +56,7 @@ impl TagReflection for IncludeTag {
 impl ParseTag for IncludeTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let name = arguments.expect_next("Identifier or literal expected.")?;
@@ -88,16 +86,15 @@ impl ParseTag for IncludeTag {
 mod test {
     use std::borrow;
 
-    use compiler;
-    use compiler::Filter;
-    use derive::*;
-    use interpreter;
-    use interpreter::ContextBuilder;
-    use partials;
-    use partials::PartialCompiler;
-    use tags;
-    use value;
-    use value::Value;
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::interpreter::ContextBuilder;
+    use liquid_core::Value;
+    use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
+
+    use crate::partials;
+    use crate::partials::PartialCompiler;
+    use crate::tags;
 
     use super::*;
 
@@ -144,7 +141,7 @@ mod test {
     pub struct SizeFilter;
 
     impl Filter for SizeFilter {
-        fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
             match *input {
                 Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
                 Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
@@ -171,12 +168,10 @@ mod test {
         let mut context = ContextBuilder::new()
             .set_partials(partials.as_ref())
             .build();
+        context.stack_mut().set_global("num", Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global("num", value::Value::scalar(5f64));
-        context
-            .stack_mut()
-            .set_global("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot");
     }
@@ -198,12 +193,10 @@ mod test {
         let mut context = ContextBuilder::new()
             .set_partials(partials.as_ref())
             .build();
+        context.stack_mut().set_global("num", Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global("num", value::Value::scalar(5f64));
-        context
-            .stack_mut()
-            .set_global("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut context).unwrap();
         assert_eq!(output, "5 wat wot");
     }
@@ -225,12 +218,10 @@ mod test {
         let mut context = ContextBuilder::new()
             .set_partials(partials.as_ref())
             .build();
+        context.stack_mut().set_global("num", Value::scalar(5f64));
         context
             .stack_mut()
-            .set_global("num", value::Value::scalar(5f64));
-        context
-            .stack_mut()
-            .set_global("numTwo", value::Value::scalar(10f64));
+            .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut context);
         assert!(output.is_err());
     }

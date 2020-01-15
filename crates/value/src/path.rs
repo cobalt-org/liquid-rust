@@ -83,7 +83,7 @@ impl<'s> fmt::Display for Path<'s> {
 
 /// Iterate over indexes in a `Value`'s `Path`.
 #[derive(Debug)]
-pub struct PathIter<'i, 's: 'i>(slice::Iter<'i, ScalarCow<'s>>);
+pub struct PathIter<'i, 's>(slice::Iter<'i, ScalarCow<'s>>);
 
 impl<'i, 's: 'i> Iterator for PathIter<'i, 's> {
     type Item = &'i ScalarCow<'s>;

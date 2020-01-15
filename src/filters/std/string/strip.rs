@@ -1,8 +1,7 @@
-use liquid_compiler::Filter;
-use liquid_derive::*;
-use liquid_error::Result;
-use liquid_interpreter::Context;
-use liquid_value::{Value, ValueView};
+use liquid_core::Context;
+use liquid_core::Result;
+use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 
 /// Removes all whitespace (tabs, spaces, and newlines) from both the left and right side of a
 /// string.
@@ -24,7 +23,7 @@ pub struct Strip;
 struct StripFilter;
 
 impl Filter for StripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim().to_owned()))
     }
@@ -49,7 +48,7 @@ pub struct Lstrip;
 struct LstripFilter;
 
 impl Filter for LstripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim_start().to_owned()))
     }
@@ -74,7 +73,7 @@ pub struct Rstrip;
 struct RstripFilter;
 
 impl Filter for RstripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim_end().to_owned()))
     }
@@ -93,7 +92,7 @@ pub struct StripNewlines;
 struct StripNewlinesFilter;
 
 impl Filter for StripNewlinesFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(
             input
@@ -114,14 +113,14 @@ mod tests {
             unit!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            let filter = ::liquid::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
+            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
         }};
     }
 
@@ -130,14 +129,14 @@ mod tests {
             failed!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            ::liquid::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
+                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
                 .unwrap_err()
         }};
     }

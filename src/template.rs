@@ -1,10 +1,10 @@
 use std::io::Write;
 use std::sync;
 
-use liquid_error::Result;
-use liquid_interpreter as interpreter;
-use liquid_interpreter::PartialStore;
-use liquid_interpreter::Renderable;
+use liquid_core::error::Result;
+use liquid_core::interpreter;
+use liquid_core::interpreter::PartialStore;
+use liquid_core::interpreter::Renderable;
 
 pub struct Template {
     pub(crate) template: interpreter::Template,
@@ -13,7 +13,7 @@ pub struct Template {
 
 impl Template {
     /// Renders an instance of the Template, using the given globals.
-    pub fn render(&self, globals: &dyn liquid_value::ObjectView) -> Result<String> {
+    pub fn render(&self, globals: &dyn crate::ObjectView) -> Result<String> {
         const BEST_GUESS: usize = 10_000;
         let mut data = Vec::with_capacity(BEST_GUESS);
         self.render_to(&mut data, globals)?;
@@ -22,11 +22,7 @@ impl Template {
     }
 
     /// Renders an instance of the Template, using the given globals.
-    pub fn render_to(
-        &self,
-        writer: &mut dyn Write,
-        globals: &dyn liquid_value::ObjectView,
-    ) -> Result<()> {
+    pub fn render_to(&self, writer: &mut dyn Write, globals: &dyn crate::ObjectView) -> Result<()> {
         let context = interpreter::ContextBuilder::new().set_globals(globals);
         let context = match self.partials {
             Some(ref partials) => context.set_partials(partials.as_ref()),

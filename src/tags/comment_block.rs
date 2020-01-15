@@ -1,21 +1,17 @@
 use std::io::Write;
 
-use liquid_error::Result;
-
-use compiler::BlockElement;
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
+use liquid_core::compiler::BlockElement;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;
 
 impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context<'_>) -> Result<()> {
         Ok(())
     }
 }
@@ -46,8 +42,8 @@ impl BlockReflection for CommentBlock {
 impl ParseBlock for CommentBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
@@ -79,8 +75,9 @@ impl ParseBlock for CommentBlock {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
 
     fn options() -> Language {
         let mut options = Language::default();

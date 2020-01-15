@@ -35,23 +35,16 @@ To include liquid in your project add the following to your Cargo.toml:
 liquid = "0.18"
 ```
 
-Now you can use the crate in your code:
-
-```rust
-extern crate liquid;
-```
-
 Example:
 
 ```rust
-extern crate liquid;
-
 let template = liquid::ParserBuilder::with_liquid()
     .build().unwrap()
     .parse("Liquid! {{num | minus: 2}}").unwrap();
 
-let mut globals = liquid::value::Object::new();
-globals.insert("num".into(), liquid::value::Value::scalar(4f64));
+let mut globals = liquid::object!({
+    "num": 4f64
+});
 
 let output = template.render(&globals).unwrap();
 assert_eq!(output, "Liquid! 2".to_string());

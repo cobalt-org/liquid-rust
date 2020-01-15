@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync;
 
-use liquid_compiler;
-use liquid_compiler::Language;
-use liquid_error::Error;
-use liquid_error::Result;
-use liquid_interpreter;
-use liquid_interpreter::PartialStore;
-use liquid_interpreter::Renderable;
+use liquid_core::compiler;
+use liquid_core::compiler::Language;
+use liquid_core::error::Error;
+use liquid_core::error::Result;
+use liquid_core::interpreter;
+use liquid_core::interpreter::PartialStore;
+use liquid_core::interpreter::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;
@@ -88,11 +88,10 @@ where
             .into_iter()
             .map(|name| {
                 let source = self.source.get(name).and_then(|s| {
-                    liquid_compiler::parse(s.as_ref(), &language)
-                        .map(liquid_interpreter::Template::new)
+                    compiler::parse(s.as_ref(), &language)
+                        .map(interpreter::Template::new)
                         .map(|t| {
-                            let t: sync::Arc<dyn liquid_interpreter::Renderable> =
-                                sync::Arc::new(t);
+                            let t: sync::Arc<dyn interpreter::Renderable> = sync::Arc::new(t);
                             t
                         })
                 });
@@ -109,7 +108,7 @@ where
 }
 
 struct EagerStore {
-    store: HashMap<String, Result<sync::Arc<dyn liquid_interpreter::Renderable>>>,
+    store: HashMap<String, Result<sync::Arc<dyn interpreter::Renderable>>>,
 }
 
 impl PartialStore for EagerStore {
@@ -139,7 +138,7 @@ impl PartialStore for EagerStore {
 }
 
 impl fmt::Debug for EagerStore {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.names().fmt(f)
     }
 }

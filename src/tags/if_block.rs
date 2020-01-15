@@ -1,20 +1,17 @@
 use std::fmt;
 use std::io::Write;
 
-use liquid_error::{Error, Result, ResultLiquidExt};
-use liquid_value::{Value, ValueView, ValueViewCmp};
-
-use compiler::BlockElement;
-use compiler::BlockReflection;
-use compiler::Language;
-use compiler::ParseBlock;
-use compiler::TagBlock;
-use compiler::TagToken;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Expression;
-use interpreter::Renderable;
-use interpreter::Template;
+use liquid_core::compiler::BlockElement;
+use liquid_core::compiler::TagToken;
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::value::{Value, ValueView, ValueViewCmp};
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Template;
+use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
+use liquid_core::{Error, Result};
 
 #[derive(Clone, Debug)]
 enum ComparisonOperator {
@@ -28,7 +25,7 @@ enum ComparisonOperator {
 }
 
 impl fmt::Display for ComparisonOperator {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let out = match *self {
             ComparisonOperator::Equals => "==",
             ComparisonOperator::NotEquals => "!=",
@@ -65,7 +62,7 @@ struct BinaryCondition {
 }
 
 impl BinaryCondition {
-    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
         let a = self.lh.evaluate(context)?;
         let ca = ValueViewCmp::new(a);
         let b = self.rh.evaluate(context)?;
@@ -86,7 +83,7 @@ impl BinaryCondition {
 }
 
 impl fmt::Display for BinaryCondition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {}", self.lh, self.comparison, self.rh)
     }
 }
@@ -99,14 +96,14 @@ struct ExistenceCondition {
 static NIL: Value = Value::Nil;
 
 impl ExistenceCondition {
-    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
         let a = self.lh.try_evaluate(context).unwrap_or(&NIL);
-        Ok(a.query_state(liquid_value::State::Truthy))
+        Ok(a.query_state(liquid_core::value::State::Truthy))
     }
 }
 
 impl fmt::Display for ExistenceCondition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.lh)
     }
 }
@@ -120,7 +117,7 @@ enum Condition {
 }
 
 impl Condition {
-    pub fn evaluate(&self, context: &Context) -> Result<bool> {
+    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
         match *self {
             Condition::Binary(ref c) => c.evaluate(context),
             Condition::Existence(ref c) => c.evaluate(context),
@@ -135,7 +132,7 @@ impl Condition {
 }
 
 impl fmt::Display for Condition {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Condition::Binary(ref c) => write!(f, "{}", c),
             Condition::Existence(ref c) => write!(f, "{}", c),
@@ -180,7 +177,7 @@ fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
 }
 
 impl Conditional {
-    fn compare(&self, context: &Context) -> Result<bool> {
+    fn compare(&self, context: &Context<'_>) -> Result<bool> {
         let result = self.condition.evaluate(context)?;
 
         Ok(result == self.mode)
@@ -192,7 +189,7 @@ impl Conditional {
 }
 
 impl Renderable for Conditional {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let condition = self.compare(context).trace_with(|| self.trace().into())?;
         if condition {
             self.if_true
@@ -242,7 +239,7 @@ impl<'a> PeekableTagTokenIter<'a> {
     }
 }
 
-fn parse_atom_condition(arguments: &mut PeekableTagTokenIter) -> Result<Condition> {
+fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
     let lh = arguments
         .expect_next("Value expected.")?
         .expect_value()
@@ -270,7 +267,7 @@ fn parse_atom_condition(arguments: &mut PeekableTagTokenIter) -> Result<Conditio
     Ok(cond)
 }
 
-fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter) -> Result<Condition> {
+fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
     let mut lh = parse_atom_condition(arguments)?;
 
     while let Some("and") = arguments.peek().map(TagToken::as_str) {
@@ -283,7 +280,7 @@ fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter) -> Result<Condi
 }
 
 /// Common parsing for "if" and "unless" condition
-fn parse_condition(arguments: TagTokenIter) -> Result<Condition> {
+fn parse_condition(arguments: TagTokenIter<'_>) -> Result<Condition> {
     let mut arguments = PeekableTagTokenIter {
         iter: arguments,
         peeked: None,
@@ -328,8 +325,8 @@ impl BlockReflection for UnlessBlock {
 impl ParseBlock for UnlessBlock {
     fn parse(
         &self,
-        arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let condition = parse_condition(arguments)?;
@@ -370,8 +367,8 @@ impl ParseBlock for UnlessBlock {
 
 fn parse_if(
     tag_name: &str,
-    arguments: TagTokenIter,
-    tokens: &mut TagBlock,
+    arguments: TagTokenIter<'_>,
+    tokens: &mut TagBlock<'_, '_>,
     options: &Language,
 ) -> Result<Box<dyn Renderable>> {
     let condition = parse_condition(arguments)?;
@@ -434,8 +431,8 @@ impl BlockReflection for IfBlock {
 impl ParseBlock for IfBlock {
     fn parse(
         &self,
-        arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let conditional = parse_if(self.start_tag(), arguments, &mut tokens, options)?;
@@ -463,10 +460,11 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use value::Object;
-    use value::Value;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Object;
+    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

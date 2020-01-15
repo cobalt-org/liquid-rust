@@ -1,11 +1,13 @@
 use chrono::FixedOffset;
-use filters::invalid_input;
-use liquid_compiler::{Filter, FilterParameters};
-use liquid_derive::*;
-use liquid_error::Result;
-use liquid_interpreter::Context;
-use liquid_interpreter::Expression;
-use liquid_value::{Value, ValueView};
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::{
+    Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
+};
+use liquid_core::{Value, ValueView};
+
+use crate::filters::invalid_input;
 
 // liquid-rust proprietary
 
@@ -37,7 +39,7 @@ struct DateInTzFilter {
 }
 
 impl Filter for DateInTzFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let date = input
@@ -63,14 +65,14 @@ mod tests {
             unit!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            let filter = ::liquid::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
+            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
         }};
     }
 
@@ -79,14 +81,14 @@ mod tests {
             failed!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            ::liquid::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
+                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
                 .unwrap_err()
         }};
     }

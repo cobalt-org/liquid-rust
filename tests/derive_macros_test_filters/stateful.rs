@@ -1,10 +1,9 @@
-extern crate liquid;
-use liquid::compiler::{Filter, FilterArguments, FilterParameters, ParseFilter};
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::interpreter::Expression;
-use liquid::value::Value;
+use liquid_core::compiler::FilterArguments;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::Value;
+use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
 
 #[derive(Clone, Copy, Debug)]
 enum Mood {
@@ -46,14 +45,14 @@ impl TestStatefulFilterParser {
 }
 
 impl ParseFilter for TestStatefulFilterParser {
-    fn parse(&self, arguments: FilterArguments) -> Result<Box<dyn Filter>> {
+    fn parse(&self, arguments: FilterArguments<'_>) -> Result<Box<dyn Filter>> {
         let args = TestStatefulFilterParameters::from_args(arguments)?;
         let state = self.state;
 
         Ok(Box::new(TestStatefulFilter { args, state }))
     }
 
-    fn reflection(&self) -> &dyn liquid::compiler::FilterReflection {
+    fn reflection(&self) -> &dyn liquid_core::FilterReflection {
         self
     }
 }
@@ -67,7 +66,7 @@ pub struct TestStatefulFilter {
 }
 
 impl Filter for TestStatefulFilter {
-    fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let result = match self.state {

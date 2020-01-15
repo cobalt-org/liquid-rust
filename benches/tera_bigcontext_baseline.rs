@@ -1,6 +1,5 @@
 #![feature(test)]
-extern crate serde_json;
-extern crate tera;
+
 extern crate test;
 #[macro_use]
 extern crate serde_derive;

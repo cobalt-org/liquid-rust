@@ -1,9 +1,9 @@
 #![feature(test)]
 
-extern crate serde_yaml;
+use serde_yaml;
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 // Benches from https://github.com/djc/template-benchmarks-rs
 
@@ -11,14 +11,12 @@ extern crate liquid;
 pub fn big_table(b: &mut test::Bencher) {
     // 100 instead of 50 in the original benchmark to make the time bigger
     let size = 100;
-    let mut table = Vec::with_capacity(size);
-    for _ in 0..size {
-        let mut inner = Vec::with_capacity(size);
-        for i in 0..size {
-            inner.push(liquid::value::Value::scalar(i as i32));
-        }
-        table.push(liquid::value::Value::array(inner));
-    }
+    let table: Vec<_> = (0..size)
+        .map(|_| {
+            let inner: Vec<_> = (0..size).map(|i| i as i32).collect();
+            inner
+        })
+        .collect();
 
     let parser = liquid::ParserBuilder::with_liquid()
         .extra_filters()
@@ -28,7 +26,7 @@ pub fn big_table(b: &mut test::Bencher) {
         .parse(BIG_TABLE_TEMPLATE)
         .expect("Benchmark template parsing failed");
 
-    let data = liquid::value::object!({ "table": table });
+    let data = liquid::object!({ "table": table });
 
     template.render(&data).unwrap();
     b.iter(|| template.render(&data));
@@ -50,7 +48,7 @@ pub fn teams(b: &mut test::Bencher) {
         .parse(TEAMS_TEMPLATE)
         .expect("Benchmark template parsing failed");
 
-    let data: liquid::value::Object =
+    let data: liquid::Object =
         serde_yaml::from_str(TEAMS_DATA).expect("Benchmark object parsing failed");
 
     template.render(&data).unwrap();

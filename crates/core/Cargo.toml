@@ -1,0 +1,19 @@
+[package]
+name = "liquid-core"
+version = "0.19.0"
+authors = ["Ed Page <eopage@gmail.com>"]
+description = "Core liquid functionality"
+repository = "https://github.com/cobalt-org/liquid-rust/tree/master/crate/core"
+documentation = "https://docs.rs/liquid-core"
+readme = "README.md"
+categories = ["template-engine"]
+keywords = ["liquid", "template", "templating", "language", "html"]
+license = "MIT"
+edition = "2018"
+
+[dependencies]
+liquid-error = { version = "^0.19", path = "../error" }
+liquid-value = { version = "^0.19", path = "../value" }
+liquid-compiler = { version = "^0.19", path = "../compiler" }
+liquid-interpreter = { version = "^0.19", path = "../interpreter" }
+liquid-derive = { version = "^0.19", path = "../derive" }

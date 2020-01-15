@@ -1,9 +1,9 @@
 #![feature(test)]
-extern crate tera;
+
 extern crate test;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
+use serde_json;
 
 use tera::{escape_html, Context, Template, Tera, Value};
 

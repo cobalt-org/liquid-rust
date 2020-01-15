@@ -23,16 +23,6 @@ mod view;
 
 pub mod map;
 
-/// Liquid Processing Errors.
-pub mod error {
-    pub use liquid_error::*;
-}
-
-/// String-type optimized for `Value`
-pub mod kstring {
-    pub use kstring::*;
-}
-
 pub use crate::array::*;
 pub use crate::date::*;
 pub use crate::display::*;

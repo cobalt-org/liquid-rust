@@ -20,7 +20,7 @@ fn test_capture_with_hyphen_in_variable_name() {
         .unwrap()
         .parse(template_source)
         .unwrap();
-    let rendered = template.render(&liquid::value::Object::default()).unwrap();
+    let rendered = template.render(&liquid::Object::default()).unwrap();
 
     assert_eq!("Print this-thing", rendered.trim());
 }
@@ -42,7 +42,7 @@ fn test_capture_to_variable_from_outer_scope_if_existing() {
         .unwrap()
         .parse(template_source)
         .unwrap();
-    let rendered = template.render(&liquid::value::Object::default()).unwrap();
+    let rendered = template.render(&liquid::Object::default()).unwrap();
 
     assert_eq!("test-string", rendered.trim());
 }
@@ -63,7 +63,7 @@ fn test_assigning_from_capture() {
         .unwrap()
         .parse(template_source)
         .unwrap();
-    let rendered = template.render(&liquid::value::Object::default()).unwrap();
+    let rendered = template.render(&liquid::Object::default()).unwrap();
 
     assert_eq!("3-3", rendered.trim());
 }

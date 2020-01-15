@@ -8,7 +8,6 @@ use serde::{self, Serialize};
 use super::Object;
 use super::Scalar;
 use super::Value;
-use crate::error;
 
 /// Convert a `T` into `liquid_value::Value`.
 ///
@@ -19,7 +18,7 @@ use crate::error;
 /// let value = liquid_value::to_value(s).unwrap();
 /// assert_eq!(value, liquid_value::Value::scalar(s));
 /// ```
-pub fn to_value<T>(value: T) -> Result<Value, error::Error>
+pub fn to_value<T>(value: T) -> Result<Value, liquid_error::Error>
 where
     T: Serialize,
 {
@@ -27,7 +26,7 @@ where
 }
 
 /// Convert a `T` into `liquid_value::Object`.
-pub fn to_object<T>(value: T) -> Result<Object, error::Error>
+pub fn to_object<T>(value: T) -> Result<Object, liquid_error::Error>
 where
     T: Serialize,
 {
@@ -43,7 +42,7 @@ where
 /// let value = liquid_value::to_scalar(s).unwrap();
 /// assert_eq!(value, liquid_value::Scalar::new(s));
 /// ```
-pub fn to_scalar<T>(value: T) -> Result<Scalar, error::Error>
+pub fn to_scalar<T>(value: T) -> Result<Scalar, liquid_error::Error>
 where
     T: Serialize,
 {
@@ -51,7 +50,7 @@ where
 }
 
 #[derive(Debug)]
-struct SerError(error::Error);
+struct SerError(liquid_error::Error);
 
 impl fmt::Display for SerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -74,7 +73,7 @@ impl serde::ser::Error for SerError {
     where
         T: fmt::Display,
     {
-        SerError(error::Error::with_msg(format!("{}", msg)))
+        SerError(liquid_error::Error::with_msg(format!("{}", msg)))
     }
 }
 
@@ -373,11 +372,11 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
 struct ObjectSerializer;
 
 fn object_cannot_be_a_scalar() -> SerError {
-    SerError(error::Error::with_msg("Object cannot be a scalar."))
+    SerError(liquid_error::Error::with_msg("Object cannot be a scalar."))
 }
 
 fn object_cannot_be_an_array() -> SerError {
-    SerError(error::Error::with_msg("Object cannot be an array."))
+    SerError(liquid_error::Error::with_msg("Object cannot be an array."))
 }
 
 impl serde::Serializer for ObjectSerializer {
@@ -692,7 +691,7 @@ impl<O: From<Object>> serde::ser::SerializeMap for SerializeMap<O> {
 struct MapKeySerializer;
 
 fn key_must_be_a_string() -> SerError {
-    SerError(error::Error::with_msg("Key must be a string."))
+    SerError(liquid_error::Error::with_msg("Key must be a string."))
 }
 
 impl serde::Serializer for MapKeySerializer {
@@ -903,7 +902,7 @@ impl<O: From<Object>> serde::ser::SerializeStructVariant for SerializeStructVari
 struct ScalarSerializer;
 
 fn scalar_must_be_a_string() -> SerError {
-    SerError(error::Error::with_msg("Scalar must be a string."))
+    SerError(liquid_error::Error::with_msg("Scalar must be a string."))
 }
 
 impl serde::Serializer for ScalarSerializer {
@@ -1092,6 +1091,6 @@ impl serde::Serializer for ScalarSerializer {
 #[inline]
 fn serialize_as_i32<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
     let value = num_traits::cast::cast::<T, i32>(value)
-        .ok_or_else(|| SerError(error::Error::with_msg("Cannot fit number")))?;
+        .ok_or_else(|| SerError(liquid_error::Error::with_msg("Cannot fit number")))?;
     Ok(Scalar::new(value))
 }

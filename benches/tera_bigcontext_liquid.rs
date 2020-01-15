@@ -2,13 +2,13 @@
 
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 #[bench]
 fn bench_big_loop_big_object(b: &mut test::Bencher) {
     const NUM_OBJECTS: usize = 100;
-    let objects = (0..NUM_OBJECTS).map(|i| {
-        let data_wrapper= liquid::value::object!({
+    let objects: Vec<_> = (0..NUM_OBJECTS).map(|i| {
+        let data_wrapper= liquid::object!({
             "i": (i as i32),
             "v": "Meta
 Before we get to the details, two important notes about the ownership system.
@@ -16,19 +16,18 @@ Rust has a focus on safety and speed. It accomplishes these goals through many �
 However, this system does have a certain cost: learning curve. Many new users to Rust experience something we like to call ‘fighting with the borrow checker’, where the Rust compiler refuses to compile a program that the author thinks is valid. This often happens because the programmer’s mental model of how ownership should work doesn’t match the actual rules that Rust implements. You probably will experience similar things at first. There is good news, however: more experienced Rust developers report that once they work with the rules of the ownership system for a period of time, they fight the borrow checker less and less.
 With that in mind, let’s learn about borrowing.",
         });
-        liquid::value::value!({
-            "field_a": liquid::value::Value::Object(data_wrapper.clone()),
-            "field_b": liquid::value::Value::Object(data_wrapper.clone()),
-            "field_c": liquid::value::Value::Object(data_wrapper.clone()),
-            "field_d": liquid::value::Value::Object(data_wrapper.clone()),
-            "field_e": liquid::value::Value::Object(data_wrapper.clone()),
-            "field_f": liquid::value::Value::Object(data_wrapper.clone()),
+        liquid::object!({
+            "field_a": data_wrapper.clone(),
+            "field_b": data_wrapper.clone(),
+            "field_c": data_wrapper.clone(),
+            "field_d": data_wrapper.clone(),
+            "field_e": data_wrapper.clone(),
+            "field_f": data_wrapper.clone(),
         })
     }).collect();
-    let data: liquid::value::Object =
-        vec![("objects".into(), liquid::value::Value::Array(objects))]
-            .into_iter()
-            .collect();
+    let data = liquid::object!({
+        "objects": objects,
+    });
 
     let parser = liquid::ParserBuilder::with_liquid()
         .extra_filters()

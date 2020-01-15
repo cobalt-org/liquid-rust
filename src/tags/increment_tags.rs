@@ -1,14 +1,12 @@
 use std::io::Write;
 
-use liquid_error::{Result, ResultLiquidReplaceExt};
-
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
-use value::{Value, ValueView};
+use liquid_core::error::ResultLiquidReplaceExt;
+use liquid_core::value::{Value, ValueView};
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Clone, Debug)]
 struct Increment {
@@ -16,7 +14,7 @@ struct Increment {
 }
 
 impl Renderable for Increment {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut val = context
             .stack()
             .get_index(&self.id)
@@ -55,7 +53,7 @@ impl TagReflection for IncrementTag {
 impl ParseTag for IncrementTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let id = arguments
@@ -81,7 +79,7 @@ struct Decrement {
 }
 
 impl Renderable for Decrement {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut val = context
             .stack()
             .get_index(&self.id)
@@ -120,7 +118,7 @@ impl TagReflection for DecrementTag {
 impl ParseTag for DecrementTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let id = arguments
@@ -143,9 +141,11 @@ impl ParseTag for DecrementTag {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

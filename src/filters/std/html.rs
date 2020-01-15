@@ -1,8 +1,7 @@
-use liquid_compiler::Filter;
-use liquid_derive::*;
-use liquid_error::Result;
-use liquid_interpreter::Context;
-use liquid_value::{Value, ValueView};
+use liquid_core::Context;
+use liquid_core::Result;
+use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 use regex::Regex;
 
 /// Returns the number of already escaped characters.
@@ -76,7 +75,7 @@ pub struct Escape;
 struct EscapeFilter;
 
 impl Filter for EscapeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         escape(input, false)
     }
 }
@@ -94,7 +93,7 @@ pub struct EscapeOnce;
 struct EscapeOnceFilter;
 
 impl Filter for EscapeOnceFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         escape(input, true)
     }
 }
@@ -121,7 +120,7 @@ static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(
 });
 
 impl Filter for StripHtmlFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr().into_string();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
@@ -144,7 +143,7 @@ pub struct NewlineToBr;
 struct NewlineToBrFilter;
 
 impl Filter for NewlineToBrFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         // TODO handle windows line endings
         let input = input.to_kstr();
         Ok(Value::scalar(input.replace("\n", "<br />\n")))
@@ -161,14 +160,14 @@ mod tests {
             unit!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            let filter = ::liquid::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
+            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
+            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
         }};
     }
 
@@ -177,14 +176,14 @@ mod tests {
             failed!($a, $b, )
         }};
         ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid::interpreter::Expression::Literal($c)),*].into_iter());
+            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
             let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid::compiler::FilterArguments { positional, keyword };
+            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
 
-            let context = ::liquid::interpreter::Context::default();
+            let context = ::liquid_core::interpreter::Context::default();
 
-            ::liquid::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid::compiler::Filter::evaluate(&*filter, &$b, &context))
+            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
+                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
                 .unwrap_err()
         }};
     }

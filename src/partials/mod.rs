@@ -2,10 +2,10 @@ use std::borrow;
 use std::fmt;
 use std::sync;
 
-use liquid_compiler::Language;
-use liquid_error::Error;
-use liquid_error::Result;
-use liquid_interpreter::PartialStore;
+use liquid_core::compiler::Language;
+use liquid_core::error::Error;
+use liquid_core::error::Result;
+use liquid_core::interpreter::PartialStore;
 
 mod eager;
 mod inmemory;

@@ -11,7 +11,7 @@ fn test_assign_with_hyphen_in_variable_name() {
         .unwrap()
         .parse(template_source)
         .unwrap();
-    let rendered = template.render(&liquid::value::Object::default()).unwrap();
+    let rendered = template.render(&liquid::Object::default()).unwrap();
 
     assert_eq!("Print this-thing", rendered.trim());
 }

@@ -1,4 +1,4 @@
-use helpers::*;
+use crate::helpers::*;
 use proc_macro2::*;
 use proc_quote::*;
 use syn::*;
@@ -148,7 +148,7 @@ impl<'a> FilterStruct<'a> {
 }
 
 /// Generates implementation of `Display`.
-fn generate_impl_display(filter: &FilterStruct) -> TokenStream {
+fn generate_impl_display(filter: &FilterStruct<'_>) -> TokenStream {
     let FilterStruct {
         filter_name,
         parameters,

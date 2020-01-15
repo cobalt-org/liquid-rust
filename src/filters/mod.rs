@@ -1,4 +1,4 @@
-use liquid_error::Error;
+use liquid_core::Error;
 
 pub mod std;
 

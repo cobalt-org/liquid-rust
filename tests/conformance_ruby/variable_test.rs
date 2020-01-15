@@ -1,4 +1,4 @@
-use liquid::value::ValueView;
+use liquid::ValueView;
 
 #[test]
 fn test_simple_variable() {

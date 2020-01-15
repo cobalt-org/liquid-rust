@@ -1,15 +1,12 @@
 use std::io::Write;
 
-use liquid_error::Result;
-use liquid_error::ResultLiquidExt;
-
-use compiler::FilterChain;
-use compiler::Language;
-use compiler::ParseTag;
-use compiler::TagReflection;
-use compiler::TagTokenIter;
-use interpreter::Context;
-use interpreter::Renderable;
+use liquid_core::compiler::FilterChain;
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::Context;
+use liquid_core::Language;
+use liquid_core::Renderable;
+use liquid_core::Result;
+use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
 struct Assign {
@@ -24,7 +21,7 @@ impl Assign {
 }
 
 impl Renderable for Assign {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let value = self
             .src
             .evaluate(context)
@@ -56,7 +53,7 @@ impl TagReflection for AssignTag {
 impl ParseTag for AssignTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let dst = arguments
@@ -89,12 +86,14 @@ impl ParseTag for AssignTag {
 #[cfg(test)]
 mod test {
     use super::*;
-    use compiler;
-    use interpreter;
-    use tags;
-    use value::Scalar;
-    use value::Value;
-    use value::ValueViewCmp;
+
+    use liquid_core::compiler;
+    use liquid_core::interpreter;
+    use liquid_core::value::Scalar;
+    use liquid_core::value::Value;
+    use liquid_core::value::ValueViewCmp;
+
+    use crate::tags;
 
     fn options() -> Language {
         let mut options = Language::default();

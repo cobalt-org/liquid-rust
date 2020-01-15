@@ -15,4 +15,4 @@ edition = "2018"
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
-liquid = { version = "0.19", path = "../../" }
+liquid-core = { version = "0.19", path = "../core" }

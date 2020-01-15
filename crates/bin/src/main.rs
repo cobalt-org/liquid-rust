@@ -1,8 +1,6 @@
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 
-use liquid;
-
 use serde_json;
 use serde_yaml;
 
@@ -21,17 +19,17 @@ struct Error {
 
 impl std::error::Error for Error {}
 
-fn load_yaml(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
+fn load_yaml(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_yaml::from_reader(f).map_err(|e| e.into())
 }
 
-fn load_json(path: &path::Path) -> Result<liquid::value::Value, Box<dyn std::error::Error>> {
+fn load_json(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error::Error>> {
     let f = fs::File::open(path)?;
     serde_json::from_reader(f).map_err(|e| e.into())
 }
 
-fn build_context(path: &path::Path) -> Result<liquid::value::Object, Box<dyn std::error::Error>> {
+fn build_context(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error::Error>> {
     let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
     let value = if extension == ffi::OsStr::new("yaml") {
         load_yaml(path)
@@ -39,10 +37,6 @@ fn build_context(path: &path::Path) -> Result<liquid::value::Object, Box<dyn std
         load_json(path)
     } else {
         Err(Error::new("Unsupported file type"))?
-    }?;
-    let value = match value {
-        liquid::value::Value::Object(o) => Ok(o),
-        _ => Err(Error::new("File must be an object")),
     }?;
 
     Ok(value)
@@ -75,7 +69,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         .as_ref()
         .map(|p| build_context(p.as_path()))
         .map_or(Ok(None), |r| r.map(Some))?
-        .unwrap_or_else(liquid::value::Object::new);
+        .unwrap_or_else(liquid::Object::new);
     let output = template.render(&data)?;
     match args.output {
         Some(path) => {

@@ -1,10 +1,10 @@
-extern crate liquid;
-use liquid::compiler::{Filter, FilterParameters};
-use liquid::derive::*;
-use liquid::error::Result;
-use liquid::interpreter::Context;
-use liquid::interpreter::Expression;
-use liquid::value::Value;
+use liquid_core::Context;
+use liquid_core::Expression;
+use liquid_core::Result;
+use liquid_core::Value;
+use liquid_core::{
+    Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
+};
 
 #[derive(Debug, FilterParameters)]
 struct TestKeywordFilterParameters {
@@ -40,7 +40,7 @@ pub struct TestKeywordFilter {
 }
 
 impl Filter for TestKeywordFilter {
-    fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let required = args.required;
