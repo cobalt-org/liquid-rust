@@ -3,10 +3,14 @@ use proc_quote::*;
 use syn::*;
 
 pub fn derive(input: &DeriveInput) -> TokenStream {
-    let DeriveInput { ident, .. } = input;
+    let DeriveInput {
+        ident, generics, ..
+    } = input;
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     quote! {
-        impl ::liquid::ValueView for #ident {
+        impl #impl_generics ::liquid::ValueView for #ident #ty_generics #where_clause {
             fn render(&self) -> ::liquid::value::DisplayCow<'_> {
                 ::liquid::value::DisplayCow::Owned(Box::new(::liquid::value::ObjectRender::new(self)))
             }

@@ -85,3 +85,34 @@ fn test_static_object() {
     assert_eq!(uut.contains_key("boolean"), true);
     assert!(uut.get("boolean").is_some());
 }
+
+#[derive(ObjectView, ValueView, serde::Serialize, serde::Deserialize, Debug)]
+struct TestBorrow<'s> {
+    s: &'s str,
+}
+
+#[test]
+fn test_borrow_value() {
+    let fixture = String::from("foo");
+    let uut = TestBorrow {
+        s: fixture.as_str(),
+    };
+
+    assert!(uut.as_object().is_some());
+}
+
+#[test]
+fn test_borrow_object() {
+    let fixture = String::from("foo");
+    let uut = TestBorrow {
+        s: fixture.as_str(),
+    };
+
+    assert_eq!(uut.size(), 1i32);
+    assert!(!uut.keys().collect::<Vec<_>>().is_empty());
+    assert!(!uut.values().collect::<Vec<_>>().is_empty());
+    assert!(!uut.iter().collect::<Vec<_>>().is_empty());
+    assert_eq!(uut.contains_key("non-existent"), false);
+    assert_eq!(uut.contains_key("s"), true);
+    assert!(uut.get("s").is_some());
+}

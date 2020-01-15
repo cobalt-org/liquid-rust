@@ -3,7 +3,14 @@ use proc_quote::*;
 use syn::*;
 
 pub fn derive(input: &DeriveInput) -> TokenStream {
-    let DeriveInput { ident, data, .. } = input;
+    let DeriveInput {
+        ident,
+        data,
+        generics,
+        ..
+    } = input;
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let fields = match get_fields(data) {
         Ok(fields) => fields,
@@ -12,12 +19,12 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
     let num_fields = fields.len();
 
     quote! {
-        impl ::liquid::ObjectView for #ident {
+        impl #impl_generics ::liquid::ObjectView for #ident #ty_generics #where_clause {
             fn size(&self) -> i32 {
                 #num_fields as i32
             }
 
-            fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = ::kstring::KStringCow<'k>> + 'k> {
+            fn keys<'liquid_derive_k>(&'liquid_derive_k self) -> Box<dyn Iterator<Item = ::kstring::KStringCow<'liquid_derive_k>> + 'liquid_derive_k> {
                 let mut keys = Vec::with_capacity(#num_fields);
                 #(
                     keys.push(::kstring::KStringCow::from_static(stringify!(#fields)));
@@ -25,7 +32,7 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 Box::new(keys.into_iter())
             }
 
-            fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ::liquid::ValueView> + 'k> {
+            fn values<'liquid_derive_k>(&'liquid_derive_k self) -> Box<dyn Iterator<Item = &'liquid_derive_k dyn ::liquid::ValueView> + 'liquid_derive_k> {
                 let mut values = Vec::<&dyn ::liquid::ValueView>::with_capacity(#num_fields);
                 #(
                     values.push(&self.#fields);
@@ -33,8 +40,8 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 Box::new(values.into_iter())
             }
 
-            fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (::kstring::KStringCow<'k>, &'k dyn ::liquid::ValueView)> + 'k> {
-                let mut values = Vec::<(::kstring::KStringCow<'k>, &'k dyn ::liquid::ValueView)>::with_capacity(#num_fields);
+            fn iter<'liquid_derive_k>(&'liquid_derive_k self) -> Box<dyn Iterator<Item = (::kstring::KStringCow<'liquid_derive_k>, &'liquid_derive_k dyn ::liquid::ValueView)> + 'liquid_derive_k> {
+                let mut values = Vec::<(::kstring::KStringCow<'liquid_derive_k>, &'liquid_derive_k dyn ::liquid::ValueView)>::with_capacity(#num_fields);
                 #(
                     values.push((
                         ::kstring::KStringCow::from_static(stringify!(#fields)),
@@ -53,7 +60,7 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 }
             }
 
-            fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ::liquid::ValueView> {
+            fn get<'liquid_derive_s>(&'liquid_derive_s self, index: &str) -> Option<&'liquid_derive_s dyn ::liquid::ValueView> {
                 match index {
                     #(
                         stringify!(#fields) => Some(&self.#fields),
