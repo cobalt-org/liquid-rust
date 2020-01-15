@@ -322,8 +322,16 @@ fn as_value<T: ValueView>(value: &T) -> &dyn ValueView {
 }
 
 #[derive(Debug)]
-struct ObjectSource<'s, O: ObjectView> {
+#[doc(hidden)]
+pub struct ObjectSource<'s, O: ObjectView> {
     s: &'s O,
+}
+
+impl<'s, O: ObjectView> ObjectSource<'s, O> {
+    #[doc(hidden)]
+    pub fn new(other: &'s O) -> Self {
+        Self { s: other }
+    }
 }
 
 impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
@@ -338,8 +346,16 @@ impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
 }
 
 #[derive(Debug)]
-struct ObjectRender<'s, O: ObjectView> {
+#[doc(hidden)]
+pub struct ObjectRender<'s, O: ObjectView> {
     s: &'s O,
+}
+
+impl<'s, O: ObjectView> ObjectRender<'s, O> {
+    #[doc(hidden)]
+    pub fn new(other: &'s O) -> Self {
+        Self { s: other }
+    }
 }
 
 impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
