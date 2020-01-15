@@ -7,7 +7,9 @@ use syn;
 mod filter;
 mod filter_parameters;
 pub(crate) mod helpers;
+mod object_view;
 mod parse_filter;
+mod value_view;
 
 use proc_macro::TokenStream;
 
@@ -248,4 +250,16 @@ pub fn derive_from_filter_parameters(item: TokenStream) -> TokenStream {
 pub fn derive_display_filter(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::DeriveInput);
     filter::display::derive(&input).into()
+}
+
+#[proc_macro_derive(ValueView)]
+pub fn derive_value_view(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::DeriveInput);
+    value_view::derive(&input).into()
+}
+
+#[proc_macro_derive(ObjectView)]
+pub fn derive_object_view(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::DeriveInput);
+    object_view::derive(&input).into()
 }

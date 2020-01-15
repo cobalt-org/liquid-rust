@@ -29,6 +29,9 @@ pub mod filters;
 pub mod partials;
 pub mod tags;
 
+#[doc(hidden)]
+pub use liquid_core::value;
+
 pub use crate::parser::*;
 pub use crate::reflection::*;
 pub use crate::template::*;
@@ -37,6 +40,7 @@ pub use liquid_core::to_object;
 pub use liquid_core::Error;
 pub use liquid_core::Object;
 pub use liquid_core::{ObjectView, ValueView};
+pub use liquid_derive::{ObjectView, ValueView};
 
 #[macro_use]
 extern crate doc_comment;
