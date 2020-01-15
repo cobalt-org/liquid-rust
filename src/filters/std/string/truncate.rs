@@ -68,7 +68,7 @@ struct TruncateFilter {
 }
 
 impl Filter for TruncateFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let lenght = args.lenght.unwrap_or(50) as usize;
@@ -126,7 +126,7 @@ struct TruncateWordsFilter {
 }
 
 impl Filter for TruncateWordsFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let words = args.lenght.unwrap_or(50) as usize;

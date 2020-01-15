@@ -132,7 +132,7 @@ impl<S> fmt::Debug for OnDemandStore<S>
 where
     S: PartialSource,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.source.fmt(f)
     }
 }

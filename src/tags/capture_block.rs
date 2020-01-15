@@ -22,7 +22,7 @@ impl Capture {
 }
 
 impl Renderable for Capture {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut captured = Vec::new();
         self.template
             .render_to(&mut captured, context)
@@ -62,8 +62,8 @@ impl BlockReflection for CaptureBlock {
 impl ParseBlock for CaptureBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let id = arguments

@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate difference;
-extern crate liquid;
 
 use liquid::*;
 

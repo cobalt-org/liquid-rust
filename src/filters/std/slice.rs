@@ -62,7 +62,7 @@ struct SliceFilter {
 }
 
 impl Filter for SliceFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let offset = args.offset as isize;

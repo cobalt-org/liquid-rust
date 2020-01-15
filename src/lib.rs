@@ -21,22 +21,6 @@
 //! assert_eq!(output, "Liquid! 2".to_string());
 //! ```
 
-extern crate chrono;
-extern crate deunicode;
-extern crate itertools;
-extern crate once_cell;
-extern crate regex;
-extern crate unicode_segmentation;
-extern crate url;
-
-#[cfg(feature = "serde")]
-extern crate serde;
-#[cfg(test)]
-extern crate serde_yaml;
-
-extern crate kstring;
-extern crate liquid_core;
-
 mod parser;
 mod reflection;
 mod template;
@@ -45,14 +29,14 @@ pub mod filters;
 pub mod partials;
 pub mod tags;
 
+pub use crate::parser::*;
+pub use crate::reflection::*;
+pub use crate::template::*;
 pub use liquid_core::object;
 pub use liquid_core::to_object;
 pub use liquid_core::Error;
 pub use liquid_core::Object;
 pub use liquid_core::{ObjectView, ValueView};
-pub use parser::*;
-pub use reflection::*;
-pub use template::*;
 
 #[macro_use]
 extern crate doc_comment;

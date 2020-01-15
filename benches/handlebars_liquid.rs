@@ -1,9 +1,9 @@
 #![feature(test)]
 
-extern crate serde_yaml;
+use serde_yaml;
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 // Mirrors handlebars' benchmark
 static ITERATE: &'static str = "<html>

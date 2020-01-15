@@ -20,7 +20,7 @@ impl IfChanged {
 }
 
 impl Renderable for IfChanged {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut rendered = Vec::new();
         self.if_changed
             .render_to(&mut rendered, context)
@@ -61,8 +61,8 @@ impl BlockReflection for IfChangedBlock {
 impl ParseBlock for IfChangedBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error

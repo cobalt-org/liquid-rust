@@ -2,7 +2,7 @@
 
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 #[bench]
 fn bench_big_loop_big_object(b: &mut test::Bencher) {

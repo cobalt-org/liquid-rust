@@ -43,7 +43,7 @@ pub struct Size;
 struct SizeFilter;
 
 impl Filter for SizeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         match *input {
             Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
             Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
@@ -76,7 +76,7 @@ struct DefaultFilter {
 }
 
 impl Filter for DefaultFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         if input.query_state(liquid_core::value::State::DefaultValue) {

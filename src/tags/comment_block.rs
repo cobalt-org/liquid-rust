@@ -11,7 +11,7 @@ use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 struct Comment;
 
 impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context<'_>) -> Result<()> {
         Ok(())
     }
 }
@@ -42,8 +42,8 @@ impl BlockReflection for CommentBlock {
 impl ParseBlock for CommentBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error

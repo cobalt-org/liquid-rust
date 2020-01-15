@@ -21,7 +21,7 @@ impl Assign {
 }
 
 impl Renderable for Assign {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let value = self
             .src
             .evaluate(context)
@@ -53,7 +53,7 @@ impl TagReflection for AssignTag {
 impl ParseTag for AssignTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let dst = arguments

@@ -75,7 +75,7 @@ pub struct Escape;
 struct EscapeFilter;
 
 impl Filter for EscapeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         escape(input, false)
     }
 }
@@ -93,7 +93,7 @@ pub struct EscapeOnce;
 struct EscapeOnceFilter;
 
 impl Filter for EscapeOnceFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         escape(input, true)
     }
 }
@@ -120,7 +120,7 @@ static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(
 });
 
 impl Filter for StripHtmlFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr().into_string();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
@@ -143,7 +143,7 @@ pub struct NewlineToBr;
 struct NewlineToBrFilter;
 
 impl Filter for NewlineToBrFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         // TODO handle windows line endings
         let input = input.to_kstr();
         Ok(Value::scalar(input.replace("\n", "<br />\n")))

@@ -1,6 +1,4 @@
-extern crate kstring;
-extern crate liquid;
-extern crate liquid_core;
+use liquid;
 
 use liquid::{Parser, ParserBuilder};
 use liquid_core::compiler::FilterReflection;

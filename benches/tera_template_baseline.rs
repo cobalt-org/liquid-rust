@@ -1,5 +1,5 @@
 #![feature(test)]
-extern crate tera;
+
 extern crate test;
 #[macro_use]
 extern crate serde_derive;

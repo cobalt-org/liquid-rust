@@ -1,9 +1,8 @@
 #![feature(test)]
 
-extern crate serde_yaml;
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 static TEXT_ONLY: &'static str = "Hello World";
 

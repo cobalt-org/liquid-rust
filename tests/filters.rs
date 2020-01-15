@@ -1,5 +1,4 @@
-extern crate liquid;
-extern crate serde_yaml;
+use liquid;
 
 #[test]
 pub fn upcase() {

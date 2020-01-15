@@ -1,7 +1,4 @@
-extern crate chrono;
-extern crate liquid;
-extern crate liquid_core;
-extern crate regex;
+use liquid_core;
 
 pub use liquid_core::Value::Nil;
 

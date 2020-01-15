@@ -355,7 +355,7 @@ struct StringVisitor;
 impl<'de> serde::de::Visitor<'de> for StringVisitor {
     type Value = KString;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a string")
     }
 

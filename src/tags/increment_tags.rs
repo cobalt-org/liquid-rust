@@ -14,7 +14,7 @@ struct Increment {
 }
 
 impl Renderable for Increment {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut val = context
             .stack()
             .get_index(&self.id)
@@ -53,7 +53,7 @@ impl TagReflection for IncrementTag {
 impl ParseTag for IncrementTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let id = arguments
@@ -79,7 +79,7 @@ struct Decrement {
 }
 
 impl Renderable for Decrement {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let mut val = context
             .stack()
             .get_index(&self.id)
@@ -118,7 +118,7 @@ impl TagReflection for DecrementTag {
 impl ParseTag for DecrementTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let id = arguments

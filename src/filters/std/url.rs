@@ -48,7 +48,7 @@ static URL_ENCODE_SET: once_cell::sync::Lazy<UrlEncodeSet> =
     once_cell::sync::Lazy::new(|| UrlEncodeSet("".to_owned()));
 
 impl Filter for UrlEncodeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }
@@ -74,7 +74,7 @@ pub struct UrlDecode;
 struct UrlDecodeFilter;
 
 impl Filter for UrlDecodeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }

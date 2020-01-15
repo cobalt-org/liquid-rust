@@ -1,10 +1,9 @@
 #![feature(test)]
 
-extern crate serde_json;
-extern crate serde_yaml;
+use serde_yaml;
 extern crate test;
 
-extern crate liquid;
+use liquid;
 
 static VARIABLE_ONLY: &'static str = "{{product.name}}";
 

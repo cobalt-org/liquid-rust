@@ -40,7 +40,7 @@ pub struct TestKeywordFilter {
 }
 
 impl Filter for TestKeywordFilter {
-    fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let required = args.required;

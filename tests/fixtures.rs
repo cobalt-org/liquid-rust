@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate difference;
-extern crate liquid;
-extern crate serde_yaml;
+use liquid;
 
 use std::fs::File;
 use std::io::Read;

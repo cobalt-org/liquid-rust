@@ -126,7 +126,7 @@ pub struct ValueViewCmp<'v>(&'v dyn ValueView);
 
 impl<'v> ValueViewCmp<'v> {
     /// `Value` comparison semantics for types implementing `ValueView`.
-    pub fn new(v: &dyn ValueView) -> ValueViewCmp {
+    pub fn new(v: &dyn ValueView) -> ValueViewCmp<'_> {
         ValueViewCmp(v)
     }
 }

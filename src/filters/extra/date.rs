@@ -39,7 +39,7 @@ struct DateInTzFilter {
 }
 
 impl Filter for DateInTzFilter {
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let date = input

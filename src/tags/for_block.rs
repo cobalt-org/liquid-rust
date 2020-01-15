@@ -22,7 +22,7 @@ enum Range {
 }
 
 impl Range {
-    pub fn evaluate(&self, context: &Context) -> Result<Vec<Value>> {
+    pub fn evaluate(&self, context: &Context<'_>) -> Result<Vec<Value>> {
         let range = match *self {
             Range::Array(ref array_id) => get_array(context, array_id)?,
 
@@ -39,7 +39,7 @@ impl Range {
 }
 
 impl fmt::Display for Range {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Range::Array(ref arr) => write!(f, "{}", arr),
             Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
@@ -68,7 +68,7 @@ fn iter_array(
 }
 
 /// Extracts an integer value or an identifier from the token stream
-fn parse_attr(arguments: &mut TagTokenIter) -> Result<Expression> {
+fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
     arguments
         .expect_next("\":\" expected.")?
         .expect_str(":")
@@ -81,7 +81,7 @@ fn parse_attr(arguments: &mut TagTokenIter) -> Result<Expression> {
 }
 
 /// Evaluates an attribute, returning Ok(None) if input is also None.
-fn evaluate_attr(attr: &Option<Expression>, context: &mut Context) -> Result<Option<usize>> {
+fn evaluate_attr(attr: &Option<Expression>, context: &mut Context<'_>) -> Result<Option<usize>> {
     match attr {
         Some(attr) => {
             let value = attr.evaluate(context)?;
@@ -119,7 +119,7 @@ impl For {
     }
 }
 
-fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
+fn get_array(context: &Context<'_>, array_id: &Expression) -> Result<Vec<Value>> {
     let array = array_id.evaluate(context)?;
     if let Some(x) = array.as_array() {
         Ok(x.values().map(|v| v.to_value()).collect())
@@ -140,7 +140,7 @@ fn get_array(context: &Context, array_id: &Expression) -> Result<Vec<Value>> {
     }
 }
 
-fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<isize> {
+fn int_argument(arg: &Expression, context: &Context<'_>, arg_name: &str) -> Result<isize> {
     let value = arg.evaluate(context)?;
 
     let value = value
@@ -154,7 +154,7 @@ fn int_argument(arg: &Expression, context: &Context, arg_name: &str) -> Result<i
 }
 
 impl Renderable for For {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let range = self
             .range
             .evaluate(context)
@@ -263,8 +263,8 @@ impl BlockReflection for ForBlock {
 impl ParseBlock for ForBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let var_name = arguments
@@ -394,7 +394,7 @@ fn trace_tablerow_tag(
 }
 
 impl Renderable for TableRow {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let range = self
             .range
             .evaluate(context)
@@ -487,8 +487,8 @@ impl BlockReflection for TableRowBlock {
 impl ParseBlock for TableRowBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let var_name = arguments
@@ -593,7 +593,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context = Default::default();
+        let mut context: Context<'_> = Default::default();
         context.stack_mut().set_global(
             "array",
             Value::Array(vec![
@@ -855,7 +855,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context = Default::default();
+        let mut context: Context<'_> = Default::default();
         let output = template.render(&mut context).unwrap();
         assert_eq!(
                 output,
@@ -876,7 +876,7 @@ mod test {
     pub struct ShoutFilter;
 
     impl Filter for ShoutFilter {
-        fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+        fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_uppercase()))
         }
     }
@@ -941,7 +941,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context = Default::default();
+        let mut context: Context<'_> = Default::default();
         context.stack_mut().set_global(
             "array",
             Value::Array(vec![
@@ -967,7 +967,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context = Default::default();
+        let mut context: Context<'_> = Default::default();
         context.stack_mut().set_global(
             "array",
             Value::Array(vec![
@@ -1026,7 +1026,7 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context = Default::default();
+        let mut context: Context<'_> = Default::default();
         let output = template.render(&mut context).unwrap();
         assert_eq!(
                 output,

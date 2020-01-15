@@ -24,7 +24,7 @@ impl CaseOption {
         CaseOption { args, template }
     }
 
-    fn evaluate(&self, value: &dyn ValueView, context: &Context) -> Result<bool> {
+    fn evaluate(&self, value: &dyn ValueView, context: &Context<'_>) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(context)?;
             if ValueViewCmp::new(v) == ValueViewCmp::new(value) {
@@ -53,7 +53,7 @@ impl Case {
 }
 
 impl Renderable for Case {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         let value = self.target.evaluate(context)?.to_value();
         for case in &self.cases {
             if case.evaluate(&value, context)? {
@@ -80,7 +80,7 @@ impl Renderable for Case {
     }
 }
 
-fn parse_condition(arguments: &mut TagTokenIter) -> Result<Vec<Expression>> {
+fn parse_condition(arguments: &mut TagTokenIter<'_>) -> Result<Vec<Expression>> {
     let mut values = Vec::new();
 
     let first_value = arguments
@@ -134,8 +134,8 @@ impl BlockReflection for CaseBlock {
 impl ParseBlock for CaseBlock {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
-        mut tokens: TagBlock,
+        mut arguments: TagTokenIter<'_>,
+        mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let target = arguments

@@ -8,10 +8,10 @@ use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter;
 
 use super::Template;
-use filters;
-use partials;
-use reflection;
-use tags;
+use crate::filters;
+use crate::partials;
+use crate::reflection;
+use crate::tags;
 
 /// Storage for partial-templates.
 ///

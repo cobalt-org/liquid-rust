@@ -138,7 +138,7 @@ impl PartialStore for EagerStore {
 }
 
 impl fmt::Debug for EagerStore {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.names().fmt(f)
     }
 }

@@ -52,7 +52,7 @@ pub struct TestMixedFilter {
 }
 
 impl Filter for TestMixedFilter {
-    fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let a = args.a.map(|i| i.to_string()).unwrap_or("None".to_string());

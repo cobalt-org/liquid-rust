@@ -1,9 +1,3 @@
-extern crate chrono;
-extern crate kstring;
-extern crate liquid;
-extern crate regex;
-extern crate serde_yaml;
-
 #[macro_use]
 extern crate liquid_core;
 

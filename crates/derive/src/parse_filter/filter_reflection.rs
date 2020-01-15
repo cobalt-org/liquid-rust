@@ -1,7 +1,7 @@
 use super::*;
 
 /// Generates implementation of `FilterReflection`.
-fn generate_reflection(filter_parser: &ParseFilter) -> Result<TokenStream> {
+fn generate_reflection(filter_parser: &ParseFilter<'_>) -> Result<TokenStream> {
     let ParseFilterMeta {
         filter_name,
         filter_description,

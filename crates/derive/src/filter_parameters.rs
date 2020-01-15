@@ -1,4 +1,4 @@
-use helpers::*;
+use crate::helpers::*;
 use proc_macro2::*;
 use proc_quote::*;
 use std::str::FromStr;
@@ -134,7 +134,7 @@ impl<'a> FilterParametersFields<'a> {
     ///
     /// All optional positional parameters must appear after every required positional parameter.
     /// If this function returns `Some`, the macro is supposed to fail to compile.
-    fn required_after_optional(&self) -> Option<&FilterParameter> {
+    fn required_after_optional(&self) -> Option<&FilterParameter<'_>> {
         self.parameters
             .iter()
             .filter(|parameter| parameter.is_positional())
@@ -451,7 +451,10 @@ impl FilterParameterMeta {
 }
 
 /// Generates the statement that assigns the next positional argument.
-fn generate_construct_positional_field(field: &FilterParameter, required: usize) -> TokenStream {
+fn generate_construct_positional_field(
+    field: &FilterParameter<'_>,
+    required: usize,
+) -> TokenStream {
     let name = &field.name;
 
     if field.is_optional() {
@@ -470,7 +473,7 @@ fn generate_construct_positional_field(field: &FilterParameter, required: usize)
 }
 
 /// Generates the statement that evaluates the `Expression`
-fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
+fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
     let name = &field.name;
     let liquid_name = field.liquid_name();
     let ty = &field.meta.ty;
@@ -542,7 +545,7 @@ fn generate_evaluate_field(field: &FilterParameter) -> TokenStream {
 }
 
 /// Generates the match arm that assigns the given keyword argument.
-fn generate_keyword_match_arm(field: &FilterParameter) -> TokenStream {
+fn generate_keyword_match_arm(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
     let liquid_name = field.liquid_name();
 
@@ -556,7 +559,7 @@ fn generate_keyword_match_arm(field: &FilterParameter) -> TokenStream {
 }
 
 /// Generates implementation of `FilterParameters`.
-fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters {
         name,
         evaluated_name,
@@ -655,7 +658,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters) -> Toke
 }
 
 /// Generates `EvaluatedFilterParameters` struct.
-fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters {
         evaluated_name,
         fields,
@@ -692,7 +695,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters) -> TokenStrea
 }
 
 /// Constructs `ParameterReflection` for the given parameter.
-fn generate_parameter_reflection(field: &FilterParameter) -> TokenStream {
+fn generate_parameter_reflection(field: &FilterParameter<'_>) -> TokenStream {
     let name = field.liquid_name();
     let description = &field.meta.description.to_string();
     let is_optional = field.is_optional();
@@ -707,7 +710,7 @@ fn generate_parameter_reflection(field: &FilterParameter) -> TokenStream {
 }
 
 /// Generates implementation of `FilterParametersReflection`.
-fn generate_impl_reflection(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters { name, fields, .. } = filter_parameters;
 
     let kw_params_reflection = fields
@@ -736,7 +739,7 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters) -> TokenStream
 }
 
 /// Helper function for `generate_impl_display`
-fn generate_access_positional_field_for_display(field: &FilterParameter) -> TokenStream {
+fn generate_access_positional_field_for_display(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
 
     if field.is_optional() {
@@ -751,7 +754,7 @@ fn generate_access_positional_field_for_display(field: &FilterParameter) -> Toke
 }
 
 /// Helper function for `generate_impl_display`
-fn generate_access_keyword_field_for_display(field: &FilterParameter) -> TokenStream {
+fn generate_access_keyword_field_for_display(field: &FilterParameter<'_>) -> TokenStream {
     let rust_name = &field.name;
     let liquid_name = field.liquid_name();
 
@@ -767,7 +770,7 @@ fn generate_access_keyword_field_for_display(field: &FilterParameter) -> TokenSt
 }
 
 /// Generates implementation of `Display`.
-fn generate_impl_display(filter_parameters: &FilterParameters) -> TokenStream {
+fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStream {
     let FilterParameters { name, fields, .. } = filter_parameters;
 
     let positional_fields = fields

@@ -11,7 +11,7 @@ use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 struct Break;
 
 impl Renderable for Break {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Break);
         Ok(())
     }
@@ -39,7 +39,7 @@ impl TagReflection for BreakTag {
 impl ParseTag for BreakTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error
@@ -56,7 +56,7 @@ impl ParseTag for BreakTag {
 struct Continue;
 
 impl Renderable for Continue {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
         context.interrupt_mut().set_interrupt(Interrupt::Continue);
         Ok(())
     }
@@ -84,7 +84,7 @@ impl TagReflection for ContinueTag {
 impl ParseTag for ContinueTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         // no arguments should be supplied, trying to supply them is an error

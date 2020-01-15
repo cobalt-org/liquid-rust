@@ -1,4 +1,4 @@
-use helpers::*;
+use crate::helpers::*;
 use proc_macro2::*;
 use proc_quote::*;
 use syn::*;
@@ -169,7 +169,7 @@ struct FilterField<'a> {
 }
 
 /// Generates implementation of `From<FilterParameters>`.
-fn generate_from_filter_parameters(filter: &FilterStruct) -> TokenStream {
+fn generate_from_filter_parameters(filter: &FilterStruct<'_>) -> TokenStream {
     let FilterStruct {
         parameters_struct_name,
         fields,

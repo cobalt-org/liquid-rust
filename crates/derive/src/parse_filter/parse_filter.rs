@@ -1,7 +1,7 @@
 use super::*;
 
 /// Generates implementation of `ParseFilter`.
-fn generate_parse_filter(filter_parser: &ParseFilter) -> Result<TokenStream> {
+fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream> {
     let ParseFilterMeta {
         parameters_struct_name,
         filter_struct_name,

@@ -45,7 +45,7 @@ impl TestStatefulFilterParser {
 }
 
 impl ParseFilter for TestStatefulFilterParser {
-    fn parse(&self, arguments: FilterArguments) -> Result<Box<dyn Filter>> {
+    fn parse(&self, arguments: FilterArguments<'_>) -> Result<Box<dyn Filter>> {
         let args = TestStatefulFilterParameters::from_args(arguments)?;
         let state = self.state;
 
@@ -66,7 +66,7 @@ pub struct TestStatefulFilter {
 }
 
 impl Filter for TestStatefulFilter {
-    fn evaluate(&self, _input: &Value, context: &Context) -> Result<Value> {
+    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let result = match self.state {
