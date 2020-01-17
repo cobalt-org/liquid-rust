@@ -68,7 +68,7 @@ struct TruncateFilter {
 }
 
 impl Filter for TruncateFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let lenght = args.lenght.unwrap_or(50) as usize;
@@ -88,7 +88,7 @@ impl Filter for TruncateFilter {
                 + truncate_string.as_str();
             Value::scalar(result)
         } else {
-            input.clone()
+            input.to_value()
         };
         Ok(result)
     }
@@ -126,7 +126,7 @@ struct TruncateWordsFilter {
 }
 
 impl Filter for TruncateWordsFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let words = args.lenght.unwrap_or(50) as usize;
@@ -142,7 +142,7 @@ impl Filter for TruncateWordsFilter {
             let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_str();
             Value::scalar(result)
         } else {
-            input.clone()
+            input.to_value()
         };
         Ok(result)
     }

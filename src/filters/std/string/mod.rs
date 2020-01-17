@@ -37,7 +37,7 @@ struct SplitFilter {
 }
 
 impl Filter for SplitFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let input = input.to_kstr();

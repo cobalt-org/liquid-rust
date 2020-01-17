@@ -17,7 +17,7 @@ fn nr_escaped(text: &str) -> usize {
 // The code is adapted from
 // https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/escape.rs
 // Retrieved 2016-11-19.
-fn escape(input: &Value, once_p: bool) -> Result<Value> {
+fn escape(input: &dyn ValueView, once_p: bool) -> Result<Value> {
     if input.is_nil() {
         return Ok(Value::Nil);
     }
@@ -75,7 +75,7 @@ pub struct Escape;
 struct EscapeFilter;
 
 impl Filter for EscapeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         escape(input, false)
     }
 }
@@ -93,7 +93,7 @@ pub struct EscapeOnce;
 struct EscapeOnceFilter;
 
 impl Filter for EscapeOnceFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         escape(input, true)
     }
 }
@@ -120,7 +120,7 @@ static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(
 });
 
 impl Filter for StripHtmlFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr().into_string();
 
         let result = MATCHERS.iter().fold(input, |acc, matcher| {
@@ -143,7 +143,7 @@ pub struct NewlineToBr;
 struct NewlineToBrFilter;
 
 impl Filter for NewlineToBrFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         // TODO handle windows line endings
         let input = input.to_kstr();
         Ok(Value::scalar(input.replace("\n", "<br />\n")))

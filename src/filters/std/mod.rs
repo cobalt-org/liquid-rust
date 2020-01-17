@@ -43,12 +43,15 @@ pub struct Size;
 struct SizeFilter;
 
 impl Filter for SizeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
-        match *input {
-            Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
-            Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
-            Value::Object(ref x) => Ok(Value::scalar(x.len() as i32)),
-            _ => Ok(Value::scalar(0i32)),
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+        if let Some(x) = input.as_scalar() {
+            Ok(Value::scalar(x.to_kstr().len() as i32))
+        } else if let Some(x) = input.as_array() {
+            Ok(Value::scalar(x.size()))
+        } else if let Some(x) = input.as_object() {
+            Ok(Value::scalar(x.size()))
+        } else {
+            Ok(Value::scalar(0i32))
         }
     }
 }
@@ -76,13 +79,13 @@ struct DefaultFilter {
 }
 
 impl Filter for DefaultFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         if input.query_state(liquid_core::value::State::DefaultValue) {
             Ok(args.default.to_value())
         } else {
-            Ok(input.clone())
+            Ok(input.to_value())
         }
     }
 }

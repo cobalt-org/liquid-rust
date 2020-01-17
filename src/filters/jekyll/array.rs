@@ -33,7 +33,7 @@ struct PushFilter {
 }
 
 impl Filter for PushFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let element = args.element.to_value();
@@ -60,7 +60,7 @@ pub struct Pop;
 struct PopFilter;
 
 impl Filter for PopFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -94,7 +94,7 @@ struct UnshiftFilter {
 }
 
 impl Filter for UnshiftFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let element = args.element.to_value();
@@ -121,7 +121,7 @@ pub struct Shift;
 struct ShiftFilter;
 
 impl Filter for ShiftFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -161,7 +161,7 @@ struct ArrayToSentenceStringFilter {
 }
 
 impl Filter for ArrayToSentenceStringFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let connector = args.connector.unwrap_or("and".into());

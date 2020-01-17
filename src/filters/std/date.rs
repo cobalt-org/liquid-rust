@@ -29,7 +29,7 @@ struct DateFilter {
 }
 
 impl Filter for DateFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let date = input.as_scalar().and_then(|s| s.to_date_time());
@@ -37,7 +37,7 @@ impl Filter for DateFilter {
             Some(date) if !args.format.is_empty() => {
                 Ok(Value::scalar(date.format(args.format.as_str()).to_string()))
             }
-            _ => Ok(input.clone()),
+            _ => Ok(input.to_value()),
         }
     }
 }

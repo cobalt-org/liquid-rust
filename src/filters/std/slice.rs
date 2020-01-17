@@ -62,7 +62,7 @@ struct SliceFilter {
 }
 
 impl Filter for SliceFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let offset = args.offset as isize;
@@ -72,10 +72,14 @@ impl Filter for SliceFilter {
             return invalid_argument("length", "Positive number expected").into_err();
         }
 
-        if let Value::Array(input) = input {
-            let (offset, length) = canonicalize_slice(offset, length, input.len());
+        if let Some(input) = input.as_array() {
+            let (offset, length) = canonicalize_slice(offset, length, input.size() as usize);
             Ok(Value::array(
-                input.iter().skip(offset).take(length).cloned(),
+                input
+                    .values()
+                    .skip(offset)
+                    .take(length)
+                    .map(|s| s.to_value()),
             ))
         } else {
             let input = input.to_kstr();

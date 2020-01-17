@@ -1,10 +1,10 @@
 use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
-use liquid_core::Value;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
+use liquid_core::{Value, ValueView};
 
 // Colision with FilterParameters' evaluated struct.
 #[allow(dead_code)]
@@ -52,7 +52,7 @@ pub struct TestMixedFilter {
 }
 
 impl Filter for TestMixedFilter {
-    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let a = args.a.map(|i| i.to_string()).unwrap_or("None".to_string());
