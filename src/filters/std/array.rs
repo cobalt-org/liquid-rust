@@ -295,7 +295,7 @@ impl Filter for UniqFilter {
         for x in array.values() {
             if deduped
                 .iter()
-                .find(|v| ValueViewCmp::new(v.as_value()) == ValueViewCmp::new(x))
+                .find(|v| ValueViewCmp::new(v.as_view()) == ValueViewCmp::new(x))
                 .is_none()
             {
                 deduped.push(x.to_value())

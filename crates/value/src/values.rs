@@ -37,7 +37,7 @@ impl Value {
     }
 
     /// Performs the conversion.
-    pub fn as_value(&self) -> &dyn ValueView {
+    pub fn as_view(&self) -> &dyn ValueView {
         match &self {
             Value::Scalar(ref x) => x,
             Value::Object(ref x) => x,
