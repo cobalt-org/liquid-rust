@@ -113,7 +113,7 @@ macro_rules! value_internal {
     };
 
     ([]) => {
-        $crate::Value::Array(Default::default())
+        $crate::Value::Array(::std::default::Default::default())
     };
 
     ([ $($tt:tt)+ ]) => {
@@ -121,7 +121,7 @@ macro_rules! value_internal {
     };
 
     ({}) => {
-        $crate::Value::Object(Default::default())
+        $crate::Value::Object(::std::default::Default::default())
     };
 
     ({ $($tt:tt)+ }) => {
