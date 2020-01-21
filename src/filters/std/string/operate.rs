@@ -229,81 +229,85 @@ impl Filter for PrependFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_append() {
-        assert_eq!(unit!(Append, tos!("sam"), tos!("son")), tos!("samson"));
+        assert_eq!(
+            liquid_core::call_filter!(Append, "sam", "son").unwrap(),
+            liquid_core::value!("samson")
+        );
     }
 
     #[test]
     fn unit_prepend() {
         assert_eq!(
-            unit!(Prepend, tos!("barbar"), tos!("foo")),
-            tos!("foobarbar")
+            liquid_core::call_filter!(Prepend, "barbar", "foo").unwrap(),
+            liquid_core::value!("foobarbar")
         );
     }
 
     #[test]
     fn unit_remove() {
-        assert_eq!(unit!(Remove, tos!("barbar"), tos!("bar")), tos!(""));
-        assert_eq!(unit!(Remove, tos!("barbar"), tos!("")), tos!("barbar"));
-        assert_eq!(unit!(Remove, tos!("barbar"), tos!("barbar")), tos!(""));
-        assert_eq!(unit!(Remove, tos!("barbar"), tos!("a")), tos!("brbr"));
+        assert_eq!(
+            liquid_core::call_filter!(Remove, "barbar", "bar").unwrap(),
+            liquid_core::value!("")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Remove, "barbar", "").unwrap(),
+            liquid_core::value!("barbar")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Remove, "barbar", "barbar").unwrap(),
+            liquid_core::value!("")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Remove, "barbar", "a").unwrap(),
+            liquid_core::value!("brbr")
+        );
     }
 
     #[test]
     fn unit_remove_first() {
-        assert_eq!(unit!(RemoveFirst, tos!("barbar"), tos!("bar")), tos!("bar"));
-        assert_eq!(unit!(RemoveFirst, tos!("barbar"), tos!("")), tos!("barbar"));
-        assert_eq!(unit!(RemoveFirst, tos!("barbar"), tos!("barbar")), tos!(""));
-        assert_eq!(unit!(RemoveFirst, tos!("barbar"), tos!("a")), tos!("brbar"));
+        assert_eq!(
+            liquid_core::call_filter!(RemoveFirst, "barbar", "bar").unwrap(),
+            liquid_core::value!("bar")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(RemoveFirst, "barbar", "").unwrap(),
+            liquid_core::value!("barbar")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(RemoveFirst, "barbar", "barbar").unwrap(),
+            liquid_core::value!("")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(RemoveFirst, "barbar", "a").unwrap(),
+            liquid_core::value!("brbar")
+        );
     }
 
     #[test]
     fn unit_replace() {
         assert_eq!(
-            unit!(Replace, tos!("barbar"), tos!("bar"), tos!("foo")),
-            tos!("foofoo")
+            liquid_core::call_filter!(Replace, "barbar", "bar", "foo").unwrap(),
+            liquid_core::value!("foofoo")
         );
     }
 
     #[test]
     fn unit_replace_first() {
         assert_eq!(
-            unit!(ReplaceFirst, tos!("barbar"), tos!("bar"), tos!("foo")),
-            tos!("foobar")
+            liquid_core::call_filter!(ReplaceFirst, "barbar", "bar", "foo").unwrap(),
+            liquid_core::value!("foobar")
         );
         assert_eq!(
-            unit!(ReplaceFirst, tos!("barxoxo"), tos!("xo"), tos!("foo")),
-            tos!("barfooxo")
+            liquid_core::call_filter!(ReplaceFirst, "barxoxo", "xo", "foo").unwrap(),
+            liquid_core::value!("barfooxo")
         );
         assert_eq!(
-            unit!(ReplaceFirst, tos!(""), tos!("bar"), tos!("foo")),
-            tos!("")
+            liquid_core::call_filter!(ReplaceFirst, "", "bar", "foo").unwrap(),
+            liquid_core::value!("")
         );
     }
 }

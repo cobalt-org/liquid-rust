@@ -89,74 +89,64 @@ impl Filter for SliceFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_slice() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("ot");
-        assert_eq!(unit!(Slice, input, tos!(10), tos!(2)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(
+                Slice,
+                "I often quote myself.  It adds spice to my conversation.",
+                10,
+                2
+            )
+            .unwrap(),
+            liquid_core::value!("ot")
+        );
     }
 
     #[test]
-    fn unit_slice_no_lenght_specified() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("t");
-        assert_eq!(unit!(Slice, input, tos!(4)), desired_result);
+    fn unit_slice_no_length_specified() {
+        assert_eq!(
+            liquid_core::call_filter!(
+                Slice,
+                "I often quote myself.  It adds spice to my conversation.",
+                4
+            )
+            .unwrap(),
+            liquid_core::value!("t")
+        );
     }
 
     #[test]
     fn unit_slice_negative_offset() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("ver");
-        assert_eq!(unit!(Slice, input, tos!(-10), tos!(3)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(
+                Slice,
+                "I often quote myself.  It adds spice to my conversation.",
+                -10,
+                3
+            )
+            .unwrap(),
+            liquid_core::value!("ver")
+        );
     }
 
     #[test]
-    fn unit_slice_non_positive_lenght() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-
-        failed!(Slice, input, tos!(-10), tos!(0));
-        failed!(Slice, input, tos!(-10), tos!(-1));
+    fn unit_slice_non_positive_length() {
+        liquid_core::call_filter!(
+            Slice,
+            "I often quote myself.  It adds spice to my conversation.",
+            -10,
+            0
+        )
+        .unwrap_err();
+        liquid_core::call_filter!(
+            Slice,
+            "I often quote myself.  It adds spice to my conversation.",
+            -10,
+            -1
+        )
+        .unwrap_err();
     }
 }

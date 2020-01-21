@@ -472,127 +472,96 @@ impl Filter for FloorFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_abs() {
-        let input = Value::scalar(-1f64);
-        let desired_result = Value::scalar(1f64);
-        assert_eq!(unit!(Abs, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Abs, -1f64).unwrap(),
+            Value::scalar(1f64)
+        );
     }
 
     #[test]
     fn unit_abs_positive_in_string() {
-        let input = &tos!("42");
-        let desired_result = Value::scalar(42f64);
-        assert_eq!(unit!(Abs, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Abs, "42").unwrap(),
+            Value::scalar(42f64)
+        );
     }
 
     #[test]
     fn unit_abs_not_number_or_string() {
-        let input = &Value::scalar(true);
-        failed!(Abs, input);
+        liquid_core::call_filter!(Abs, true).unwrap_err();
     }
 
     #[test]
     fn unit_abs_one_argument() {
-        let input = &Value::scalar(-1f64);
-        failed!(Abs, input, Value::scalar(0f64));
+        liquid_core::call_filter!(Abs, -1f64, 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_abs_shopify_liquid() {
         // Three tests from https://shopify.github.io/liquid/filters/abs/
-        assert_eq!(unit!(Abs, Value::scalar(-17f64)), Value::scalar(17f64));
-        assert_eq!(unit!(Abs, Value::scalar(4f64)), Value::scalar(4f64));
-        assert_eq!(unit!(Abs, tos!("-19.86")), Value::scalar(19.86f64));
+        assert_eq!(
+            liquid_core::call_filter!(Abs, -17f64).unwrap(),
+            Value::scalar(17f64)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Abs, 4f64).unwrap(),
+            Value::scalar(4f64)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Abs, "-19.86").unwrap(),
+            Value::scalar(19.86f64)
+        );
     }
     #[test]
     fn unit_at_least() {
         assert_eq!(
-            unit!(AtLeast, Value::scalar(4f64), Value::scalar(5f64)),
+            liquid_core::call_filter!(AtLeast, 4f64, 5f64).unwrap(),
             Value::scalar(5f64)
         );
         assert_eq!(
-            unit!(AtLeast, Value::scalar(4f64), Value::scalar(3f64)),
+            liquid_core::call_filter!(AtLeast, 4f64, 3f64).unwrap(),
             Value::scalar(4f64)
         );
         assert_eq!(
-            unit!(AtLeast, Value::scalar(21.5), Value::scalar(2.25)),
+            liquid_core::call_filter!(AtLeast, 21.5, 2.25).unwrap(),
             Value::scalar(21.5)
         );
         assert_eq!(
-            unit!(AtLeast, Value::scalar(21.5), Value::scalar(42.25)),
+            liquid_core::call_filter!(AtLeast, 21.5, 42.25).unwrap(),
             Value::scalar(42.25)
         );
     }
     #[test]
     fn unit_at_most() {
         assert_eq!(
-            unit!(AtMost, Value::scalar(4f64), Value::scalar(5f64)),
+            liquid_core::call_filter!(AtMost, 4f64, 5f64).unwrap(),
             Value::scalar(4f64)
         );
         assert_eq!(
-            unit!(AtMost, Value::scalar(4f64), Value::scalar(3f64)),
+            liquid_core::call_filter!(AtMost, 4f64, 3f64).unwrap(),
             Value::scalar(3f64)
         );
         assert_eq!(
-            unit!(AtMost, Value::scalar(21.5), Value::scalar(2.25)),
+            liquid_core::call_filter!(AtMost, 21.5, 2.25).unwrap(),
             Value::scalar(2.25)
         );
         assert_eq!(
-            unit!(AtMost, Value::scalar(21.5), Value::scalar(42.25)),
+            liquid_core::call_filter!(AtMost, 21.5, 42.25).unwrap(),
             Value::scalar(21.5)
         );
     }
     #[test]
     fn unit_plus() {
         assert_eq!(
-            unit!(Plus, Value::scalar(2f64), Value::scalar(1f64)),
+            liquid_core::call_filter!(Plus, 2f64, 1f64).unwrap(),
             Value::scalar(3f64)
         );
         assert_eq!(
-            unit!(Plus, Value::scalar(21.5), Value::scalar(2.25)),
+            liquid_core::call_filter!(Plus, 21.5, 2.25).unwrap(),
             Value::scalar(23.75)
         );
     }
@@ -600,11 +569,11 @@ mod tests {
     #[test]
     fn unit_minus() {
         assert_eq!(
-            unit!(Minus, Value::scalar(2f64), Value::scalar(1f64)),
+            liquid_core::call_filter!(Minus, 2f64, 1f64).unwrap(),
             Value::scalar(1f64)
         );
         assert_eq!(
-            unit!(Minus, Value::scalar(21.5), Value::scalar(1.25)),
+            liquid_core::call_filter!(Minus, 21.5, 1.25).unwrap(),
             Value::scalar(20.25)
         );
     }
@@ -612,34 +581,34 @@ mod tests {
     #[test]
     fn unit_times() {
         assert_eq!(
-            unit!(Times, Value::scalar(2f64), Value::scalar(3f64)),
+            liquid_core::call_filter!(Times, 2f64, 3f64).unwrap(),
             Value::scalar(6f64)
         );
         assert_eq!(
-            unit!(Times, Value::scalar(8.5), Value::scalar(0.5)),
+            liquid_core::call_filter!(Times, 8.5, 0.5).unwrap(),
             Value::scalar(4.25)
         );
-        failed!(Times, Value::scalar(true), Value::scalar(8.5));
-        failed!(Times, Value::scalar(2.5), Value::scalar(true));
-        failed!(Times, Value::scalar(2.5));
+        liquid_core::call_filter!(Times, true, 8.5).unwrap_err();
+        liquid_core::call_filter!(Times, 2.5, true).unwrap_err();
+        liquid_core::call_filter!(Times, 2.5).unwrap_err();
     }
 
     #[test]
     fn unit_modulo() {
         assert_eq!(
-            unit!(Modulo, Value::scalar(3_f64), Value::scalar(2_f64)),
+            liquid_core::call_filter!(Modulo, 3_f64, 2_f64).unwrap(),
             Value::scalar(1_f64)
         );
         assert_eq!(
-            unit!(Modulo, Value::scalar(3_f64), Value::scalar(3.0)),
+            liquid_core::call_filter!(Modulo, 3_f64, 3.0).unwrap(),
             Value::scalar(0_f64)
         );
         assert_eq!(
-            unit!(Modulo, Value::scalar(24_f64), Value::scalar(7_f64)),
+            liquid_core::call_filter!(Modulo, 24_f64, 7_f64).unwrap(),
             Value::scalar(3_f64)
         );
         assert_eq!(
-            unit!(Modulo, Value::scalar(183.357), Value::scalar(12_f64)),
+            liquid_core::call_filter!(Modulo, 183.357, 12_f64).unwrap(),
             Value::scalar(3.3569999999999993)
         );
     }
@@ -647,52 +616,73 @@ mod tests {
     #[test]
     fn unit_divided_by() {
         assert_eq!(
-            unit!(DividedBy, Value::scalar(4f64), Value::scalar(2f64)),
+            liquid_core::call_filter!(DividedBy, 4f64, 2f64).unwrap(),
             Value::scalar(2f64)
         );
         assert_eq!(
-            unit!(DividedBy, Value::scalar(5f64), Value::scalar(2f64)),
+            liquid_core::call_filter!(DividedBy, 5f64, 2f64).unwrap(),
             Value::scalar(2.5f64)
         );
-        failed!(DividedBy, Value::scalar(true), Value::scalar(8.5));
-        failed!(DividedBy, Value::scalar(2.5), Value::scalar(true));
-        failed!(DividedBy, Value::scalar(2.5));
+        liquid_core::call_filter!(DividedBy, true, 8.5).unwrap_err();
+        liquid_core::call_filter!(DividedBy, 2.5, true).unwrap_err();
+        liquid_core::call_filter!(DividedBy, 2.5).unwrap_err();
     }
 
     #[test]
     fn unit_ceil() {
-        assert_eq!(unit!(Ceil, Value::scalar(1.1f64)), Value::scalar(2f64));
-        assert_eq!(unit!(Ceil, Value::scalar(1f64)), Value::scalar(1f64));
-        failed!(Ceil, Value::scalar(true));
+        assert_eq!(
+            liquid_core::call_filter!(Ceil, 1.1f64).unwrap(),
+            Value::scalar(2f64)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Ceil, 1f64).unwrap(),
+            Value::scalar(1f64)
+        );
+        liquid_core::call_filter!(Ceil, true).unwrap_err();
     }
 
     #[test]
     fn unit_floor() {
-        assert_eq!(unit!(Floor, Value::scalar(1.1f64)), Value::scalar(1f64));
-        assert_eq!(unit!(Floor, Value::scalar(1f64)), Value::scalar(1f64));
-        failed!(Floor, Value::scalar(true));
+        assert_eq!(
+            liquid_core::call_filter!(Floor, 1.1f64).unwrap(),
+            Value::scalar(1f64)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Floor, 1f64).unwrap(),
+            Value::scalar(1f64)
+        );
+        liquid_core::call_filter!(Floor, true).unwrap_err();
     }
 
     #[test]
     fn unit_round() {
-        assert_eq!(unit!(Round, Value::scalar(1.1f64)), Value::scalar(1i32));
-        assert_eq!(unit!(Round, Value::scalar(1.5f64)), Value::scalar(2i32));
-        assert_eq!(unit!(Round, Value::scalar(2f64)), Value::scalar(2i32));
-        failed!(Round, Value::scalar(true));
+        assert_eq!(
+            liquid_core::call_filter!(Round, 1.1f64).unwrap(),
+            Value::scalar(1i32)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Round, 1.5f64).unwrap(),
+            Value::scalar(2i32)
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Round, 2f64).unwrap(),
+            Value::scalar(2i32)
+        );
+        liquid_core::call_filter!(Round, true).unwrap_err();
     }
 
     #[test]
     fn unit_round_precision() {
         assert_eq!(
-            unit!(Round, Value::scalar(1.1f64), Value::scalar(0i32)),
+            liquid_core::call_filter!(Round, 1.1f64, 0i32).unwrap(),
             Value::scalar(1f64)
         );
         assert_eq!(
-            unit!(Round, Value::scalar(1.5f64), Value::scalar(1i32)),
+            liquid_core::call_filter!(Round, 1.5f64, 1i32).unwrap(),
             Value::scalar(1.5f64)
         );
         assert_eq!(
-            unit!(Round, Value::scalar(3.14159f64), Value::scalar(3i32)),
+            liquid_core::call_filter!(Round, 3.14159f64, 3i32).unwrap(),
             Value::scalar(3.142f64)
         );
     }

@@ -533,346 +533,228 @@ mod tests {
 
     use super::*;
 
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
-
     #[test]
     fn unit_concat_nothing() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        let result = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        assert_eq!(unit!(Concat, input, Value::Array(vec![])), result);
+        let input = liquid_core::value!([1f64, 2f64]);
+        let result = liquid_core::value!([1f64, 2f64]);
+        assert_eq!(
+            liquid_core::call_filter!(Concat, input, liquid_core::value!([])).unwrap(),
+            result
+        );
     }
 
     #[test]
     fn unit_concat_something() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        let result = Value::Array(vec![
-            Value::scalar(1f64),
-            Value::scalar(2f64),
-            Value::scalar(3f64),
-            Value::scalar(4f64),
-        ]);
+        let input = liquid_core::value!([1f64, 2f64]);
+        let result = liquid_core::value!([1f64, 2f64, 3f64, 4f64]);
         assert_eq!(
-            unit!(
-                Concat,
-                input,
-                Value::Array(vec![Value::scalar(3f64), Value::scalar(4f64)])
-            ),
+            liquid_core::call_filter!(Concat, input, liquid_core::value!([3f64, 4f64])).unwrap(),
             result
         );
     }
 
     #[test]
     fn unit_concat_mixed() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        let result = Value::Array(vec![
-            Value::scalar(1f64),
-            Value::scalar(2f64),
-            Value::scalar(3f64),
-            Value::scalar("a"),
-        ]);
+        let input = liquid_core::value!([1f64, 2f64]);
+        let result = liquid_core::value!([1f64, 2f64, 3f64, "a"]);
         assert_eq!(
-            unit!(
-                Concat,
-                input,
-                Value::Array(vec![Value::scalar(3f64), Value::scalar("a")])
-            ),
+            liquid_core::call_filter!(Concat, input, liquid_core::value!([3f64, "a"])).unwrap(),
             result
         );
     }
 
     #[test]
     fn unit_concat_wrong_type() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        failed!(Concat, input, Value::scalar(1f64));
+        let input = liquid_core::value!([1f64, 2f64]);
+        liquid_core::call_filter!(Concat, input, 1f64).unwrap_err();
     }
 
     #[test]
     fn unit_concat_no_args() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        failed!(Concat, input);
+        let input = liquid_core::value!([1f64, 2f64]);
+        liquid_core::call_filter!(Concat, input).unwrap_err();
     }
 
     #[test]
     fn unit_concat_extra_args() {
-        let input = Value::Array(vec![Value::scalar(1f64), Value::scalar(2f64)]);
-        failed!(
-            Concat,
-            input,
-            Value::Array(vec![Value::scalar(3f64), Value::scalar("a")]),
-            Value::scalar(2f64)
-        );
+        let input = liquid_core::value!([1f64, 2f64]);
+        liquid_core::call_filter!(Concat, input, liquid_core::value!([3f64, "a"]), 2f64)
+            .unwrap_err();
     }
 
     #[test]
     fn unit_first() {
         assert_eq!(
-            unit!(
-                First,
-                Value::Array(vec![
-                    Value::scalar(0f64),
-                    Value::scalar(1f64),
-                    Value::scalar(2f64),
-                    Value::scalar(3f64),
-                    Value::scalar(4f64),
-                ])
-            ),
-            Value::scalar(0f64)
+            liquid_core::call_filter!(First, liquid_core::value!([0f64, 1f64, 2f64, 3f64, 4f64,]))
+                .unwrap(),
+            0f64
         );
         assert_eq!(
-            unit!(First, Value::Array(vec![tos!("test"), tos!("two")])),
-            tos!("test")
+            liquid_core::call_filter!(First, liquid_core::value!(["test", "two"])).unwrap(),
+            liquid_core::value!("test")
         );
-        assert_eq!(unit!(First, Value::Array(vec![])), Value::Nil);
+        assert_eq!(
+            liquid_core::call_filter!(First, liquid_core::value!([])).unwrap(),
+            Value::Nil
+        );
     }
 
     #[test]
     fn unit_join() {
-        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        assert_eq!(unit!(Join, input, tos!(",")), tos!("a,b,c"));
+        let input = liquid_core::value!(["a", "b", "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Join, input, ",").unwrap(),
+            liquid_core::value!("a,b,c")
+        );
     }
 
     #[test]
     fn unit_join_bad_input() {
-        let input = tos!("a");
-        failed!(Join, input, tos!(","));
+        let input = "a";
+        liquid_core::call_filter!(Join, input, ",").unwrap_err();
     }
 
     #[test]
     fn unit_join_bad_join_string() {
-        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        assert_eq!(unit!(Join, input, Value::scalar(1f64)), tos!("a1b1c"));
+        let input = liquid_core::value!(["a", "b", "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Join, input, 1f64).unwrap(),
+            "a1b1c"
+        );
     }
 
     #[test]
     fn unit_join_no_args() {
-        let input = Value::Array(vec![tos!("a"), tos!("b"), tos!("c")]);
-        assert_eq!(unit!(Join, input), tos!("a b c"));
+        let input = liquid_core::value!(["a", "b", "c"]);
+        assert_eq!(liquid_core::call_filter!(Join, input).unwrap(), "a b c");
     }
 
     #[test]
     fn unit_join_non_string_element() {
-        let input = Value::Array(vec![tos!("a"), Value::scalar(1f64), tos!("c")]);
-        assert_eq!(unit!(Join, input, tos!(",")), tos!("a,1,c"));
+        let input = liquid_core::value!(["a", 1f64, "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Join, input, ",").unwrap(),
+            liquid_core::value!("a,1,c")
+        );
     }
 
     #[test]
     fn unit_sort() {
-        let input = &Value::Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
-        let desired_result = Value::Array(vec![tos!("Z"), tos!("a"), tos!("b"), tos!("c")]);
-        assert_eq!(unit!(Sort, input), desired_result);
+        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
+        let desired_result = liquid_core::value!(["Z", "a", "b", "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Sort, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_sort_natural() {
-        let input = &Value::Array(vec![tos!("Z"), tos!("b"), tos!("c"), tos!("a")]);
-        let desired_result = Value::Array(vec![tos!("a"), tos!("b"), tos!("c"), tos!("Z")]);
-        assert_eq!(unit!(SortNatural, input), desired_result);
+        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
+        let desired_result = liquid_core::value!(["a", "b", "c", "Z"]);
+        assert_eq!(
+            liquid_core::call_filter!(SortNatural, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_last() {
         assert_eq!(
-            unit!(
-                Last,
-                Value::Array(vec![
-                    Value::scalar(0f64),
-                    Value::scalar(1f64),
-                    Value::scalar(2f64),
-                    Value::scalar(3f64),
-                    Value::scalar(4f64),
-                ])
-            ),
-            Value::scalar(4f64)
+            liquid_core::call_filter!(Last, liquid_core::value!([0f64, 1f64, 2f64, 3f64, 4f64,]))
+                .unwrap(),
+            4f64
         );
         assert_eq!(
-            unit!(Last, Value::Array(vec![tos!("test"), tos!("last")])),
-            tos!("last")
+            liquid_core::call_filter!(Last, liquid_core::value!(["test", "last"])).unwrap(),
+            liquid_core::value!("last")
         );
-        assert_eq!(unit!(Last, Value::Array(vec![])), Value::Nil);
+        assert_eq!(
+            liquid_core::call_filter!(Last, liquid_core::value!([])).unwrap(),
+            Value::Nil
+        );
     }
 
     #[test]
     fn unit_reverse_apples_oranges_peaches_plums() {
         // First example from https://shopify.github.io/liquid/filters/reverse/
-        let input = &Value::Array(vec![
-            tos!("apples"),
-            tos!("oranges"),
-            tos!("peaches"),
-            tos!("plums"),
-        ]);
-        let desired_result = Value::Array(vec![
-            tos!("plums"),
-            tos!("peaches"),
-            tos!("oranges"),
-            tos!("apples"),
-        ]);
-        assert_eq!(unit!(Reverse, input), desired_result);
+        let input = liquid_core::value!(["apples", "oranges", "peaches", "plums"]);
+        let desired_result = liquid_core::value!(["plums", "peaches", "oranges", "apples"]);
+        assert_eq!(
+            liquid_core::call_filter!(Reverse, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_reverse_array() {
-        let input = &Value::Array(vec![
-            Value::scalar(3f64),
-            Value::scalar(1f64),
-            Value::scalar(2f64),
-        ]);
-        let desired_result = Value::Array(vec![
-            Value::scalar(2f64),
-            Value::scalar(1f64),
-            Value::scalar(3f64),
-        ]);
-        assert_eq!(unit!(Reverse, input), desired_result);
+        let input = liquid_core::value!([3f64, 1f64, 2f64]);
+        let desired_result = liquid_core::value!([2f64, 1f64, 3f64]);
+        assert_eq!(
+            liquid_core::call_filter!(Reverse, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_reverse_array_extra_args() {
-        let input = &Value::Array(vec![
-            Value::scalar(3f64),
-            Value::scalar(1f64),
-            Value::scalar(2f64),
-        ]);
-        failed!(Reverse, input, Value::scalar(0f64));
+        let input = liquid_core::value!([3f64, 1f64, 2f64]);
+        liquid_core::call_filter!(Reverse, input, 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_reverse_ground_control_major_tom() {
         // Second example from https://shopify.github.io/liquid/filters/reverse/
-        let input = &Value::Array(vec![
-            tos!("G"),
-            tos!("r"),
-            tos!("o"),
-            tos!("u"),
-            tos!("n"),
-            tos!("d"),
-            tos!(" "),
-            tos!("c"),
-            tos!("o"),
-            tos!("n"),
-            tos!("t"),
-            tos!("r"),
-            tos!("o"),
-            tos!("l"),
-            tos!(" "),
-            tos!("t"),
-            tos!("o"),
-            tos!(" "),
-            tos!("M"),
-            tos!("a"),
-            tos!("j"),
-            tos!("o"),
-            tos!("r"),
-            tos!(" "),
-            tos!("T"),
-            tos!("o"),
-            tos!("m"),
-            tos!("."),
+        let input = liquid_core::value!([
+            "G", "r", "o", "u", "n", "d", " ", "c", "o", "n", "t", "r", "o", "l", " ", "t", "o",
+            " ", "M", "a", "j", "o", "r", " ", "T", "o", "m", ".",
         ]);
-        let desired_result = Value::Array(vec![
-            tos!("."),
-            tos!("m"),
-            tos!("o"),
-            tos!("T"),
-            tos!(" "),
-            tos!("r"),
-            tos!("o"),
-            tos!("j"),
-            tos!("a"),
-            tos!("M"),
-            tos!(" "),
-            tos!("o"),
-            tos!("t"),
-            tos!(" "),
-            tos!("l"),
-            tos!("o"),
-            tos!("r"),
-            tos!("t"),
-            tos!("n"),
-            tos!("o"),
-            tos!("c"),
-            tos!(" "),
-            tos!("d"),
-            tos!("n"),
-            tos!("u"),
-            tos!("o"),
-            tos!("r"),
-            tos!("G"),
+        let desired_result = liquid_core::value!([
+            ".", "m", "o", "T", " ", "r", "o", "j", "a", "M", " ", "o", "t", " ", "l", "o", "r",
+            "t", "n", "o", "c", " ", "d", "n", "u", "o", "r", "G",
         ]);
-        assert_eq!(unit!(Reverse, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Reverse, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_reverse_string() {
-        let input = &tos!("abc");
-        failed!(Reverse, input);
+        let input = "abc";
+        liquid_core::call_filter!(Reverse, input).unwrap_err();
     }
 
     #[test]
     fn unit_uniq() {
-        let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
-        let desired_result = Value::Array(vec![tos!("a"), tos!("b")]);
-        assert_eq!(unit!(Uniq, input), desired_result);
+        let input = liquid_core::value!(["a", "b", "a"]);
+        let desired_result = liquid_core::value!(["a", "b"]);
+        assert_eq!(
+            liquid_core::call_filter!(Uniq, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]
     fn unit_uniq_non_array() {
-        let input = &Value::scalar(0f64);
-        failed!(Uniq, input);
+        let input = 0f64;
+        liquid_core::call_filter!(Uniq, input).unwrap_err();
     }
 
     #[test]
     fn unit_uniq_one_argument() {
-        let input = &Value::Array(vec![tos!("a"), tos!("b"), tos!("a")]);
-        failed!(Uniq, input, Value::scalar(0f64));
+        let input = liquid_core::value!(["a", "b", "a"]);
+        liquid_core::call_filter!(Uniq, input, 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_uniq_shopify_liquid() {
         // Test from https://shopify.github.io/liquid/filters/uniq/
-        let input = &Value::Array(vec![
-            tos!("ants"),
-            tos!("bugs"),
-            tos!("bees"),
-            tos!("bugs"),
-            tos!("ants"),
-        ]);
-        let desired_result = Value::Array(vec![tos!("ants"), tos!("bugs"), tos!("bees")]);
-        assert_eq!(unit!(Uniq, input), desired_result);
+        let input = liquid_core::value!(["ants", "bugs", "bees", "bugs", "ants",]);
+        let desired_result = liquid_core::value!(["ants", "bugs", "bees"]);
+        assert_eq!(
+            liquid_core::call_filter!(Uniq, input).unwrap(),
+            desired_result
+        );
     }
 }

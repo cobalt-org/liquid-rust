@@ -44,68 +44,28 @@ impl Filter for DateFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_date() {
         assert_eq!(
-            unit!(Date, tos!("13 Jun 2016 02:30:00 +0300"), tos!("%Y-%m-%d")),
-            tos!("2016-06-13")
+            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "%Y-%m-%d").unwrap(),
+            liquid_core::value!("2016-06-13")
         );
     }
 
     #[test]
     fn unit_date_cobalt_format() {
         assert_eq!(
-            unit!(Date, tos!("2016-06-13 02:30:00 +0300"), tos!("%Y-%m-%d")),
-            tos!("2016-06-13")
+            liquid_core::call_filter!(Date, "2016-06-13 02:30:00 +0300", "%Y-%m-%d").unwrap(),
+            liquid_core::value!("2016-06-13")
         );
     }
 
     #[test]
     fn unit_date_bad_input_type() {
         assert_eq!(
-            unit!(Date, Value::scalar(0f64), tos!("%Y-%m-%d")),
+            liquid_core::call_filter!(Date, 0f64, "%Y-%m-%d").unwrap(),
             Value::scalar(0f64)
         );
     }
@@ -113,47 +73,34 @@ mod tests {
     #[test]
     fn unit_date_bad_input_format() {
         assert_eq!(
-            unit!(Date, tos!("blah blah blah"), tos!("%Y-%m-%d")),
-            tos!("blah blah blah")
+            liquid_core::call_filter!(Date, "blah blah blah", "%Y-%m-%d").unwrap(),
+            liquid_core::value!("blah blah blah")
         );
     }
 
     #[test]
     fn unit_date_format_empty() {
         assert_eq!(
-            unit!(
-                Date,
-                tos!("13 Jun 2016 02:30:00 +0300"),
-                Value::scalar("".to_owned())
-            ),
-            tos!("13 Jun 2016 02:30:00 +0300")
+            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "").unwrap(),
+            liquid_core::value!("13 Jun 2016 02:30:00 +0300")
         );
     }
 
     #[test]
     fn unit_date_bad_format_type() {
         assert_eq!(
-            unit!(
-                Date,
-                tos!("13 Jun 2016 02:30:00 +0300"),
-                Value::scalar(0f64)
-            ),
-            tos!("0")
+            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", 0f64).unwrap(),
+            liquid_core::value!("0")
         );
     }
 
     #[test]
     fn unit_date_missing_format() {
-        failed!(Date, tos!("13 Jun 2016 02:30:00 +0300"));
+        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300").unwrap_err();
     }
 
     #[test]
     fn unit_date_extra_param() {
-        failed!(
-            Date,
-            tos!("13 Jun 2016 02:30:00 +0300"),
-            Value::scalar(0f64),
-            Value::scalar(1f64)
-        );
+        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", 0f64, 1f64).unwrap_err();
     }
 }

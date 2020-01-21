@@ -68,67 +68,59 @@ impl Filter for CapitalizeFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_capitalize() {
-        assert_eq!(unit!(Capitalize, tos!("abc")), tos!("Abc"));
         assert_eq!(
-            unit!(Capitalize, tos!("hello world 21")),
-            tos!("Hello world 21")
+            liquid_core::call_filter!(Capitalize, "abc").unwrap(),
+            liquid_core::value!("Abc")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Capitalize, "hello world 21").unwrap(),
+            liquid_core::value!("Hello world 21")
         );
 
         // sure that Umlauts work
         assert_eq!(
-            unit!(Capitalize, tos!("über ètat, y̆es?")),
-            tos!("Über ètat, y̆es?")
+            liquid_core::call_filter!(Capitalize, "über ètat, y̆es?").unwrap(),
+            liquid_core::value!("Über ètat, y̆es?")
         );
 
         // Weird UTF-8 White space is kept – this is a no-break whitespace!
-        assert_eq!(unit!(Capitalize, tos!("hello world​")), tos!("Hello world​"));
+        assert_eq!(
+            liquid_core::call_filter!(Capitalize, "hello world​").unwrap(),
+            liquid_core::value!("Hello world​")
+        );
 
         // The uppercase version of some character are more than one character long
-        assert_eq!(unit!(Capitalize, tos!("ßß")), tos!("SSß"));
+        assert_eq!(
+            liquid_core::call_filter!(Capitalize, "ßß").unwrap(),
+            liquid_core::value!("SSß")
+        );
     }
 
     #[test]
     fn unit_downcase() {
-        assert_eq!(unit!(Downcase, tos!("Abc")), tos!("abc"));
         assert_eq!(
-            unit!(Downcase, tos!("Hello World 21")),
-            tos!("hello world 21")
+            liquid_core::call_filter!(Downcase, "Abc").unwrap(),
+            liquid_core::value!("abc")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Downcase, "Hello World 21").unwrap(),
+            liquid_core::value!("hello world 21")
         );
     }
 
     #[test]
     fn unit_upcase() {
-        assert_eq!(unit!(Upcase, tos!("abc")), tos!("ABC"));
         assert_eq!(
-            unit!(Upcase, tos!("Hello World 21")),
-            tos!("HELLO WORLD 21")
+            liquid_core::call_filter!(Upcase, "abc").unwrap(),
+            liquid_core::value!("ABC")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(Upcase, "Hello World 21").unwrap(),
+            liquid_core::value!("HELLO WORLD 21")
         );
     }
 }
