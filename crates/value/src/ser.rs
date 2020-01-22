@@ -15,10 +15,10 @@ use super::Value;
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_value::to_value(s).unwrap();
+/// let value = liquid_value::to_value(&s).unwrap();
 /// assert_eq!(value, liquid_value::Value::scalar(s));
 /// ```
-pub fn to_value<T>(value: T) -> Result<Value, liquid_error::Error>
+pub fn to_value<T>(value: &T) -> Result<Value, liquid_error::Error>
 where
     T: Serialize,
 {
@@ -26,7 +26,7 @@ where
 }
 
 /// Convert a `T` into `liquid_value::Object`.
-pub fn to_object<T>(value: T) -> Result<Object, liquid_error::Error>
+pub fn to_object<T>(value: &T) -> Result<Object, liquid_error::Error>
 where
     T: Serialize,
 {
@@ -39,10 +39,10 @@ where
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_value::to_scalar(s).unwrap();
+/// let value = liquid_value::to_scalar(&s).unwrap();
 /// assert_eq!(value, liquid_value::Scalar::new(s));
 /// ```
-pub fn to_scalar<T>(value: T) -> Result<Scalar, liquid_error::Error>
+pub fn to_scalar<T>(value: &T) -> Result<Scalar, liquid_error::Error>
 where
     T: Serialize,
 {
