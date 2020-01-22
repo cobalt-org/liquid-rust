@@ -258,13 +258,13 @@ impl Default for Value {
 
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
-        crate::value_eq(self, other)
+        crate::value_eq(self.as_view(), other.as_view())
     }
 }
 
 impl<'v> PartialEq<ValueViewCmp<'v>> for Value {
     fn eq(&self, other: &ValueViewCmp<'v>) -> bool {
-        ValueViewCmp::new(self) == *other
+        ValueViewCmp::new(self.as_view()) == *other
     }
 }
 
