@@ -31,7 +31,7 @@ impl FilterChain {
         // apply all specified filters
         for filter in &self.filters {
             entry = filter
-                .evaluate(&entry, context)
+                .evaluate(entry.as_view(), context)
                 .trace("Filter error")
                 .context_key("filter")
                 .value_with(|| format!("{}", filter).into())
