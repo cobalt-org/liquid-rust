@@ -6,7 +6,7 @@ description = "The liquid templating language for Rust"
 readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
-license = "MIT"
+license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [lib]
