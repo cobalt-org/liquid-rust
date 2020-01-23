@@ -107,7 +107,7 @@ impl<'g> Stack<'g> {
     fn roots(&self) -> Vec<kstring::KStringCow<'_>> {
         let mut roots = Vec::new();
         if let Some(globals) = self.globals {
-            roots.extend(globals.keys().map(|k| kstring::KStringCow::from(k)));
+            roots.extend(globals.keys());
         }
         for frame in self.stack.iter() {
             roots.extend(frame.data.keys().map(|k| kstring::KStringCow::from(k)));

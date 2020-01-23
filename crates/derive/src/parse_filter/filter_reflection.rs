@@ -52,10 +52,8 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
         Err(err) => return err.to_compile_error(),
     };
 
-    let output = match generate_reflection(&filter_parser) {
+    match generate_reflection(&filter_parser) {
         Ok(output) => output,
         Err(err) => return err.to_compile_error(),
-    };
-
-    output
+    }
 }

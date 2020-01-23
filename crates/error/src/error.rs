@@ -121,10 +121,6 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {
-    fn description(&self) -> &str {
-        ERROR_DESCRIPTION
-    }
-
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         self.inner.cause.as_ref().and_then(|e| e.source())
     }

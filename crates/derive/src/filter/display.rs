@@ -51,7 +51,7 @@ impl<'a> FilterStruct<'a> {
     }
 
     /// Searches for `#[name(...)]` in order to parse `filter_name`.
-    fn parse_attrs(attrs: &Vec<Attribute>) -> Result<String> {
+    fn parse_attrs(attrs: &[Attribute]) -> Result<String> {
         let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path.is_ident("name"));
 
         match (evaluated_attrs.next(), evaluated_attrs.next()) {
@@ -136,7 +136,7 @@ impl<'a> FilterStruct<'a> {
 
         let name = ident;
         let filter_name = Self::parse_attrs(attrs)?;
-        let parameters = parameters.to_option();
+        let parameters = parameters.into_option();
 
         Ok(Self {
             name,
@@ -182,7 +182,5 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
         Err(err) => return err.to_compile_error(),
     };
 
-    let output = generate_impl_display(&filter);
-
-    output
+    generate_impl_display(&filter)
 }

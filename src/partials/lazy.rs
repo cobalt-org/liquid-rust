@@ -82,7 +82,7 @@ where
 {
     fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>> {
         let store = LazyStore {
-            language: language,
+            language,
             source: self.source,
             cache: sync::Mutex::new(Default::default()),
         };

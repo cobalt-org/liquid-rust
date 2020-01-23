@@ -215,7 +215,5 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
         Err(err) => return err.to_compile_error(),
     };
 
-    let output = generate_from_filter_parameters(&filter);
-
-    output
+    generate_from_filter_parameters(&filter)
 }

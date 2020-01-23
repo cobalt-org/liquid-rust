@@ -67,10 +67,8 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
         Err(err) => return err.to_compile_error(),
     };
 
-    let output = match generate_parse_filter(&filter_parser) {
+    match generate_parse_filter(&filter_parser) {
         Ok(output) => output,
         Err(err) => return err.to_compile_error(),
-    };
-
-    output
+    }
 }

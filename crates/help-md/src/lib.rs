@@ -18,7 +18,7 @@ impl Renderable for dyn liquid_core::FilterReflection {
 
     fn render(&self, stream: &mut dyn std::io::Write) -> Result<(), Box<dyn std::error::Error>> {
         writeln!(stream, "**{}**: {}", self.name(), self.description())?;
-        writeln!(stream, "")?;
+        writeln!(stream)?;
         let params = self.positional_parameters();
         if !params.is_empty() {
             writeln!(stream, "Parameters (positional):")?;
@@ -33,7 +33,7 @@ impl Renderable for dyn liquid_core::FilterReflection {
                     if param.is_optional { "no" } else { "yes" }
                 )?;
             }
-            writeln!(stream, "")?;
+            writeln!(stream)?;
         }
         let params = self.keyword_parameters();
         if !params.is_empty() {
@@ -49,7 +49,7 @@ impl Renderable for dyn liquid_core::FilterReflection {
                     if param.is_optional { "no" } else { "yes" }
                 )?;
             }
-            writeln!(stream, "")?;
+            writeln!(stream)?;
         }
         Ok(())
     }
@@ -66,10 +66,10 @@ impl Renderable for dyn liquid_core::TagReflection {
 
     fn render(&self, stream: &mut dyn std::io::Write) -> Result<(), Box<dyn std::error::Error>> {
         writeln!(stream, "**{}**: {}", self.tag(), self.description())?;
-        writeln!(stream, "")?;
+        writeln!(stream)?;
         if let Some(spec) = self.spec() {
             writeln!(stream, "Grammar: `{}`", spec)?;
-            writeln!(stream, "")?;
+            writeln!(stream)?;
         }
         if let Some(example) = self.example() {
             writeln!(stream, "Example:")?;
@@ -92,10 +92,10 @@ impl Renderable for dyn liquid_core::BlockReflection {
 
     fn render(&self, stream: &mut dyn std::io::Write) -> Result<(), Box<dyn std::error::Error>> {
         writeln!(stream, "**{}**: {}", self.start_tag(), self.description())?;
-        writeln!(stream, "")?;
+        writeln!(stream)?;
         if let Some(spec) = self.spec() {
             writeln!(stream, "Grammar: `{}`", spec)?;
-            writeln!(stream, "")?;
+            writeln!(stream)?;
         }
         if let Some(example) = self.example() {
             writeln!(stream, "Example:")?;
