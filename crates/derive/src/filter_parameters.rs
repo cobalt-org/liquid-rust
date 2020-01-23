@@ -16,7 +16,7 @@ struct FilterParameters<'a> {
 
 impl<'a> FilterParameters<'a> {
     /// Searches for `#[evaluated(...)]` in order to parse `evaluated_name`.
-    fn parse_attrs(attrs: &Vec<Attribute>) -> Result<Option<Ident>> {
+    fn parse_attrs(attrs: &[Attribute]) -> Result<Option<Ident>> {
         let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path.is_ident("evaluated"));
 
         match (evaluated_attrs.next(), evaluated_attrs.next()) {
@@ -156,7 +156,7 @@ impl<'a> FilterParametersFields<'a> {
                     })
                     .collect::<Result<Punctuated<_, Token![,]>>>()?;
 
-                if parameters.len() == 0 {
+                if parameters.is_empty() {
                     Err(Error::new_spanned(
                         fields,
                         "FilterParameters fields must have at least one field. To define an argumentless filter, just skip the `parameters(...)` element in `ParseFilter`.",
@@ -398,10 +398,12 @@ impl FilterParameterMeta {
                     "description" => assign_str_value(&mut description, key, value)?,
                     "mode" => parse_str_value(&mut mode, key, value)?,
                     "arg_type" => parse_str_value(&mut ty, key, value)?,
-                    _ => Err(Error::new_spanned(
-                        key,
-                        "Unknown element in parameter attribute.",
-                    ))?,
+                    _ => {
+                        return Err(Error::new_spanned(
+                            key,
+                            "Unknown element in parameter attribute.",
+                        ));
+                    }
                 }
             } else {
                 return Err(Error::new_spanned(
@@ -411,7 +413,7 @@ impl FilterParameterMeta {
             }
         }
 
-        let rename = rename.to_option();
+        let rename = rename.into_option();
         let description = description.unwrap_or_err(|| Error::new_spanned(
             attr,
             "Found parameter without description. Description is necessary in order to properly generate ParameterReflection.",

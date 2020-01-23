@@ -9,11 +9,9 @@ use super::Result;
 /// `Result` extension methods for adapting third party errors to `Error`.
 pub trait ResultLiquidChainExt<T> {
     /// Create an `Error` with `E` as the cause.
-    #[must_use]
     fn chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` with `E` as the cause.
-    #[must_use]
     fn chain_with<F>(self, msg: F) -> Result<T>
     where
         F: FnOnce() -> kstring::KString;
@@ -33,7 +31,6 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.lossy_chain("Missing liquid partial");
     /// ```
-    #[must_use]
     fn lossy_chain<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` ignoring `E` as the cause.
@@ -50,7 +47,6 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error: Result<i32> = error
     ///     .lossy_chain_with(|| format!("Missing liquid partial: {}", filename).into());
     /// ```
-    #[must_use]
     fn lossy_chain_with<F>(self, msg: F) -> Result<T>
     where
         F: FnOnce() -> kstring::KString;
@@ -67,7 +63,6 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.replace("Missing liquid partial");
     /// ```
-    #[must_use]
     fn replace<S: Into<kstring::KString>>(self, msg: S) -> Result<T>;
 
     /// Create an `Error` ignoring `E` as the cause.
@@ -84,7 +79,6 @@ pub trait ResultLiquidReplaceExt<T> {
     /// let error: Result<i32> = error
     ///     .replace_with(|| format!("Missing liquid partial: {}", filename).into());
     /// ```
-    #[must_use]
     fn replace_with<F>(self, msg: F) -> Result<T>
     where
         F: FnOnce() -> kstring::KString;
@@ -150,7 +144,6 @@ where
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
     /// let error = error.trace("Within forloop");
     /// ```
-    #[must_use]
     fn trace<S>(self, trace: S) -> Result<T>
     where
         S: Into<kstring::KString>;
@@ -168,7 +161,6 @@ where
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
     /// let error = error.trace_with(|| format!("Within forloop with {}", for_var).into());
     /// ```
-    #[must_use]
     fn trace_with<F>(self, trace: F) -> Result<T>
     where
         F: FnOnce() -> kstring::KString;
@@ -271,7 +263,6 @@ impl<T> Key<T> {
     }
 
     /// Finish creating context and add it to `Result<T>`.
-    #[must_use]
     pub fn value<S>(self, value: S) -> Result<T>
     where
         S: Into<kstring::KString>,
@@ -282,7 +273,6 @@ impl<T> Key<T> {
     }
 
     /// Finish creating context and add it to `Result<T>`.
-    #[must_use]
     pub fn value_with<F>(self, value: F) -> Result<T>
     where
         F: FnOnce() -> kstring::KString,
@@ -314,7 +304,6 @@ where
     }
 
     /// Finish creating context and add it to `Result<T>`.
-    #[must_use]
     pub fn value<S>(self, value: S) -> Result<T>
     where
         S: Into<kstring::KString>,
@@ -325,7 +314,6 @@ where
     }
 
     /// Finish creating context and add it to `Result<T>`.
-    #[must_use]
     pub fn value_with<V>(self, value: V) -> Result<T>
     where
         V: FnOnce() -> kstring::KString,

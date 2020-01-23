@@ -261,29 +261,22 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
 }
 
 pub(crate) fn value_cmp(lhs: &dyn ValueView, rhs: &dyn ValueView) -> Option<Ordering> {
-    match (lhs.as_scalar(), rhs.as_scalar()) {
-        (Some(x), Some(y)) => return x.partial_cmp(&y),
-        _ => (),
+    if let (Some(x), Some(y)) = (lhs.as_scalar(), rhs.as_scalar()) {
+        return x.partial_cmp(&y);
     }
 
-    match (lhs.as_array(), rhs.as_array()) {
-        (Some(x), Some(y)) => {
-            return x
-                .values()
-                .map(|v| ValueViewCmp(v))
-                .partial_cmp(y.values().map(|v| ValueViewCmp(v)))
-        }
-        _ => (),
+    if let (Some(x), Some(y)) = (lhs.as_array(), rhs.as_array()) {
+        return x
+            .values()
+            .map(|v| ValueViewCmp(v))
+            .partial_cmp(y.values().map(|v| ValueViewCmp(v)));
     }
 
-    match (lhs.as_object(), rhs.as_object()) {
-        (Some(x), Some(y)) => {
-            return x
-                .iter()
-                .map(|(k, v)| (k, ValueViewCmp(v)))
-                .partial_cmp(y.iter().map(|(k, v)| (k, ValueViewCmp(v))))
-        }
-        _ => (),
+    if let (Some(x), Some(y)) = (lhs.as_object(), rhs.as_object()) {
+        return x
+            .iter()
+            .map(|(k, v)| (k, ValueViewCmp(v)))
+            .partial_cmp(y.iter().map(|(k, v)| (k, ValueViewCmp(v))));
     }
 
     None

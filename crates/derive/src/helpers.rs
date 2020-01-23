@@ -41,7 +41,7 @@ impl<T> AssignOnce<T> {
     }
 
     /// Converts this type to `Option`.
-    pub fn to_option(self) -> Option<T> {
+    pub fn into_option(self) -> Option<T> {
         match self {
             AssignOnce::Set(value) => Some(value),
             AssignOnce::Unset => None,

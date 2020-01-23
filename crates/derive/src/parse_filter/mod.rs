@@ -40,7 +40,7 @@ impl<'a> ParseFilter<'a> {
     }
 
     /// Searches for `#[filter(...)]` in order to parse `ParseFilterMeta`.
-    fn parse_attrs(attrs: &Vec<Attribute>) -> Result<ParseFilterMeta> {
+    fn parse_attrs(attrs: &[Attribute]) -> Result<ParseFilterMeta> {
         let mut filter_attrs = attrs.iter().filter(|attr| attr.path.is_ident("filter"));
 
         match (filter_attrs.next(), filter_attrs.next()) {
@@ -124,13 +124,17 @@ impl ParseFilterMeta {
                         "name" => assign_str_value(&mut name, key, value)?,
                         "description" => assign_str_value(&mut description, key, value)?,
                         "parameters" => {
-                            Err(Error::new_spanned(key, "Did you mean `parameters(...)`."))?
+                            return Err(Error::new_spanned(key, "Did you mean `parameters(...)`."));
                         }
-                        "parsed" => Err(Error::new_spanned(key, "Did you mean `parsed(...)`."))?,
-                        _ => Err(Error::new_spanned(
-                            key,
-                            "Unknown element in filter attribute.",
-                        ))?,
+                        "parsed" => {
+                            return Err(Error::new_spanned(key, "Did you mean `parsed(...)`."));
+                        }
+                        _ => {
+                            return Err(Error::new_spanned(
+                                key,
+                                "Unknown element in filter attribute.",
+                            ));
+                        }
                     }
                 }
 
@@ -198,7 +202,7 @@ impl ParseFilterMeta {
             attr,
             "FilterReflection does not have a description. Have you tried `#[filter(name=\"...\", description=\"...\", parameters(...), parsed(...))]`?",
         ));
-        let parameters_struct_name = parameters.to_option();
+        let parameters_struct_name = parameters.into_option();
         let filter_struct_name = parsed.unwrap_or_err(|| Error::new_spanned(
             attr,
             "ParseFilter does not have a Filter to return. Have you tried `#[filter(name=\"...\", description=\"...\", parameters(...), parsed(...))]`?",

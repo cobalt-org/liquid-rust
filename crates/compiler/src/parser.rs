@@ -447,7 +447,7 @@ impl<'a> Into<&'a str> for Raw<'a> {
 }
 impl<'a> Raw<'a> {
     /// Turns the text into a Renderable.
-    pub fn to_renderable(self) -> Box<dyn Renderable> {
+    pub fn into_renderable(self) -> Box<dyn Renderable> {
         Box::new(Text::new(self.as_str()))
     }
 
@@ -703,7 +703,7 @@ impl<'a> BlockElement<'a> {
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         match self {
-            BlockElement::Raw(raw) => Ok(raw.to_renderable()),
+            BlockElement::Raw(raw) => Ok(raw.into_renderable()),
             BlockElement::Tag(tag) => tag.parse(block, options),
             BlockElement::Expression(exp) => exp.parse(options),
             BlockElement::Invalid(invalid) => invalid.parse(block),
@@ -717,7 +717,7 @@ impl<'a> BlockElement<'a> {
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         match self {
-            BlockElement::Raw(raw) => Ok(raw.to_renderable()),
+            BlockElement::Raw(raw) => Ok(raw.into_renderable()),
             BlockElement::Tag(tag) => tag.parse_pair(next_elements, options),
             BlockElement::Expression(exp) => exp.parse(options),
             BlockElement::Invalid(invalid) => invalid.parse_pair(next_elements),
