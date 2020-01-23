@@ -33,7 +33,7 @@ struct PushFilter {
 }
 
 impl Filter for PushFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let element = args.element.to_value();
@@ -60,7 +60,7 @@ pub struct Pop;
 struct PopFilter;
 
 impl Filter for PopFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -94,7 +94,7 @@ struct UnshiftFilter {
 }
 
 impl Filter for UnshiftFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let element = args.element.to_value();
@@ -121,7 +121,7 @@ pub struct Shift;
 struct ShiftFilter;
 
 impl Filter for ShiftFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -161,7 +161,7 @@ struct ArrayToSentenceStringFilter {
 }
 
 impl Filter for ArrayToSentenceStringFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let connector = args.connector.unwrap_or("and".into());
@@ -193,126 +193,93 @@ impl Filter for ArrayToSentenceStringFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
 
     #[test]
     fn unit_push() {
-        let input = Value::Array(vec![Value::scalar("Seattle"), Value::scalar("Tacoma")]);
-        let unit_result = unit!(Push, input, Value::scalar("Spokane"));
-        let desired_result = Value::Array(vec![
-            Value::scalar("Seattle"),
-            Value::scalar("Tacoma"),
-            Value::scalar("Spokane"),
-        ]);
+        let input = liquid_core::value!(["Seattle", "Tacoma"]);
+        let unit_result = liquid_core::call_filter!(Push, input, "Spokane").unwrap();
+        let desired_result = liquid_core::value!(["Seattle", "Tacoma", "Spokane",]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_pop() {
-        let input = Value::Array(vec![Value::scalar("Seattle"), Value::scalar("Tacoma")]);
-        let unit_result = unit!(Pop, input);
-        let desired_result = Value::Array(vec![Value::scalar("Seattle")]);
+        let input = liquid_core::value!(["Seattle", "Tacoma"]);
+        let unit_result = liquid_core::call_filter!(Pop, input).unwrap();
+        let desired_result = liquid_core::value!(["Seattle"]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_pop_empty() {
-        let input = Value::Array(vec![]);
-        let unit_result = unit!(Pop, input);
-        let desired_result = Value::Array(vec![]);
+        let input = liquid_core::value!([]);
+        let unit_result = liquid_core::call_filter!(Pop, input).unwrap();
+        let desired_result = liquid_core::value!([]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_unshift() {
-        let input = Value::Array(vec![Value::scalar("Seattle"), Value::scalar("Tacoma")]);
-        let unit_result = unit!(Unshift, input, Value::scalar("Olympia"));
-        let desired_result = Value::Array(vec![
-            Value::scalar("Olympia"),
-            Value::scalar("Seattle"),
-            Value::scalar("Tacoma"),
-        ]);
+        let input = liquid_core::value!(["Seattle", "Tacoma"]);
+        let unit_result = liquid_core::call_filter!(Unshift, input, "Olympia").unwrap();
+        let desired_result = liquid_core::value!(["Olympia", "Seattle", "Tacoma"]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_shift() {
-        let input = Value::Array(vec![Value::scalar("Seattle"), Value::scalar("Tacoma")]);
-        let unit_result = unit!(Shift, input);
-        let desired_result = Value::Array(vec![Value::scalar("Tacoma")]);
+        let input = liquid_core::value!(["Seattle", "Tacoma"]);
+        let unit_result = liquid_core::call_filter!(Shift, input).unwrap();
+        let desired_result = liquid_core::value!(["Tacoma"]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_shift_empty() {
-        let input = Value::Array(vec![]);
-        let unit_result = unit!(Shift, input);
-        let desired_result = Value::Array(vec![]);
+        let input = liquid_core::value!([]);
+        let unit_result = liquid_core::call_filter!(Shift, input).unwrap();
+        let desired_result = liquid_core::value!([]);
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_array_to_sentence_string() {
-        let input = Value::Array(vec![
-            Value::scalar("foo"),
-            Value::scalar("bar"),
-            Value::scalar("baz"),
-        ]);
-        let unit_result = unit!(ArrayToSentenceString, input);
-        let desired_result = Value::scalar("foo, bar, and baz");
+        let input = liquid_core::value!(["foo", "bar", "baz"]);
+        let unit_result = liquid_core::call_filter!(ArrayToSentenceString, input).unwrap();
+        let desired_result = "foo, bar, and baz";
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_array_to_sentence_string_two_elements() {
-        let input = Value::Array(vec![Value::scalar("foo"), Value::scalar("bar")]);
-        let unit_result = unit!(ArrayToSentenceString, input);
-        let desired_result = Value::scalar("foo, and bar");
+        let input = liquid_core::value!(["foo", "bar"]);
+        let unit_result = liquid_core::call_filter!(ArrayToSentenceString, input).unwrap();
+        let desired_result = "foo, and bar";
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_array_to_sentence_string_one_element() {
-        let input = Value::Array(vec![Value::scalar("foo")]);
-        let unit_result = unit!(ArrayToSentenceString, input);
-        let desired_result = Value::scalar("foo");
+        let input = liquid_core::value!(["foo"]);
+        let unit_result = liquid_core::call_filter!(ArrayToSentenceString, input).unwrap();
+        let desired_result = "foo";
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_array_to_sentence_string_no_elements() {
-        let input = Value::Array(vec![]);
-        let unit_result = unit!(ArrayToSentenceString, input);
-        let desired_result = Value::scalar("");
+        let input = liquid_core::value!([]);
+        let unit_result = liquid_core::call_filter!(ArrayToSentenceString, input).unwrap();
+        let desired_result = "";
         assert_eq!(unit_result, desired_result);
     }
 
     #[test]
     fn unit_array_to_sentence_string_custom_connector() {
-        let input = Value::Array(vec![
-            Value::scalar("foo"),
-            Value::scalar("bar"),
-            Value::scalar("baz"),
-        ]);
-        let unit_result = unit!(ArrayToSentenceString, input, Value::scalar("or"));
-        let desired_result = Value::scalar("foo, bar, or baz");
+        let input = liquid_core::value!(["foo", "bar", "baz"]);
+        let unit_result = liquid_core::call_filter!(ArrayToSentenceString, input, "or").unwrap();
+        let desired_result = "foo, bar, or baz";
         assert_eq!(unit_result, desired_result);
     }
 }

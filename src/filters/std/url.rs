@@ -48,7 +48,7 @@ static URL_ENCODE_SET: once_cell::sync::Lazy<UrlEncodeSet> =
     once_cell::sync::Lazy::new(|| UrlEncodeSet("".to_owned()));
 
 impl Filter for UrlEncodeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }
@@ -74,7 +74,7 @@ pub struct UrlDecode;
 struct UrlDecodeFilter;
 
 impl Filter for UrlDecodeFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }
@@ -91,48 +91,34 @@ impl Filter for UrlDecodeFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_url_encode() {
-        assert_eq!(unit!(UrlEncode, tos!("foo bar")), tos!("foo%20bar"));
         assert_eq!(
-            unit!(UrlEncode, tos!("foo+1@example.com")),
-            tos!("foo%2B1%40example.com")
+            liquid_core::call_filter!(UrlEncode, "foo bar").unwrap(),
+            liquid_core::value!("foo%20bar")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(UrlEncode, "foo+1@example.com").unwrap(),
+            liquid_core::value!("foo%2B1%40example.com")
         );
     }
 
     #[test]
     fn unit_url_decode() {
         // TODO Test case from shopify/liquid that we aren't handling:
-        // - assert_eq!(unit!(url_decode, tos!("foo+bar")), tos!("foo bar"));
-        assert_eq!(unit!(UrlDecode, tos!("foo%20bar")), tos!("foo bar"));
+        // - assert_eq!(
+        //      liquid_core::call_filter!(url_decode, "foo+bar").unwrap(),
+        //      liquid_core::value!("foo bar")
+        //  );
         assert_eq!(
-            unit!(UrlDecode, tos!("foo%2B1%40example.com")),
-            tos!("foo+1@example.com")
+            liquid_core::call_filter!(UrlDecode, "foo%20bar").unwrap(),
+            liquid_core::value!("foo bar")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(UrlDecode, "foo%2B1%40example.com").unwrap(),
+            liquid_core::value!("foo+1@example.com")
         );
     }
 }

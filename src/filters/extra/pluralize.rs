@@ -35,7 +35,7 @@ struct PluralizeFilter {
 }
 
 impl Filter for PluralizeFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let n = input
@@ -53,41 +53,18 @@ impl Filter for PluralizeFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_pluralize() {
         assert_eq!(
-            unit!(Pluralize, Value::scalar(1i32), tos!("one"), tos!("many")),
-            tos!("one")
+            liquid_core::call_filter!(Pluralize, 1i32, "one", "many").unwrap(),
+            liquid_core::value!("one")
         );
 
         assert_eq!(
-            unit!(Pluralize, Value::scalar(2i32), tos!("one"), tos!("many")),
-            tos!("many")
+            liquid_core::call_filter!(Pluralize, 2i32, "one", "many").unwrap(),
+            liquid_core::value!("many")
         );
     }
 }

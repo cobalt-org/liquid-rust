@@ -67,7 +67,7 @@ struct SlugifyFilter {
 }
 
 impl Filter for SlugifyFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let s = input.to_kstr();
@@ -98,68 +98,45 @@ impl Filter for SlugifyFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn test_slugify_default() {
         assert_eq!(
-            unit!(Slugify, tos!("The _cönfig.yml file")),
-            tos!("the-cönfig-yml-file")
+            liquid_core::call_filter!(Slugify, "The _cönfig.yml file").unwrap(),
+            liquid_core::value!("the-cönfig-yml-file")
         );
     }
 
     #[test]
     fn test_slugify_ascii() {
         assert_eq!(
-            unit!(Slugify, tos!("The _cönfig.yml file"), tos!("ascii")),
-            tos!("the-c-nfig-yml-file")
+            liquid_core::call_filter!(Slugify, "The _cönfig.yml file", "ascii").unwrap(),
+            liquid_core::value!("the-c-nfig-yml-file")
         );
     }
 
     #[test]
     fn test_slugify_latin() {
         assert_eq!(
-            unit!(Slugify, tos!("The _cönfig.yml file"), tos!("latin")),
-            tos!("the-config-yml-file")
+            liquid_core::call_filter!(Slugify, "The _cönfig.yml file", "latin").unwrap(),
+            liquid_core::value!("the-config-yml-file")
         );
     }
 
     #[test]
     fn test_slugify_raw() {
         assert_eq!(
-            unit!(Slugify, tos!("The _config.yml file"), tos!("raw")),
-            tos!("the-_config.yml-file")
+            liquid_core::call_filter!(Slugify, "The _config.yml file", "raw").unwrap(),
+            liquid_core::value!("the-_config.yml-file")
         );
     }
 
     #[test]
     fn test_slugify_none() {
         assert_eq!(
-            unit!(Slugify, tos!("The _config.yml file"), tos!("none")),
-            tos!("the _config.yml file")
+            liquid_core::call_filter!(Slugify, "The _config.yml file", "none").unwrap(),
+            liquid_core::value!("the _config.yml file")
         );
     }
 }

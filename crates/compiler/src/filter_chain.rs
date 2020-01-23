@@ -8,7 +8,7 @@ use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_interpreter::Context;
 use liquid_interpreter::Expression;
 use liquid_interpreter::Renderable;
-use liquid_value::{Value, ValueView};
+use liquid_value::{ValueCow, ValueView};
 
 /// A `Value` expression.
 #[derive(Debug)]
@@ -24,19 +24,21 @@ impl FilterChain {
     }
 
     /// Process `Value` expression within `context`'s stack.
-    pub fn evaluate(&self, context: &Context) -> Result<Value> {
+    pub fn evaluate<'s>(&'s self, context: &'s Context) -> Result<ValueCow<'s>> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(context)?.to_value();
+        let mut entry = ValueCow::Borrowed(self.entry.evaluate(context)?);
 
         // apply all specified filters
         for filter in &self.filters {
-            entry = filter
-                .evaluate(&entry, context)
-                .trace("Filter error")
-                .context_key("filter")
-                .value_with(|| format!("{}", filter).into())
-                .context_key("input")
-                .value_with(|| format!("{}", entry.source()).into())?;
+            entry = ValueCow::Owned(
+                filter
+                    .evaluate(entry.as_view(), context)
+                    .trace("Filter error")
+                    .context_key("filter")
+                    .value_with(|| format!("{}", filter).into())
+                    .context_key("input")
+                    .value_with(|| format!("{}", entry.source()).into())?,
+            );
         }
 
         Ok(entry)

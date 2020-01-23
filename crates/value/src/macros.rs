@@ -87,7 +87,7 @@ macro_rules! scalar {
     // Any Serialize type: numbers, strings, struct literals, variables etc.
     // Must be below every other rule.
     ($other:expr) => {
-        $crate::to_scalar($other).unwrap()
+        $crate::to_scalar(&$other).unwrap()
     };
 }
 
@@ -113,7 +113,7 @@ macro_rules! value_internal {
     };
 
     ([]) => {
-        $crate::Value::Array(Default::default())
+        $crate::Value::Array(::std::default::Default::default())
     };
 
     ([ $($tt:tt)+ ]) => {
@@ -121,7 +121,7 @@ macro_rules! value_internal {
     };
 
     ({}) => {
-        $crate::Value::Object(Default::default())
+        $crate::Value::Object(::std::default::Default::default())
     };
 
     ({ $($tt:tt)+ }) => {
@@ -139,7 +139,7 @@ macro_rules! value_internal {
     // Any Serialize type: numbers, strings, struct literals, variables etc.
     // Must be below every other rule.
     ($other:expr) => {
-        $crate::to_value($other).unwrap()
+        $crate::to_value(&$other).unwrap()
     };
 }
 
@@ -277,7 +277,7 @@ macro_rules! object_internal {
     // Any Serialize type: numbers, strings, struct literals, variables etc.
     // Must be below every other rule.
     ($other:expr) => {
-        $crate::to_object($other).unwrap()
+        $crate::to_object(&$other).unwrap()
     };
 }
 

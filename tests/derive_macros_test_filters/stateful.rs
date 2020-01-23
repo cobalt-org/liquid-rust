@@ -2,8 +2,8 @@ use liquid_core::compiler::FilterArguments;
 use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
-use liquid_core::Value;
 use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
+use liquid_core::{Value, ValueView};
 
 #[derive(Clone, Copy, Debug)]
 enum Mood {
@@ -66,7 +66,7 @@ pub struct TestStatefulFilter {
 }
 
 impl Filter for TestStatefulFilter {
-    fn evaluate(&self, _input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let result = match self.state {

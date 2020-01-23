@@ -24,8 +24,26 @@ pub use liquid_interpreter::Context;
 pub use liquid_interpreter::Expression;
 pub use liquid_interpreter::Renderable;
 pub use liquid_interpreter::Template;
-pub use liquid_value::object;
-pub use liquid_value::to_object;
-pub use liquid_value::Object;
-pub use liquid_value::Value;
+pub use liquid_value::{object, to_object, Object};
+pub use liquid_value::{to_value, value, Value};
 pub use liquid_value::{ObjectView, ValueView};
+
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! call_filter {
+    ($filter:expr, $input:expr) => {{
+        $crate::call_filter!($filter, $input, )
+    }};
+    ($filter:expr, $input:expr, $($args:expr),*) => {{
+        let positional = Box::new(vec![$($crate::Expression::Literal($crate::value!($args))),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = $crate::compiler::FilterArguments { positional, keyword };
+
+        let context = $crate::Context::default();
+
+        let input = $crate::value!($input);
+
+        $crate::ParseFilter::parse(&$filter, args)
+            .and_then(|filter| $crate::Filter::evaluate(&*filter, &input, &context))
+    }};
+}

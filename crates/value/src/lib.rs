@@ -11,6 +11,7 @@ extern crate serde;
 mod macros;
 
 mod array;
+mod cow;
 mod date;
 mod display;
 mod object;
@@ -24,6 +25,7 @@ mod view;
 pub mod map;
 
 pub use crate::array::*;
+pub use crate::cow::*;
 pub use crate::date::*;
 pub use crate::display::*;
 pub use crate::object::*;

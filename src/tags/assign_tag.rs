@@ -25,7 +25,8 @@ impl Renderable for Assign {
         let value = self
             .src
             .evaluate(context)
-            .trace_with(|| self.trace().into())?;
+            .trace_with(|| self.trace().into())?
+            .into_owned();
         context.stack_mut().set_global(self.dst.to_owned(), value);
         Ok(())
     }

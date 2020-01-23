@@ -23,7 +23,7 @@ pub struct Strip;
 struct StripFilter;
 
 impl Filter for StripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim().to_owned()))
     }
@@ -48,7 +48,7 @@ pub struct Lstrip;
 struct LstripFilter;
 
 impl Filter for LstripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim_start().to_owned()))
     }
@@ -73,7 +73,7 @@ pub struct Rstrip;
 struct RstripFilter;
 
 impl Filter for RstripFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(input.trim_end().to_owned()))
     }
@@ -92,7 +92,7 @@ pub struct StripNewlines;
 struct StripNewlinesFilter;
 
 impl Filter for StripNewlinesFilter {
-    fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
         let input = input.to_kstr();
         Ok(Value::scalar(
             input
@@ -105,220 +105,200 @@ impl Filter for StripNewlinesFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_lstrip() {
-        let input = &tos!(" 	 \n \r test");
-        let desired_result = tos!("test");
-        assert_eq!(unit!(Lstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Lstrip, " 	 \n \r test").unwrap(),
+            liquid_core::value!("test")
+        );
     }
 
     #[test]
     fn unit_lstrip_non_string() {
-        let input = &Value::scalar(0f64);
-        let desired_result = tos!("0");
-        assert_eq!(unit!(Lstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Lstrip, 0f64).unwrap(),
+            liquid_core::value!("0")
+        );
     }
 
     #[test]
     fn unit_lstrip_one_argument() {
-        let input = &tos!(" 	 \n \r test");
-        failed!(Lstrip, input, Value::scalar(0f64));
+        liquid_core::call_filter!(Lstrip, " 	 \n \r test", 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_lstrip_shopify_liquid() {
         // One test from https://shopify.github.io/liquid/filters/lstrip/
-        let input = &tos!("          So much room for activities!          ");
-        let desired_result = tos!("So much room for activities!          ");
-        assert_eq!(unit!(Lstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Lstrip, "          So much room for activities!          ")
+                .unwrap(),
+            liquid_core::value!("So much room for activities!          ")
+        );
     }
 
     #[test]
     fn unit_lstrip_trailing_sequence() {
-        let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let desired_result = tos!("test 	 \n \r ");
-        assert_eq!(unit!(Lstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Lstrip, " 	 \n \r test 	 \n \r ").unwrap(),
+            liquid_core::value!("test 	 \n \r ")
+        );
     }
 
     #[test]
     fn unit_lstrip_trailing_sequence_only() {
-        let input = &tos!("test 	 \n \r ");
-        let desired_result = tos!("test 	 \n \r ");
-        assert_eq!(unit!(Lstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Lstrip, "test 	 \n \r ").unwrap(),
+            liquid_core::value!("test 	 \n \r ")
+        );
     }
 
     #[test]
     fn unit_rstrip() {
-        let input = &tos!("test 	 \n \r ");
-        let desired_result = tos!("test");
-        assert_eq!(unit!(Rstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Rstrip, "test 	 \n \r ").unwrap(),
+            liquid_core::value!("test")
+        );
     }
 
     #[test]
     fn unit_rstrip_leading_sequence() {
-        let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let desired_result = tos!(" 	 \n \r test");
-        assert_eq!(unit!(Rstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Rstrip, " 	 \n \r test 	 \n \r ").unwrap(),
+            liquid_core::value!(" 	 \n \r test")
+        );
     }
 
     #[test]
     fn unit_rstrip_leading_sequence_only() {
-        let input = &tos!(" 	 \n \r test");
-        let desired_result = tos!(" 	 \n \r test");
-        assert_eq!(unit!(Rstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Rstrip, " 	 \n \r test").unwrap(),
+            liquid_core::value!(" 	 \n \r test")
+        );
     }
 
     #[test]
     fn unit_rstrip_non_string() {
-        let input = &Value::scalar(0f64);
-        let desired_result = tos!("0");
-        assert_eq!(unit!(Rstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Rstrip, 0f64).unwrap(),
+            liquid_core::value!("0")
+        );
     }
 
     #[test]
     fn unit_rstrip_one_argument() {
-        let input = &tos!(" 	 \n \r test");
-        failed!(Rstrip, input, Value::scalar(0f64));
+        liquid_core::call_filter!(Rstrip, " 	 \n \r test", 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_rstrip_shopify_liquid() {
         // One test from https://shopify.github.io/liquid/filters/rstrip/
-        let input = &tos!("          So much room for activities!          ");
-        let desired_result = tos!("          So much room for activities!");
-        assert_eq!(unit!(Rstrip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Rstrip, "          So much room for activities!          ")
+                .unwrap(),
+            liquid_core::value!("          So much room for activities!")
+        );
     }
 
     #[test]
     fn unit_strip() {
-        let input = &tos!(" 	 \n \r test 	 \n \r ");
-        let desired_result = tos!("test");
-        assert_eq!(unit!(Strip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Strip, " 	 \n \r test 	 \n \r ").unwrap(),
+            liquid_core::value!("test")
+        );
     }
 
     #[test]
     fn unit_strip_leading_sequence_only() {
-        let input = &tos!(" 	 \n \r test");
-        let desired_result = tos!("test");
-        assert_eq!(unit!(Strip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Strip, " 	 \n \r test").unwrap(),
+            liquid_core::value!("test")
+        );
     }
 
     #[test]
     fn unit_strip_non_string() {
-        let input = &Value::scalar(0f64);
-        let desired_result = tos!("0");
-        assert_eq!(unit!(Strip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Strip, 0f64).unwrap(),
+            liquid_core::value!("0")
+        );
     }
 
     #[test]
     fn unit_strip_one_argument() {
-        let input = &tos!(" 	 \n \r test 	 \n \r ");
-        failed!(Strip, input, Value::scalar(0f64));
+        liquid_core::call_filter!(Strip, " 	 \n \r test 	 \n \r ", 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_strip_shopify_liquid() {
         // One test from https://shopify.github.io/liquid/filters/strip/
-        let input = &tos!("          So much room for activities!          ");
-        let desired_result = tos!("So much room for activities!");
-        assert_eq!(unit!(Strip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Strip, "          So much room for activities!          ")
+                .unwrap(),
+            liquid_core::value!("So much room for activities!")
+        );
     }
 
     #[test]
     fn unit_strip_trailing_sequence_only() {
-        let input = &tos!("test 	 \n \r ");
-        let desired_result = tos!("test");
-        assert_eq!(unit!(Strip, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Strip, "test 	 \n \r ").unwrap(),
+            liquid_core::value!("test")
+        );
     }
 
     #[test]
     fn unit_strip_newlines() {
-        let input = &tos!("a\nb\n");
-        let desired_result = tos!("ab");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, "a\nb\n").unwrap(),
+            liquid_core::value!("ab")
+        );
     }
 
     #[test]
     fn unit_strip_newlines_between_only() {
-        let input = &tos!("a\nb");
-        let desired_result = tos!("ab");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, "a\nb").unwrap(),
+            liquid_core::value!("ab")
+        );
     }
 
     #[test]
     fn unit_strip_newlines_leading_only() {
-        let input = &tos!("\nab");
-        let desired_result = tos!("ab");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, "\nab").unwrap(),
+            liquid_core::value!("ab")
+        );
     }
 
     #[test]
     fn unit_strip_newlines_non_string() {
-        let input = &Value::scalar(0f64);
-        let desired_result = tos!("0");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, 0f64).unwrap(),
+            liquid_core::value!("0")
+        );
     }
 
     #[test]
     fn unit_strip_newlines_one_argument() {
-        let input = &tos!("ab\n");
-        failed!(StripNewlines, input, Value::scalar(0f64));
+        liquid_core::call_filter!(StripNewlines, "ab\n", 0f64).unwrap_err();
     }
 
     #[test]
     fn unit_strip_newlines_shopify_liquid() {
         // Test from https://shopify.github.io/liquid/filters/strip_newlines/
-        let input = &tos!("\nHello\nthere\n");
-        let desired_result = tos!("Hellothere");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, "\nHello\nthere\n").unwrap(),
+            liquid_core::value!("Hellothere")
+        );
     }
 
     #[test]
     fn unit_strip_newlines_trailing_only() {
-        let input = &tos!("ab\n");
-        let desired_result = tos!("ab");
-        assert_eq!(unit!(StripNewlines, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(StripNewlines, "ab\n").unwrap(),
+            liquid_core::value!("ab")
+        );
     }
 }

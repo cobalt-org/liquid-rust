@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use liquid_error::Result;
 use liquid_interpreter::{Context, Expression};
-use liquid_value::Value;
+use liquid_value::{Value, ValueView};
 
 /// A structure that holds the information of a single parameter in a filter.
 /// This includes its name, description and whether it is optional or required.
@@ -94,7 +94,7 @@ pub struct FilterArguments<'a> {
 /// struct AbsFilter; // There are no parameters, so implements `Default`.
 ///
 /// impl Filter for AbsFilter {
-///     fn evaluate(&self, input: &Value, _context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn  ValueView, _context: &Context) -> Result<Value> {
 ///         // Implementation of the filter here
 ///     }
 /// }
@@ -110,7 +110,7 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &ValueViwe, context: &Context) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
 ///         let args = self.args.evaluate(context)?;
 ///
@@ -132,7 +132,7 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &Value, context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn ValueView, context: &Context) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
 ///         let args = self.args.evaluate(context)?;
 ///
@@ -142,7 +142,7 @@ pub struct FilterArguments<'a> {
 /// ```
 pub trait Filter: Send + Sync + Debug + Display {
     // This will evaluate the expressions and evaluate the filter.
-    fn evaluate(&self, input: &Value, context: &Context) -> Result<Value>;
+    fn evaluate(&self, input: &dyn ValueView, context: &Context) -> Result<Value>;
 }
 
 /// A trait to register a new filter in the `liquid::Parser`.

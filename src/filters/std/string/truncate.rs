@@ -68,7 +68,7 @@ struct TruncateFilter {
 }
 
 impl Filter for TruncateFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let lenght = args.lenght.unwrap_or(50) as usize;
@@ -88,7 +88,7 @@ impl Filter for TruncateFilter {
                 + truncate_string.as_str();
             Value::scalar(result)
         } else {
-            input.clone()
+            input.to_value()
         };
         Ok(result)
     }
@@ -126,7 +126,7 @@ struct TruncateWordsFilter {
 }
 
 impl Filter for TruncateWordsFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let words = args.lenght.unwrap_or(50) as usize;
@@ -142,7 +142,7 @@ impl Filter for TruncateWordsFilter {
             let result = itertools::join(word_list.iter().take(l), " ") + truncate_string.as_str();
             Value::scalar(result)
         } else {
-            input.clone()
+            input.to_value()
         };
         Ok(result)
     }
@@ -150,103 +150,73 @@ impl Filter for TruncateWordsFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_truncate() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("I often quote ...");
-        assert_eq!(unit!(Truncate, input, Value::scalar(17i32)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(
+                Truncate,
+                "I often quote myself.  It adds spice to my conversation.",
+                17i32
+            )
+            .unwrap(),
+            liquid_core::value!("I often quote ...")
+        );
     }
 
     #[test]
     fn unit_truncate_negative_length() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("I often quote myself.  It adds spice to my conversation.");
         assert_eq!(
-            unit!(Truncate, input, Value::scalar(-17i32)),
-            desired_result
+            liquid_core::call_filter!(
+                Truncate,
+                "I often quote myself.  It adds spice to my conversation.",
+                -17i32
+            )
+            .unwrap(),
+            liquid_core::value!("I often quote myself.  It adds spice to my conversation.")
         );
     }
 
     #[test]
     fn unit_truncate_non_string() {
-        let input = &Value::scalar(10000000f64);
-        let desired_result = tos!("10...");
-        assert_eq!(unit!(Truncate, input, Value::scalar(5i32)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Truncate, 10000000f64, 5i32).unwrap(),
+            liquid_core::value!("10...")
+        );
     }
 
     #[test]
     fn unit_truncate_shopify_liquid() {
         // Tests from https://shopify.github.io/liquid/filters/truncate/
-        let input = &tos!("Ground control to Major Tom.");
+        let input = "Ground control to Major Tom.";
 
-        let desired_result = tos!("Ground control to...");
-        assert_eq!(unit!(Truncate, input, Value::scalar(20i32)), desired_result);
-
-        let desired_result = tos!("Ground control, and so on");
         assert_eq!(
-            unit!(Truncate, input, Value::scalar(25i32), tos!(", and so on")),
-            desired_result
+            liquid_core::call_filter!(Truncate, input, 20i32).unwrap(),
+            liquid_core::value!("Ground control to...")
         );
 
-        let desired_result = tos!("Ground control to Ma");
         assert_eq!(
-            unit!(Truncate, input, Value::scalar(20i32), tos!("")),
-            desired_result
+            liquid_core::call_filter!(Truncate, input, 25i32, ", and so on").unwrap(),
+            liquid_core::value!("Ground control, and so on")
+        );
+
+        assert_eq!(
+            liquid_core::call_filter!(Truncate, input, 20i32, "").unwrap(),
+            liquid_core::value!("Ground control to Ma")
         );
     }
 
     #[test]
     fn unit_truncate_three_arguments() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        failed!(
+        liquid_core::call_filter!(
             Truncate,
-            input,
-            Value::scalar(17i32),
-            tos!("..."),
-            Value::scalar(0i32)
-        );
+            "I often quote myself.  It adds spice to my conversation.",
+            17i32,
+            "...",
+            0i32
+        )
+        .unwrap_err();
     }
 
     #[test]
@@ -258,69 +228,76 @@ mod tests {
         //
         // Note that the accents applied to each letter are treated as part of the single grapheme
         // cluster for the applicable letter.
-        let input = &tos!("Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.");
-        let desired_result = tos!("Here is an a\u{310}, e\u{301}, ...");
-        assert_eq!(unit!(Truncate, input, Value::scalar(20i32)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(
+                Truncate,
+                "Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.",
+                20i32
+            )
+            .unwrap(),
+            liquid_core::value!("Here is an a\u{310}, e\u{301}, ...")
+        );
 
         // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
-        let input = &tos!("Here is a RUST: 🇷🇺🇸🇹.");
-        let desired_result = tos!("Here is a RUST: 🇷🇺...");
-        assert_eq!(unit!(Truncate, input, Value::scalar(20i32)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Truncate, "Here is a RUST: 🇷🇺🇸🇹.", 20i32).unwrap(),
+            liquid_core::value!("Here is a RUST: 🇷🇺...")
+        );
     }
 
     #[test]
     fn unit_truncate_zero_arguments() {
-        let input = &tos!("I often quote myself.  It adds spice to my conversation.");
-        let desired_result = tos!("I often quote myself.  It adds spice to my conv...");
-        assert_eq!(unit!(Truncate, input), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(
+                Truncate,
+                "I often quote myself.  It adds spice to my conversation."
+            )
+            .unwrap(),
+            liquid_core::value!("I often quote myself.  It adds spice to my conv...")
+        );
     }
 
     #[test]
     fn unit_truncatewords_negative_length() {
         assert_eq!(
-            unit!(TruncateWords, tos!("one two three"), Value::scalar(-1_i32)),
-            tos!("one two three")
+            liquid_core::call_filter!(TruncateWords, "one two three", -1_i32).unwrap(),
+            liquid_core::value!("one two three")
         );
     }
 
     #[test]
     fn unit_truncatewords_zero_length() {
         assert_eq!(
-            unit!(TruncateWords, tos!("one two three"), Value::scalar(0_i32)),
-            tos!("...")
+            liquid_core::call_filter!(TruncateWords, "one two three", 0_i32).unwrap(),
+            liquid_core::value!("...")
         );
     }
 
     #[test]
     fn unit_truncatewords_no_truncation() {
         assert_eq!(
-            unit!(TruncateWords, tos!("one two three"), Value::scalar(4_i32)),
-            tos!("one two three")
+            liquid_core::call_filter!(TruncateWords, "one two three", 4_i32).unwrap(),
+            liquid_core::value!("one two three")
         );
     }
 
     #[test]
     fn unit_truncatewords_truncate() {
         assert_eq!(
-            unit!(TruncateWords, tos!("one two three"), Value::scalar(2_i32)),
-            tos!("one two...")
+            liquid_core::call_filter!(TruncateWords, "one two three", 2_i32).unwrap(),
+            liquid_core::value!("one two...")
         );
         assert_eq!(
-            unit!(
-                TruncateWords,
-                tos!("one two three"),
-                Value::scalar(2_i32),
-                Value::scalar(1_i32)
-            ),
-            tos!("one two1")
+            liquid_core::call_filter!(TruncateWords, "one two three", 2_i32, 1_i32).unwrap(),
+            liquid_core::value!("one two1")
         );
     }
 
     #[test]
     fn unit_truncatewords_empty_string() {
         assert_eq!(
-            unit!(TruncateWords, tos!(""), Value::scalar(1_i32)),
-            tos!("")
+            liquid_core::call_filter!(TruncateWords, "", 1_i32).unwrap(),
+            liquid_core::value!("")
         );
     }
 }

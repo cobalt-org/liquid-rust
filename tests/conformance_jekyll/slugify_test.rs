@@ -1,15 +1,20 @@
 #[test]
 fn test_slugify_default() {
     assert_eq!(
+        liquid_core::call_filter!(liquid::filters::jekyll::Slugify, " Q*bert says @!#@!").unwrap(),
         v!("q-bert-says"),
-        jekyll_filters!(Slugify, v!(" Q*bert says @!#@!"))
     );
 }
 
 #[test]
 fn test_slugify_pretty() {
     assert_eq!(
+        liquid_core::call_filter!(
+            liquid::filters::jekyll::Slugify,
+            " Q*bert says _@!#?@!",
+            "pretty"
+        )
+        .unwrap(),
         v!("q-bert-says-_@!-@!"),
-        jekyll_filters!(Slugify, v!(" Q*bert says _@!#?@!"), v!("pretty"))
     );
 }

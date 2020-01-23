@@ -6,7 +6,7 @@ use crate::DisplayCow;
 use crate::State;
 use crate::{Array, ArrayView, Object, ObjectView};
 use crate::{Scalar, ScalarCow};
-use crate::{ValueView, ValueViewCmp};
+use crate::{ValueCow, ValueView, ValueViewCmp};
 
 /// An enum to represent different value types
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,7 +37,7 @@ impl Value {
     }
 
     /// Performs the conversion.
-    pub fn as_value(&self) -> &dyn ValueView {
+    pub fn as_view(&self) -> &dyn ValueView {
         match &self {
             Value::Scalar(ref x) => x,
             Value::Object(ref x) => x,
@@ -258,13 +258,19 @@ impl Default for Value {
 
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
-        crate::value_eq(self, other)
+        crate::value_eq(self.as_view(), other.as_view())
     }
 }
 
 impl<'v> PartialEq<ValueViewCmp<'v>> for Value {
     fn eq(&self, other: &ValueViewCmp<'v>) -> bool {
-        ValueViewCmp::new(self) == *other
+        ValueViewCmp::new(self.as_view()) == *other
+    }
+}
+
+impl<'v> PartialEq<ValueCow<'v>> for Value {
+    fn eq(&self, other: &ValueCow<'v>) -> bool {
+        crate::value_eq(self.as_view(), other.as_view())
     }
 }
 

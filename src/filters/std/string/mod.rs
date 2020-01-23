@@ -37,7 +37,7 @@ struct SplitFilter {
 }
 
 impl Filter for SplitFilter {
-    fn evaluate(&self, input: &Value, context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
         let args = self.args.evaluate(context)?;
 
         let input = input.to_kstr();
@@ -54,70 +54,30 @@ impl Filter for SplitFilter {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-
-    macro_rules! unit {
-        ($a:ident, $b:expr) => {{
-            unit!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            let filter = ::liquid_core::compiler::ParseFilter::parse(&$a, args).unwrap();
-            ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context).unwrap()
-        }};
-    }
-
-    macro_rules! failed {
-        ($a:ident, $b:expr) => {{
-            failed!($a, $b, )
-        }};
-        ($a:ident, $b:expr, $($c:expr),*) => {{
-            let positional = Box::new(vec![$(::liquid_core::interpreter::Expression::Literal($c)),*].into_iter());
-            let keyword = Box::new(Vec::new().into_iter());
-            let args = ::liquid_core::compiler::FilterArguments { positional, keyword };
-
-            let context = ::liquid_core::interpreter::Context::default();
-
-            ::liquid_core::compiler::ParseFilter::parse(&$a, args)
-                .and_then(|filter| ::liquid_core::compiler::Filter::evaluate(&*filter, &$b, &context))
-                .unwrap_err()
-        }};
-    }
-
-    macro_rules! tos {
-        ($a:expr) => {{
-            Value::scalar($a.to_owned())
-        }};
-    }
 
     #[test]
     fn unit_split() {
         assert_eq!(
-            unit!(Split, tos!("a, b, c"), tos!(", ")),
-            Value::Array(vec![tos!("a"), tos!("b"), tos!("c")])
+            liquid_core::call_filter!(Split, "a, b, c", ", ").unwrap(),
+            liquid_core::value!(["a", "b", "c"])
         );
         assert_eq!(
-            unit!(Split, tos!("a~b"), tos!("~")),
-            Value::Array(vec![tos!("a"), tos!("b")])
+            liquid_core::call_filter!(Split, "a~b", "~").unwrap(),
+            liquid_core::value!(["a", "b"])
         );
     }
 
     #[test]
     fn unit_split_bad_split_string() {
-        let input = tos!("a,b,c");
-        let desired_result = Value::Array(vec![tos!("a,b,c")]);
-        assert_eq!(unit!(Split, input, Value::scalar(1f64)), desired_result);
+        assert_eq!(
+            liquid_core::call_filter!(Split, "a,b,c", 1f64).unwrap(),
+            liquid_core::value!(["a,b,c"])
+        );
     }
 
     #[test]
     fn unit_split_no_args() {
-        let input = tos!("a,b,c");
-        failed!(Split, input);
+        liquid_core::call_filter!(Split, "a,b,c").unwrap_err();
     }
 }

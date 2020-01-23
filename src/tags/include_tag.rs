@@ -141,12 +141,15 @@ mod test {
     pub struct SizeFilter;
 
     impl Filter for SizeFilter {
-        fn evaluate(&self, input: &Value, _context: &Context<'_>) -> Result<Value> {
-            match *input {
-                Value::Scalar(ref x) => Ok(Value::scalar(x.to_kstr().len() as i32)),
-                Value::Array(ref x) => Ok(Value::scalar(x.len() as i32)),
-                Value::Object(ref x) => Ok(Value::scalar(x.len() as i32)),
-                _ => Ok(Value::scalar(0i32)),
+        fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+            if let Some(x) = input.as_scalar() {
+                Ok(Value::scalar(x.to_kstr().len() as i32))
+            } else if let Some(x) = input.as_array() {
+                Ok(Value::scalar(x.size()))
+            } else if let Some(x) = input.as_object() {
+                Ok(Value::scalar(x.size()))
+            } else {
+                Ok(Value::scalar(0i32))
             }
         }
     }

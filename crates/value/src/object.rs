@@ -153,12 +153,12 @@ impl ObjectView for Object {
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
-        let i = Object::values(self).map(|v| v.as_value());
+        let i = Object::values(self).map(|v| v.as_view());
         Box::new(i)
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = Object::iter(self).map(|(k, v)| (k.as_str().into(), v.as_value()));
+        let i = Object::iter(self).map(|(k, v)| (k.as_str().into(), v.as_view()));
         Box::new(i)
     }
 
@@ -167,7 +167,7 @@ impl ObjectView for Object {
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        Object::get(self, index).map(|v| v.as_value())
+        Object::get(self, index).map(|v| v.as_view())
     }
 }
 
@@ -236,12 +236,12 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
-        let i = HashMap::values(self).map(as_value);
+        let i = HashMap::values(self).map(as_view);
         Box::new(i)
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = HashMap::iter(self).map(|(k, v)| (k.as_str().into(), as_value(v)));
+        let i = HashMap::iter(self).map(|(k, v)| (k.as_str().into(), as_view(v)));
         Box::new(i)
     }
 
@@ -250,7 +250,7 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        HashMap::get(self, index).map(as_value)
+        HashMap::get(self, index).map(as_view)
     }
 }
 
@@ -299,12 +299,12 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
-        let i = BTreeMap::values(self).map(as_value);
+        let i = BTreeMap::values(self).map(as_view);
         Box::new(i)
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = BTreeMap::iter(self).map(|(k, v)| (k.as_str().into(), as_value(v)));
+        let i = BTreeMap::iter(self).map(|(k, v)| (k.as_str().into(), as_view(v)));
         Box::new(i)
     }
 
@@ -313,11 +313,11 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
-        BTreeMap::get(self, index).map(as_value)
+        BTreeMap::get(self, index).map(as_view)
     }
 }
 
-fn as_value<T: ValueView>(value: &T) -> &dyn ValueView {
+fn as_view<T: ValueView>(value: &T) -> &dyn ValueView {
     value
 }
 
