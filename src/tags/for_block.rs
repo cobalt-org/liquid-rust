@@ -98,7 +98,7 @@ fn evaluate_attr(attr: &Option<Expression>, context: &mut Context<'_>) -> Result
 
 #[derive(Debug)]
 struct For {
-    var_name: String,
+    var_name: kstring::KString,
     range: Range,
     item_template: Template,
     else_template: Option<Template>,
@@ -110,7 +110,7 @@ struct For {
 impl For {
     fn trace(&self) -> String {
         trace_for_tag(
-            &self.var_name,
+            self.var_name.as_str(),
             &self.range,
             &self.limit,
             &self.offset,
@@ -189,7 +189,7 @@ impl Renderable for For {
                         scope
                             .stack_mut()
                             .set("forloop", Value::Object(helper_vars.clone()));
-                        scope.stack_mut().set(self.var_name.to_owned(), v);
+                        scope.stack_mut().set(self.var_name.clone(), v);
                         self.item_template
                             .render_to(writer, &mut scope)
                             .trace_with(|| self.trace().into())
@@ -270,8 +270,7 @@ impl ParseBlock for ForBlock {
         let var_name = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()
-            .into_result()?
-            .to_string();
+            .into_result()?;
 
         arguments
             .expect_next("\"in\" expected.")?
@@ -331,7 +330,7 @@ impl ParseBlock for ForBlock {
 
         tokens.assert_empty();
         Ok(Box::new(For {
-            var_name,
+            var_name: kstring::KString::from_ref(var_name),
             range,
             item_template,
             else_template,
@@ -348,7 +347,7 @@ impl ParseBlock for ForBlock {
 
 #[derive(Debug)]
 struct TableRow {
-    var_name: String,
+    var_name: kstring::KString,
     range: Range,
     item_template: Template,
     cols: Option<Expression>,
@@ -359,7 +358,7 @@ struct TableRow {
 impl TableRow {
     fn trace(&self) -> String {
         trace_tablerow_tag(
-            &self.var_name,
+            self.var_name.as_str(),
             &self.range,
             &self.cols,
             &self.limit,
@@ -442,7 +441,7 @@ impl Renderable for TableRow {
                 write!(writer, "<td class=\"col{}\">", col_index + 1)
                     .replace("Failed to render")?;
 
-                scope.stack_mut().set(self.var_name.to_owned(), v);
+                scope.stack_mut().set(self.var_name.clone(), v);
                 self.item_template
                     .render_to(writer, &mut scope)
                     .trace_with(|| self.trace().into())
@@ -494,8 +493,7 @@ impl ParseBlock for TableRowBlock {
         let var_name = arguments
             .expect_next("Identifier expected.")?
             .expect_identifier()
-            .into_result()?
-            .to_string();
+            .into_result()?;
 
         arguments
             .expect_next("\"in\" expected.")?
@@ -536,7 +534,7 @@ impl ParseBlock for TableRowBlock {
 
         tokens.assert_empty();
         Ok(Box::new(TableRow {
-            var_name,
+            var_name: kstring::KString::from_ref(var_name),
             range,
             item_template,
             cols,
