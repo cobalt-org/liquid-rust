@@ -4,7 +4,6 @@ extern crate test;
 #[macro_use]
 extern crate serde_derive;
 
-use serde_json::to_value;
 use tera::{Context, Tera};
 
 #[derive(Serialize)]
@@ -118,7 +117,6 @@ fn bench_macro_big_object_no_loop_with_set(b: &mut test::Bencher) {
     .unwrap();
     let mut context = Context::new();
     context.insert("two_fields", &TwoFields::new());
-    let context = to_value(context).unwrap();
     let rendering = tera.render("no_loop.html", &context).expect("Good render");
     assert_eq!(&rendering[..], "\nA\nB\nC\n");
     b.iter(|| tera.render("no_loop.html", &context));
@@ -145,7 +143,6 @@ fn bench_macro_big_object_no_loop_macro_call(b: &mut test::Bencher) {
     .unwrap();
     let mut context = Context::new();
     context.insert("two_fields", &TwoFields::new());
-    let context = to_value(context).unwrap();
     let rendering = tera.render("no_loop.html", &context).expect("Good render");
     assert_eq!(&rendering[..], "A");
     b.iter(|| tera.render("no_loop.html", &context));
