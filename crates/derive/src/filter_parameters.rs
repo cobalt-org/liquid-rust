@@ -329,6 +329,7 @@ enum FilterParameterType {
     Value,
 
     // Scalars
+    Scalar,
     Integer,
     Float,
     Bool,
@@ -342,13 +343,14 @@ impl FromStr for FilterParameterType {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "any" => Ok(FilterParameterType::Value),
+            "scalar" => Ok(FilterParameterType::Scalar),
             "integer" => Ok(FilterParameterType::Integer),
             "float" => Ok(FilterParameterType::Float),
             "bool" => Ok(FilterParameterType::Bool),
             "date_time" => Ok(FilterParameterType::DateTime),
             "date" => Ok(FilterParameterType::Date),
             "str" => Ok(FilterParameterType::Str),
-            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date_time\", \"date\" or \"str\". Found \"{}\".", s)),
+            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date_time\", \"date\", \"scalar\", or \"str\". Found \"{}\".", s)),
         }
     }
 }
@@ -482,6 +484,14 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
 
     let to_type = match ty {
         FilterParameterType::Value => quote! { ::std::result::Result::Ok(#name) },
+        FilterParameterType::Scalar => quote! {
+            #name.as_scalar()
+            .ok_or_else(||
+                ::liquid_core::error::Error::with_msg("Invalid argument")
+                    .context("argument", #liquid_name)
+                    .context("cause", "Scalar expected")
+            )
+        },
         FilterParameterType::Integer => quote! {
             #name.as_scalar()
             .and_then(|s| s.to_integer())
@@ -673,6 +683,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
     let field_types = fields.parameters.iter().map(|field| {
         let ty = match &field.meta.ty {
             FilterParameterType::Value => quote! {&'a ::liquid_core::value::ValueView},
+            FilterParameterType::Scalar => quote! { ::liquid_core::value::ScalarCow<'a> },
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
