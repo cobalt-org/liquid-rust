@@ -84,7 +84,7 @@ impl<'g> Stack<'g> {
     pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<&dyn ValueView> {
         let frame = self.find_path_frame(path)?;
 
-        frame.try_find(path)
+        liquid_value::try_find(frame.as_value(), path)
     }
 
     /// Recursively index into the stack.
@@ -101,7 +101,7 @@ impl<'g> Stack<'g> {
                 .context("available variables", globals)
         })?;
 
-        frame.find(path)
+        liquid_value::find(frame.as_value(), path)
     }
 
     fn roots(&self) -> Vec<kstring::KStringCow<'_>> {

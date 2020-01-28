@@ -3,12 +3,12 @@ use std::fmt;
 
 use kstring::KStringCow;
 
-use super::ArrayView;
-use super::DisplayCow;
-use super::ObjectView;
-use super::ScalarCow;
-use super::State;
-use super::Value;
+use crate::ArrayView;
+use crate::DisplayCow;
+use crate::ObjectView;
+use crate::ScalarCow;
+use crate::State;
+use crate::Value;
 
 /// Accessor for Values.
 pub trait ValueView: fmt::Debug {
