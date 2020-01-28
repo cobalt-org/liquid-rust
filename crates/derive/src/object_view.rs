@@ -20,6 +20,10 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
 
     quote! {
         impl #impl_generics ::liquid::ObjectView for #ident #ty_generics #where_clause {
+            fn as_value(&self) -> &dyn ::liquid::ValueView {
+                self
+            }
+
             fn size(&self) -> i32 {
                 #num_fields as i32
             }

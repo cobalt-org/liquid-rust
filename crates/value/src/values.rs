@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt;
 
 use kstring::KStringCow;
 
@@ -97,6 +98,10 @@ impl Value {
 }
 
 impl ValueView for Value {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         match *self {
             Value::Scalar(ref x) => x.render(),

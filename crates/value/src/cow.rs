@@ -1,3 +1,5 @@
+use std::fmt;
+
 use kstring::KStringCow;
 
 use super::ArrayView;
@@ -38,6 +40,10 @@ impl<'s> ValueCow<'s> {
 }
 
 impl<'s> ValueView for ValueCow<'s> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         self.as_view().render()
     }

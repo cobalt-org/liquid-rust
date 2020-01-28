@@ -13,6 +13,9 @@ use crate::{Value, ValueView};
 
 /// Accessor for objects.
 pub trait ObjectView: ValueView {
+    /// Cast to ValueView
+    fn as_value(&self) -> &dyn ValueView;
+
     /// Returns the number of elements.
     fn size(&self) -> i32;
 
@@ -113,6 +116,10 @@ pub trait ObjectView: ValueView {
 pub type Object = map::Map;
 
 impl ValueView for Object {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -143,6 +150,10 @@ impl ValueView for Object {
 }
 
 impl ObjectView for Object {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -192,6 +203,10 @@ impl ObjectIndex for kstring::KString {
 }
 
 impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for HashMap<K, V, S> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -226,6 +241,10 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for Ha
 }
 
 impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for HashMap<K, V, S> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -255,6 +274,10 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
 }
 
 impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -289,6 +312,10 @@ impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
 }
 
 impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -364,5 +391,20 @@ impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
             write!(f, "{}{}", k, v.render())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_object() {
+        let obj = Object::new();
+        println!("{}", obj.source());
+        let object: &dyn ObjectView = &obj;
+        println!("{}", object.source());
+        let view: &dyn ValueView = object.as_value();
+        println!("{}", view.source());
     }
 }

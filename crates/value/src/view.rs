@@ -12,6 +12,9 @@ use super::Value;
 
 /// Accessor for Values.
 pub trait ValueView: fmt::Debug {
+    /// Get a `Debug` representation
+    fn as_debug(&self) -> &dyn fmt::Debug;
+
     /// A `Display` for a `BoxedValue` rendered for the user.
     fn render(&self) -> DisplayCow<'_>;
     /// A `Display` for a `Value` as source code.
@@ -73,6 +76,10 @@ pub trait ValueView: fmt::Debug {
 static NIL: Value = Value::Nil;
 
 impl<T: ValueView> ValueView for Option<T> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         forward(self).render()
     }
@@ -280,4 +287,19 @@ pub(crate) fn value_cmp(lhs: &dyn ValueView, rhs: &dyn ValueView) -> Option<Orde
     }
 
     None
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_debug() {
+        let scalar = 5;
+        println!("{:?}", scalar);
+        let view: &dyn ValueView = &scalar;
+        println!("{:?}", view);
+        let debug: &dyn fmt::Debug = view.as_debug();
+        println!("{:?}", debug);
+    }
 }
