@@ -2,10 +2,10 @@ use std::io::Write;
 
 use liquid_core::compiler::FilterChain;
 use liquid_core::error::ResultLiquidExt;
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
@@ -21,13 +21,13 @@ impl Assign {
 }
 
 impl Renderable for Assign {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let value = self
             .src
-            .evaluate(context)
+            .evaluate(runtime)
             .trace_with(|| self.trace().into())?
             .into_owned();
-        context.stack_mut().set_global(self.dst.to_owned(), value);
+        runtime.stack_mut().set_global(self.dst.to_owned(), value);
         Ok(())
     }
 }
@@ -117,9 +117,9 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
 
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "false");
     }
 
@@ -131,8 +131,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global(
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global(
             "tags",
             Value::Array(vec![
                 Value::scalar("alpha"),
@@ -141,7 +141,7 @@ mod test {
             ]),
         );
 
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "beta");
     }
 
@@ -156,8 +156,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global(
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global(
             "tags",
             Value::Object(
                 vec![("greek".into(), Value::scalar("alpha"))]
@@ -166,7 +166,7 @@ mod test {
             ),
         );
 
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "alpha");
     }
 
@@ -189,8 +189,8 @@ mod test {
 
         // test one: no matching value in `tags`
         {
-            let mut context = Context::new();
-            context.stack_mut().set_global(
+            let mut runtime = Runtime::new();
+            runtime.stack_mut().set_global(
                 "tags",
                 Value::Array(vec![
                     Value::scalar("alpha"),
@@ -199,9 +199,9 @@ mod test {
                 ]),
             );
 
-            let output = template.render(&mut context).unwrap();
+            let output = template.render(&mut runtime).unwrap();
             assert_eq!(
-                ValueViewCmp::new(context.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                ValueViewCmp::new(runtime.stack().get(&[Scalar::new("freestyle")]).unwrap()),
                 false
             );
             assert_eq!(output, "");
@@ -209,8 +209,8 @@ mod test {
 
         // test two: matching value in `tags`
         {
-            let mut context = Context::new();
-            context.stack_mut().set_global(
+            let mut runtime = Runtime::new();
+            runtime.stack_mut().set_global(
                 "tags",
                 Value::Array(vec![
                     Value::scalar("alpha"),
@@ -220,9 +220,9 @@ mod test {
                 ]),
             );
 
-            let output = template.render(&mut context).unwrap();
+            let output = template.render(&mut runtime).unwrap();
             assert_eq!(
-                ValueViewCmp::new(context.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                ValueViewCmp::new(runtime.stack().get(&[Scalar::new("freestyle")]).unwrap()),
                 true
             );
             assert_eq!(output, "<p>Freestyle!</p>");

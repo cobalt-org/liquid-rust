@@ -63,7 +63,7 @@ impl<'g> Stack<'g> {
     /// # Panics
     ///
     /// This method will panic if popping the topmost frame results in an
-    /// empty stack. Given that a context is created with a top-level stack
+    /// empty stack. Given that a runtime is created with a top-level stack
     /// frame already in place, emptying the stack should never happen in a
     /// well-formed program.
     pub(crate) fn pop_frame(&mut self) {
@@ -154,7 +154,7 @@ impl<'g> Stack<'g> {
         self.indexes.get(name)
     }
 
-    /// Sets a value in the global context.
+    /// Sets a value in the global runtime.
     pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
         S: Into<kstring::KString>,
@@ -163,12 +163,12 @@ impl<'g> Stack<'g> {
         self.global_frame().insert(name, val)
     }
 
-    /// Sets a value to the rendering context.
+    /// Sets a value to the rendering runtime.
     /// Note that it needs to be wrapped in a liquid::Value.
     ///
     /// # Panics
     ///
-    /// Panics if there is no frame on the local values stack. Context
+    /// Panics if there is no frame on the local values stack. Runtime
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
     pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>

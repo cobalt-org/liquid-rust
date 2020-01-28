@@ -1,10 +1,10 @@
 use std::io::Write;
 
 use liquid_core::error::ResultLiquidReplaceExt;
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Clone, Debug)]
@@ -13,7 +13,7 @@ struct RawT {
 }
 
 impl Renderable for RawT {
-    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, _runtime: &mut Runtime<'_>) -> Result<()> {
         write!(writer, "{}", self.content).replace("Failed to render")?;
         Ok(())
     }
@@ -82,9 +82,9 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
 
-        template.render(&mut context).unwrap()
+        template.render(&mut runtime).unwrap()
     }
 
     #[test]

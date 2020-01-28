@@ -7,10 +7,10 @@ use liquid_core::compiler::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter::Interrupt;
 use liquid_core::value::{Object, Value};
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
+use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
@@ -22,13 +22,13 @@ enum Range {
 }
 
 impl Range {
-    pub fn evaluate(&self, context: &Context<'_>) -> Result<Vec<Value>> {
+    pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<Vec<Value>> {
         let range = match *self {
-            Range::Array(ref array_id) => get_array(context, array_id)?,
+            Range::Array(ref array_id) => get_array(runtime, array_id)?,
 
             Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = int_argument(start_arg, context, "start")?;
-                let stop = int_argument(stop_arg, context, "end")?;
+                let start = int_argument(start_arg, runtime, "start")?;
+                let stop = int_argument(stop_arg, runtime, "end")?;
                 let range = start..=stop;
                 range.map(|x| Value::scalar(x as i32)).collect()
             }
@@ -81,10 +81,10 @@ fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
 }
 
 /// Evaluates an attribute, returning Ok(None) if input is also None.
-fn evaluate_attr(attr: &Option<Expression>, context: &mut Context<'_>) -> Result<Option<usize>> {
+fn evaluate_attr(attr: &Option<Expression>, runtime: &mut Runtime<'_>) -> Result<Option<usize>> {
     match attr {
         Some(attr) => {
-            let value = attr.evaluate(context)?;
+            let value = attr.evaluate(runtime)?;
             let value = value
                 .as_scalar()
                 .and_then(|s| s.to_integer())
@@ -119,8 +119,8 @@ impl For {
     }
 }
 
-fn get_array(context: &Context<'_>, array_id: &Expression) -> Result<Vec<Value>> {
-    let array = array_id.evaluate(context)?;
+fn get_array(runtime: &Runtime<'_>, array_id: &Expression) -> Result<Vec<Value>> {
+    let array = array_id.evaluate(runtime)?;
     if let Some(x) = array.as_array() {
         Ok(x.values().map(|v| v.to_value()).collect())
     } else if let Some(x) = array.as_object() {
@@ -140,8 +140,8 @@ fn get_array(context: &Context<'_>, array_id: &Expression) -> Result<Vec<Value>>
     }
 }
 
-fn int_argument(arg: &Expression, context: &Context<'_>, arg_name: &str) -> Result<isize> {
-    let value = arg.evaluate(context)?;
+fn int_argument(arg: &Expression, runtime: &Runtime<'_>, arg_name: &str) -> Result<isize> {
+    let value = arg.evaluate(runtime)?;
 
     let value = value
         .as_scalar()
@@ -154,26 +154,26 @@ fn int_argument(arg: &Expression, context: &Context<'_>, arg_name: &str) -> Resu
 }
 
 impl Renderable for For {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let range = self
             .range
-            .evaluate(context)
+            .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
-        let limit = evaluate_attr(&self.limit, context)?;
-        let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
+        let limit = evaluate_attr(&self.limit, runtime)?;
+        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
         let range = iter_array(range, limit, offset, self.reversed);
 
         match range.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
-                    t.render_to(writer, context)
+                    t.render_to(writer, runtime)
                         .trace("{{% else %}}")
                         .trace_with(|| self.trace().into())?;
                 }
             }
 
             range_len => {
-                context.run_in_scope(|mut scope| -> Result<()> {
+                runtime.run_in_scope(|mut scope| -> Result<()> {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".into(), Value::scalar(range_len as i32));
 
@@ -393,17 +393,17 @@ fn trace_tablerow_tag(
 }
 
 impl Renderable for TableRow {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let range = self
             .range
-            .evaluate(context)
+            .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
-        let cols = evaluate_attr(&self.cols, context)?;
-        let limit = evaluate_attr(&self.limit, context)?;
-        let offset = evaluate_attr(&self.offset, context)?.unwrap_or(0);
+        let cols = evaluate_attr(&self.cols, runtime)?;
+        let limit = evaluate_attr(&self.limit, runtime)?;
+        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
         let range = iter_array(range, limit, offset, false);
 
-        context.run_in_scope(|mut scope| -> Result<()> {
+        runtime.run_in_scope(|mut scope| -> Result<()> {
             let mut helper_vars = Object::new();
 
             let range_len = range.len();
@@ -563,7 +563,7 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
-    use liquid_core::interpreter::ContextBuilder;
+    use liquid_core::interpreter::RuntimeBuilder;
     use liquid_core::value::ValueView;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
@@ -591,8 +591,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context<'_> = Default::default();
-        context.stack_mut().set_global(
+        let mut runtime: Runtime<'_> = Default::default();
+        runtime.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -601,7 +601,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "test 22 test 23 test 24 test wat ");
     }
 
@@ -617,8 +617,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Default::default();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Default::default();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
             output,
             "#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | #5 test 46 | "
@@ -636,14 +636,14 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("alpha", Value::scalar(42i32));
-        context
+        runtime
             .stack_mut()
             .set_global("omega", Value::scalar(46i32));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
             output,
             "#1 test 42, #2 test 43, #3 test 44, #4 test 45, #5 test 46, "
@@ -668,8 +668,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
             output,
             concat!(
@@ -696,17 +696,17 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("i", Value::Array(vec![]));
-        context.stack_mut().set_global("j", Value::Array(vec![]));
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("i", Value::Array(vec![]));
+        runtime.stack_mut().set_global("j", Value::Array(vec![]));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "empty outer");
 
-        context
+        runtime
             .stack_mut()
             .set_global("i", Value::Array(vec![Value::scalar(1i32)]));
-        context.stack_mut().set_global("j", Value::Array(vec![]));
-        let output = template.render(&mut context).unwrap();
+        runtime.stack_mut().set_global("j", Value::Array(vec![]));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "empty inner");
     }
 
@@ -719,8 +719,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "");
     }
 
@@ -735,8 +735,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "1 2 ");
     }
 
@@ -751,8 +751,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 6 7 8 9 10 ");
     }
 
@@ -767,8 +767,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 6 ");
     }
 
@@ -783,8 +783,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "10 9 8 7 6 5 4 3 2 1 ");
     }
 
@@ -799,8 +799,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "6 5 4 3 2 ");
     }
 
@@ -817,8 +817,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "There are no items!");
     }
 
@@ -829,8 +829,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "1 2 3 4 5 ");
     }
 
@@ -853,8 +853,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context<'_> = Default::default();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime: Runtime<'_> = Default::default();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
                 output,
                 concat!(
@@ -874,7 +874,7 @@ mod test {
     pub struct ShoutFilter;
 
     impl Filter for ShoutFilter {
-        fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_uppercase()))
         }
     }
@@ -895,9 +895,9 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = ContextBuilder::new().build();
+        let mut runtime = RuntimeBuilder::new().build();
 
-        context.stack_mut().set_global(
+        runtime.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar("alpha"),
@@ -905,7 +905,7 @@ mod test {
                 Value::scalar("gamma"),
             ]),
         );
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "test ALPHA test BETA test GAMMA ");
     }
 
@@ -922,8 +922,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "6 7 8 9 ");
     }
 
@@ -939,8 +939,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context<'_> = Default::default();
-        context.stack_mut().set_global(
+        let mut runtime: Runtime<'_> = Default::default();
+        runtime.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -949,7 +949,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">test 22 </td><td class=\"col2\">test 23 </td><td class=\"col3\">test 24 </td><td class=\"col4\">test wat </td></tr>");
     }
 
@@ -965,8 +965,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context<'_> = Default::default();
-        context.stack_mut().set_global(
+        let mut runtime: Runtime<'_> = Default::default();
+        runtime.stack_mut().set_global(
             "array",
             Value::Array(vec![
                 Value::scalar(22f64),
@@ -975,7 +975,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
                 output,
                 "<tr class=\"row1\"><td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr><tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr><tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>"
@@ -996,8 +996,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr><tr class=\"row2\"><td class=\"col1\">9 </td></tr>");
     }
 
@@ -1024,8 +1024,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context: Context<'_> = Default::default();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime: Runtime<'_> = Default::default();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(
                 output,
                 concat!(

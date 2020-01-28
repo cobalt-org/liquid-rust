@@ -545,14 +545,14 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
     if field.is_optional() {
         quote! {
             let #name = self.#name.as_ref().map(|field| {
-                let #name = field.evaluate(context)?;
+                let #name = field.evaluate(runtime)?;
                 let #name = #to_type?;
                 ::std::result::Result::Ok(#name)
             }).transpose()?;
         }
     } else {
         quote! {
-            let #name = self.#name.evaluate(context)?;
+            let #name = self.#name.evaluate(runtime)?;
             let #name = #to_type?;
         }
     }
@@ -662,7 +662,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
                 Ok( #name { #comma_separated_field_names } )
             }
 
-            fn evaluate(&'a self, context: &'a ::liquid_core::interpreter::Context) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
+            fn evaluate(&'a self, runtime: &'a ::liquid_core::interpreter::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
                #(#evaluate_fields)*
 
                 Ok( #evaluated_name { #comma_separated_field_names __phantom_data: ::std::marker::PhantomData } )

@@ -2,10 +2,10 @@ use std::io::Write;
 
 use liquid_core::error::ResultLiquidReplaceExt;
 use liquid_core::value::{Value, ValueView};
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Clone, Debug)]
@@ -14,8 +14,8 @@ struct Increment {
 }
 
 impl Renderable for Increment {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let mut val = context
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let mut val = runtime
             .stack()
             .get_index(&self.id)
             .and_then(|i| i.as_scalar())
@@ -24,7 +24,7 @@ impl Renderable for Increment {
 
         write!(writer, "{}", val).replace("Failed to render")?;
         val += 1;
-        context
+        runtime
             .stack_mut()
             .set_index(self.id.to_owned(), Value::scalar(val));
         Ok(())
@@ -79,8 +79,8 @@ struct Decrement {
 }
 
 impl Renderable for Decrement {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let mut val = context
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let mut val = runtime
             .stack()
             .get_index(&self.id)
             .and_then(|i| i.as_scalar())
@@ -89,7 +89,7 @@ impl Renderable for Decrement {
 
         val -= 1;
         write!(writer, "{}", val).replace("Failed to render")?;
-        context
+        runtime
             .stack_mut()
             .set_index(self.id.to_owned(), Value::scalar(val));
         Ok(())
@@ -168,8 +168,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "01");
     }
 
@@ -180,8 +180,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "-1-1");
     }
 
@@ -192,8 +192,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "0110");
     }
 
@@ -204,8 +204,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "019");
     }
 }

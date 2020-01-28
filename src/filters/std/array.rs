@@ -1,9 +1,9 @@
 use std::cmp;
 
 use liquid_core::value::ValueViewCmp;
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
@@ -47,8 +47,8 @@ struct JoinFilter {
 }
 
 impl Filter for JoinFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let separator = args.separator.unwrap_or_else(|| " ".into());
 
@@ -120,8 +120,8 @@ fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueVi
 }
 
 impl Filter for SortFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let input: Vec<_> = as_sequence(input).collect();
         if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
@@ -162,8 +162,8 @@ struct SortNaturalFilter {
 }
 
 impl Filter for SortNaturalFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let input: Vec<_> = as_sequence(input).collect();
         if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
@@ -223,8 +223,8 @@ struct WhereFilter {
 }
 
 impl Filter for WhereFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
         let property: &str = &args.property;
         let target_value: Option<&dyn ValueView> = args.target_value;
 
@@ -281,7 +281,7 @@ pub struct Uniq;
 struct UniqFilter;
 
 impl Filter for UniqFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         // TODO(#267) optional property parameter
 
         let array = input
@@ -314,7 +314,7 @@ pub struct Reverse;
 struct ReverseFilter;
 
 impl Filter for ReverseFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let mut array: Vec<_> = input
             .as_array()
             .ok_or_else(|| invalid_input("Array expected"))?
@@ -352,8 +352,8 @@ struct MapFilter {
 }
 
 impl Filter for MapFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let array = input
             .as_array()
@@ -388,8 +388,8 @@ struct CompactFilter {
 }
 
 impl Filter for CompactFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let array = input
             .as_array()
@@ -444,8 +444,8 @@ struct ConcatFilter {
 }
 
 impl Filter for ConcatFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let input = input
             .as_array()
@@ -477,7 +477,7 @@ pub struct First;
 struct FirstFilter;
 
 impl Filter for FirstFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if let Some(x) = input.as_scalar() {
             let c = x
                 .to_kstr()
@@ -509,7 +509,7 @@ pub struct Last;
 struct LastFilter;
 
 impl Filter for LastFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if let Some(x) = input.as_scalar() {
             let c = x
                 .to_kstr()

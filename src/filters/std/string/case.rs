@@ -1,5 +1,5 @@
-use liquid_core::Context;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 
@@ -16,7 +16,7 @@ pub struct Downcase;
 struct DowncaseFilter;
 
 impl Filter for DowncaseFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let s = input.to_kstr();
         Ok(Value::scalar(s.to_lowercase()))
     }
@@ -35,7 +35,7 @@ pub struct Upcase;
 struct UpcaseFilter;
 
 impl Filter for UpcaseFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let s = input.to_kstr();
         Ok(Value::scalar(s.to_uppercase()))
     }
@@ -54,7 +54,7 @@ pub struct Capitalize;
 struct CapitalizeFilter;
 
 impl Filter for CapitalizeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let s = input.to_kstr().to_owned();
         let mut chars = s.chars();
         let capitalized = match chars.next() {

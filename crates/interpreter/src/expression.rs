@@ -5,7 +5,7 @@ use liquid_value::Scalar;
 use liquid_value::Value;
 use liquid_value::ValueView;
 
-use super::Context;
+use super::Runtime;
 use crate::variable::Variable;
 
 /// An un-evaluated `Value`.
@@ -40,23 +40,23 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<&'c dyn ValueView> {
+    pub fn try_evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Option<&'c dyn ValueView> {
         match self {
             Expression::Literal(ref x) => Some(x),
             Expression::Variable(ref x) => {
-                let path = x.try_evaluate(context)?;
-                context.stack().try_get(&path)
+                let path = x.try_evaluate(runtime)?;
+                runtime.stack().try_get(&path)
             }
         }
     }
 
     /// Convert to a `Value`.
-    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<&'c dyn ValueView> {
+    pub fn evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Result<&'c dyn ValueView> {
         let val = match self {
             Expression::Literal(ref x) => x,
             Expression::Variable(ref x) => {
-                let path = x.evaluate(context)?;
-                context.stack().get(&path)?
+                let path = x.evaluate(runtime)?;
+                runtime.stack().get(&path)?
             }
         };
         Ok(val)

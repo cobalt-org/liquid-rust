@@ -1,5 +1,5 @@
-use liquid_core::Context;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 
@@ -16,7 +16,7 @@ pub struct TestParameterlessFilterParser;
 pub struct TestParameterlessFilter;
 
 impl Filter for TestParameterlessFilter {
-    fn evaluate(&self, _input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let result = "<>";
 
         Ok(Value::scalar(result))

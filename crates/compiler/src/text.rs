@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidReplaceExt};
-use liquid_interpreter::Context;
 use liquid_interpreter::Renderable;
+use liquid_interpreter::Runtime;
 
 /// A raw template expression.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,7 +18,7 @@ impl Text {
 }
 
 impl Renderable for Text {
-    fn render_to(&self, writer: &mut dyn Write, _context: &mut Context) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, _runtime: &mut Runtime) -> Result<()> {
         write!(writer, "{}", &self.text).replace("Failed to render")?;
         Ok(())
     }

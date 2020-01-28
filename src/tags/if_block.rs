@@ -5,10 +5,10 @@ use liquid_core::compiler::BlockElement;
 use liquid_core::compiler::TagToken;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::value::{Value, ValueView, ValueViewCmp};
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
+use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
@@ -62,10 +62,10 @@ struct BinaryCondition {
 }
 
 impl BinaryCondition {
-    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
-        let a = self.lh.evaluate(context)?;
+    pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
+        let a = self.lh.evaluate(runtime)?;
         let ca = ValueViewCmp::new(a);
-        let b = self.rh.evaluate(context)?;
+        let b = self.rh.evaluate(runtime)?;
         let cb = ValueViewCmp::new(b);
 
         let result = match self.comparison {
@@ -96,8 +96,8 @@ struct ExistenceCondition {
 static NIL: Value = Value::Nil;
 
 impl ExistenceCondition {
-    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
-        let a = self.lh.try_evaluate(context).unwrap_or(&NIL);
+    pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
+        let a = self.lh.try_evaluate(runtime).unwrap_or(&NIL);
         Ok(a.query_state(liquid_core::value::State::Truthy))
     }
 }
@@ -117,15 +117,15 @@ enum Condition {
 }
 
 impl Condition {
-    pub fn evaluate(&self, context: &Context<'_>) -> Result<bool> {
+    pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
         match *self {
-            Condition::Binary(ref c) => c.evaluate(context),
-            Condition::Existence(ref c) => c.evaluate(context),
+            Condition::Binary(ref c) => c.evaluate(runtime),
+            Condition::Existence(ref c) => c.evaluate(runtime),
             Condition::Conjunction(ref left, ref right) => {
-                Ok(left.evaluate(context)? && right.evaluate(context)?)
+                Ok(left.evaluate(runtime)? && right.evaluate(runtime)?)
             }
             Condition::Disjunction(ref left, ref right) => {
-                Ok(left.evaluate(context)? || right.evaluate(context)?)
+                Ok(left.evaluate(runtime)? || right.evaluate(runtime)?)
             }
         }
     }
@@ -177,8 +177,8 @@ fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
 }
 
 impl Conditional {
-    fn compare(&self, context: &Context<'_>) -> Result<bool> {
-        let result = self.condition.evaluate(context)?;
+    fn compare(&self, runtime: &Runtime<'_>) -> Result<bool> {
+        let result = self.condition.evaluate(runtime)?;
 
         Ok(result == self.mode)
     }
@@ -189,15 +189,15 @@ impl Conditional {
 }
 
 impl Renderable for Conditional {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let condition = self.compare(context).trace_with(|| self.trace().into())?;
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let condition = self.compare(runtime).trace_with(|| self.trace().into())?;
         if condition {
             self.if_true
-                .render_to(writer, context)
+                .render_to(writer, runtime)
                 .trace_with(|| self.trace().into())?;
         } else if let Some(ref template) = self.if_false {
             template
-                .render_to(writer, context)
+                .render_to(writer, runtime)
                 .trace("{{% else %}}")
                 .trace_with(|| self.trace().into())?;
         }
@@ -482,8 +482,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
@@ -491,8 +491,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -503,8 +503,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
@@ -512,8 +512,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -532,30 +532,30 @@ mod test {
             .unwrap();
 
         // Non-existence
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "nope");
 
         // Explicit nil
-        let mut context = Context::new();
-        context.stack_mut().set_global("truthy", Value::Nil);
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("truthy", Value::Nil);
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "nope");
 
         // false
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("truthy", Value::scalar(false));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "nope");
 
         // true
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("truthy", Value::scalar(true));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "yep");
     }
 
@@ -571,18 +571,18 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("some_value", Value::scalar(1f64));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "");
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("some_value", Value::scalar(42f64));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "unless body");
     }
 
@@ -604,14 +604,14 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("truthy", Value::scalar(true));
-        context
+        runtime
             .stack_mut()
             .set_global("also_truthy", Value::scalar(false));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "yep, not also truthy");
     }
 
@@ -633,24 +633,24 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("a", Value::scalar(1f64));
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("a", Value::scalar(1f64));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "first");
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("a", Value::scalar(2f64));
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("a", Value::scalar(2f64));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "second");
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("a", Value::scalar(3f64));
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("a", Value::scalar(3f64));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "third");
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("a", Value::scalar("else"));
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("a", Value::scalar("else"));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "fourth");
     }
 
@@ -661,8 +661,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
@@ -670,8 +670,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -682,11 +682,11 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("movie", Value::scalar("Star Wars"));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
@@ -694,11 +694,11 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context
+        let mut runtime = Runtime::new();
+        runtime
             .stack_mut()
             .set_global("movie", Value::scalar("Batman"));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -709,11 +709,11 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
         let mut obj = Object::new();
         obj.insert("Star Wars".into(), Value::scalar("1977"));
-        context.stack_mut().set_global("movies", Value::Object(obj));
-        let output = template.render(&mut context).unwrap();
+        runtime.stack_mut().set_global("movies", Value::Object(obj));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
     }
 
@@ -724,10 +724,10 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
         let obj = Object::new();
-        context.stack_mut().set_global("movies", Value::Object(obj));
-        let output = template.render(&mut context).unwrap();
+        runtime.stack_mut().set_global("movies", Value::Object(obj));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -738,14 +738,14 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
         let arr = vec![
             Value::scalar("Star Wars"),
             Value::scalar("Star Trek"),
             Value::scalar("Alien"),
         ];
-        context.stack_mut().set_global("movies", Value::Array(arr));
-        let output = template.render(&mut context).unwrap();
+        runtime.stack_mut().set_global("movies", Value::Array(arr));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
     }
 
@@ -756,10 +756,10 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
         let arr = vec![Value::scalar("Alien")];
-        context.stack_mut().set_global("movies", Value::Array(arr));
-        let output = template.render(&mut context).unwrap();
+        runtime.stack_mut().set_global("movies", Value::Array(arr));
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -770,8 +770,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 1 == 1 and 2 != 2 %}if true{% else %}if false{% endif %}";
@@ -779,8 +779,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -791,8 +791,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 1 != 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
@@ -800,8 +800,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if false");
     }
 
@@ -812,8 +812,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "if true");
     }
 }

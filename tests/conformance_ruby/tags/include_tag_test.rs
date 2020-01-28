@@ -104,7 +104,7 @@ fn test_include_tag_with_multiple_local_variables() {
 
 #[test]
 #[should_panic] // liquid-rust#237
-fn test_include_tag_with_multiple_local_variables_from_context() {
+fn test_include_tag_with_multiple_local_variables_from_runtime() {
     assert_template_result!(
         "Locale: test123 test321",
         "{% include 'locale_variables' echo1: echo1, echo2: more_echos.echo2 %}",

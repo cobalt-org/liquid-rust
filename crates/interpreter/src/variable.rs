@@ -5,8 +5,8 @@ use liquid_value::Path;
 use liquid_value::Scalar;
 use liquid_value::ValueView;
 
-use super::Context;
 use super::Expression;
+use super::Runtime;
 
 /// A `Value` reference.
 #[derive(Clone, Debug, PartialEq)]
@@ -31,11 +31,11 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn try_evaluate<'c>(&'c self, context: &'c Context<'_>) -> Option<Path<'c>> {
+    pub fn try_evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Option<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
-            let v = expr.try_evaluate(context)?;
+            let v = expr.try_evaluate(runtime)?;
             let s = v.as_scalar()?;
             path.push(s);
         }
@@ -43,11 +43,11 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate<'c>(&'c self, context: &'c Context<'_>) -> Result<Path<'c>> {
+    pub fn evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Result<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
-            let v = expr.evaluate(context)?;
+            let v = expr.evaluate(runtime)?;
             let s = v.as_scalar().ok_or_else(|| {
                 Error::with_msg(format!("Expected scalar, found `{}`", v.source()))
             })?;
@@ -89,7 +89,7 @@ mod test {
     use liquid_value::ValueViewCmp;
     use serde_yaml;
 
-    use super::super::ContextBuilder;
+    use super::super::RuntimeBuilder;
 
     #[test]
     fn identifier_path_array_index() {
@@ -103,9 +103,9 @@ test_a: ["test"]
         let index = vec![Scalar::new(0)];
         var.extend(index);
 
-        let context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = var.evaluate(&context).unwrap();
-        let actual = context.stack().get(&actual).unwrap();
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&runtime).unwrap();
+        let actual = runtime.stack().get(&actual).unwrap();
         assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test"));
     }
 
@@ -121,9 +121,9 @@ test_a: ["test1", "test2"]
         let index = vec![Scalar::new(-1)];
         var.extend(index);
 
-        let context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = var.evaluate(&context).unwrap();
-        let actual = context.stack().get(&actual).unwrap();
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&runtime).unwrap();
+        let actual = runtime.stack().get(&actual).unwrap();
         assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test2"));
     }
 
@@ -140,9 +140,9 @@ test_a:
         let index = vec![Scalar::new(0), Scalar::new("test_h")];
         var.extend(index);
 
-        let context = ContextBuilder::new().set_globals(&globals).build();
-        let actual = var.evaluate(&context).unwrap();
-        let actual = context.stack().get(&actual).unwrap();
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let actual = var.evaluate(&runtime).unwrap();
+        let actual = runtime.stack().get(&actual).unwrap();
         assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&5));
     }
 }

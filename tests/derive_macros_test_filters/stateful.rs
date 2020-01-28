@@ -1,7 +1,7 @@
 use liquid_core::compiler::FilterArguments;
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 
@@ -66,8 +66,8 @@ pub struct TestStatefulFilter {
 }
 
 impl Filter for TestStatefulFilter {
-    fn evaluate(&self, _input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, _input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let result = match self.state {
             Mood::Happy => format!(":-) {} :-)", args.arg),

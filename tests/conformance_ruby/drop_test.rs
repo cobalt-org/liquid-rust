@@ -60,13 +60,13 @@ fn test_text_array_drop() {
 
 #[test]
 #[should_panic]
-fn test_context_drop() {
+fn test_runtime_drop() {
     panic!("Implementation specific: drops");
 }
 
 #[test]
 #[should_panic]
-fn test_nested_context_drop() {
+fn test_nested_runtime_drop() {
     panic!("Implementation specific: drops");
 }
 
@@ -108,7 +108,7 @@ fn test_scope_from_tags() {
 
 #[test]
 #[should_panic]
-fn test_access_context_from_drop() {
+fn test_access_runtime_from_drop() {
     panic!("Implementation specific: drops");
 }
 
