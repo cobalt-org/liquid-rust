@@ -92,7 +92,6 @@ mod test {
     use liquid_core::interpreter;
     use liquid_core::value::Scalar;
     use liquid_core::value::Value;
-    use liquid_core::value::ValueViewCmp;
 
     use crate::tags;
 
@@ -201,7 +200,7 @@ mod test {
 
             let output = template.render(&mut runtime).unwrap();
             assert_eq!(
-                ValueViewCmp::new(runtime.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                runtime.stack().get(&[Scalar::new("freestyle")]).unwrap(),
                 false
             );
             assert_eq!(output, "");
@@ -222,7 +221,7 @@ mod test {
 
             let output = template.render(&mut runtime).unwrap();
             assert_eq!(
-                ValueViewCmp::new(runtime.stack().get(&[Scalar::new("freestyle")]).unwrap()),
+                runtime.stack().get(&[Scalar::new("freestyle")]).unwrap(),
                 true
             );
             assert_eq!(output, "<p>Freestyle!</p>");

@@ -7,7 +7,7 @@ use liquid_core::Runtime;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
-use liquid_core::{Value, ValueView};
+use liquid_core::{Value, ValueCow, ValueView};
 
 use crate::filters::{invalid_argument, invalid_input};
 
@@ -226,7 +226,7 @@ impl Filter for WhereFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
         let property: &str = &args.property;
-        let target_value: Option<&dyn ValueView> = args.target_value;
+        let target_value: Option<ValueCow<'_>> = args.target_value;
 
         if let Some(array) = input.as_array() {
             if !array.values().all(|v| v.is_object()) {
@@ -254,8 +254,7 @@ impl Filter for WhereFilter {
                 .filter(|object| {
                     object.get(property).map_or(false, |value| {
                         let value = ValueViewCmp::new(value);
-                        let target_value = ValueViewCmp::new(target_value);
-                        value == target_value
+                        target_value == value
                     })
                 })
                 .map(|object| object.to_value())

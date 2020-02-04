@@ -485,8 +485,14 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
     let to_type = match ty {
         FilterParameterType::Value => quote! { ::std::result::Result::Ok(#name) },
         FilterParameterType::Scalar => quote! {
-            #name.as_scalar()
-            .ok_or_else(||
+            match #name {
+                ::liquid_core::ValueCow::Owned(v) => {
+                    v.as_scalar().into_owned()
+                },
+                ::liquid_core::ValueCow::Borrowed(v) => {
+                    v.as_scalar()
+                },
+            }.ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Scalar expected")
@@ -538,7 +544,14 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
             )
         },
         FilterParameterType::Str => quote! {
-            ::std::result::Result::Ok(#name.to_kstr())
+            match #name {
+                ::liquid_core::ValueCow::Owned(v) => {
+                    ::std::result::Result::Ok(v.to_kstr().into_owned().into())
+                },
+                ::liquid_core::ValueCow::Borrowed(v) => {
+                    ::std::result::Result::Ok(v.to_kstr())
+                },
+            }
         },
     };
 
@@ -682,7 +695,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
 
     let field_types = fields.parameters.iter().map(|field| {
         let ty = match &field.meta.ty {
-            FilterParameterType::Value => quote! {&'a ::liquid_core::value::ValueView},
+            FilterParameterType::Value => quote! { ::liquid_core::value::ValueCow<'a> },
             FilterParameterType::Scalar => quote! { ::liquid_core::value::ScalarCow<'a> },
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },

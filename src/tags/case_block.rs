@@ -27,7 +27,7 @@ impl CaseOption {
     fn evaluate(&self, value: &dyn ValueView, runtime: &Runtime<'_>) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(runtime)?;
-            if ValueViewCmp::new(v) == ValueViewCmp::new(value) {
+            if v == ValueViewCmp::new(value) {
                 return Ok(true);
             }
         }

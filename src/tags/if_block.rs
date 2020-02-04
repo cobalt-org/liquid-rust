@@ -4,7 +4,7 @@ use std::io::Write;
 use liquid_core::compiler::BlockElement;
 use liquid_core::compiler::TagToken;
 use liquid_core::error::ResultLiquidExt;
-use liquid_core::value::{Value, ValueView, ValueViewCmp};
+use liquid_core::value::{ValueView, ValueViewCmp};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -64,9 +64,9 @@ struct BinaryCondition {
 impl BinaryCondition {
     pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
         let a = self.lh.evaluate(runtime)?;
-        let ca = ValueViewCmp::new(a);
+        let ca = ValueViewCmp::new(a.as_view());
         let b = self.rh.evaluate(runtime)?;
-        let cb = ValueViewCmp::new(b);
+        let cb = ValueViewCmp::new(b.as_view());
 
         let result = match self.comparison {
             ComparisonOperator::Equals => ca == cb,
@@ -75,7 +75,7 @@ impl BinaryCondition {
             ComparisonOperator::GreaterThan => ca > cb,
             ComparisonOperator::LessThanEquals => ca <= cb,
             ComparisonOperator::GreaterThanEquals => ca >= cb,
-            ComparisonOperator::Contains => contains_check(a, b)?,
+            ComparisonOperator::Contains => contains_check(a.as_view(), b.as_view())?,
         };
 
         Ok(result)
@@ -93,12 +93,12 @@ struct ExistenceCondition {
     lh: Expression,
 }
 
-static NIL: Value = Value::Nil;
-
 impl ExistenceCondition {
     pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
-        let a = self.lh.try_evaluate(runtime).unwrap_or(&NIL);
-        Ok(a.query_state(liquid_core::value::State::Truthy))
+        let a = self.lh.try_evaluate(runtime);
+        let a = a.unwrap_or_default();
+        let is_truthy = a.query_state(liquid_core::value::State::Truthy);
+        Ok(is_truthy)
     }
 }
 

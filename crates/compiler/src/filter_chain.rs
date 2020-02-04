@@ -26,7 +26,7 @@ impl FilterChain {
     /// Process `Value` expression within `runtime`'s stack.
     pub fn evaluate<'s>(&'s self, runtime: &'s Runtime) -> Result<ValueCow<'s>> {
         // take either the provided value or the value from the provided variable
-        let mut entry = ValueCow::Borrowed(self.entry.evaluate(runtime)?);
+        let mut entry = self.entry.evaluate(runtime)?;
 
         // apply all specified filters
         for filter in &self.filters {

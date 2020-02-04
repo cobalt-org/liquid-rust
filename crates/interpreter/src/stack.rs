@@ -1,6 +1,6 @@
 use itertools;
 use liquid_error::{Error, Result};
-use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueView};
+use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueCow, ValueView};
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
@@ -81,14 +81,14 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<&dyn ValueView> {
+    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<ValueCow<'_>> {
         let frame = self.find_path_frame(path)?;
 
         liquid_value::try_find(frame.as_value(), path)
     }
 
     /// Recursively index into the stack.
-    pub fn get(&self, path: PathRef<'_, '_>) -> Result<&dyn ValueView> {
+    pub fn get(&self, path: PathRef<'_, '_>) -> Result<ValueCow<'_>> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path
                 .iter()
@@ -228,9 +228,6 @@ mod test {
         post.insert("number".into(), Value::scalar(42f64));
         stack.set_global("post", Value::Object(post));
         let indexes = [Scalar::new("post"), Scalar::new("number")];
-        assert_eq!(
-            &ValueViewCmp::new(stack.get(&indexes).unwrap()),
-            &ValueViewCmp::new(&42f64)
-        );
+        assert_eq!(&stack.get(&indexes).unwrap(), &ValueViewCmp::new(&42f64));
     }
 }

@@ -6,7 +6,7 @@ use liquid_core::compiler::BlockElement;
 use liquid_core::compiler::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter::Interrupt;
-use liquid_core::value::{Object, Value};
+use liquid_core::value::{Object, Value, ValueView};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;

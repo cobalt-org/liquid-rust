@@ -230,21 +230,21 @@ mod test {
         let mut rt = Runtime::new();
         rt.stack_mut().set_global("test", Value::scalar(42f64));
         assert_eq!(
-            &ValueViewCmp::new(rt.stack().get(&test_path).unwrap()),
+            &rt.stack().get(&test_path).unwrap(),
             &ValueViewCmp::new(&42f64)
         );
 
         rt.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(
-                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &new_scope.stack().get(&test_path).unwrap(),
                 &ValueViewCmp::new(&42f64)
             );
 
             // set a new local value, and assert that it overrides the previous value
             new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
-                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &new_scope.stack().get(&test_path).unwrap(),
                 &ValueViewCmp::new(&3.14f64)
             );
 
@@ -256,11 +256,11 @@ mod test {
 
         // assert that the value has reverted to the old one
         assert_eq!(
-            &ValueViewCmp::new(rt.stack().get(&test_path).unwrap()),
+            &rt.stack().get(&test_path).unwrap(),
             &ValueViewCmp::new(&42f64)
         );
         assert_eq!(
-            &ValueViewCmp::new(rt.stack().get(&global_path).unwrap()),
+            &rt.stack().get(&global_path).unwrap(),
             &ValueViewCmp::new(&"some value")
         );
     }

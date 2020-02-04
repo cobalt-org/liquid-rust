@@ -97,7 +97,6 @@ mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
     use liquid_core::value::Scalar;
-    use liquid_core::value::ValueViewCmp;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -125,7 +124,7 @@ mod test {
 
         let output = template.render(&mut rt).unwrap();
         assert_eq!(
-            ValueViewCmp::new(rt.stack().get(&[Scalar::new("attribute_name")]).unwrap()),
+            rt.stack().get(&[Scalar::new("attribute_name")]).unwrap(),
             "potato-42-color"
         );
         assert_eq!(output, "");

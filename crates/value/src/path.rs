@@ -6,6 +6,8 @@ use kstring::KStringCow;
 use liquid_error::{Error, Result};
 
 use crate::ScalarCow;
+use crate::Value;
+use crate::ValueCow;
 use crate::ValueView;
 
 /// Path to a value in an `Object`.
@@ -117,30 +119,67 @@ impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
 pub type PathRef<'p, 's> = &'p [ScalarCow<'s>];
 
 /// Find a `ValueView` nested in an `ObjectView`
-pub fn try_find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Option<&'o dyn ValueView> {
+pub fn try_find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Option<ValueCow<'o>> {
     let indexes = path.iter();
-    indexes.fold(Some(value), |value, index| {
-        let value = value?;
-        if let Some(arr) = value.as_array() {
-            if let Some(index) = index.to_integer() {
-                arr.get(index)
-            } else {
-                match &*index.to_kstr() {
-                    "first" => arr.first(),
-                    "last" => arr.last(),
-                    _ => None,
-                }
-            }
-        } else if let Some(obj) = value.as_object() {
-            obj.get(index.to_kstr().as_str())
-        } else {
-            None
+    try_find_borrowed(value, indexes)
+}
+
+fn try_find_borrowed<'o, 'i>(
+    value: &'o dyn ValueView,
+    mut path: impl Iterator<Item = &'i ScalarCow<'i>>,
+) -> Option<ValueCow<'o>> {
+    let index = match path.next() {
+        Some(index) => index,
+        None => {
+            return Some(ValueCow::Borrowed(value));
         }
-    })
+    };
+    let child = augmented_get(value, index)?;
+    match child {
+        ValueCow::Owned(child) => try_find_owned(child, path),
+        ValueCow::Borrowed(child) => try_find_borrowed(child, path),
+    }
+}
+
+fn try_find_owned<'o, 'i>(
+    value: Value,
+    mut path: impl Iterator<Item = &'i ScalarCow<'i>>,
+) -> Option<ValueCow<'o>> {
+    let index = match path.next() {
+        Some(index) => index,
+        None => {
+            return Some(ValueCow::Owned(value));
+        }
+    };
+    let child = augmented_get(&value, index)?;
+    match child {
+        ValueCow::Owned(child) => try_find_owned(child, path),
+        ValueCow::Borrowed(child) => {
+            try_find_borrowed(child, path).map(|v| ValueCow::Owned(v.into_owned()))
+        }
+    }
+}
+
+fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow) -> Option<ValueCow<'o>> {
+    if let Some(arr) = value.as_array() {
+        if let Some(index) = index.to_integer() {
+            arr.get(index).map(ValueCow::Borrowed)
+        } else {
+            match &*index.to_kstr() {
+                "first" => arr.first().map(ValueCow::Borrowed),
+                "last" => arr.last().map(ValueCow::Borrowed),
+                _ => None,
+            }
+        }
+    } else if let Some(obj) = value.as_object() {
+        obj.get(index.to_kstr().as_str()).map(ValueCow::Borrowed)
+    } else {
+        None
+    }
 }
 
 /// Find a `ValueView` nested in an `ObjectView`
-pub fn find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Result<&'o dyn ValueView> {
+pub fn find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Result<ValueCow<'o>> {
     if let Some(res) = try_find(value, path) {
         Ok(res)
     } else {

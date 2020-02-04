@@ -3,7 +3,7 @@ use std::fmt;
 use liquid_error::{Error, Result};
 use liquid_value::Path;
 use liquid_value::Scalar;
-use liquid_value::ValueView;
+use liquid_value::{ValueCow, ValueView};
 
 use super::Expression;
 use super::Runtime;
@@ -36,7 +36,10 @@ impl Variable {
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.try_evaluate(runtime)?;
-            let s = v.as_scalar()?;
+            let s = match v {
+                ValueCow::Owned(v) => v.into_scalar(),
+                ValueCow::Borrowed(v) => v.as_scalar(),
+            }?;
             path.push(s);
         }
         Some(path)
@@ -48,7 +51,12 @@ impl Variable {
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.evaluate(runtime)?;
-            let s = v.as_scalar().ok_or_else(|| {
+            let s = match v {
+                ValueCow::Owned(v) => v.into_scalar(),
+                ValueCow::Borrowed(v) => v.as_scalar(),
+            }
+            .ok_or_else(|| {
+                let v = expr.evaluate(runtime).expect("lookup already verified");
                 Error::with_msg(format!("Expected scalar, found `{}`", v.source()))
             })?;
             path.push(s);
@@ -106,7 +114,7 @@ test_a: ["test"]
         let runtime = RuntimeBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&runtime).unwrap();
         let actual = runtime.stack().get(&actual).unwrap();
-        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test"));
+        assert_eq!(actual, ValueViewCmp::new(&"test"));
     }
 
     #[test]
@@ -124,7 +132,7 @@ test_a: ["test1", "test2"]
         let runtime = RuntimeBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&runtime).unwrap();
         let actual = runtime.stack().get(&actual).unwrap();
-        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&"test2"));
+        assert_eq!(actual, ValueViewCmp::new(&"test2"));
     }
 
     #[test]
@@ -143,6 +151,6 @@ test_a:
         let runtime = RuntimeBuilder::new().set_globals(&globals).build();
         let actual = var.evaluate(&runtime).unwrap();
         let actual = runtime.stack().get(&actual).unwrap();
-        assert_eq!(ValueViewCmp::new(actual), ValueViewCmp::new(&5));
+        assert_eq!(actual, ValueViewCmp::new(&5));
     }
 }

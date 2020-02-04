@@ -25,7 +25,7 @@ pub use liquid_interpreter::Renderable;
 pub use liquid_interpreter::Runtime;
 pub use liquid_interpreter::Template;
 pub use liquid_value::{object, to_object, Object};
-pub use liquid_value::{to_value, value, Value};
+pub use liquid_value::{to_value, value, Value, ValueCow};
 pub use liquid_value::{ObjectView, ValueView};
 
 #[allow(unused_macros)]
