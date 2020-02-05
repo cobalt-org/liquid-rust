@@ -155,7 +155,6 @@ fn test_case_with_else() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#136
 fn test_case_on_size() {
     assert_template_result!(
         "",
@@ -190,7 +189,6 @@ fn test_case_on_size() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#136
 fn test_case_on_size_with_else() {
     assert_template_result!(
         "else",
@@ -405,7 +403,6 @@ fn test_multiple_named_cycles_with_names_from_runtime() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#136
 fn test_size_of_array() {
     let assigns = o!({ "array": [1, 2, 3, 4] });
     assert_template_result!(
@@ -416,7 +413,6 @@ fn test_size_of_array() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#136
 fn test_size_of_hash() {
     let assigns = o!({ "hash": { "a": 1, "b": 2, "c": 3, "d": 4 } });
     assert_template_result!(

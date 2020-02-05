@@ -168,11 +168,26 @@ fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow) -> Option<Valu
             match &*index.to_kstr() {
                 "first" => arr.first().map(ValueCow::Borrowed),
                 "last" => arr.last().map(ValueCow::Borrowed),
+                "size" => Some(ValueCow::Owned(Value::scalar(arr.size()))),
                 _ => None,
             }
         }
     } else if let Some(obj) = value.as_object() {
-        obj.get(index.to_kstr().as_str()).map(ValueCow::Borrowed)
+        let index = index.to_kstr();
+        obj.get(index.as_str())
+            .map(ValueCow::Borrowed)
+            .or_else(|| match index.as_str() {
+                "size" => Some(ValueCow::Owned(Value::scalar(obj.size()))),
+                _ => None,
+            })
+    } else if let Some(scalar) = value.as_scalar() {
+        let index = index.to_kstr();
+        match index.as_str() {
+            "size" => Some(ValueCow::Owned(Value::scalar(
+                scalar.to_kstr().as_str().len() as i32,
+            ))),
+            _ => None,
+        }
     } else {
         None
     }
