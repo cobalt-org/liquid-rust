@@ -225,36 +225,6 @@ impl From<State> for Value {
     }
 }
 
-/// Iterator over a `Value`s keys.
-#[derive(Debug)]
-pub struct Keys<'s>(::std::vec::IntoIter<ScalarCow<'s>>);
-
-impl<'s> Iterator for Keys<'s> {
-    type Item = ScalarCow<'s>;
-
-    #[inline]
-    fn next(&mut self) -> Option<ScalarCow<'s>> {
-        self.0.next()
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.0.size_hint()
-    }
-
-    #[inline]
-    fn count(self) -> usize {
-        self.0.count()
-    }
-}
-
-impl<'s> ExactSizeIterator for Keys<'s> {
-    #[inline]
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
 impl Default for Value {
     fn default() -> Self {
         Self::Nil
