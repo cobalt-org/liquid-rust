@@ -1,6 +1,6 @@
 use itertools;
 use liquid_error::{Error, Result};
-use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueView};
+use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueCow, ValueView};
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
@@ -63,7 +63,7 @@ impl<'g> Stack<'g> {
     /// # Panics
     ///
     /// This method will panic if popping the topmost frame results in an
-    /// empty stack. Given that a context is created with a top-level stack
+    /// empty stack. Given that a runtime is created with a top-level stack
     /// frame already in place, emptying the stack should never happen in a
     /// well-formed program.
     pub(crate) fn pop_frame(&mut self) {
@@ -81,14 +81,14 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<&dyn ValueView> {
+    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<ValueCow<'_>> {
         let frame = self.find_path_frame(path)?;
 
-        frame.try_find(path)
+        liquid_value::try_find(frame.as_value(), path)
     }
 
     /// Recursively index into the stack.
-    pub fn get(&self, path: PathRef<'_, '_>) -> Result<&dyn ValueView> {
+    pub fn get(&self, path: PathRef<'_, '_>) -> Result<ValueCow<'_>> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path
                 .iter()
@@ -101,7 +101,7 @@ impl<'g> Stack<'g> {
                 .context("available variables", globals)
         })?;
 
-        frame.find(path)
+        liquid_value::find(frame.as_value(), path)
     }
 
     fn roots(&self) -> Vec<kstring::KStringCow<'_>> {
@@ -154,7 +154,7 @@ impl<'g> Stack<'g> {
         self.indexes.get(name)
     }
 
-    /// Sets a value in the global context.
+    /// Sets a value in the global runtime.
     pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
     where
         S: Into<kstring::KString>,
@@ -163,12 +163,12 @@ impl<'g> Stack<'g> {
         self.global_frame().insert(name, val)
     }
 
-    /// Sets a value to the rendering context.
+    /// Sets a value to the rendering runtime.
     /// Note that it needs to be wrapped in a liquid::Value.
     ///
     /// # Panics
     ///
-    /// Panics if there is no frame on the local values stack. Context
+    /// Panics if there is no frame on the local values stack. Runtime
     /// instances are created with a top-level stack frame in place, so
     /// this should never happen in a well-formed program.
     pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
@@ -228,9 +228,6 @@ mod test {
         post.insert("number".into(), Value::scalar(42f64));
         stack.set_global("post", Value::Object(post));
         let indexes = [Scalar::new("post"), Scalar::new("number")];
-        assert_eq!(
-            &ValueViewCmp::new(stack.get(&indexes).unwrap()),
-            &ValueViewCmp::new(&42f64)
-        );
+        assert_eq!(&stack.get(&indexes).unwrap(), &ValueViewCmp::new(&42f64));
     }
 }

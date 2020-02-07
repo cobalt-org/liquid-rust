@@ -1,8 +1,8 @@
 use std::fmt::Write;
 
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
@@ -33,8 +33,8 @@ struct PushFilter {
 }
 
 impl Filter for PushFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let element = args.element.to_value();
         let mut array = input
@@ -60,7 +60,7 @@ pub struct Pop;
 struct PopFilter;
 
 impl Filter for PopFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -94,8 +94,8 @@ struct UnshiftFilter {
 }
 
 impl Filter for UnshiftFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let element = args.element.to_value();
         let mut array = input
@@ -121,7 +121,7 @@ pub struct Shift;
 struct ShiftFilter;
 
 impl Filter for ShiftFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         let mut array = input
             .to_value()
             .into_array()
@@ -161,8 +161,8 @@ struct ArrayToSentenceStringFilter {
 }
 
 impl Filter for ArrayToSentenceStringFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let connector = args.connector.unwrap_or("and".into());
 

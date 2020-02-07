@@ -2,11 +2,11 @@ use std::io::Write;
 
 use liquid_core::compiler::TryMatchToken;
 use liquid_core::error::ResultLiquidExt;
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::ValueView;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
@@ -16,9 +16,9 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let name = self.partial.evaluate(context)?.render().to_string();
-        context.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let name = self.partial.evaluate(runtime)?.render().to_string();
+        runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
             let partial = scope
                 .partials()
                 .get(&name)
@@ -88,7 +88,7 @@ mod test {
 
     use liquid_core::compiler;
     use liquid_core::interpreter;
-    use liquid_core::interpreter::ContextBuilder;
+    use liquid_core::interpreter::RuntimeBuilder;
     use liquid_core::Value;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
@@ -141,7 +141,7 @@ mod test {
     pub struct SizeFilter;
 
     impl Filter for SizeFilter {
-        fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
             if let Some(x) = input.as_scalar() {
                 Ok(Value::scalar(x.to_kstr().len() as i32))
             } else if let Some(x) = input.as_array() {
@@ -168,14 +168,14 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut context = ContextBuilder::new()
+        let mut runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        context.stack_mut().set_global("num", Value::scalar(5f64));
-        context
+        runtime.stack_mut().set_global("num", Value::scalar(5f64));
+        runtime
             .stack_mut()
             .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
     }
 
@@ -193,14 +193,14 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut context = ContextBuilder::new()
+        let mut runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        context.stack_mut().set_global("num", Value::scalar(5f64));
-        context
+        runtime.stack_mut().set_global("num", Value::scalar(5f64));
+        runtime
             .stack_mut()
             .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
     }
 
@@ -218,14 +218,14 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut context = ContextBuilder::new()
+        let mut runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        context.stack_mut().set_global("num", Value::scalar(5f64));
-        context
+        runtime.stack_mut().set_global("num", Value::scalar(5f64));
+        runtime
             .stack_mut()
             .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut context);
+        let output = template.render(&mut runtime);
         assert!(output.is_err());
     }
 }

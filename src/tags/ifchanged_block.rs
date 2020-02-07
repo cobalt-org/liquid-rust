@@ -1,10 +1,10 @@
 use std::io::Write;
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
@@ -20,14 +20,14 @@ impl IfChanged {
 }
 
 impl Renderable for IfChanged {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let mut rendered = Vec::new();
         self.if_changed
-            .render_to(&mut rendered, context)
+            .render_to(&mut rendered, runtime)
             .trace_with(|| self.trace().into())?;
 
         let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
-        if context.get_register_mut::<State>().has_changed(&rendered) {
+        if runtime.get_register_mut::<State>().has_changed(&rendered) {
             write!(writer, "{}", rendered).replace("Failed to render")?;
         }
 
@@ -139,8 +139,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context).unwrap();
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "\nHey! \nHey! Numbers are now bigger than 5!");
     }
 }

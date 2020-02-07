@@ -1,6 +1,6 @@
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
@@ -43,7 +43,7 @@ pub struct Size;
 struct SizeFilter;
 
 impl Filter for SizeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if let Some(x) = input.as_scalar() {
             Ok(Value::scalar(x.to_kstr().len() as i32))
         } else if let Some(x) = input.as_array() {
@@ -79,8 +79,8 @@ struct DefaultFilter {
 }
 
 impl Filter for DefaultFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         if input.query_state(liquid_core::value::State::DefaultValue) {
             Ok(args.default.to_value())

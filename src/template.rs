@@ -23,13 +23,13 @@ impl Template {
 
     /// Renders an instance of the Template, using the given globals.
     pub fn render_to(&self, writer: &mut dyn Write, globals: &dyn crate::ObjectView) -> Result<()> {
-        let context = interpreter::ContextBuilder::new().set_globals(globals);
-        let context = match self.partials {
-            Some(ref partials) => context.set_partials(partials.as_ref()),
-            None => context,
+        let runtime = interpreter::RuntimeBuilder::new().set_globals(globals);
+        let runtime = match self.partials {
+            Some(ref partials) => runtime.set_partials(partials.as_ref()),
+            None => runtime,
         };
-        let mut context = context.build();
-        self.template.render_to(writer, &mut context)
+        let mut runtime = runtime.build();
+        self.template.render_to(writer, &mut runtime)
     }
 }
 

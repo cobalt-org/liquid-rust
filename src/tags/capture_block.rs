@@ -2,10 +2,10 @@ use std::io::Write;
 
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::value::Value;
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
@@ -22,14 +22,14 @@ impl Capture {
 }
 
 impl Renderable for Capture {
-    fn render_to(&self, _writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let mut captured = Vec::new();
         self.template
-            .render_to(&mut captured, context)
+            .render_to(&mut captured, runtime)
             .trace_with(|| self.trace().into())?;
 
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
-        context
+        runtime
             .stack_mut()
             .set_global(self.id.to_owned(), Value::scalar(output));
         Ok(())
@@ -97,7 +97,6 @@ mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
     use liquid_core::value::Scalar;
-    use liquid_core::value::ValueViewCmp;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -119,13 +118,13 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut ctx = Context::new();
-        ctx.stack_mut().set_global("item", Value::scalar("potato"));
-        ctx.stack_mut().set_global("i", Value::scalar(42f64));
+        let mut rt = Runtime::new();
+        rt.stack_mut().set_global("item", Value::scalar("potato"));
+        rt.stack_mut().set_global("i", Value::scalar(42f64));
 
-        let output = template.render(&mut ctx).unwrap();
+        let output = template.render(&mut rt).unwrap();
         assert_eq!(
-            ValueViewCmp::new(ctx.stack().get(&[Scalar::new("attribute_name")]).unwrap()),
+            rt.stack().get(&[Scalar::new("attribute_name")]).unwrap(),
             "potato-42-color"
         );
         assert_eq!(output, "");

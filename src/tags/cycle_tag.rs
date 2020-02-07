@@ -5,10 +5,10 @@ use itertools;
 use liquid_core::compiler::TagToken;
 use liquid_core::compiler::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
+use liquid_core::Runtime;
 use liquid_core::ValueView;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
@@ -29,12 +29,12 @@ impl Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let expr = context
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let expr = runtime
             .get_register_mut::<State>()
             .cycle(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
-        let value = expr.evaluate(context).trace_with(|| self.trace().into())?;
+        let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
         write!(writer, "{}", value.render()).replace("Failed to render")?;
         Ok(())
     }
@@ -196,8 +196,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context);
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\none\ntwo\n");
     }
@@ -214,8 +214,8 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        let output = template.render(&mut context);
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\nthree\none\n");
     }
@@ -232,12 +232,12 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("alpha", Value::scalar(1f64));
-        context.stack_mut().set_global("beta", Value::scalar(2f64));
-        context.stack_mut().set_global("gamma", Value::scalar(3f64));
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("alpha", Value::scalar(1f64));
+        runtime.stack_mut().set_global("beta", Value::scalar(2f64));
+        runtime.stack_mut().set_global("gamma", Value::scalar(3f64));
 
-        let output = template.render(&mut context);
+        let output = template.render(&mut runtime);
 
         assert_eq!(output.unwrap(), "1\n2\n3\n1\n");
     }

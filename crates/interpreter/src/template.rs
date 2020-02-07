@@ -2,8 +2,8 @@ use std::io::Write;
 
 use liquid_error::Result;
 
-use super::Context;
 use super::Renderable;
+use super::Runtime;
 
 /// An executable template block.
 #[derive(Debug)]
@@ -19,15 +19,15 @@ impl Template {
 }
 
 impl Renderable for Template {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         for el in &self.elements {
-            el.render_to(writer, context)?;
+            el.render_to(writer, runtime)?;
 
             // Did the last element we processed set an interrupt? If so, we
             // need to abandon the rest of our child elements and just
             // return what we've got. This is usually in response to a
             // `break` or `continue` tag being rendered.
-            if context.interrupt().interrupted() {
+            if runtime.interrupt().interrupted() {
                 break;
             }
         }

@@ -11,6 +11,10 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
 
     quote! {
         impl #impl_generics ::liquid::ValueView for #ident #ty_generics #where_clause {
+            fn as_debug(&self) -> &dyn ::std::fmt::Debug {
+                self
+            }
+
             fn render(&self) -> ::liquid::value::DisplayCow<'_> {
                 ::liquid::value::DisplayCow::Owned(Box::new(::liquid::value::ObjectRender::new(self)))
             }

@@ -2,8 +2,12 @@ use std::fmt;
 use std::slice;
 
 use itertools;
+use kstring::KStringCow;
+use liquid_error::{Error, Result};
 
 use crate::ScalarCow;
+use crate::Value;
+use crate::ValueCow;
 use crate::ValueView;
 
 /// Path to a value in an `Object`.
@@ -113,3 +117,122 @@ impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
 
 /// Path to a value in an `Object`.
 pub type PathRef<'p, 's> = &'p [ScalarCow<'s>];
+
+/// Find a `ValueView` nested in an `ObjectView`
+pub fn try_find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Option<ValueCow<'o>> {
+    let indexes = path.iter();
+    try_find_borrowed(value, indexes)
+}
+
+fn try_find_borrowed<'o, 'i>(
+    value: &'o dyn ValueView,
+    mut path: impl Iterator<Item = &'i ScalarCow<'i>>,
+) -> Option<ValueCow<'o>> {
+    let index = match path.next() {
+        Some(index) => index,
+        None => {
+            return Some(ValueCow::Borrowed(value));
+        }
+    };
+    let child = augmented_get(value, index)?;
+    match child {
+        ValueCow::Owned(child) => try_find_owned(child, path),
+        ValueCow::Borrowed(child) => try_find_borrowed(child, path),
+    }
+}
+
+fn try_find_owned<'o, 'i>(
+    value: Value,
+    mut path: impl Iterator<Item = &'i ScalarCow<'i>>,
+) -> Option<ValueCow<'o>> {
+    let index = match path.next() {
+        Some(index) => index,
+        None => {
+            return Some(ValueCow::Owned(value));
+        }
+    };
+    let child = augmented_get(&value, index)?;
+    match child {
+        ValueCow::Owned(child) => try_find_owned(child, path),
+        ValueCow::Borrowed(child) => {
+            try_find_borrowed(child, path).map(|v| ValueCow::Owned(v.into_owned()))
+        }
+    }
+}
+
+fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow) -> Option<ValueCow<'o>> {
+    if let Some(arr) = value.as_array() {
+        if let Some(index) = index.to_integer() {
+            arr.get(index).map(ValueCow::Borrowed)
+        } else {
+            match &*index.to_kstr() {
+                "first" => arr.first().map(ValueCow::Borrowed),
+                "last" => arr.last().map(ValueCow::Borrowed),
+                "size" => Some(ValueCow::Owned(Value::scalar(arr.size()))),
+                _ => None,
+            }
+        }
+    } else if let Some(obj) = value.as_object() {
+        let index = index.to_kstr();
+        obj.get(index.as_str())
+            .map(ValueCow::Borrowed)
+            .or_else(|| match index.as_str() {
+                "size" => Some(ValueCow::Owned(Value::scalar(obj.size()))),
+                _ => None,
+            })
+    } else if let Some(scalar) = value.as_scalar() {
+        let index = index.to_kstr();
+        match index.as_str() {
+            "size" => Some(ValueCow::Owned(Value::scalar(
+                scalar.to_kstr().as_str().len() as i32,
+            ))),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+/// Find a `ValueView` nested in an `ObjectView`
+pub fn find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Result<ValueCow<'o>> {
+    if let Some(res) = try_find(value, path) {
+        Ok(res)
+    } else {
+        for cur_idx in 1..path.len() {
+            let subpath_end = path.len() - cur_idx;
+            let subpath = &path[0..subpath_end];
+            if let Some(parent) = try_find(value, subpath) {
+                let subpath = itertools::join(subpath.iter().map(ValueView::render), ".");
+                let requested = &path[subpath_end];
+                let available = if let Some(arr) = parent.as_array() {
+                    let mut available = vec![
+                        KStringCow::from_static("first"),
+                        KStringCow::from_static("last"),
+                    ];
+                    if 0 < arr.size() {
+                        available
+                            .insert(0, KStringCow::from_string(format!("0..{}", arr.size() - 1)));
+                    }
+                    available
+                } else if let Some(obj) = parent.as_object() {
+                    let available: Vec<_> = obj.keys().collect();
+                    available
+                } else {
+                    Vec::new()
+                };
+                let available = itertools::join(available.iter(), ", ");
+                return Error::with_msg("Unknown index")
+                    .context("variable", subpath)
+                    .context("requested index", format!("{}", requested.render()))
+                    .context("available indexes", available)
+                    .into_err();
+            }
+        }
+
+        panic!(
+            "Should have already errored for `{}` with path {:?}",
+            value.source(),
+            path
+        );
+    }
+}

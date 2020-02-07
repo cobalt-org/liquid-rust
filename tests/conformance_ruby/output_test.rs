@@ -1,6 +1,6 @@
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterParameters, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 
@@ -17,7 +17,7 @@ pub struct MakeFunnyFilterParser;
 pub struct MakeFunnyFilter;
 
 impl Filter for MakeFunnyFilter {
-    fn evaluate(&self, _input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar("LOL"))
     }
 }
@@ -35,7 +35,7 @@ pub struct CiteFunnyFilterParser;
 pub struct CiteFunnyFilter;
 
 impl Filter for CiteFunnyFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar(format!("LOL: {}", input.render())))
     }
 }
@@ -63,8 +63,8 @@ pub struct AddSmileyFilter {
 }
 
 impl Filter for AddSmileyFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
         let smiley = args.smiley.unwrap_or(":-)".into()).to_string();
         Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
     }
@@ -96,8 +96,8 @@ pub struct AddTagFilter {
 }
 
 impl Filter for AddTagFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let tag = args.tag.unwrap_or("p".into()).to_string();
         let id = args.id.unwrap_or("foo".into()).to_string();
@@ -124,7 +124,7 @@ pub struct ParagraphFilterParser;
 pub struct ParagraphFilter;
 
 impl Filter for ParagraphFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar(format!("<p>{}</p>", input.render())))
     }
 }
@@ -152,8 +152,8 @@ pub struct LinkToFilter {
 }
 
 impl Filter for LinkToFilter {
-    fn evaluate(&self, input: &dyn ValueView, context: &Context<'_>) -> Result<Value> {
-        let args = self.args.evaluate(context)?;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
 
         let name = input;
         let url = args.url.unwrap_or(":-)".into()).to_string();

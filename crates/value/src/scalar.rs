@@ -137,6 +137,10 @@ impl<'s> fmt::Debug for ScalarCow<'s> {
 }
 
 impl<'s> ValueView for ScalarCow<'s> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         self.as_view().render()
     }
@@ -175,6 +179,10 @@ impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
 }
 
 impl ValueView for i32 {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -228,6 +236,10 @@ impl<'s> PartialOrd<i32> for ScalarCow<'s> {
 }
 
 impl ValueView for f64 {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -281,6 +293,10 @@ impl<'s> PartialOrd<f64> for ScalarCow<'s> {
 }
 
 impl ValueView for bool {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -334,6 +350,10 @@ impl<'s> PartialOrd<bool> for ScalarCow<'s> {
 }
 
 impl ValueView for DateTime {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -387,6 +407,10 @@ impl<'s> PartialOrd<DateTime> for ScalarCow<'s> {
 }
 
 impl ValueView for Date {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -440,6 +464,10 @@ impl<'s> PartialOrd<Date> for ScalarCow<'s> {
 }
 
 impl<'s> ValueView for &'s str {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -510,6 +538,10 @@ impl<'s> PartialOrd<str> for ScalarCow<'s> {
 }
 
 impl ValueView for String {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -566,6 +598,10 @@ impl<'s> PartialOrd<String> for ScalarCow<'s> {
 }
 
 impl ValueView for KString {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -622,6 +658,10 @@ impl<'s> PartialOrd<KString> for ScalarCow<'s> {
 }
 
 impl<'s> ValueView for KStringCow<'s> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }
@@ -678,6 +718,10 @@ impl<'s> PartialOrd<KStringCow<'s>> for ScalarCow<'s> {
 }
 
 impl<'s> ValueView for KStringRef<'s> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }

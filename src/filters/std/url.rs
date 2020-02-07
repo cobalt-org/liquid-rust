@@ -1,5 +1,5 @@
-use liquid_core::Context;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 use url::percent_encoding;
@@ -48,7 +48,7 @@ static URL_ENCODE_SET: once_cell::sync::Lazy<UrlEncodeSet> =
     once_cell::sync::Lazy::new(|| UrlEncodeSet("".to_owned()));
 
 impl Filter for UrlEncodeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }
@@ -74,7 +74,7 @@ pub struct UrlDecode;
 struct UrlDecodeFilter;
 
 impl Filter for UrlDecodeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }

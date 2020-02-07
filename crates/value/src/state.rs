@@ -65,6 +65,10 @@ impl fmt::Display for State {
 }
 
 impl ValueView for State {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Borrowed(self)
     }

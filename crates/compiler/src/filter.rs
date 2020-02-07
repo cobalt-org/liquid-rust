@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use liquid_error::Result;
-use liquid_interpreter::{Context, Expression};
+use liquid_interpreter::{Expression, Runtime};
 use liquid_value::{Value, ValueView};
 
 /// A structure that holds the information of a single parameter in a filter.
@@ -58,7 +58,7 @@ pub trait FilterReflection {
 pub trait FilterParameters<'a>: Sized + FilterParametersReflection + Debug + Display {
     type EvaluatedFilterParameters;
     fn from_args(args: FilterArguments) -> Result<Self>;
-    fn evaluate(&'a self, context: &'a Context) -> Result<Self::EvaluatedFilterParameters>;
+    fn evaluate(&'a self, runtime: &'a Runtime) -> Result<Self::EvaluatedFilterParameters>;
 }
 
 /// Structure that holds the unparsed arguments of a filter, both positional and keyword.
@@ -94,7 +94,7 @@ pub struct FilterArguments<'a> {
 /// struct AbsFilter; // There are no parameters, so implements `Default`.
 ///
 /// impl Filter for AbsFilter {
-///     fn evaluate(&self, input: &dyn  ValueView, _context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn  ValueView, _runtime: &Runtime) -> Result<Value> {
 ///         // Implementation of the filter here
 ///     }
 /// }
@@ -110,9 +110,9 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &ValueViwe, context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &ValueViwe, runtime: &Runtime) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
-///         let args = self.args.evaluate(context)?;
+///         let args = self.args.evaluate(runtime)?;
 ///
 ///         // Implementation of the filter here
 ///     }
@@ -128,13 +128,13 @@ pub struct FilterArguments<'a> {
 /// struct ExampleFilter {
 ///     #[parameters] // Mark the FilterParameters struct for `Display`
 ///     args: ExampleArgs, // A struct that implements `FilterParameters`
-///     state: i32, // See `ParseFilter` example for context
+///     state: i32, // See `ParseFilter` example for runtime
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &dyn ValueView, context: &Context) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
-///         let args = self.args.evaluate(context)?;
+///         let args = self.args.evaluate(runtime)?;
 ///
 ///         // Implementation of the filter here
 ///     }
@@ -142,7 +142,7 @@ pub struct FilterArguments<'a> {
 /// ```
 pub trait Filter: Send + Sync + Debug + Display {
     // This will evaluate the expressions and evaluate the filter.
-    fn evaluate(&self, input: &dyn ValueView, context: &Context) -> Result<Value>;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime) -> Result<Value>;
 }
 
 /// A trait to register a new filter in the `liquid::Parser`.

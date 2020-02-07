@@ -68,14 +68,14 @@ impl PartialStore for NullPartials {
     }
 }
 
-/// Create processing context for a template.
-pub struct ContextBuilder<'g> {
+/// Create processing runtime for a template.
+pub struct RuntimeBuilder<'g> {
     globals: Option<&'g dyn ObjectView>,
     partials: Option<&'g dyn PartialStore>,
 }
 
-impl<'g> ContextBuilder<'g> {
-    /// Creates a new, empty rendering context.
+impl<'g> RuntimeBuilder<'g> {
+    /// Creates a new, empty rendering runtime.
     pub fn new() -> Self {
         Self {
             globals: None,
@@ -95,14 +95,14 @@ impl<'g> ContextBuilder<'g> {
         self
     }
 
-    /// Create the `Context`.
-    pub fn build(self) -> Context<'g> {
+    /// Create the `Runtime`.
+    pub fn build(self) -> Runtime<'g> {
         let stack = match self.globals {
             Some(globals) => Stack::with_globals(globals),
             None => Stack::empty(),
         };
         let partials = self.partials.unwrap_or(&NullPartials);
-        Context {
+        Runtime {
             stack,
             partials,
             registers: anymap::AnyMap::new(),
@@ -111,14 +111,14 @@ impl<'g> ContextBuilder<'g> {
     }
 }
 
-impl<'g> Default for ContextBuilder<'g> {
+impl<'g> Default for RuntimeBuilder<'g> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// Processing context for a template.
-pub struct Context<'g> {
+/// Processing runtime for a template.
+pub struct Runtime<'g> {
     stack: Stack<'g>,
     partials: &'g dyn PartialStore,
 
@@ -126,12 +126,12 @@ pub struct Context<'g> {
     interrupt: InterruptState,
 }
 
-impl<'g> Context<'g> {
-    /// Create a default `Context`.
+impl<'g> Runtime<'g> {
+    /// Create a default `Runtime`.
     ///
-    /// See `ContextBuilder` for more control.
+    /// See `RuntimeBuilder` for more control.
     pub fn new() -> Self {
-        Context::default()
+        Runtime::default()
     }
 
     /// Access the block's `InterruptState`.
@@ -177,7 +177,7 @@ impl<'g> Context<'g> {
     /// to the caller.
     pub fn run_in_scope<RvalT, FnT>(&mut self, f: FnT) -> RvalT
     where
-        FnT: FnOnce(&mut Context<'_>) -> RvalT,
+        FnT: FnOnce(&mut Runtime<'_>) -> RvalT,
     {
         self.stack.push_frame();
         let result = f(self);
@@ -194,7 +194,7 @@ impl<'g> Context<'g> {
         f: FnT,
     ) -> RvalT
     where
-        FnT: FnOnce(&mut Context<'_>) -> RvalT,
+        FnT: FnOnce(&mut Runtime<'_>) -> RvalT,
     {
         self.stack.push_named_frame(name);
         let result = f(self);
@@ -203,7 +203,7 @@ impl<'g> Context<'g> {
     }
 }
 
-impl<'g> Default for Context<'g> {
+impl<'g> Default for Runtime<'g> {
     fn default() -> Self {
         Self {
             stack: Stack::empty(),
@@ -227,24 +227,24 @@ mod test {
         let test_path = [Scalar::new("test")];
         let global_path = [Scalar::new("global")];
 
-        let mut ctx = Context::new();
-        ctx.stack_mut().set_global("test", Value::scalar(42f64));
+        let mut rt = Runtime::new();
+        rt.stack_mut().set_global("test", Value::scalar(42f64));
         assert_eq!(
-            &ValueViewCmp::new(ctx.stack().get(&test_path).unwrap()),
+            &rt.stack().get(&test_path).unwrap(),
             &ValueViewCmp::new(&42f64)
         );
 
-        ctx.run_in_scope(|new_scope| {
+        rt.run_in_scope(|new_scope| {
             // assert that values are chained to the parent scope
             assert_eq!(
-                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &new_scope.stack().get(&test_path).unwrap(),
                 &ValueViewCmp::new(&42f64)
             );
 
             // set a new local value, and assert that it overrides the previous value
             new_scope.stack_mut().set("test", Value::scalar(3.14f64));
             assert_eq!(
-                &ValueViewCmp::new(new_scope.stack().get(&test_path).unwrap()),
+                &new_scope.stack().get(&test_path).unwrap(),
                 &ValueViewCmp::new(&3.14f64)
             );
 
@@ -256,11 +256,11 @@ mod test {
 
         // assert that the value has reverted to the old one
         assert_eq!(
-            &ValueViewCmp::new(ctx.stack().get(&test_path).unwrap()),
+            &rt.stack().get(&test_path).unwrap(),
             &ValueViewCmp::new(&42f64)
         );
         assert_eq!(
-            &ValueViewCmp::new(ctx.stack().get(&global_path).unwrap()),
+            &rt.stack().get(&global_path).unwrap(),
             &ValueViewCmp::new(&"some value")
         );
     }

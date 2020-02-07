@@ -20,12 +20,12 @@ pub use liquid_derive::{
     Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
 pub use liquid_error::{Error, Result};
-pub use liquid_interpreter::Context;
 pub use liquid_interpreter::Expression;
 pub use liquid_interpreter::Renderable;
+pub use liquid_interpreter::Runtime;
 pub use liquid_interpreter::Template;
 pub use liquid_value::{object, to_object, Object};
-pub use liquid_value::{to_value, value, Value};
+pub use liquid_value::{to_value, value, Value, ValueCow};
 pub use liquid_value::{ObjectView, ValueView};
 
 #[allow(unused_macros)]
@@ -39,11 +39,11 @@ macro_rules! call_filter {
         let keyword = Box::new(Vec::new().into_iter());
         let args = $crate::compiler::FilterArguments { positional, keyword };
 
-        let context = $crate::Context::default();
+        let runtime = $crate::Runtime::default();
 
         let input = $crate::value!($input);
 
         $crate::ParseFilter::parse(&$filter, args)
-            .and_then(|filter| $crate::Filter::evaluate(&*filter, &input, &context))
+            .and_then(|filter| $crate::Filter::evaluate(&*filter, &input, &runtime))
     }};
 }

@@ -3,16 +3,17 @@ use std::collections::HashMap;
 use std::fmt;
 
 use kstring::KStringCow;
-use liquid_error::{Error, Result};
 
 use crate::map;
 use crate::DisplayCow;
-use crate::PathRef;
 use crate::State;
 use crate::{Value, ValueView};
 
 /// Accessor for objects.
 pub trait ObjectView: ValueView {
+    /// Cast to ValueView
+    fn as_value(&self) -> &dyn ValueView;
+
     /// Returns the number of elements.
     fn size(&self) -> i32;
 
@@ -27,92 +28,16 @@ pub trait ObjectView: ValueView {
     fn contains_key(&self, index: &str) -> bool;
     /// Access a contained `Value`.
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView>;
-
-    /// Find a `ValueView` nested in an `ObjectView`
-    #[inline]
-    fn try_find<'o>(&'o self, path: PathRef<'_, '_>) -> Option<&'o dyn ValueView> {
-        let mut indexes = path.iter();
-        let key = indexes.next()?;
-        let key = key.to_kstr();
-        let value = self.get(key.as_str())?;
-
-        indexes.fold(Some(value), |value, index| {
-            let value = value?;
-            if let Some(arr) = value.as_array() {
-                if let Some(index) = index.to_integer() {
-                    arr.get(index)
-                } else {
-                    match &*index.to_kstr() {
-                        "first" => arr.first(),
-                        "last" => arr.last(),
-                        _ => None,
-                    }
-                }
-            } else if let Some(obj) = value.as_object() {
-                obj.get(index.to_kstr().as_str())
-            } else {
-                None
-            }
-        })
-    }
-
-    /// Find a `ValueView` nested in an `ObjectView`
-    #[inline]
-    fn find<'o>(&'o self, path: PathRef<'_, '_>) -> Result<&'o dyn ValueView> {
-        if let Some(res) = self.try_find(path) {
-            Ok(res)
-        } else {
-            for cur_idx in 1..path.len() {
-                let subpath_end = path.len() - cur_idx;
-                let subpath = &path[0..subpath_end];
-                if let Some(parent) = self.try_find(subpath) {
-                    let subpath = itertools::join(subpath.iter().map(ValueView::render), ".");
-                    let requested = &path[subpath_end];
-                    let available = if let Some(arr) = parent.as_array() {
-                        let mut available = vec![
-                            KStringCow::from_static("first"),
-                            KStringCow::from_static("last"),
-                        ];
-                        if 0 < arr.size() {
-                            available.insert(
-                                0,
-                                KStringCow::from_string(format!("0..{}", arr.size() - 1)),
-                            );
-                        }
-                        available
-                    } else if let Some(obj) = parent.as_object() {
-                        let available: Vec<_> = obj.keys().collect();
-                        available
-                    } else {
-                        Vec::new()
-                    };
-                    let available = itertools::join(available.iter(), ", ");
-                    return Error::with_msg("Unknown index")
-                        .context("variable", subpath)
-                        .context("requested index", format!("{}", requested.render()))
-                        .context("available indexes", available)
-                        .into_err();
-                }
-            }
-
-            let requested = path
-                .get(0)
-                .expect("`Path` guarantees at least one element")
-                .to_kstr()
-                .into_owned();
-            let available = itertools::join(self.keys(), ", ");
-            Error::with_msg("Unknown variable")
-                .context("requested variable", requested)
-                .context("available variables", available)
-                .into_err()
-        }
-    }
 }
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
 pub type Object = map::Map;
 
 impl ValueView for Object {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -143,6 +68,10 @@ impl ValueView for Object {
 }
 
 impl ObjectView for Object {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -192,6 +121,10 @@ impl ObjectIndex for kstring::KString {
 }
 
 impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for HashMap<K, V, S> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -226,6 +159,10 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for Ha
 }
 
 impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for HashMap<K, V, S> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -255,6 +192,10 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
 }
 
 impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ObjectRender { s: self }))
     }
@@ -289,6 +230,10 @@ impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
 }
 
 impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -364,5 +309,20 @@ impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
             write!(f, "{}{}", k, v.render())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_object() {
+        let obj = Object::new();
+        println!("{}", obj.source());
+        let object: &dyn ObjectView = &obj;
+        println!("{}", object.source());
+        let view: &dyn ValueView = object.as_value();
+        println!("{}", view.source());
     }
 }

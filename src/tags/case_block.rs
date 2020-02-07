@@ -5,11 +5,11 @@ use liquid_core::compiler::BlockElement;
 use liquid_core::compiler::TryMatchToken;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::value::{ValueView, ValueViewCmp};
-use liquid_core::Context;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
@@ -24,10 +24,10 @@ impl CaseOption {
         CaseOption { args, template }
     }
 
-    fn evaluate(&self, value: &dyn ValueView, context: &Context<'_>) -> Result<bool> {
+    fn evaluate(&self, value: &dyn ValueView, runtime: &Runtime<'_>) -> Result<bool> {
         for a in &self.args {
-            let v = a.evaluate(context)?;
-            if ValueViewCmp::new(v) == ValueViewCmp::new(value) {
+            let v = a.evaluate(runtime)?;
+            if v == ValueViewCmp::new(value) {
                 return Ok(true);
             }
         }
@@ -53,13 +53,13 @@ impl Case {
 }
 
 impl Renderable for Case {
-    fn render_to(&self, writer: &mut dyn Write, context: &mut Context<'_>) -> Result<()> {
-        let value = self.target.evaluate(context)?.to_value();
+    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+        let value = self.target.evaluate(runtime)?.to_value();
         for case in &self.cases {
-            if case.evaluate(&value, context)? {
+            if case.evaluate(&value, runtime)? {
                 return case
                     .template
-                    .render_to(writer, context)
+                    .render_to(writer, runtime)
                     .trace_with(|| case.trace().into())
                     .trace_with(|| self.trace().into())
                     .context_key_with(|| self.target.to_string().into())
@@ -69,7 +69,7 @@ impl Renderable for Case {
 
         if let Some(ref t) = self.else_block {
             return t
-                .render_to(writer, context)
+                .render_to(writer, runtime)
                 .trace("{{% else %}}")
                 .trace_with(|| self.trace().into())
                 .context_key_with(|| self.target.to_string().into())
@@ -225,18 +225,18 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("x", Value::scalar(2f64));
-        assert_eq!(template.render(&mut context).unwrap(), "two");
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("x", Value::scalar(2f64));
+        assert_eq!(template.render(&mut runtime).unwrap(), "two");
 
-        context.stack_mut().set_global("x", Value::scalar(3f64));
-        assert_eq!(template.render(&mut context).unwrap(), "three and a half");
+        runtime.stack_mut().set_global("x", Value::scalar(3f64));
+        assert_eq!(template.render(&mut runtime).unwrap(), "three and a half");
 
-        context.stack_mut().set_global("x", Value::scalar(4f64));
-        assert_eq!(template.render(&mut context).unwrap(), "three and a half");
+        runtime.stack_mut().set_global("x", Value::scalar(4f64));
+        assert_eq!(template.render(&mut runtime).unwrap(), "three and a half");
 
-        context.stack_mut().set_global("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut context).unwrap(), "otherwise");
+        runtime.stack_mut().set_global("x", Value::scalar("nope"));
+        assert_eq!(template.render(&mut runtime).unwrap(), "otherwise");
     }
 
     #[test]
@@ -254,9 +254,9 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut context).unwrap(), "");
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("x", Value::scalar("nope"));
+        assert_eq!(template.render(&mut runtime).unwrap(), "");
     }
 
     #[test]

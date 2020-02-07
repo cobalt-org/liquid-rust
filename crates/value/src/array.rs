@@ -9,6 +9,9 @@ use crate::ValueView;
 
 /// Accessor for arrays.
 pub trait ArrayView: ValueView {
+    /// Cast to ValueView
+    fn as_value(&self) -> &dyn ValueView;
+
     /// Returns the number of elements.
     fn size(&self) -> i32;
 
@@ -33,6 +36,10 @@ pub trait ArrayView: ValueView {
 pub type Array = Vec<Value>;
 
 impl<T: ValueView> ValueView for Vec<T> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
     fn render(&self) -> DisplayCow<'_> {
         DisplayCow::Owned(Box::new(ArrayRender { s: self }))
     }
@@ -64,6 +71,10 @@ impl<T: ValueView> ValueView for Vec<T> {
 }
 
 impl<T: ValueView> ArrayView for Vec<T> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
     fn size(&self) -> i32 {
         self.len() as i32
     }
@@ -122,5 +133,20 @@ impl<'s, T: ValueView> fmt::Display for ArrayRender<'s, T> {
             write!(f, "{}", item.render())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_array() {
+        let arr = Array::new();
+        println!("{}", arr.source());
+        let array: &dyn ArrayView = &arr;
+        println!("{}", array.source());
+        let view: &dyn ValueView = array.as_value();
+        println!("{}", view.source());
     }
 }

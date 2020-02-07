@@ -1,17 +1,17 @@
 use std::io::Write;
 
 use liquid_core::compiler::BlockElement;
-use liquid_core::Context;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
 #[derive(Copy, Clone, Debug)]
 struct Comment;
 
 impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut dyn Write, _context: &mut Context<'_>) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, _runtime: &mut Runtime<'_>) -> Result<()> {
         Ok(())
     }
 }
@@ -93,9 +93,9 @@ mod test {
             .map(interpreter::Template::new)
             .unwrap();
 
-        let mut context = Context::new();
+        let mut runtime = Runtime::new();
 
-        template.render(&mut context).unwrap()
+        template.render(&mut runtime).unwrap()
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use liquid_core::Context;
 use liquid_core::Result;
+use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
 
@@ -12,7 +12,7 @@ pub struct MoneyFilterParser;
 pub struct MoneyFilter;
 
 impl Filter for MoneyFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar(format!(" {}$ ", input.render())))
     }
 }
@@ -30,7 +30,7 @@ pub struct MoneyWithUnderscoreFilterParser;
 pub struct MoneyWithUnderscoreFilter;
 
 impl Filter for MoneyWithUnderscoreFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar(format!(" {}$ ", input.render())))
     }
 }
@@ -56,7 +56,7 @@ pub struct SubstituteFilterParser;
 pub struct SubstituteFilter;
 
 impl Filter for SubstituteFilter {
-    fn evaluate(&self, input: &dyn ValueView, _context: &Context<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         Ok(Value::scalar(format!(
             "No keyword argument support: {}",
             input.render()

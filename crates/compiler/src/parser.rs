@@ -154,7 +154,7 @@ fn parse_variable(variable: Pair) -> Variable {
 /// Parses an `Expression` from a `Pair` with a value.
 ///
 /// Do not confuse this value with `liquid-value`'s `Value`.
-/// In this context, value refers to either a literal value or a variable.
+/// In this runtime, value refers to either a literal value or a variable.
 ///
 /// This `Pair` must be `Rule::Value`.
 fn parse_value(value: Pair) -> Expression {
@@ -950,7 +950,7 @@ impl<'a> TagToken<'a> {
     /// Tries to obtain a value from this token.
     ///
     /// Do not confuse this value with `liquid-value`'s `Value`.
-    /// In this context, value refers to either a literal value or a variable.
+    /// In this runtime, value refers to either a literal value or a variable.
     pub fn expect_value(mut self) -> TryMatchToken<'a, Expression> {
         match self.unwrap_value() {
             Ok(t) => TryMatchToken::Matches(parse_value(t)),
@@ -1034,7 +1034,7 @@ impl<'a> TagToken<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use liquid_interpreter::{Context, Template};
+    use liquid_interpreter::{Runtime, Template};
 
     #[test]
     fn test_parse_literal() {
@@ -1137,30 +1137,30 @@ mod test {
     fn test_whitespace_control() {
         let options = Language::default();
 
-        let mut context = Context::new();
-        context.stack_mut().set_global("exp", Value::scalar(5));
+        let mut runtime = Runtime::new();
+        runtime.stack_mut().set_global("exp", Value::scalar(5));
 
         let text = "    \n    {{ exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
 
         assert_eq!(output, "    \n    5    \n    ");
 
         let text = "    \n    {{- exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
 
         assert_eq!(output, "5    \n    ");
 
         let text = "    \n    {{ exp -}}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
 
         assert_eq!(output, "    \n    5");
 
         let text = "    \n    {{- exp -}}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut context).unwrap();
+        let output = template.render(&mut runtime).unwrap();
 
         assert_eq!(output, "5");
     }

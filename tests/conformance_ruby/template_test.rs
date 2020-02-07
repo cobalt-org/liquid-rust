@@ -96,19 +96,19 @@ fn test_render_length_persists_between_blocks() {
 
 #[test]
 #[should_panic]
-fn test_default_resource_limits_unaffected_by_render_with_context() {
+fn test_default_resource_limits_unaffected_by_render_with_runtime() {
     panic!("Implementation specific: render API");
 }
 
 #[test]
 #[should_panic]
-fn test_can_use_drop_as_context() {
+fn test_can_use_drop_as_runtime() {
     panic!("Implementation specific: drops");
 }
 
 #[test]
 #[should_panic]
-fn test_render_bang_force_rethrow_errors_on_passed_context() {
+fn test_render_bang_force_rethrow_errors_on_passed_runtime() {
     panic!("Implementation specific: error API");
 }
 
