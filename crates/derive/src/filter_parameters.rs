@@ -481,67 +481,69 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
     let ty = &field.meta.ty;
 
     let to_type = match ty {
-        FilterParameterType::Value => quote! {},
+        FilterParameterType::Value => quote! { ::std::result::Result::Ok(#name) },
         FilterParameterType::Integer => quote! {
-            .as_scalar()
+            #name.as_scalar()
             .and_then(|s| s.to_integer())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Whole number expected")
-            )?
+            )
         },
         FilterParameterType::Float => quote! {
-            .as_scalar()
+            #name.as_scalar()
             .and_then(|s| s.to_float())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Fractional number expected")
-            )?
+            )
         },
         FilterParameterType::Bool => quote! {
-            .as_scalar()
+            #name.as_scalar()
             .and_then(|s| s.to_bool())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Boolean expected")
-            )?
+            )
         },
         FilterParameterType::DateTime => quote! {
-            .as_scalar()
+            #name.as_scalar()
             .and_then(|s| s.to_date_time())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "DateTime expected")
-            )?
+            )
         },
         FilterParameterType::Date => quote! {
-            .as_scalar()
+            #name.as_scalar()
             .and_then(|s| s.to_date())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
                     .context("cause", "Date expected")
-            )?
+            )
         },
         FilterParameterType::Str => quote! {
-            .to_kstr()
+            ::std::result::Result::Ok(#name.to_kstr())
         },
     };
 
     if field.is_optional() {
         quote! {
-            let #name = match &self.#name {
-                ::std::option::Option::Some(field) => ::std::option::Option::Some(field.evaluate(context)? #to_type),
-                ::std::option::Option::None => ::std::option::Option::None,
-            };
+            let #name = self.#name.as_ref().map(|field| {
+                let #name = field.evaluate(context)?;
+                let #name = #to_type?;
+                ::std::result::Result::Ok(#name)
+            }).transpose()?;
         }
     } else {
         quote! {
-            let #name = self.#name.evaluate(context)? #to_type ;
+            let #name = self.#name.evaluate(context)?;
+            let #name = #to_type?;
         }
     }
 }
