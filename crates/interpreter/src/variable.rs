@@ -57,7 +57,9 @@ impl Variable {
             }
             .ok_or_else(|| {
                 let v = expr.evaluate(runtime).expect("lookup already verified");
-                Error::with_msg(format!("Expected scalar, found `{}`", v.source()))
+                let v = v.source();
+                let msg = format!("Expected scalar, found `{}`", v);
+                Error::with_msg(msg)
             })?;
             path.push(s);
         }
