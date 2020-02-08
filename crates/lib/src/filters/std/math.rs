@@ -412,16 +412,13 @@ impl Filter for RoundFilter {
             .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
 
-        if n == 0 {
-            Ok(Value::scalar(input.round() as i32))
-        } else if n < 0 {
-            Err(invalid_argument(
-                "decimal_places",
-                "Positive number expected",
-            ))
-        } else {
-            let multiplier = 10.0_f64.powi(n);
-            Ok(Value::scalar((input * multiplier).round() / multiplier))
+        match n.cmp(&0) {
+            std::cmp::Ordering::Equal => Ok(Value::scalar(input.round() as i32)),
+            std::cmp::Ordering::Less => Ok(Value::scalar(input.round() as i32)),
+            _ => {
+                let multiplier = 10.0_f64.powi(n);
+                Ok(Value::scalar((input * multiplier).round() / multiplier))
+            }
         }
     }
 }

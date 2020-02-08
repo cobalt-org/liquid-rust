@@ -15,6 +15,7 @@ mod parse_tree_visitor_test;
 mod parsing_quirks_test;
 mod render_profiling_test;
 mod security_test;
+#[cfg(feature = "stdlib")]
 mod standard_filter_test;
 mod template_test;
 mod trim_mode_test;

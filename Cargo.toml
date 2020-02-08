@@ -9,6 +9,7 @@ members = [
   "crates/help-md",
   "crates/bin",
   "crates/kstring",
+  "crates/lib",
 ]
 
 [package]
@@ -24,28 +25,23 @@ keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT"
 edition = "2018"
 
+[package.metadata.docs.rs]
+features = [ "default", "object_sorted" ]
+
 [badges]
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [features]
-default = ["extra-filters", "serde"]
-extra-filters = []
-jekyll-filters = []
+default = ["stdlib", "serde"]
+stdlib = ["liquid-lib/stdlib"]
 
 [dependencies]
-regex = "1.0"
-once_cell = "1.0"
-chrono = "0.4"
-unicode-segmentation = "1.2"
-itertools = "0.8.0"
-url = "1.5"
 doc-comment = "0.3"
 kstring = { version = "0.1.0", path = "crates/kstring" }
 liquid-core = { version = "^0.19", path = "crates/core" }
 liquid-derive = { version = "^0.19", path = "crates/derive" }
-
+liquid-lib = { version = "^0.19", path = "crates/lib", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"] }
-deunicode = "1.0.0"
 
 [dev-dependencies]
 difference = "2.0"
@@ -54,3 +50,4 @@ tera = "1.0"
 handlebars = "3.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+regex = "1.0"

@@ -236,12 +236,10 @@ where
 /// present in the map.
 ///
 /// ```rust
-/// # fn main() {
 /// #     let mut map = liquid_value::map::Map::new();
 /// #     map.insert("key".into(), liquid_value::Value::Nil);
 /// #
 /// map["key"] = liquid_value::value!("value");
-/// # }
 /// ```
 impl<'a, Q: ?Sized> ops::IndexMut<&'a Q> for Map
 where
@@ -414,12 +412,10 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// let mut map = liquid_value::map::Map::new();
     /// map.entry("liquid").or_insert(liquid_value::value!(12));
     ///
     /// assert_eq!(map["liquid"], liquid_value::value!(12));
-    /// # }
     /// ```
     pub fn or_insert(self, default: Value) -> &'a mut Value {
         match self {
@@ -435,12 +431,10 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// let mut map = liquid_value::map::Map::new();
     /// map.entry("liquid").or_insert_with(|| liquid_value::value!("hoho"));
     ///
     /// assert_eq!(map["liquid"], liquid_value::value!("hoho"));
-    /// # }
     /// ```
     pub fn or_insert_with<F>(self, default: F) -> &'a mut Value
     where
@@ -482,7 +476,6 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -493,7 +486,6 @@ impl<'a> VacantEntry<'a> {
     ///     }
     ///     Entry::Occupied(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn insert(self, value: Value) -> &'a mut Value {
@@ -507,7 +499,6 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -519,7 +510,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn key(&self) -> &Key {
@@ -531,7 +521,6 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -543,7 +532,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn get(&self) -> &Value {
@@ -557,7 +545,6 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_value::ValueView;
     /// #
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -569,7 +556,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn get_mut(&mut self) -> &mut Value {
@@ -583,7 +569,6 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_value::ValueView;
     /// #
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -595,7 +580,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn into_mut(self) -> &'a mut Value {
@@ -608,7 +592,6 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -621,7 +604,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn insert(&mut self, value: Value) -> Value {
@@ -633,7 +615,6 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # fn main() {
     /// use liquid_value::map::Entry;
     ///
     /// let mut map = liquid_value::map::Map::new();
@@ -645,7 +626,6 @@ impl<'a> OccupiedEntry<'a> {
     ///     }
     ///     Entry::Vacant(_) => unimplemented!(),
     /// }
-    /// # }
     /// ```
     #[inline]
     pub fn remove(self) -> Value {

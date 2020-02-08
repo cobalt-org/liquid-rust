@@ -2,10 +2,12 @@ use std::borrow;
 use std::fmt;
 use std::sync;
 
-use liquid_core::compiler::Language;
-use liquid_core::error::Error;
-use liquid_core::error::Result;
-use liquid_core::interpreter::PartialStore;
+use itertools;
+
+use crate::compiler::Language;
+use crate::error::Error;
+use crate::error::Result;
+use crate::interpreter::PartialStore;
 
 mod eager;
 mod inmemory;

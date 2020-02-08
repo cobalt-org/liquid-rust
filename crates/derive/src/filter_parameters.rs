@@ -206,7 +206,7 @@ impl<'a> FilterParameter<'a> {
 
                 Ok(path)
             }
-            ty => return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
+            ty => Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
         }
     }
 
@@ -231,24 +231,24 @@ impl<'a> FilterParameter<'a> {
 
                     if let GenericArgument::Type(ty) = arg {
                         let path = Self::get_type_name(ty)?;
-                        if path.ident.to_string().as_str() == "Expression" {
-                            if path.arguments.is_empty() {
-                                return Ok(true);
-                            }
+                        if path.ident.to_string().as_str() == "Expression"
+                            && path.arguments.is_empty()
+                        {
+                            return Ok(true);
                         }
                     }
-                    return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE));
+                    Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE))
                 }
-                _ => return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
+                _ => Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
             },
             "Expression" => {
                 if !path.arguments.is_empty() {
-                    return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE));
+                    Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE))
                 } else {
-                    return Ok(false);
+                    Ok(false)
                 }
             }
-            _ => return Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
+            _ => Err(Error::new_spanned(ty, Self::ERROR_INVALID_TYPE)),
         }
     }
 

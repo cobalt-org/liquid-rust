@@ -8,10 +8,12 @@ use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter;
 
 use super::Template;
-use crate::filters;
-use crate::partials;
 use crate::reflection;
-use crate::tags;
+use liquid_core::partials;
+#[cfg(feature = "stdlib")]
+use liquid_lib::filters;
+#[cfg(feature = "stdlib")]
+use liquid_lib::tags;
 
 /// Storage for partial-templates.
 ///
@@ -34,6 +36,7 @@ impl ParserBuilder<Partials> {
         Self::default()
     }
 
+    #[cfg(feature = "stdlib")]
     pub fn with_liquid() -> Self {
         Self::new().liquid()
     }
@@ -43,11 +46,13 @@ impl<P> ParserBuilder<P>
 where
     P: partials::PartialCompiler,
 {
+    #[cfg(feature = "stdlib")]
     /// Create a Liquid parser with built-in Liquid features
     pub fn liquid(self) -> Self {
         self.liquid_tags().liquid_blocks().liquid_filters()
     }
 
+    #[cfg(feature = "stdlib")]
     /// Register built-in Liquid tags
     pub fn liquid_tags(self) -> Self {
         self.tag(tags::AssignTag)
@@ -59,6 +64,7 @@ where
             .tag(tags::DecrementTag)
     }
 
+    #[cfg(feature = "stdlib")]
     /// Register built-in Liquid blocks
     pub fn liquid_blocks(self) -> Self {
         self.block(tags::RawBlock)
@@ -72,6 +78,7 @@ where
             .block(tags::CaseBlock)
     }
 
+    #[cfg(feature = "stdlib")]
     /// Register built-in Liquid filters
     pub fn liquid_filters(self) -> Self {
         self.filter(filters::std::Abs)
@@ -121,36 +128,6 @@ where
             .filter(filters::std::Upcase)
             .filter(filters::std::UrlDecode)
             .filter(filters::std::UrlEncode)
-    }
-
-    /// Register non-standard filters
-    #[cfg(not(feature = "extra-filters"))]
-    pub fn extra_filters(self) -> Self {
-        self
-    }
-
-    /// Register non-standard filters
-    #[cfg(feature = "extra-filters")]
-    pub fn extra_filters(self) -> Self {
-        self.filter(filters::extra::DateInTz)
-            .filter(filters::extra::Pluralize)
-    }
-
-    /// Register non-standard filters
-    #[cfg(not(feature = "jekyll-filters"))]
-    pub fn jekyll_filters(self) -> Self {
-        self
-    }
-
-    /// Register non-standard filters
-    #[cfg(feature = "jekyll-filters")]
-    pub fn jekyll_filters(self) -> Self {
-        self.filter(filters::jekyll::Slugify)
-            .filter(filters::jekyll::Pop)
-            .filter(filters::jekyll::Push)
-            .filter(filters::jekyll::Shift)
-            .filter(filters::jekyll::Unshift)
-            .filter(filters::jekyll::ArrayToSentenceString)
     }
 
     /// Inserts a new custom block into the parser

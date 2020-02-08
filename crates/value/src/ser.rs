@@ -89,92 +89,66 @@ impl serde::Serializer for ValueSerializer {
 
     #[inline]
     fn serialize_bool(self, value: bool) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_bool(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_bool(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_i8(self, value: i8) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_i8(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_i8(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_i16(self, value: i16) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_i16(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_i16(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_i32(self, value: i32) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_i32(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_i32(value).map(Value::Scalar)
     }
 
     fn serialize_i64(self, value: i64) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_i64(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_i64(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_u8(self, value: u8) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_u8(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_u8(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_u16(self, value: u16) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_u16(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_u16(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_u32(self, value: u32) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_u32(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_u32(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_u64(self, value: u64) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_u64(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_u64(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_f32(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_f32(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_f64(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_f64(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_char(self, value: char) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_char(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_char(value).map(Value::Scalar)
     }
 
     #[inline]
     fn serialize_str(self, value: &str) -> Result<Value, SerError> {
-        ScalarSerializer
-            .serialize_str(value)
-            .map(|s| Value::Scalar(s))
+        ScalarSerializer.serialize_str(value).map(Value::Scalar)
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Value, SerError> {
@@ -201,7 +175,7 @@ impl serde::Serializer for ValueSerializer {
     ) -> Result<Value, SerError> {
         ScalarSerializer
             .serialize_unit_variant(name, variant_index, variant)
-            .map(|s| Value::Scalar(s))
+            .map(Value::Scalar)
     }
 
     #[inline]
