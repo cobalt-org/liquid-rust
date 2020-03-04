@@ -30,8 +30,6 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 [features]
 default = ["extra-filters", "serde"]
 extra-filters = []
-# Ensure keys in `Value`s `Object`s to be sorted.
-object_sorted = []
 jekyll-filters = []
 
 [dependencies]
