@@ -1,3 +1,121 @@
+<a name="0.20.0"></a>
+## 0.20.0 (2020-03-12)
+
+This release resolves a lot of breaking changes we've been holding off on.  This doesn't make us ready for 1.0 yet but this closes the gap significantly.
+
+### Highlights
+
+#### Conformance improvements
+
+We're striving to match the Ruby implementations behavior and this release gets us closer:
+- `where` trait implemented by or17191
+- Improvements to `sort`, `sort_natural`, `compact`, and other filters by or17191
+- Support for `{{ var.size }}`
+
+In addition, we've made it more clear what functionality is a part of core liquid, Jekyll's extensions, Shopify's extensions, or our own extensions.
+
+#### Improved API stability for `liquid`
+
+The `liquid` crate has been stripped down to what is needed for parsing and rendering a template.
+- `liquid_core` was created as a convenience for plugin authors.
+- `liquid_lib` has all plugins so `liquid` can focus on providing the `stdlib`
+  while non-`stdlib` plugins can more easily evolve.
+
+#### `render` can accept Rust-native types
+
+Previously, you had to construct a `liquid::value::Object` (a newtype for a `HashMap`) to pass to `render`.  Now, you can create a `struct` and pass it in instead:
+
+```rust
+#[derive(liquid::ObjectView, liquid::ValueView, Debug, Default)]
+struct Data {
+    foo: i32,
+    bar: String,
+}
+
+let data = Data::default();
+let template = todo!();
+let s = template.render(&data)?;
+```
+
+In addition to the ergonomic improvements, this can help get the most performance:
+* Can reuse borrowed data rather than having to switch everything to an owned type.
+* Avoid allocating for the `HashMap` entries.
+
+#### Other `render` ergonomic improvements
+
+There are now other easy ways to construct your `data`, depending on your application:
+```rust
+let template = todo!();
+
+let object = liquid::Object::new()
+let s = template.render(&object)?;
+
+let data = Data::default();
+let s = template.render(&data)?;
+
+let data = todo!();
+let object = data.to_object()?;  // Requires serde
+let s = template.render(&object)?;
+
+let object = liquid::object!({
+    "foo" => 0,
+    "bar" => "Hello World",
+});
+let s = template.render(&object)?;
+```
+
+#### String Optimizations
+
+A core data type in liquid is an "Object", a mapping of strings to `Value`s. Strings used as keys within a template engine are:
+* Immutable, not needing separate `size` and `capacity` fields of a `String`. `Box<str>` is more appropriate.
+* Generally short, gaining a lot from small-string optimizations
+* Depending on the application, `'static`.  Something like a `Cow<'static, str>`. Even better if it can preserve `'static` getting a reference and going back to an owned value.
+
+Combining these together gives us the new `kstring` crate.
+
+### Details
+
+#### Breaking Changes
+
+* String types have been switched to `kstring` types for small string and `'static` optimizations.
+* Plugins (tags, filters, and blocks)
+  * Reflection traits are no longer a super trait but instead a getter is used.
+  * Filter API changed to accept a `&dyn ValueView`
+  * `liquid` is stripped down to being about to parse and render. For tag, filter, and block plugins, `liquid_core` will have everything you need.
+* Value:
+  * Functionality has moved from `Value` to `ValueView`, `ArrayView`, and `ObjectView`.
+  * `Date` was renamed to `DateTime`.
+  * `DateTime` is now a newtype.
+* Library:
+  * `liquid` no longer exposes filters, tags, or blocks.  Depend on `liquid_lib` and enable the relevant features to get them.
+  * `ParserBuilder`s `extra_filters` and `jekyll_filters` are no more.  Instead depend on `liquid_lib`, enable the `extras`, `shopify`, or `jekyll` features and manually add them.
+  * `ParserBuilder`s `with_liquid` and `liquid` have been renamed to `with_stdlib` and `stdlib`.
+
+#### Features
+
+* Value
+  * Scalar extended with a date-only type (#253 fixed in #363).
+  * Support structs being `ObjectView` (#379).
+  * `to_scalar` and `to_object` functions along with existing `to_value` (#381).
+  * `scalar`, `array`, and `object` macros along with existing `value` (#381).
+  * derive macros for `ObjectView` / `ValueView` (#385).
+  * Support `.size` (#136 fixed in #390).
+* Parser:
+  * Initial reflection support (#357).
+* Render:
+  * Make accessing variables faster (#386).
+* Filters:
+  * Support the `where` filter (#291 fixed in #349)
+  * `sort`, `sort_natural`, `compact` now accept `property` parameter (#333, #334, #335 fixed in #352).
+
+#### Fixes
+
+* Reflection
+  * `'static` lifetimes were relaxed (#367).
+* Filters:
+  * `sort` order of `nil` was incorrect (#262 fixed in #352).
+  * `sort` should work on scalars (#250 fixed in #352).
+
 <a name="0.19.0"></a>
 ## 0.19.0 (2019-06-08)
 
