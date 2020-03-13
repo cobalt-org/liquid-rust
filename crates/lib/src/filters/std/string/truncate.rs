@@ -84,7 +84,6 @@ impl Filter for TruncateFilter {
                 .take(l)
                 .collect::<Vec<&str>>()
                 .join("")
-                .to_string()
                 + truncate_string.as_str();
             Value::scalar(result)
         } else {

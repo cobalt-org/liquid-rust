@@ -1,12 +1,12 @@
 use std::fmt;
 use std::sync;
 
-use liquid_core::compiler;
-use liquid_core::compiler::Language;
-use liquid_core::error::Result;
-use liquid_core::interpreter;
-use liquid_core::interpreter::PartialStore;
-use liquid_core::interpreter::Renderable;
+use crate::compiler;
+use crate::compiler::Language;
+use crate::error::Result;
+use crate::interpreter;
+use crate::interpreter::PartialStore;
+use crate::interpreter::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;

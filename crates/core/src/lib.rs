@@ -11,6 +11,8 @@ pub mod value {
     pub use liquid_value::*;
 }
 
+pub mod partials;
+
 pub use liquid_compiler::Language;
 pub use liquid_compiler::TagTokenIter;
 pub use liquid_compiler::{BlockReflection, ParseBlock, TagBlock};

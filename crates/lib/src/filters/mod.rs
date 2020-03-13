@@ -1,12 +1,16 @@
 use liquid_core::Error;
 
+#[cfg(feature = "stdlib")]
 pub mod std;
 
-#[cfg(feature = "jekyll-filters")]
+#[cfg(feature = "jekyll")]
 pub mod jekyll;
 
-#[cfg(feature = "extra-filters")]
+#[cfg(feature = "extra")]
 pub mod extra;
+
+#[cfg(feature = "shopify")]
+pub mod shopify;
 
 pub fn invalid_input<S>(cause: S) -> Error
 where

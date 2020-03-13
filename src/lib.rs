@@ -25,10 +25,6 @@ mod parser;
 mod reflection;
 mod template;
 
-pub mod filters;
-pub mod partials;
-pub mod tags;
-
 #[doc(hidden)]
 pub use liquid_core::value;
 

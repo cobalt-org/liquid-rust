@@ -54,6 +54,6 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
 
     match generate_reflection(&filter_parser) {
         Ok(output) => output,
-        Err(err) => return err.to_compile_error(),
+        Err(err) => err.to_compile_error(),
     }
 }

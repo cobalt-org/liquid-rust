@@ -46,57 +46,6 @@ pub fn capitalize() {
 }
 
 #[test]
-#[cfg(feature = "extra-filters")]
-pub fn pluralize_none() {
-    let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals = liquid::object!({
-        "count": 0,
-    });
-    let template = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
-        .build()
-        .unwrap()
-        .parse(text)
-        .unwrap();
-    let output = template.render(&globals).unwrap();
-    assert_eq!(output, "many".to_string());
-}
-
-#[test]
-#[cfg(feature = "extra-filters")]
-pub fn pluralize_singular() {
-    let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals = liquid::object!({
-        "count": 1,
-    });
-    let template = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
-        .build()
-        .unwrap()
-        .parse(text)
-        .unwrap();
-    let output = template.render(&globals).unwrap();
-    assert_eq!(output, "one".to_string());
-}
-
-#[test]
-#[cfg(feature = "extra-filters")]
-pub fn pluralize_plural() {
-    let text = "{{ count | pluralize: 'one', 'many'}}";
-    let globals = liquid::object!({
-        "count": 10,
-    });
-    let template = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
-        .build()
-        .unwrap()
-        .parse(text)
-        .unwrap();
-    let output = template.render(&globals).unwrap();
-    assert_eq!(output, "many".to_string());
-}
-
-#[test]
 pub fn minus() {
     let text = "{{ num | minus : 2 }}";
     let globals = liquid::object!({

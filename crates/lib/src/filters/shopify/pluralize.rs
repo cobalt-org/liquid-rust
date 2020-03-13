@@ -63,7 +63,17 @@ mod tests {
         );
 
         assert_eq!(
+            liquid_core::call_filter!(Pluralize, 0i32, "one", "many").unwrap(),
+            liquid_core::value!("many")
+        );
+
+        assert_eq!(
             liquid_core::call_filter!(Pluralize, 2i32, "one", "many").unwrap(),
+            liquid_core::value!("many")
+        );
+
+        assert_eq!(
+            liquid_core::call_filter!(Pluralize, 10i32, "one", "many").unwrap(),
             liquid_core::value!("many")
         );
     }

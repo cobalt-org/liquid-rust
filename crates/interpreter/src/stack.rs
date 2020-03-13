@@ -110,7 +110,7 @@ impl<'g> Stack<'g> {
             roots.extend(globals.keys());
         }
         for frame in self.stack.iter() {
-            roots.extend(frame.data.keys().map(|k| kstring::KStringCow::from(k)));
+            roots.extend(frame.data.keys().map(kstring::KStringCow::from));
         }
         roots.sort();
         roots.dedup();

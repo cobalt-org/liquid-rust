@@ -17,3 +17,4 @@ liquid-value = { version = "^0.19", path = "../value" }
 liquid-compiler = { version = "^0.19", path = "../compiler" }
 liquid-interpreter = { version = "^0.19", path = "../interpreter" }
 liquid-derive = { version = "^0.19", path = "../derive" }
+itertools = "0.8.0"

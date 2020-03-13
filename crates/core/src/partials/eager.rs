@@ -2,13 +2,15 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync;
 
-use liquid_core::compiler;
-use liquid_core::compiler::Language;
-use liquid_core::error::Error;
-use liquid_core::error::Result;
-use liquid_core::interpreter;
-use liquid_core::interpreter::PartialStore;
-use liquid_core::interpreter::Renderable;
+use itertools;
+
+use crate::compiler;
+use crate::compiler::Language;
+use crate::error::Error;
+use crate::error::Result;
+use crate::interpreter;
+use crate::interpreter::PartialStore;
+use crate::interpreter::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;
