@@ -36,7 +36,7 @@ impl liquid::partials::PartialSource for TestFileSystem {
 }
 
 fn liquid() -> liquid::Parser {
-    liquid::ParserBuilder::with_liquid()
+    liquid::ParserBuilder::with_stdlib()
         .partials(liquid::partials::OnDemandCompiler::<TestFileSystem>::empty())
         .build()
         .unwrap()
@@ -175,7 +175,7 @@ impl liquid::partials::PartialSource for InfiniteFileSystem {
 fn test_recursively_included_template_does_not_produce_endless_loop() {
     panic!("We don't check recursion depth");
     /*
-    liquid::ParserBuilder::with_liquid()
+    liquid::ParserBuilder::with_stdlib()
         .partials(liquid::partials::OnDemandCompiler::<TestFileSystem>::empty())
         .build()
         .unwrap()

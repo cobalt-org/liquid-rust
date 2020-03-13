@@ -76,7 +76,7 @@ fn test_preset_assigns() {
 
 #[test]
 fn test_reuse_parsed_template() {
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(r#"{{ greeting }} {{ name }}"#)
@@ -99,7 +99,7 @@ fn test_reuse_parsed_template() {
 
 #[test]
 fn test_assigns_not_polluted_from_template() {
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(r#"{{ test }}{% assign test = 'bar' %}{{ test }}"#)

@@ -57,9 +57,7 @@ struct Args {
 fn run() -> Result<i32, Box<dyn std::error::Error>> {
     let args = Args::from_args();
 
-    let parser = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
-        .jekyll_filters()
+    let parser = liquid::ParserBuilder::with_stdlib()
         .build()
         .expect("should succeed without partials");
     let template = parser.parse_file(&args.input)?;

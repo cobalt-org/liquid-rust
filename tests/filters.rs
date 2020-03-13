@@ -6,7 +6,7 @@ pub fn upcase() {
     let globals = liquid::object!({
         "text": "hello",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -21,7 +21,7 @@ pub fn downcase() {
     let globals = liquid::object!({
         "text": "HELLO tHeRe",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -36,7 +36,7 @@ pub fn capitalize() {
     let globals = liquid::object!({
         "text": "hello world",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -51,7 +51,7 @@ pub fn minus() {
     let globals = liquid::object!({
         "num": 4,
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -66,7 +66,7 @@ pub fn plus() {
     let globals = liquid::object!({
         "num": 4,
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -81,7 +81,7 @@ pub fn minus_error() {
     let globals = liquid::object!({
         "num": 4,
     });
-    let output = liquid::ParserBuilder::with_liquid()
+    let output = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -96,7 +96,7 @@ pub fn first_numeric_array() {
     let globals = liquid::object!({
         "nums": [12, 1],
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -111,7 +111,7 @@ pub fn first_string_array() {
     let globals = liquid::object!({
         "nums": ["first", "second"],
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -126,7 +126,7 @@ pub fn first_char() {
     let globals = liquid::object!({
         "nums": "first",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -141,7 +141,7 @@ pub fn last_numeric_array() {
     let globals = liquid::object!({
         "nums": [12, 1],
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -156,7 +156,7 @@ pub fn last_string_array() {
     let globals = liquid::object!({
         "nums": ["first", "second"],
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -171,7 +171,7 @@ pub fn last_char() {
     let globals = liquid::object!({
         "nums": "second",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -186,7 +186,7 @@ pub fn replace_first() {
     let globals = liquid::object!({
         "text": "bar2bar",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -201,7 +201,7 @@ pub fn replace() {
     let globals = liquid::object!({
         "text": "bar2bar",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -216,7 +216,7 @@ pub fn prepend_constant() {
     let globals = liquid::object!({
         "text": "bar2bar",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -232,7 +232,7 @@ pub fn prepend_variable() {
         "text": "bar2bar",
         "myvar": "fifo",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -247,7 +247,7 @@ pub fn append() {
     let globals = liquid::object!({
         "text": "roobarb",
     });
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -264,7 +264,7 @@ pub fn split_with_comma() {
     let text = "{% assign beatles = \"John, Paul, George, Ringo\" | split: \", \" %}{% for member \
                 in beatles %}{{ member }}\n{% endfor %}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -279,7 +279,7 @@ pub fn split_no_comma() {
     let text = "{% assign letters = \"a~b~c\" | split:\"~\" %}{% for letter in letters %}LETTER: \
                 {{ letter }}\n{% endfor %}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -293,7 +293,7 @@ pub fn split_no_comma() {
 pub fn split_then_join() {
     let text = "{{ 'a~b~c' | split:'~' | join:', ' }}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -307,7 +307,7 @@ pub fn split_then_join() {
 pub fn slice_one() {
     let text = "{{ '0123456' | slice: 2 }}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -321,7 +321,7 @@ pub fn slice_one() {
 pub fn slice_negative() {
     let text = "{{ '6543210' | slice: -4, 3 }}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -335,7 +335,7 @@ pub fn slice_negative() {
 pub fn slice_overflow() {
     let text = "{{ 'xx0123456' | slice: 2, 11 }}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -349,7 +349,7 @@ pub fn slice_overflow() {
 pub fn slice_empty() {
     let text = "{{ '' | slice: 2 }}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -363,7 +363,7 @@ pub fn slice_empty() {
 pub fn split_sort_join() {
     let text = "{{ 'zebra, octopus, giraffe, Sally Snake' | split:', ' | sort | join: ', '}}";
     let globals = liquid::Object::default();
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -378,7 +378,7 @@ pub fn modulo() {
     let samples = [(4_f64, "0"), (3_f64, "1"), (5.1, "1.0999999999999996")];
     for t in &samples {
         let globals = liquid::object!({"num": t.0});
-        let template = liquid::ParserBuilder::with_liquid()
+        let template = liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse(text)
@@ -401,7 +401,7 @@ pub fn escape() {
     ];
     for t in &samples {
         let globals = liquid::object!({"var": t.0});
-        let template = liquid::ParserBuilder::with_liquid()
+        let template = liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse(text)
@@ -424,7 +424,7 @@ pub fn escape_once() {
     ];
     for t in &samples {
         let globals = liquid::object!({"var": t.0});
-        let template = liquid::ParserBuilder::with_liquid()
+        let template = liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse(text)
@@ -438,7 +438,7 @@ pub fn escape_once() {
 pub fn remove_first_constant() {
     let text = "{{ text | remove_first: 'bar' }}";
     let globals = liquid::object!({"text": "bar2bar"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -451,7 +451,7 @@ pub fn remove_first_constant() {
 pub fn remove_first_variable() {
     let text = "{{ text | remove_first: myvar }}";
     let globals = liquid::object!({"text": "bar2bar", "myvar": "bar"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -464,7 +464,7 @@ pub fn remove_first_variable() {
 pub fn remove() {
     let text = "{{ text | remove: 'bar' }}";
     let globals = liquid::object!({"text": "bar2bar"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -477,7 +477,7 @@ pub fn remove() {
 pub fn strip_html() {
     let text = "{{ text | strip_html }}";
     let globals = liquid::object!({"text": "<!-- <b> Comment -->Lorem <a>ipsum </b>dolor"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -490,7 +490,7 @@ pub fn strip_html() {
 pub fn truncatewords() {
     let text = "{{ text | truncatewords: 1, '...' }}";
     let globals = liquid::object!({"text": "first second third"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -503,7 +503,7 @@ pub fn truncatewords() {
 pub fn default_use() {
     let text = "{{ text | default: 'bar' }}";
     let globals = liquid::object!({"text": false});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -516,7 +516,7 @@ pub fn default_use() {
 pub fn default_pass() {
     let text = "{{ text | default: 'bar' }}";
     let globals = liquid::object!({"text": "foo"});
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)
@@ -533,7 +533,7 @@ fn test_compact() {
         "hashes": [{"a": "A"}, {"a": liquid_core::Value::Nil}, {"a": "C"}, {}],
     });
 
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(text)

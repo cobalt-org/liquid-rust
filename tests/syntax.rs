@@ -7,8 +7,7 @@ fn compare(input: &str, expected: &str) {
     let input = input.replace("…", " ");
     let expected = expected.replace("…", " ");
 
-    let template = ParserBuilder::with_liquid()
-        .extra_filters()
+    let template = ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(&input)

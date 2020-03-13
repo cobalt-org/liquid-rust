@@ -182,7 +182,7 @@ fn test_undefined_filters_raise() {
 #[test]
 #[should_panic] // liquid-rust#224
 fn test_using_range_literal_works_as_expected() {
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse("{% assign foo = (x..y) %}{{ foo }}")
@@ -190,7 +190,7 @@ fn test_using_range_literal_works_as_expected() {
     let rendered = template.render(&o!({"x": 1, "y": 5})).unwrap();
     assert_eq!("1..5", rendered);
 
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse("{% assign nums = (x..y) %}{% for num in nums %}{{ num }}{% endfor %}")

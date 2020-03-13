@@ -51,7 +51,7 @@ macro_rules! assert_template_result {
         assert_template_result!($expected, $template, $assigns);
     };
     ($expected:expr, $template:expr, $assigns: expr) => {
-        let liquid: ::liquid::ParserBuilder = ::liquid::ParserBuilder::with_liquid();
+        let liquid: ::liquid::ParserBuilder = ::liquid::ParserBuilder::with_stdlib();
         let liquid = liquid.build().unwrap();
         assert_template_result!($expected, $template, $assigns, liquid);
     };
@@ -79,7 +79,7 @@ macro_rules! assert_template_matches {
         assert_template_matches!($expected, $template, $assigns);
     };
     ($expected:expr, $template:expr, $assigns: expr) => {
-        let template = ::liquid::ParserBuilder::with_liquid()
+        let template = ::liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse($template.as_ref())
@@ -101,7 +101,7 @@ macro_rules! assert_parse_error {
         assert_parse_error!($template)
     };
     ($template:expr) => {{
-        let liquid = ::liquid::ParserBuilder::with_liquid().build().unwrap();
+        let liquid = ::liquid::ParserBuilder::with_stdlib().build().unwrap();
         assert_parse_error!($template, liquid)
     }};
     ($template:expr, $liquid:expr, ) => {{
@@ -128,7 +128,7 @@ macro_rules! assert_render_error {
         assert_render_error!($template, $assigns);
     };
     ($template:expr, $assigns: expr) => {
-        let template = ::liquid::ParserBuilder::with_liquid()
+        let template = ::liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse($template.as_ref())

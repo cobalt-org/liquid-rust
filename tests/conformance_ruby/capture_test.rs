@@ -15,7 +15,7 @@ fn test_capture_with_hyphen_in_variable_name() {
     {% capture this-thing %}Print this-thing{% endcapture %}
     {{ this-thing }}
 "#;
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(template_source)
@@ -37,7 +37,7 @@ fn test_capture_to_variable_from_outer_scope_if_existing() {
     {% endif %}
     {{var}}
 "#;
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(template_source)
@@ -58,7 +58,7 @@ fn test_assigning_from_capture() {
     {% endfor %}
     {{ first }}-{{ second }}
 "#;
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(template_source)
