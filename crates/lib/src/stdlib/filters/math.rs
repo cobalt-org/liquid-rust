@@ -6,7 +6,7 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueView};
 
-use crate::filters::{invalid_argument, invalid_input};
+use crate::{invalid_argument, invalid_input};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(

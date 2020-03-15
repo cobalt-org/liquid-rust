@@ -94,7 +94,7 @@ mod test {
     use liquid_core::Value;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
-    use crate::tags;
+    use crate::stdlib;
 
     use super::*;
 
@@ -125,10 +125,10 @@ mod test {
             .register("include".to_string(), IncludeTag.into());
         options
             .blocks
-            .register("comment".to_string(), tags::CommentBlock.into());
+            .register("comment".to_string(), stdlib::CommentBlock.into());
         options
             .blocks
-            .register("if".to_string(), tags::IfBlock.into());
+            .register("if".to_string(), stdlib::IfBlock.into());
         options
     }
 

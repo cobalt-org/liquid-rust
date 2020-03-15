@@ -25,9 +25,9 @@ mod parser;
 mod reflection;
 mod template;
 
+pub use liquid_core::partials;
 #[doc(hidden)]
 pub use liquid_core::value;
-pub use liquid_core::partials;
 
 pub use crate::parser::*;
 pub use crate::reflection::*;

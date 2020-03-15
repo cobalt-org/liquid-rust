@@ -567,7 +567,7 @@ mod test {
     use liquid_core::value::ValueView;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
-    use crate::tags;
+    use crate::stdlib;
 
     use super::*;
 
@@ -579,7 +579,7 @@ mod test {
             .register("tablerow".to_string(), TableRowBlock.into());
         options
             .tags
-            .register("assign".to_string(), tags::AssignTag.into());
+            .register("assign".to_string(), stdlib::AssignTag.into());
         options
     }
 

@@ -33,17 +33,13 @@ product:
 
 #[bench]
 fn bench_parsing_basic_template(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     b.iter(|| parser.parse(SIMPLE_TEMPLATE));
 }
 
 #[bench]
 fn bench_rendering_only_variable(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(VARIABLE_ONLY)
         .expect("Benchmark template parsing failed");
@@ -57,9 +53,7 @@ fn bench_rendering_only_variable(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_rendering_basic_template(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(SIMPLE_TEMPLATE)
         .expect("Benchmark template parsing failed");
@@ -105,9 +99,7 @@ fn deep_object() -> liquid::Object {
 
 #[bench]
 fn access_deep_object(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse("{% for cow in deep_object.foo.bar.goo.moo.cows %}{{cow.temperament}}{% endfor %}")
         .expect("Benchmark template parsing failed");
@@ -120,9 +112,7 @@ fn access_deep_object(b: &mut test::Bencher) {
 
 #[bench]
 fn access_deep_object_with_literal(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(
             "

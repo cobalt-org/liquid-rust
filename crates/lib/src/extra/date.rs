@@ -7,7 +7,7 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueView};
 
-use crate::filters::invalid_input;
+use crate::invalid_input;
 
 // liquid-rust proprietary
 

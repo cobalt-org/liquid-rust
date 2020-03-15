@@ -3,37 +3,37 @@ use crate::test_helper::*;
 fn test_size() {
     assert_eq!(
         v!(3),
-        call_filter!(liquid_lib::filters::std::Size, v!([1, 2, 3])).unwrap()
+        call_filter!(liquid_lib::stdlib::Size, v!([1, 2, 3])).unwrap()
     );
     assert_eq!(
         v!(0),
-        call_filter!(liquid_lib::filters::std::Size, v!([])).unwrap()
+        call_filter!(liquid_lib::stdlib::Size, v!([])).unwrap()
     );
     assert_eq!(
         v!(0),
-        call_filter!(liquid_lib::filters::std::Size, v!(nil)).unwrap()
+        call_filter!(liquid_lib::stdlib::Size, v!(nil)).unwrap()
     );
 }
 
 fn test_downcase() {
     assert_eq!(
         v!("testing"),
-        call_filter!(liquid_lib::filters::std::Downcase, v!("Testing")).unwrap()
+        call_filter!(liquid_lib::stdlib::Downcase, v!("Testing")).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::Downcase, Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::Downcase, Nil).unwrap()
     );
 }
 
 fn test_upcase() {
     assert_eq!(
         v!("TESTING"),
-        call_filter!(liquid_lib::filters::std::Upcase, v!("Testing")).unwrap()
+        call_filter!(liquid_lib::stdlib::Upcase, v!("Testing")).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::Upcase, Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::Upcase, Nil).unwrap()
     );
 }
 
@@ -41,84 +41,54 @@ fn test_upcase() {
 fn test_slice() {
     assert_eq!(
         v!("oob"),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(1), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(1), v!(3)).unwrap()
     );
     assert_eq!(
         v!("oobar"),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            v!("foobar"),
-            v!(1),
-            v!(1000)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(1), v!(1000)).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(1), v!(0)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(1), v!(0)).unwrap()
     );
     assert_eq!(
         v!("o"),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(1), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(1), v!(1)).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(3), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(3), v!(3)).unwrap()
     );
     assert_eq!(
         v!("ar"),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(-2), v!(2)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(-2), v!(2)).unwrap()
     );
     assert_eq!(
         v!("ar"),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            v!("foobar"),
-            v!(-2),
-            v!(1000)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(-2), v!(1000)).unwrap()
     );
     assert_eq!(
         v!("r"),
-        call_filter!(liquid_lib::filters::std::Slice, v!("foobar"), v!(-1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(-1)).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::Slice, Nil, v!(0)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, Nil, v!(0)).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            v!("foobar"),
-            v!(100),
-            v!(10)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(100), v!(10)).unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            v!("foobar"),
-            v!(-100),
-            v!(10)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!(-100), v!(10)).unwrap()
     );
     assert_eq!(
         v!("oob"),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            v!("foobar"),
-            v!("1"),
-            v!("3")
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, v!("foobar"), v!("1"), v!("3")).unwrap()
     );
-    liquid_core::call_filter!(liquid_lib::filters::std::Slice, "foobar", Nil).unwrap_err();
-    liquid_core::call_filter!(liquid_lib::filters::std::Slice, "foobar", 0, "").unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Slice, "foobar", Nil).unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Slice, "foobar", 0, "").unwrap_err();
 }
 
 #[should_panic] // liquid-rust#261
@@ -126,73 +96,43 @@ fn test_slice_on_arrays() {
     let input = v!(["f", "o", "o", "b", "a", "r"]);
     assert_eq!(
         v!(["o", "o", "b"]),
-        call_filter!(liquid_lib::filters::std::Slice, input.clone(), v!(1), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(3)).unwrap()
     );
     assert_eq!(
         v!(["o", "o", "b", "a", "r"]),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            input.clone(),
-            v!(1),
-            v!(1000)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(1000)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::Slice, input.clone(), v!(1), v!(0)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(0)).unwrap()
     );
     assert_eq!(
         v!(["o"]),
-        call_filter!(liquid_lib::filters::std::Slice, input.clone(), v!(1), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(1)).unwrap()
     );
     assert_eq!(
         v!(["b", "a", "r"]),
-        call_filter!(liquid_lib::filters::std::Slice, input.clone(), v!(3), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(3), v!(3)).unwrap()
     );
     assert_eq!(
         v!(["a", "r"]),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            input.clone(),
-            v!(-2),
-            v!(2)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-2), v!(2)).unwrap()
     );
     assert_eq!(
         v!(["a", "r"]),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            input.clone(),
-            v!(-2),
-            v!(1000)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-2), v!(1000)).unwrap()
     );
     assert_eq!(
         v!(["r"]),
-        call_filter!(liquid_lib::filters::std::Slice, input.clone(), v!(-1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-1)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            input.clone(),
-            v!(100),
-            v!(10)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(100), v!(10)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(
-            liquid_lib::filters::std::Slice,
-            input.clone(),
-            v!(-100),
-            v!(10)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-100), v!(10)).unwrap()
     );
 }
 
@@ -200,38 +140,27 @@ fn test_slice_on_arrays() {
 fn test_truncate() {
     assert_eq!(
         v!("1234..."),
-        call_filter!(liquid_lib::filters::std::Truncate, v!("1234567890"), v!(7)).unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("1234567890"), v!(7)).unwrap()
     );
     assert_eq!(
         v!("1234567890"),
-        call_filter!(liquid_lib::filters::std::Truncate, v!("1234567890"), v!(20)).unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("1234567890"), v!(20)).unwrap()
     );
     assert_eq!(
         v!("..."),
-        call_filter!(liquid_lib::filters::std::Truncate, v!("1234567890"), v!(0)).unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("1234567890"), v!(0)).unwrap()
     );
     assert_eq!(
         v!("1234567890"),
-        call_filter!(liquid_lib::filters::std::Truncate, v!("1234567890")).unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("1234567890")).unwrap()
     );
     assert_eq!(
         v!("测试..."),
-        call_filter!(
-            liquid_lib::filters::std::Truncate,
-            v!("测试测试测试测试"),
-            v!(5)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("测试测试测试测试"), v!(5)).unwrap()
     );
     assert_eq!(
         v!("12341"),
-        call_filter!(
-            liquid_lib::filters::std::Truncate,
-            v!("1234567890"),
-            v!(5),
-            v!(1)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Truncate, v!("1234567890"), v!(5), v!(1)).unwrap()
     );
 }
 
@@ -239,58 +168,50 @@ fn test_truncate() {
 fn test_split() {
     assert_eq!(
         v!(["12", "34"]),
-        call_filter!(liquid_lib::filters::std::Split, v!("12~34"), v!("~")).unwrap()
+        call_filter!(liquid_lib::stdlib::Split, v!("12~34"), v!("~")).unwrap()
     );
     assert_eq!(
         v!(["A? ", " ,Z"]),
-        call_filter!(
-            liquid_lib::filters::std::Split,
-            v!("A? ~ ~ ~ ,Z"),
-            v!("~ ~ ~")
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Split, v!("A? ~ ~ ~ ,Z"), v!("~ ~ ~")).unwrap()
     );
     assert_eq!(
         v!(["A?Z"]),
-        call_filter!(liquid_lib::filters::std::Split, v!("A?Z"), v!("~")).unwrap()
+        call_filter!(liquid_lib::stdlib::Split, v!("A?Z"), v!("~")).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::Split, Nil, v!(" ")).unwrap()
+        call_filter!(liquid_lib::stdlib::Split, Nil, v!(" ")).unwrap()
     );
     assert_eq!(
         v!(["A", "Z"]),
-        call_filter!(liquid_lib::filters::std::Split, v!("A1Z"), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Split, v!("A1Z"), v!(1)).unwrap()
     );
 }
 
 fn test_escape() {
     assert_eq!(
         v!("&lt;strong&gt;"),
-        call_filter!(liquid_lib::filters::std::Escape, v!("<strong>")).unwrap()
+        call_filter!(liquid_lib::stdlib::Escape, v!("<strong>")).unwrap()
     );
     assert_eq!(
         v!("1"),
-        call_filter!(liquid_lib::filters::std::Escape, v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Escape, v!(1)).unwrap()
     );
     assert_eq!(
         v!("2001-02-03"),
-        call_filter!(liquid_lib::filters::std::Escape, date(2001, 2, 3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Escape, date(2001, 2, 3)).unwrap()
     );
-    assert_eq!(
-        Nil,
-        call_filter!(liquid_lib::filters::std::Escape, Nil).unwrap()
-    );
+    assert_eq!(Nil, call_filter!(liquid_lib::stdlib::Escape, Nil).unwrap());
 }
 
 #[should_panic] // liquid-rust#269
 fn test_h() {
     panic!("Implement this filter");
     /*
-    assert_eq!(v!("&lt;strong&gt;"), call_filter!(liquid_lib::filters::std::h, v!("<strong>")));
-    assert_eq!(v!("1"), call_filter!(liquid_lib::filters::std::h, 1));
-    assert_eq!(v!("2001-02-03"), call_filter!(liquid_lib::filters::std::h, date(2001, 2, 3)));
-    assert_eq!(Nil, call_filter!(liquid_lib::filters::std::h, Nil));
+    assert_eq!(v!("&lt;strong&gt;"), call_filter!(liquid_lib::stdlib::h, v!("<strong>")));
+    assert_eq!(v!("1"), call_filter!(liquid_lib::stdlib::h, 1));
+    assert_eq!(v!("2001-02-03"), call_filter!(liquid_lib::stdlib::h, date(2001, 2, 3)));
+    assert_eq!(Nil, call_filter!(liquid_lib::stdlib::h, Nil));
     */
 }
 
@@ -298,7 +219,7 @@ fn test_escape_once() {
     assert_eq!(
         v!("&lt;strong&gt;Hulk&lt;/strong&gt;"),
         call_filter!(
-            liquid_lib::filters::std::EscapeOnce,
+            liquid_lib::stdlib::EscapeOnce,
             v!("&lt;strong&gt;Hulk</strong>")
         )
         .unwrap()
@@ -308,50 +229,46 @@ fn test_escape_once() {
 fn test_url_encode() {
     assert_eq!(
         v!("foo%2B1%40example.com"),
-        call_filter!(liquid_lib::filters::std::UrlEncode, v!("foo+1@example.com")).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlEncode, v!("foo+1@example.com")).unwrap()
     );
     assert_eq!(
         v!("1"),
-        call_filter!(liquid_lib::filters::std::UrlEncode, v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlEncode, v!(1)).unwrap()
     );
     assert_eq!(
         v!("2001-02-03"),
-        call_filter!(liquid_lib::filters::std::UrlEncode, date(2001, 2, 3)).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlEncode, date(2001, 2, 3)).unwrap()
     );
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::UrlEncode, Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlEncode, Nil).unwrap()
     );
 }
 
 fn test_url_decode() {
     assert_eq!(
         v!("foo bar"),
-        call_filter!(liquid_lib::filters::std::UrlDecode, v!("foo+bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, v!("foo+bar")).unwrap()
     );
     assert_eq!(
         v!("foo bar"),
-        call_filter!(liquid_lib::filters::std::UrlDecode, v!("foo%20bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, v!("foo%20bar")).unwrap()
     );
     assert_eq!(
         v!("foo+1@example.com"),
-        call_filter!(
-            liquid_lib::filters::std::UrlDecode,
-            v!("foo%2B1%40example.com")
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, v!("foo%2B1%40example.com")).unwrap()
     );
     assert_eq!(
         v!("1"),
-        call_filter!(liquid_lib::filters::std::UrlDecode, v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, v!(1)).unwrap()
     );
     assert_eq!(
         v!("2001-02-03"),
-        call_filter!(liquid_lib::filters::std::UrlDecode, date(2001, 2, 3)).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, date(2001, 2, 3)).unwrap()
     );
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::UrlDecode, Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::UrlDecode, Nil).unwrap()
     );
 }
 
@@ -359,7 +276,7 @@ fn test_truncatewords() {
     assert_eq!(
         v!("one two three"),
         call_filter!(
-            liquid_lib::filters::std::TruncateWords,
+            liquid_lib::stdlib::TruncateWords,
             v!("one two three"),
             v!(4)
         )
@@ -368,7 +285,7 @@ fn test_truncatewords() {
     assert_eq!(
         v!("one two..."),
         call_filter!(
-            liquid_lib::filters::std::TruncateWords,
+            liquid_lib::stdlib::TruncateWords,
             v!("one two three"),
             v!(2)
         )
@@ -376,13 +293,13 @@ fn test_truncatewords() {
     );
     assert_eq!(
         v!("one two three"),
-        call_filter!(liquid_lib::filters::std::TruncateWords, v!("one two three")).unwrap()
+        call_filter!(liquid_lib::stdlib::TruncateWords, v!("one two three")).unwrap()
     );
-    assert_eq!(v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221;..."), call_filter!(liquid_lib::filters::std::TruncateWords, v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221; x 16&#8221; x 10.5&#8221; high) with cover."), v!(15)).unwrap());
+    assert_eq!(v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221;..."), call_filter!(liquid_lib::stdlib::TruncateWords, v!("Two small (13&#8221; x 5.5&#8221; x 10&#8221; high) baskets fit inside one large basket (13&#8221; x 16&#8221; x 10.5&#8221; high) with cover."), v!(15)).unwrap());
     assert_eq!(
         v!("测试测试测试测试"),
         call_filter!(
-            liquid_lib::filters::std::TruncateWords,
+            liquid_lib::stdlib::TruncateWords,
             v!("测试测试测试测试"),
             v!(5)
         )
@@ -391,7 +308,7 @@ fn test_truncatewords() {
     assert_eq!(
         v!("one two1"),
         call_filter!(
-            liquid_lib::filters::std::TruncateWords,
+            liquid_lib::stdlib::TruncateWords,
             v!("one two three"),
             v!(2),
             v!(1)
@@ -403,16 +320,12 @@ fn test_truncatewords() {
 fn test_strip_html() {
     assert_eq!(
         v!("test"),
-        call_filter!(
-            liquid_lib::filters::std::StripHtml,
-            v!(r#"<div>test</div>"#)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::StripHtml, v!(r#"<div>test</div>"#)).unwrap()
     );
     assert_eq!(
         v!("test"),
         call_filter!(
-            liquid_lib::filters::std::StripHtml,
+            liquid_lib::stdlib::StripHtml,
             v!(r#"<div id="test">test</div>"#)
         )
         .unwrap()
@@ -420,7 +333,7 @@ fn test_strip_html() {
     assert_eq!(
         v!(""),
         call_filter!(
-            liquid_lib::filters::std::StripHtml,
+            liquid_lib::stdlib::StripHtml,
             v!(r#"<script type="text/javascript">document.write"some stuff";</script>"#)
         )
         .unwrap()
@@ -428,7 +341,7 @@ fn test_strip_html() {
     assert_eq!(
         v!(""),
         call_filter!(
-            liquid_lib::filters::std::StripHtml,
+            liquid_lib::stdlib::StripHtml,
             v!(r#"<style type="text/css">foo bar</style>"#)
         )
         .unwrap()
@@ -436,7 +349,7 @@ fn test_strip_html() {
     assert_eq!(
         v!("test"),
         call_filter!(
-            liquid_lib::filters::std::StripHtml,
+            liquid_lib::stdlib::StripHtml,
             v!(r#"<div\nclass="multiline">test</div>"#)
         )
         .unwrap()
@@ -444,41 +357,41 @@ fn test_strip_html() {
     assert_eq!(
         v!("test"),
         call_filter!(
-            liquid_lib::filters::std::StripHtml,
+            liquid_lib::stdlib::StripHtml,
             v!(r#"<!-- foo bar \n test -->test"#)
         )
         .unwrap()
     );
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::StripHtml, Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::StripHtml, Nil).unwrap()
     );
 }
 
 fn test_join() {
     assert_eq!(
         v!("1 2 3 4"),
-        call_filter!(liquid_lib::filters::std::Join, v!([1, 2, 3, 4])).unwrap()
+        call_filter!(liquid_lib::stdlib::Join, v!([1, 2, 3, 4])).unwrap()
     );
     assert_eq!(
         v!("1 - 2 - 3 - 4"),
-        call_filter!(liquid_lib::filters::std::Join, v!([1, 2, 3, 4]), v!(" - ")).unwrap()
+        call_filter!(liquid_lib::stdlib::Join, v!([1, 2, 3, 4]), v!(" - ")).unwrap()
     );
     assert_eq!(
         v!("1121314"),
-        call_filter!(liquid_lib::filters::std::Join, v!([1, 2, 3, 4]), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Join, v!([1, 2, 3, 4]), v!(1)).unwrap()
     );
 }
 
 fn test_sort() {
     assert_eq!(
         v!([1, 2, 3, 4]),
-        call_filter!(liquid_lib::filters::std::Sort, v!([4, 3, 2, 1])).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!([4, 3, 2, 1])).unwrap()
     );
     assert_eq!(
         v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]),
         call_filter!(
-            liquid_lib::filters::std::Sort,
+            liquid_lib::stdlib::Sort,
             v!([{ "a": 4 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]),
             "a"
         )
@@ -489,12 +402,12 @@ fn test_sort() {
 fn test_sort_with_nils() {
     assert_eq!(
         v!([1, 2, 3, 4, nil]),
-        call_filter!(liquid_lib::filters::std::Sort, v!([nil, 4, 3, 2, 1])).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!([nil, 4, 3, 2, 1])).unwrap()
     );
     assert_eq!(
         v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }, {}]),
         call_filter!(
-            liquid_lib::filters::std::Sort,
+            liquid_lib::stdlib::Sort,
             v!([{ "a": 4 }, { "a": 3 }, {}, { "a": 1 }, { "a": 2 }]),
             "a"
         )
@@ -523,7 +436,7 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
         vec![v!({ "handle": "delta" }), v!({ "handle": "beta" })],
         vec![v!({ "handle": "beta" }), v!({ "handle": "delta" })],
     );
-    let result = call_filter!(liquid_lib::filters::std::Sort, input, v!("price")).unwrap();
+    let result = call_filter!(liquid_lib::stdlib::Sort, input, v!("price")).unwrap();
     let result = result.into_array();
     assert!(result.is_some());
     let result = result.unwrap();
@@ -534,16 +447,12 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
 fn test_sort_natural() {
     assert_eq!(
         v!(["a", "B", "c", "D"]),
-        call_filter!(
-            liquid_lib::filters::std::SortNatural,
-            v!(["c", "D", "a", "B"])
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::SortNatural, v!(["c", "D", "a", "B"])).unwrap()
     );
     assert_eq!(
         v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }]),
         call_filter!(
-            liquid_lib::filters::std::SortNatural,
+            liquid_lib::stdlib::SortNatural,
             v!([{ "a": "D" }, { "a": "c" }, { "a": "a" }, { "a": "B" }]),
             "a"
         )
@@ -555,7 +464,7 @@ fn test_sort_natural_with_nils() {
     assert_eq!(
         v!(["a", "B", "c", "D", nil]),
         call_filter!(
-            liquid_lib::filters::std::SortNatural,
+            liquid_lib::stdlib::SortNatural,
             v!([nil, "c", "D", "a", "B"])
         )
         .unwrap()
@@ -563,7 +472,7 @@ fn test_sort_natural_with_nils() {
     assert_eq!(
         v!([{ "a": "a" }, { "a": "B" }, { "a": "c" }, { "a": "D" }, {}]),
         call_filter!(
-            liquid_lib::filters::std::SortNatural,
+            liquid_lib::stdlib::SortNatural,
             v!([{ "a": "D" }, { "a": "c" }, {}, { "a": "a" }, { "a": "B" }]),
             "a"
         )
@@ -592,7 +501,7 @@ fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
         vec![v!({ "handle": "delta" }), v!({ "handle": "beta" })],
         vec![v!({ "handle": "beta" }), v!({ "handle": "delta" })],
     );
-    let result = call_filter!(liquid_lib::filters::std::SortNatural, input, v!("price")).unwrap();
+    let result = call_filter!(liquid_lib::stdlib::SortNatural, input, v!("price")).unwrap();
     let result = result.into_array();
     assert!(result.is_some());
     let result = result.unwrap();
@@ -621,12 +530,12 @@ fn test_sort_natural_case_check() {
     ]);
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::filters::std::SortNatural, input, "key").unwrap()
+        call_filter!(liquid_lib::stdlib::SortNatural, input, "key").unwrap()
     );
     assert_eq!(
         v!(["a", "b", "c", "X", "Y", "Z"]),
         call_filter!(
-            liquid_lib::filters::std::SortNatural,
+            liquid_lib::stdlib::SortNatural,
             v!(["X", "Y", "Z", "a", "b", "c"])
         )
         .unwrap()
@@ -636,46 +545,41 @@ fn test_sort_natural_case_check() {
 fn test_sort_empty_array() {
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::Sort, v!([]), v!("a")).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!([]), v!("a")).unwrap()
     );
 }
 
 fn test_sort_natural_empty_array() {
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::SortNatural, v!([]), v!("a")).unwrap()
+        call_filter!(liquid_lib::stdlib::SortNatural, v!([]), v!("a")).unwrap()
     );
 }
 
 fn test_legacy_sort_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
-        call_filter!(liquid_lib::filters::std::Sort, v!({ "a": 1, "b": 2 })).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!({ "a": 1, "b": 2 })).unwrap()
     );
 }
 
 fn test_numerical_vs_lexicographical_sort() {
     assert_eq!(
         v!([2, 10]),
-        call_filter!(liquid_lib::filters::std::Sort, v!([10, 2])).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!([10, 2])).unwrap()
     );
     assert_eq!(
         v!([{ "a": 2 }, { "a": 10 }]),
-        call_filter!(
-            liquid_lib::filters::std::Sort,
-            v!([{ "a": 10 }, { "a": 2 }]),
-            "a"
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!([{ "a": 10 }, { "a": 2 }]), "a").unwrap()
     );
     assert_eq!(
         v!(["10", "2"]),
-        call_filter!(liquid_lib::filters::std::Sort, v!(["10", "2"])).unwrap()
+        call_filter!(liquid_lib::stdlib::Sort, v!(["10", "2"])).unwrap()
     );
     assert_eq!(
         v!([{ "a": "10" }, { "a": "2" }]),
         call_filter!(
-            liquid_lib::filters::std::Sort,
+            liquid_lib::stdlib::Sort,
             v!([{ "a": "10" }, { "a": "2" }]),
             "a"
         )
@@ -687,20 +591,16 @@ fn test_numerical_vs_lexicographical_sort() {
 fn test_uniq() {
     assert_eq!(
         v!(["foo"]),
-        call_filter!(liquid_lib::filters::std::Uniq, v!("foo")).unwrap()
+        call_filter!(liquid_lib::stdlib::Uniq, v!("foo")).unwrap()
     );
     assert_eq!(
         v!([1, 3, 2, 4]),
-        call_filter!(
-            liquid_lib::filters::std::Uniq,
-            v!([1, 1, 3, 2, 3, 1, 4, 3, 2, 1])
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Uniq, v!([1, 1, 3, 2, 3, 1, 4, 3, 2, 1])).unwrap()
     );
     assert_eq!(
         v!([{ "a": 1 }, { "a": 3 }, { "a": 2 }]),
         call_filter!(
-            liquid_lib::filters::std::Uniq,
+            liquid_lib::stdlib::Uniq,
             v!([{ "a": 1 }, { "a": 3 }, { "a": 1 }, { "a": 2 }]),
             "a"
         )
@@ -713,27 +613,27 @@ fn test_uniq() {
 fn test_uniq_empty_array() {
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::Uniq, v!([]), v!("a")).unwrap()
+        call_filter!(liquid_lib::stdlib::Uniq, v!([]), v!("a")).unwrap()
     );
 }
 
 fn test_compact_empty_array() {
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::filters::std::Compact, v!([]), v!("a")).unwrap()
+        call_filter!(liquid_lib::stdlib::Compact, v!([]), v!("a")).unwrap()
     );
 }
 
 fn test_compact_invalid_property() {
     let input = v!([[1], [2], [3]]);
 
-    liquid_core::call_filter!(liquid_lib::filters::std::Compact, input, "bar").unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Compact, input, "bar").unwrap_err();
 }
 
 fn test_reverse() {
     assert_eq!(
         v!([4, 3, 2, 1]),
-        call_filter!(liquid_lib::filters::std::Reverse, v!([1, 2, 3, 4])).unwrap()
+        call_filter!(liquid_lib::stdlib::Reverse, v!([1, 2, 3, 4])).unwrap()
     );
 }
 
@@ -741,7 +641,7 @@ fn test_reverse() {
 fn test_legacy_reverse_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
-        call_filter!(liquid_lib::filters::std::Reverse, v!({"a": 1, "b": 2})).unwrap()
+        call_filter!(liquid_lib::stdlib::Reverse, v!({"a": 1, "b": 2})).unwrap()
     );
 }
 
@@ -749,7 +649,7 @@ fn test_map() {
     assert_eq!(
         v!([1, 2, 3, 4]),
         call_filter!(
-            liquid_lib::filters::std::Map,
+            liquid_lib::stdlib::Map,
             v!([{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }]),
             "a"
         )
@@ -828,7 +728,7 @@ fn test_date() {
     assert_eq!(
         v!("May"),
         call_filter!(
-            liquid_lib::filters::std::Date,
+            liquid_lib::stdlib::Date,
             with_time("2006-05-05 10:00:00"),
             "%B"
         )
@@ -837,7 +737,7 @@ fn test_date() {
     assert_eq!(
         v!("June"),
         call_filter!(
-            liquid_lib::filters::std::Date,
+            liquid_lib::stdlib::Date,
             with_time("2006-06-05 10:00:00"),
             "%B"
         )
@@ -846,7 +746,7 @@ fn test_date() {
     assert_eq!(
         v!("July"),
         call_filter!(
-            liquid_lib::filters::std::Date,
+            liquid_lib::stdlib::Date,
             with_time("2006-07-05 10:00:00"),
             "%B"
         )
@@ -855,48 +755,43 @@ fn test_date() {
 
     assert_eq!(
         v!("May"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-05-05 10:00:00", "%B").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-05-05 10:00:00", "%B").unwrap()
     );
     assert_eq!(
         v!("June"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-06-05 10:00:00", "%B").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-06-05 10:00:00", "%B").unwrap()
     );
     assert_eq!(
         v!("July"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-07-05 10:00:00", "%B").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", "%B").unwrap()
     );
 
     assert_eq!(
         v!("2006-07-05 10:00:00"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-07-05 10:00:00", "").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", "").unwrap()
     );
     assert_eq!(
         v!("2006-07-05 10:00:00"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-07-05 10:00:00", "").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", "").unwrap()
     );
     assert_eq!(
         v!("2006-07-05 10:00:00"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-07-05 10:00:00", "").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", "").unwrap()
     );
     assert_eq!(
         v!("2006-07-05 10:00:00"),
-        call_filter!(liquid_lib::filters::std::Date, "2006-07-05 10:00:00", Nil).unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", Nil).unwrap()
     );
 
     assert_eq!(
         v!("07/05/2006"),
-        call_filter!(
-            liquid_lib::filters::std::Date,
-            "2006-07-05 10:00:00",
-            "%m/%d/%Y"
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "2006-07-05 10:00:00", "%m/%d/%Y").unwrap()
     );
 
     assert_eq!(
         v!("07/16/2004"),
         call_filter!(
-            liquid_lib::filters::std::Date,
+            liquid_lib::stdlib::Date,
             "Fri Jul 16 01:00:00 2004",
             "%m/%d/%Y"
         )
@@ -904,82 +799,67 @@ fn test_date() {
     );
     assert_eq!(
         v!("#{Date.today.year}"),
-        call_filter!(liquid_lib::filters::std::Date, "now", "%Y").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "now", "%Y").unwrap()
     );
     assert_eq!(
         v!("#{Date.today.year}"),
-        call_filter!(liquid_lib::filters::std::Date, "today", "%Y").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "today", "%Y").unwrap()
     );
     assert_eq!(
         v!("#{Date.today.year}"),
-        call_filter!(liquid_lib::filters::std::Date, "Today", "%Y").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "Today", "%Y").unwrap()
     );
 
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::Date, Nil, "%B").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, Nil, "%B").unwrap()
     );
 
     assert_eq!(
         v!(""),
-        call_filter!(liquid_lib::filters::std::Date, "", "%B").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "", "%B").unwrap()
     );
 
     // Limited in value because we can't change the timezone
     assert_eq!(
         v!("07/05/2006"),
-        call_filter!(liquid_lib::filters::std::Date, 1152098955, "%m/%d/%Y").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, 1152098955, "%m/%d/%Y").unwrap()
     );
     assert_eq!(
         v!("07/05/2006"),
-        call_filter!(liquid_lib::filters::std::Date, "1152098955", "%m/%d/%Y").unwrap()
+        call_filter!(liquid_lib::stdlib::Date, "1152098955", "%m/%d/%Y").unwrap()
     );
 }
 
 fn test_first_last() {
     assert_eq!(
         v!(1),
-        call_filter!(liquid_lib::filters::std::First, v!([1, 2, 3])).unwrap()
+        call_filter!(liquid_lib::stdlib::First, v!([1, 2, 3])).unwrap()
     );
     assert_eq!(
         v!(3),
-        call_filter!(liquid_lib::filters::std::Last, v!([1, 2, 3])).unwrap()
+        call_filter!(liquid_lib::stdlib::Last, v!([1, 2, 3])).unwrap()
     );
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::First, v!([])).unwrap()
+        call_filter!(liquid_lib::stdlib::First, v!([])).unwrap()
     );
-    assert_eq!(
-        Nil,
-        call_filter!(liquid_lib::filters::std::Last, v!([])).unwrap()
-    );
+    assert_eq!(Nil, call_filter!(liquid_lib::stdlib::Last, v!([])).unwrap());
 }
 
 fn test_replace() {
     assert_eq!(
         v!("2 2 2 2"),
-        call_filter!(
-            liquid_lib::filters::std::Replace,
-            v!("1 1 1 1"),
-            v!("1"),
-            v!(2)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Replace, v!("1 1 1 1"), v!("1"), v!(2)).unwrap()
     );
     assert_eq!(
         v!("2 2 2 2"),
-        call_filter!(
-            liquid_lib::filters::std::Replace,
-            v!("1 1 1 1"),
-            v!(1),
-            v!(2)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Replace, v!("1 1 1 1"), v!(1), v!(2)).unwrap()
     );
     assert_eq!(
         v!("2 1 1 1"),
         call_filter!(
-            liquid_lib::filters::std::ReplaceFirst,
+            liquid_lib::stdlib::ReplaceFirst,
             v!("1 1 1 1"),
             v!("1"),
             v!(2)
@@ -989,7 +869,7 @@ fn test_replace() {
     assert_eq!(
         v!("2 1 1 1"),
         call_filter!(
-            liquid_lib::filters::std::ReplaceFirst,
+            liquid_lib::stdlib::ReplaceFirst,
             v!("1 1 1 1"),
             v!(1),
             v!(2)
@@ -1006,24 +886,19 @@ fn test_replace() {
 fn test_remove() {
     assert_eq!(
         v!("   "),
-        call_filter!(liquid_lib::filters::std::Remove, v!("a a a a"), v!("a")).unwrap()
+        call_filter!(liquid_lib::stdlib::Remove, v!("a a a a"), v!("a")).unwrap()
     );
     assert_eq!(
         v!("   "),
-        call_filter!(liquid_lib::filters::std::Remove, v!("1 1 1 1"), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Remove, v!("1 1 1 1"), v!(1)).unwrap()
     );
     assert_eq!(
         v!("a a a"),
-        call_filter!(
-            liquid_lib::filters::std::RemoveFirst,
-            v!("a a a a"),
-            v!("a ")
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::RemoveFirst, v!("a a a a"), v!("a ")).unwrap()
     );
     assert_eq!(
         v!(" 1 1 1"),
-        call_filter!(liquid_lib::filters::std::RemoveFirst, v!("1 1 1 1"), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::RemoveFirst, v!("1 1 1 1"), v!(1)).unwrap()
     );
     assert_template_result!("a a a", r#"{{ "a a a a" | remove_first: "a " }}"#);
 }
@@ -1204,18 +1079,18 @@ fn test_append() {
 fn test_concat() {
     assert_eq!(
         v!([1, 2, 3, 4]),
-        call_filter!(liquid_lib::filters::std::Concat, v!([1, 2]), v!([3, 4])).unwrap()
+        call_filter!(liquid_lib::stdlib::Concat, v!([1, 2]), v!([3, 4])).unwrap()
     );
     assert_eq!(
         v!([1, 2, "a"]),
-        call_filter!(liquid_lib::filters::std::Concat, v!([1, 2]), v!(["a"])).unwrap()
+        call_filter!(liquid_lib::stdlib::Concat, v!([1, 2]), v!(["a"])).unwrap()
     );
     assert_eq!(
         v!([1, 2, 10]),
-        call_filter!(liquid_lib::filters::std::Concat, v!([1, 2]), v!([10])).unwrap()
+        call_filter!(liquid_lib::stdlib::Concat, v!([1, 2]), v!([10])).unwrap()
     );
 
-    liquid_core::call_filter!(liquid_lib::filters::std::Concat, v!([1, 2]), 10).unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Concat, v!([1, 2]), 10).unwrap_err();
 }
 
 fn test_prepend() {
@@ -1227,27 +1102,27 @@ fn test_prepend() {
 fn test_default() {
     assert_eq!(
         v!("foo"),
-        call_filter!(liquid_lib::filters::std::Default, v!("foo"), v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, v!("foo"), v!("bar")).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Default, Nil, v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, Nil, v!("bar")).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Default, v!(""), v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, v!(""), v!("bar")).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Default, v!(false), v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, v!(false), v!("bar")).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Default, v!([]), v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, v!([]), v!("bar")).unwrap()
     );
     assert_eq!(
         v!("bar"),
-        call_filter!(liquid_lib::filters::std::Default, v!({}), v!("bar")).unwrap()
+        call_filter!(liquid_lib::stdlib::Default, v!({}), v!("bar")).unwrap()
     );
 }
 
@@ -1276,17 +1151,11 @@ fn test_where() {
 
     assert_eq!(
         expectation,
-        call_filter!(
-            liquid_lib::filters::std::Where,
-            input.clone(),
-            v!("ok"),
-            v!(true)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok"), v!(true)).unwrap()
     );
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::filters::std::Where, input.clone(), v!("ok")).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok")).unwrap()
     );
 }
 
@@ -1305,17 +1174,11 @@ fn test_where_no_key_set() {
 
     assert_eq!(
         expectation,
-        call_filter!(
-            liquid_lib::filters::std::Where,
-            input.clone(),
-            v!("ok"),
-            v!(true)
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok"), v!(true)).unwrap()
     );
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::filters::std::Where, input.clone(), v!("ok")).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok")).unwrap()
     );
 }
 
@@ -1323,7 +1186,7 @@ fn test_where_non_array_map_input() {
     assert_eq!(
         v!([{ "a": "ok" }]),
         call_filter!(
-            liquid_lib::filters::std::Where,
+            liquid_lib::stdlib::Where,
             v!({ "a": "ok" }),
             v!("a"),
             v!("ok")
@@ -1333,7 +1196,7 @@ fn test_where_non_array_map_input() {
     assert_eq!(
         v!([]),
         call_filter!(
-            liquid_lib::filters::std::Where,
+            liquid_lib::stdlib::Where,
             v!({ "a": "not ok" }),
             v!("a"),
             v!("ok")
@@ -1343,8 +1206,8 @@ fn test_where_non_array_map_input() {
 }
 
 fn test_where_indexable_but_non_map_value() {
-    liquid_core::call_filter!(liquid_lib::filters::std::Where, 1, "ok", true).unwrap_err();
-    liquid_core::call_filter!(liquid_lib::filters::std::Where, 1, "ok").unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Where, 1, "ok", true).unwrap_err();
+    liquid_core::call_filter!(liquid_lib::stdlib::Where, 1, "ok").unwrap_err();
 }
 
 fn test_where_non_boolean_value() {
@@ -1357,7 +1220,7 @@ fn test_where_non_boolean_value() {
     assert_eq!(
         v!([{ "message": "Bonjour!", "language": "French" }]),
         call_filter!(
-            liquid_lib::filters::std::Where,
+            liquid_lib::stdlib::Where,
             input.clone(),
             "language",
             "French"
@@ -1367,7 +1230,7 @@ fn test_where_non_boolean_value() {
     assert_eq!(
         v!([{ "message": "Hallo!", "language": "German" }]),
         call_filter!(
-            liquid_lib::filters::std::Where,
+            liquid_lib::stdlib::Where,
             input.clone(),
             v!("language"),
             v!("German")
@@ -1377,7 +1240,7 @@ fn test_where_non_boolean_value() {
     assert_eq!(
         v!([{ "message": "Hello!", "language": "English" }]),
         call_filter!(
-            liquid_lib::filters::std::Where,
+            liquid_lib::stdlib::Where,
             input.clone(),
             "language",
             "English"
@@ -1389,11 +1252,11 @@ fn test_where_non_boolean_value() {
 fn test_where_array_of_only_unindexable_values() {
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::Where, v!([Nil]), "ok", true).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, v!([Nil]), "ok", true).unwrap()
     );
     assert_eq!(
         Nil,
-        call_filter!(liquid_lib::filters::std::Where, v!([Nil]), "ok").unwrap()
+        call_filter!(liquid_lib::stdlib::Where, v!([Nil]), "ok").unwrap()
     );
 }
 
@@ -1407,6 +1270,6 @@ fn test_where_no_target_value() {
 
     assert_eq!(
         v!([{ "foo": true }, { "foo": "for sure" }]),
-        call_filter!(liquid_lib::filters::std::Where, input, v!("foo")).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, v!("foo")).unwrap()
     );
 }
