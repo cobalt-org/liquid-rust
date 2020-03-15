@@ -36,7 +36,7 @@ impl Filter for MoneyWithUnderscoreFilter {
 }
 
 fn liquid_money() -> liquid::Parser {
-    liquid::ParserBuilder::with_liquid()
+    liquid::ParserBuilder::with_stdlib()
         .filter(MoneyFilterParser)
         .filter(MoneyWithUnderscoreFilterParser)
         .build()
@@ -65,7 +65,7 @@ impl Filter for SubstituteFilter {
 }
 
 fn liquid_sub() -> liquid::Parser {
-    liquid::ParserBuilder::with_liquid()
+    liquid::ParserBuilder::with_stdlib()
         .filter(SubstituteFilterParser)
         .build()
         .unwrap()

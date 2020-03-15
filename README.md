@@ -38,7 +38,7 @@ liquid = "0.18"
 Example:
 
 ```rust
-let template = liquid::ParserBuilder::with_liquid()
+let template = liquid::ParserBuilder::with_stdlib()
     .build().unwrap()
     .parse("Liquid! {{num | minus: 2}}").unwrap();
 

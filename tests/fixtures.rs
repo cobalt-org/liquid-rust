@@ -20,8 +20,7 @@ fn compare_by_file(name: &str, globals: &Object) {
 "#,
     );
 
-    let template = ParserBuilder::with_liquid()
-        .extra_filters()
+    let template = ParserBuilder::with_stdlib()
         .partials(partials)
         .build()
         .unwrap()

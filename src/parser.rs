@@ -37,8 +37,8 @@ impl ParserBuilder<Partials> {
     }
 
     #[cfg(feature = "stdlib")]
-    pub fn with_liquid() -> Self {
-        Self::new().liquid()
+    pub fn with_stdlib() -> Self {
+        Self::new().stdlib()
     }
 }
 
@@ -48,13 +48,7 @@ where
 {
     #[cfg(feature = "stdlib")]
     /// Create a Liquid parser with built-in Liquid features
-    pub fn liquid(self) -> Self {
-        self.liquid_tags().liquid_blocks().liquid_filters()
-    }
-
-    #[cfg(feature = "stdlib")]
-    /// Register built-in Liquid tags
-    pub fn liquid_tags(self) -> Self {
+    pub fn stdlib(self) -> Self {
         self.tag(tags::AssignTag)
             .tag(tags::BreakTag)
             .tag(tags::ContinueTag)
@@ -62,12 +56,7 @@ where
             .tag(tags::IncludeTag)
             .tag(tags::IncrementTag)
             .tag(tags::DecrementTag)
-    }
-
-    #[cfg(feature = "stdlib")]
-    /// Register built-in Liquid blocks
-    pub fn liquid_blocks(self) -> Self {
-        self.block(tags::RawBlock)
+            .block(tags::RawBlock)
             .block(tags::IfBlock)
             .block(tags::UnlessBlock)
             .block(tags::IfChangedBlock)
@@ -76,12 +65,6 @@ where
             .block(tags::CommentBlock)
             .block(tags::CaptureBlock)
             .block(tags::CaseBlock)
-    }
-
-    #[cfg(feature = "stdlib")]
-    /// Register built-in Liquid filters
-    pub fn liquid_filters(self) -> Self {
-        self.filter(filters::std::Abs)
             .filter(filters::std::Append)
             .filter(filters::std::AtLeast)
             .filter(filters::std::AtMost)
@@ -249,7 +232,7 @@ impl Parser {
     /// ## Minimal Template
     ///
     /// ```
-    /// let template = liquid::ParserBuilder::with_liquid()
+    /// let template = liquid::ParserBuilder::with_stdlib()
     ///     .build().unwrap()
     ///     .parse("Liquid!").unwrap();
     ///
@@ -280,7 +263,7 @@ impl Parser {
     /// Your rust code:
     ///
     /// ```rust,no_run
-    /// let template = liquid::ParserBuilder::with_liquid()
+    /// let template = liquid::ParserBuilder::with_stdlib()
     ///     .build().unwrap()
     ///     .parse_file("path/to/template.txt").unwrap();
     ///

@@ -8,7 +8,7 @@ static TEXT_ONLY: &'static str = "Hello World";
 
 #[bench]
 fn bench_parse_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid()
+    let parser = liquid::ParserBuilder::with_stdlib()
         .extra_filters()
         .build()
         .unwrap();
@@ -17,7 +17,7 @@ fn bench_parse_text(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_render_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid()
+    let parser = liquid::ParserBuilder::with_stdlib()
         .extra_filters()
         .build()
         .unwrap();

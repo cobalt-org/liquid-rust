@@ -10,8 +10,7 @@ use std::thread;
 #[test]
 pub fn pass_between_threads() {
     let input_file = "tests/fixtures/input/example.txt";
-    let template = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse_file(&input_file)

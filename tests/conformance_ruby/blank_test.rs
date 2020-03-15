@@ -148,7 +148,7 @@ fn test_raw_is_not_blank() {
 
 #[test]
 fn test_include_is_blank() {
-    let liquid = liquid::ParserBuilder::with_liquid()
+    let liquid = liquid::ParserBuilder::with_stdlib()
         .partials(liquid::partials::OnDemandCompiler::<BlankTestFilesystem>::empty())
         .build()
         .unwrap();

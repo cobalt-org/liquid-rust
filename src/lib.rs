@@ -9,7 +9,7 @@
 //!
 //! ## Example
 //! ```rust
-//! let template = liquid::ParserBuilder::with_liquid()
+//! let template = liquid::ParserBuilder::with_stdlib()
 //!     .build().unwrap()
 //!     .parse("Liquid! {{num | minus: 2}}").unwrap();
 //!
@@ -27,6 +27,7 @@ mod template;
 
 #[doc(hidden)]
 pub use liquid_core::value;
+pub use liquid_core::partials;
 
 pub use crate::parser::*;
 pub use crate::reflection::*;

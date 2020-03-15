@@ -89,11 +89,11 @@ mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
     use liquid_core::interpreter::RuntimeBuilder;
+    use liquid_core::partials;
+    use liquid_core::partials::PartialCompiler;
     use liquid_core::Value;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
-    use crate::partials;
-    use crate::partials::PartialCompiler;
     use crate::tags;
 
     use super::*;

@@ -6,7 +6,7 @@ fn test_assign_with_hyphen_in_variable_name() {
     {% assign this-thing = 'Print this-thing' %}
     {{ this-thing }}
 "#;
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(template_source)

@@ -255,7 +255,7 @@ fn test_case_on_length_with_else() {
 fn test_assign_from_case() {
     // Example from the shopify forums
     let code = r#"{% case collection.handle %}{% when "menswear-jackets" %}{% assign ptitle = "menswear" %}{% when "menswear-t-shirts" %}{% assign ptitle = "menswear" %}{% else %}{% assign ptitle = "womenswear" %}{% endcase %}{{ ptitle }}"#;
-    let template = liquid::ParserBuilder::with_liquid()
+    let template = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse(code)

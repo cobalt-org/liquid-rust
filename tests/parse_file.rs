@@ -9,8 +9,7 @@ fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
-    let template = ParserBuilder::with_liquid()
-        .extra_filters()
+    let template = ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse_file(input_file)
@@ -29,8 +28,7 @@ fn compare_by_file(name: &str, globals: &Object) {
 
 #[test]
 pub fn error_on_nonexistent_file() {
-    let template = ParserBuilder::with_liquid()
-        .extra_filters()
+    let template = ParserBuilder::with_stdlib()
         .build()
         .unwrap()
         .parse_file("not-a-file.ext");

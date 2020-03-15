@@ -18,8 +18,7 @@ pub fn big_table(b: &mut test::Bencher) {
         })
         .collect();
 
-    let parser = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
+    let parser = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap();
     let template = parser
@@ -40,8 +39,7 @@ static BIG_TABLE_TEMPLATE: &'static str = "<table>
 
 #[bench]
 pub fn teams(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_liquid()
-        .extra_filters()
+    let parser = liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap();
     let template = parser
