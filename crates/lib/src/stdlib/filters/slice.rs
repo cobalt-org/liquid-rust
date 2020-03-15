@@ -8,7 +8,7 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueView};
 
-use crate::filters::invalid_argument;
+use crate::invalid_argument;
 
 fn canonicalize_slice(
     slice_offset: isize,

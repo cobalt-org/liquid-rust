@@ -5,7 +5,7 @@ use liquid_core::{Value, ValueView};
 use url::percent_encoding;
 use url::percent_encoding::EncodeSet;
 
-use crate::filters::invalid_input;
+use crate::invalid_input;
 
 #[derive(Clone)]
 struct UrlEncodeSet(String);

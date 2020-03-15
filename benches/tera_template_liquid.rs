@@ -18,9 +18,7 @@ pub fn big_table(b: &mut test::Bencher) {
         })
         .collect();
 
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(BIG_TABLE_TEMPLATE)
         .expect("Benchmark template parsing failed");
@@ -39,9 +37,7 @@ static BIG_TABLE_TEMPLATE: &'static str = "<table>
 
 #[bench]
 pub fn teams(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(TEAMS_TEMPLATE)
         .expect("Benchmark template parsing failed");

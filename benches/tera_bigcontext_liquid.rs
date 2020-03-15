@@ -29,9 +29,7 @@ With that in mind, let’s learn about borrowing.",
         "objects": objects,
     });
 
-    let parser = liquid::ParserBuilder::with_stdlib()
-        .build()
-        .unwrap();
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
     let template = parser
         .parse(
             "

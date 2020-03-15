@@ -145,13 +145,13 @@ mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
 
-    use crate::tags;
+    use crate::stdlib;
 
     fn options() -> Language {
         let mut options = Language::default();
         options
             .tags
-            .register("assign".to_string(), tags::AssignTag.into());
+            .register("assign".to_string(), stdlib::AssignTag.into());
         options
             .tags
             .register("increment".to_string(), IncrementTag.into());

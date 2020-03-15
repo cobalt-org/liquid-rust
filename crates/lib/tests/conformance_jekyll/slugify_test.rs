@@ -1,9 +1,9 @@
-use liquid_lib::filters;
+use liquid_lib::jekyll;
 
 #[test]
 fn test_slugify_default() {
     assert_eq!(
-        liquid_core::call_filter!(filters::jekyll::Slugify, " Q*bert says @!#@!").unwrap(),
+        liquid_core::call_filter!(jekyll::Slugify, " Q*bert says @!#@!").unwrap(),
         v!("q-bert-says"),
     );
 }
@@ -11,8 +11,7 @@ fn test_slugify_default() {
 #[test]
 fn test_slugify_pretty() {
     assert_eq!(
-        liquid_core::call_filter!(filters::jekyll::Slugify, " Q*bert says _@!#?@!", "pretty")
-            .unwrap(),
+        liquid_core::call_filter!(jekyll::Slugify, " Q*bert says _@!#?@!", "pretty").unwrap(),
         v!("q-bert-says-_@!-@!"),
     );
 }

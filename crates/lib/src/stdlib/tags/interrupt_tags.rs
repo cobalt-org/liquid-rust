@@ -104,7 +104,7 @@ mod test {
     use liquid_core::compiler;
     use liquid_core::interpreter;
 
-    use crate::tags;
+    use crate::stdlib;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -114,10 +114,10 @@ mod test {
             .register("continue".to_string(), ContinueTag.into());
         options
             .blocks
-            .register("for".to_string(), tags::ForBlock.into());
+            .register("for".to_string(), stdlib::ForBlock.into());
         options
             .blocks
-            .register("if".to_string(), tags::IfBlock.into());
+            .register("if".to_string(), stdlib::IfBlock.into());
         options
     }
 

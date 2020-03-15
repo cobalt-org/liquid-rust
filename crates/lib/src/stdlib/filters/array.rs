@@ -9,7 +9,7 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueCow, ValueView};
 
-use crate::filters::{invalid_argument, invalid_input};
+use crate::{invalid_argument, invalid_input};
 
 fn as_sequence<'k>(input: &'k dyn ValueView) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
     if let Some(array) = input.as_array() {
