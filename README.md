@@ -32,7 +32,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid = "0.18"
+liquid = "0.20"
 ```
 
 Example:

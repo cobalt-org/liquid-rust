@@ -14,11 +14,5 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid-help-md = "0.16"
-```
-
-Now you can use the crate in your code:
-
-```rust
-extern crate liquid_help_md;
+liquid-help-md = "0.20"
 ```

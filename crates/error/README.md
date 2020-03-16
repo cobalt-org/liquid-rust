@@ -14,13 +14,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid-error = "0.16"
-```
-
-Now you can use the crate in your code:
-
-```rust
-extern crate liquid_error;
+liquid-error = "0.20"
 ```
 
 ## License
