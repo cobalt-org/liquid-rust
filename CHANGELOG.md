@@ -8,11 +8,11 @@ This release resolves a lot of breaking changes we've been holding off on.  This
 #### Conformance improvements
 
 We're striving to match the Ruby implementations behavior and this release gets us closer:
-- `where` trait implemented by or17191
+- `where` filter implemented by or17191
 - Improvements to `sort`, `sort_natural`, `compact`, and other filters by or17191
 - Support for `{{ var.size }}`
 
-In addition, we've made it more clear what functionality is a part of core liquid, Jekyll's extensions, Shopify's extensions, or our own extensions.
+In addition, we've made it more clear what filters, tags, and blocks are a part of core liquid, Jekyll's extensions, Shopify's extensions, or our own extensions.
 
 #### Improved API stability for `liquid`
 
@@ -26,7 +26,7 @@ The `liquid` crate has been stripped down to what is needed for parsing and rend
 Previously, you had to construct a `liquid::value::Object` (a newtype for a `HashMap`) to pass to `render`.  Now, you can create a `struct` and pass it in instead:
 
 ```rust
-#[derive(liquid::ObjectView, liquid::ValueView, Debug, Default)]
+#[derive(liquid::ObjectView, liquid::ValueView, serde::Serialize, serde::Deserialize, Debug)]
 struct Data {
     foo: i32,
     bar: String,
@@ -37,24 +37,18 @@ let template = todo!();
 let s = template.render(&data)?;
 ```
 
-In addition to the ergonomic improvements, this can help get the most performance:
+In addition to the ergonomic improvements, this can help squeeze out the most performance:
 * Can reuse borrowed data rather than having to switch everything to an owned type.
 * Avoid allocating for the `HashMap` entries.
 
 #### Other `render` ergonomic improvements
 
-There are now other easy ways to construct your `data`, depending on your application:
+There multiple convenient ways to construct your `data`, depending on your application:
 ```rust
 let template = todo!();
 
-let object = liquid::Object::new()
-let s = template.render(&object)?;
-
-let data = Data::default();
-let s = template.render(&data)?;
-
-let data = todo!();
-let object = data.to_object()?;  // Requires serde
+// `Object` is a newtype for `HashMap` and has a similar interface.
+let object = liquid::Object::new();
 let s = template.render(&object)?;
 
 let object = liquid::object!({
@@ -62,6 +56,15 @@ let object = liquid::object!({
     "bar" => "Hello World",
 });
 let s = template.render(&object)?;
+
+// Requires your struct implements `serde::Serialize`
+let data = todo!();
+let object = liquid::to_object(&data)?;
+let s = template.render(&object)?;
+
+// Using the aforementioned derive.
+let data = Data::default();
+let s = template.render(&data)?;
 ```
 
 #### String Optimizations
