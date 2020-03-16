@@ -6,6 +6,8 @@ KString
 [![Build Status](https://dev.azure.com/cobalt-org/cobalt-org/_apis/build/status/liquid-rust?branchName=master)](https://dev.azure.com/cobalt-org/cobalt-org/_build/latest?definitionId=1&branchName=master)
 [![Crates Status](https://img.shields.io/crates/v/kstring.svg)](https://crates.io/crates/kstring)
 
+## Background
+
 Considerations:
 - Large maps
 - Most keys live and drop without being used in any other way
