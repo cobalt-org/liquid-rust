@@ -1,5 +1,5 @@
 //! Key String: Optimized for map keys.
-//! 
+//!
 //! # Background
 //!
 //! Considerations:
@@ -9,7 +9,7 @@
 //! - Keys are immutable
 //! - Allow zero-cost abstractions between structs and maps (e.g. no allocating
 //!   when dealing with struct field names)
-//! 
+//!
 //! Ramifications:
 //! - Inline small strings rather than going to the heap.
 //! - Preserve `&'static str` across strings (`KString`),

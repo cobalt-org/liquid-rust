@@ -22,8 +22,9 @@
 //! ```
 
 mod parser;
-mod reflection;
 mod template;
+
+pub mod reflection;
 
 pub use liquid_core::partials;
 #[doc(hidden)]

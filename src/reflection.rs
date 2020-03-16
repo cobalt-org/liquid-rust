@@ -1,5 +1,9 @@
 use liquid_core::compiler;
 
+pub use compiler::BlockReflection;
+pub use compiler::FilterReflection;
+pub use compiler::TagReflection;
+
 pub trait ParserReflection {
     fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::BlockReflection> + 'r>;
 
