@@ -63,7 +63,7 @@ impl ParseTag for IncludeTag {
 
         // This may accept strange inputs such as `{% include 0 %}` or `{% include filterchain | filter:0 %}`.
         // Those inputs would fail anyway by there being not a path with those names so they are not a big concern.
-        let name = match name.expect_literal() {
+        let name = match name.expect_identifier() {
             // Using `to_kstr()` on literals ensures `Strings` will have their quotes trimmed.
             TryMatchToken::Matches(name) => name.to_kstr().to_string(),
             TryMatchToken::Fails(name) => name.as_str().to_string(),
@@ -155,32 +155,7 @@ mod test {
     }
 
     #[test]
-    fn include_tag_quotes() {
-        let text = "{% include 'example.txt' %}";
-        let mut options = options();
-        options
-            .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
-        let template = compiler::parse(text, &options)
-            .map(interpreter::Template::new)
-            .unwrap();
-
-        let partials = partials::OnDemandCompiler::<TestSource>::empty()
-            .compile(::std::sync::Arc::new(options))
-            .unwrap();
-        let mut runtime = RuntimeBuilder::new()
-            .set_partials(partials.as_ref())
-            .build();
-        runtime.stack_mut().set_global("num", Value::scalar(5f64));
-        runtime
-            .stack_mut()
-            .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut runtime).unwrap();
-        assert_eq!(output, "5 wat wot");
-    }
-
-    #[test]
-    fn include_non_string() {
+    fn include_identifier() {
         let text = "{% include example.txt %}";
         let mut options = options();
         options
