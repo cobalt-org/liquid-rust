@@ -41,6 +41,8 @@ In addition to the ergonomic improvements, this can help squeeze out the most pe
 * Can reuse borrowed data rather than having to switch everything to an owned type.
 * Avoid allocating for the `HashMap` entries.
 
+These improvements will be in the caller of `liquid` and don't show up in our benchmarks.
+
 #### Other `render` ergonomic improvements
 
 There multiple convenient ways to construct your `data`, depending on your application:
@@ -74,7 +76,9 @@ A core data type in liquid is an "Object", a mapping of strings to `Value`s. Str
 * Generally short, gaining a lot from small-string optimizations
 * Depending on the application, `'static`.  Something like a `Cow<'static, str>`. Even better if it can preserve `'static` getting a reference and going back to an owned value.
 
-Combining these together gives us the new `kstring` crate.
+Combining these together gives us the new `kstring` crate.  Some quick benchmarking suggests
+- Equality is faster than `String` (as a gauge of access time).
+- Cloning takes 1/5 the time when using `'static` or small string optimization.
 
 ### Details
 
