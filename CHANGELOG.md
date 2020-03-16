@@ -1,16 +1,17 @@
 <a name="0.20.0"></a>
 ## 0.20.0 (2020-03-12)
 
-This release resolves a lot of breaking changes we've been holding off on.  This doesn't make us ready for 1.0 yet but this closes the gap significantly.
+This release resolves several planned breaking changes we've been holding off on.  This doesn't make us ready for 1.0 yet but this closes the gap significantly.
 
 ### Highlights
 
 #### Conformance improvements
 
-We're striving to match the Ruby implementations behavior and this release gets us closer:
+We're striving to match the liquid-ruby's behavior and this release gets us closer:
 - `where` filter implemented by or17191
 - Improvements to `sort`, `sort_natural`, `compact`, and other filters by or17191
 - Support for `{{ var.size }}`
+- Improved equality of values
 
 In addition, we've made it more clear what filters, tags, and blocks are a part of core liquid, Jekyll's extensions, Shopify's extensions, or our own extensions.
 
@@ -23,7 +24,7 @@ The `liquid` crate has been stripped down to what is needed for parsing and rend
 
 #### `render` can accept Rust-native types
 
-Previously, you had to construct a `liquid::value::Object` (a newtype for a `HashMap`) to pass to `render`.  Now, you can create a `struct` and pass it in instead:
+Previously, you had to construct a `liquid::value::Object` (a newtype for a `HashMap`) to pass to `render`.  Now, you can create a `struct` that implements `ObjectView` and `ValueView` instead and pass it in:
 
 ```rust
 #[derive(liquid::ObjectView, liquid::ValueView, serde::Serialize, serde::Deserialize, Debug)]
@@ -71,7 +72,7 @@ let s = template.render(&data)?;
 
 #### String Optimizations
 
-A core data type in liquid is an "Object", a mapping of strings to `Value`s. Strings used as keys within a template engine are:
+A core data type in liquid is an `Object`, a mapping of strings to `Value`s. Strings used as keys within a template engine are:
 * Immutable, not needing separate `size` and `capacity` fields of a `String`. `Box<str>` is more appropriate.
 * Generally short, gaining a lot from small-string optimizations
 * Depending on the application, `'static`.  Something like a `Cow<'static, str>`. Even better if it can preserve `'static` getting a reference and going back to an owned value.
