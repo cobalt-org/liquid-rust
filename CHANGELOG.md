@@ -99,6 +99,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
   * `liquid` no longer exposes filters, tags, or blocks.  Depend on `liquid_lib` and enable the relevant features to get them.
   * `ParserBuilder`s `extra_filters` and `jekyll_filters` are no more.  Instead depend on `liquid_lib`, enable the `extras`, `shopify`, or `jekyll` features and manually add them.
   * `ParserBuilder`s `with_liquid` and `liquid` have been renamed to `with_stdlib` and `stdlib`.
+  * `include` tag was a hybrid of jekyll and liquid styles.  Now there are separate jekyll and luquid plugins.
 
 #### Features
 
