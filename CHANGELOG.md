@@ -10,6 +10,7 @@ This release resolves several planned breaking changes we've been holding off on
 We're striving to match the liquid-ruby's behavior and this release gets us closer:
 - `where` filter implemented by or17191
 - Improvements to `sort`, `sort_natural`, `compact`, and other filters by or17191
+- Improvements to `include`s conformance.  Before, it was a weird hybrid of jekyll and stdlib styles.
 - Support for `{{ var.size }}`
 - Improved equality of values
 

@@ -256,10 +256,15 @@ fn test_passing_options_to_included_templates() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#275
 fn test_render_raise_argument_error_when_template_is_undefined() {
-    assert_parse_error!("{% include undefined_variable %}", liquid());
-    assert_parse_error!("{% include nil %}", liquid());
+    let parser = liquid();
+    let data = liquid::Object::new();
+
+    let template = parser.parse("{% include undefined_variable %}").unwrap();
+    template.render(&data).unwrap_err();
+
+    let template = parser.parse("{% include nil %}").unwrap();
+    template.render(&data).unwrap_err();
 }
 
 #[test]
