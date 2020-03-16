@@ -1,6 +1,6 @@
 [package]
 name = "kstring"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 authors = ["Ed Page <eopage@gmail.com>"]
 description = "Key String: optimized for map keys"
 keywords = ["serde", "serialization", "string"]
