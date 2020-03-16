@@ -1,6 +1,6 @@
 [package]
 name = "liquid-lib"
-version = "0.19.1"
+version = "0.20.0-alpha.0"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/liquid-lib"
@@ -18,8 +18,8 @@ features = [ "default", "jekyll", "all" ]
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
-liquid-core = { version = "^0.19", path = "../core" }
-kstring = { version = "0.1.0", path = "../kstring" }
+liquid-core = { version = "0.20.0-alpha.0", path = "../core" }
+kstring = { version = "0.1.0-alpha.0", path = "../kstring" }
 itertools = "0.8.0"
 regex = "1.0"
 unicode-segmentation = "1.2"
@@ -37,4 +37,4 @@ extra = []
 all = ["stdlib", "jekyll", "shopify", "extra"]
 
 [dev-dependencies]
-liquid-value = { version = "^0.19", path = "../value" }
+liquid-value = { version = "0.20.0-alpha.0", path = "../value" }

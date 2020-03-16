@@ -1,6 +1,6 @@
 [package]
 name = "liquid-interpreter"
-version = "0.19.0"
+version = "0.20.0-alpha.0"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/crate/interpreter"
@@ -18,9 +18,9 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 itertools = "0.8.0"
 anymap = "0.12"
 # Exposed in API
-kstring = { version = "0.1.0", path = "../kstring" }
-liquid-error = { version = "^0.19", path = "../error" }
-liquid-value = { version = "^0.19", path = "../value" }
+kstring = { version = "0.1.0-alpha.0", path = "../kstring" }
+liquid-error = { version = "0.20.0-alpha.0", path = "../error" }
+liquid-value = { version = "0.20.0-alpha.0", path = "../value" }
 
 [dev-dependencies]
 serde_yaml = "0.8"

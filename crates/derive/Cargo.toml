@@ -1,6 +1,6 @@
 [package]
 name = "liquid-derive"
-version = "0.19.0"
+version = "0.20.0-alpha.0"
 authors = ["Pedro Gonçalo Correia <goncalerta@gmail.com>"]
 description = "The liquid templating language for Rust"
 readme = "README.md"
@@ -21,7 +21,7 @@ proc-quote = "0.3"
 proc-macro2 = "1.0"
 
 # Exposed in API
-liquid-error = { version = "^0.19", path = "../error" }
-liquid-value = { version = "^0.19", path = "../value" }
-liquid-interpreter = { version = "^0.19", path = "../interpreter" }
-liquid-compiler = { version = "^0.19", path = "../compiler" }
+liquid-error = { version = "0.20.0-alpha.0", path = "../error" }
+liquid-value = { version = "0.20.0-alpha.0", path = "../value" }
+liquid-interpreter = { version = "0.20.0-alpha.0", path = "../interpreter" }
+liquid-compiler = { version = "0.20.0-alpha.0", path = "../compiler" }
