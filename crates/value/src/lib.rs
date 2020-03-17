@@ -11,9 +11,7 @@ extern crate serde;
 mod macros;
 
 mod cow;
-mod date;
 mod display;
-mod map;
 mod ser;
 mod state;
 mod values;

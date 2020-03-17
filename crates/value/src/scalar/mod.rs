@@ -1,5 +1,7 @@
 //! A Liquid scalar value
 
+mod date;
+
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -10,7 +12,7 @@ use kstring::KStringRef;
 use crate::{DisplayCow, State};
 use crate::{Value, ValueView};
 
-pub use crate::date::*;
+pub use date::*;
 pub use crate::ser::to_scalar;
 
 /// A Liquid scalar value

@@ -1,12 +1,13 @@
 //! Type representing a Liquid object, payload of the `Value::Object` variant
 
+mod map;
+
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt;
 
 use kstring::KStringCow;
 
-use crate::map;
 use crate::DisplayCow;
 use crate::State;
 use crate::{Value, ValueView};
