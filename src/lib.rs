@@ -31,7 +31,6 @@ pub use liquid_core::partials;
 pub use liquid_core::value;
 
 pub use crate::parser::*;
-pub use crate::reflection::*;
 pub use crate::template::*;
 pub use liquid_core::object;
 pub use liquid_core::to_object;
