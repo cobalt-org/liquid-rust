@@ -1,3 +1,5 @@
+//! Type representing a Liquid object, payload of the `Value::Object` variant
+
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt;
@@ -8,6 +10,8 @@ use crate::map;
 use crate::DisplayCow;
 use crate::State;
 use crate::{Value, ValueView};
+
+pub use map::*;
 
 /// Accessor for objects.
 pub trait ObjectView: ValueView {
@@ -29,9 +33,6 @@ pub trait ObjectView: ValueView {
     /// Access a contained `Value`.
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView>;
 }
-
-/// Type representing a Liquid object, payload of the `Value::Object` variant
-pub type Object = map::Map;
 
 impl ValueView for Object {
     fn as_debug(&self) -> &dyn fmt::Debug {
@@ -267,7 +268,7 @@ fn as_view<T: ValueView>(value: &T) -> &dyn ValueView {
 }
 
 #[derive(Debug)]
-#[doc(hidden)]
+/// Helper for `ObjectView::source`
 pub struct ObjectSource<'s, O: ObjectView> {
     s: &'s O,
 }
@@ -291,7 +292,7 @@ impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
 }
 
 #[derive(Debug)]
-#[doc(hidden)]
+/// Helper for `ObjectView::render`
 pub struct ObjectRender<'s, O: ObjectView> {
     s: &'s O,
 }

@@ -14,7 +14,7 @@ mod array;
 mod cow;
 mod date;
 mod display;
-mod object;
+mod map;
 mod path;
 mod scalar;
 mod ser;
@@ -22,13 +22,13 @@ mod state;
 mod values;
 mod view;
 
-pub mod map;
+pub mod object;
 
 pub use crate::array::*;
 pub use crate::cow::*;
 pub use crate::date::*;
 pub use crate::display::*;
-pub use crate::object::*;
+pub use crate::object::{Object, ObjectView};
 pub use crate::path::*;
 pub use crate::scalar::*;
 pub use crate::ser::*;
