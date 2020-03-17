@@ -1,6 +1,7 @@
 //! Type representing a Liquid object, payload of the `Value::Object` variant
 
 mod map;
+mod ser;
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -12,8 +13,8 @@ use crate::DisplayCow;
 use crate::State;
 use crate::{Value, ValueView};
 
-pub use crate::ser::to_object;
 pub use map::*;
+pub use ser::to_object;
 
 /// Accessor for objects.
 pub trait ObjectView: ValueView {

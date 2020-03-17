@@ -1,6 +1,7 @@
 //! A Liquid scalar value
 
 mod date;
+pub(crate) mod ser;
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -13,7 +14,7 @@ use crate::{DisplayCow, State};
 use crate::{Value, ValueView};
 
 pub use date::*;
-pub use crate::ser::to_scalar;
+pub use ser::to_scalar;
 
 /// A Liquid scalar value
 #[derive(Clone, Serialize, Deserialize)]
