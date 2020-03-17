@@ -60,6 +60,7 @@ where
             .block(stdlib::CommentBlock)
             .block(stdlib::CaptureBlock)
             .block(stdlib::CaseBlock)
+            .filter(stdlib::Abs)
             .filter(stdlib::Append)
             .filter(stdlib::AtLeast)
             .filter(stdlib::AtMost)
