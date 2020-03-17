@@ -1,5 +1,6 @@
 use crate::test_helper::*;
 
+#[test]
 fn test_size() {
     assert_eq!(
         v!(3),
@@ -15,6 +16,7 @@ fn test_size() {
     );
 }
 
+#[test]
 fn test_downcase() {
     assert_eq!(
         v!("testing"),
@@ -26,6 +28,7 @@ fn test_downcase() {
     );
 }
 
+#[test]
 fn test_upcase() {
     assert_eq!(
         v!("TESTING"),
@@ -37,6 +40,7 @@ fn test_upcase() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#261
 fn test_slice() {
     assert_eq!(
@@ -91,6 +95,7 @@ fn test_slice() {
     liquid_core::call_filter!(liquid_lib::stdlib::Slice, "foobar", 0, "").unwrap_err();
 }
 
+#[test]
 #[should_panic] // liquid-rust#261
 fn test_slice_on_arrays() {
     let input = v!(["f", "o", "o", "b", "a", "r"]);
@@ -136,6 +141,7 @@ fn test_slice_on_arrays() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#264
 fn test_truncate() {
     assert_eq!(
@@ -164,6 +170,7 @@ fn test_truncate() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#263
 fn test_split() {
     assert_eq!(
@@ -188,6 +195,7 @@ fn test_split() {
     );
 }
 
+#[test]
 fn test_escape() {
     assert_eq!(
         v!("&lt;strong&gt;"),
@@ -204,6 +212,7 @@ fn test_escape() {
     assert_eq!(Nil, call_filter!(liquid_lib::stdlib::Escape, Nil).unwrap());
 }
 
+#[test]
 #[should_panic] // liquid-rust#269
 fn test_h() {
     panic!("Implement this filter");
@@ -215,6 +224,7 @@ fn test_h() {
     */
 }
 
+#[test]
 fn test_escape_once() {
     assert_eq!(
         v!("&lt;strong&gt;Hulk&lt;/strong&gt;"),
@@ -226,6 +236,7 @@ fn test_escape_once() {
     );
 }
 
+#[test]
 fn test_url_encode() {
     assert_eq!(
         v!("foo%2B1%40example.com"),
@@ -245,6 +256,7 @@ fn test_url_encode() {
     );
 }
 
+#[test]
 fn test_url_decode() {
     assert_eq!(
         v!("foo bar"),
@@ -272,6 +284,7 @@ fn test_url_decode() {
     );
 }
 
+#[test]
 fn test_truncatewords() {
     assert_eq!(
         v!("one two three"),
@@ -317,6 +330,7 @@ fn test_truncatewords() {
     );
 }
 
+#[test]
 fn test_strip_html() {
     assert_eq!(
         v!("test"),
@@ -368,6 +382,7 @@ fn test_strip_html() {
     );
 }
 
+#[test]
 fn test_join() {
     assert_eq!(
         v!("1 2 3 4"),
@@ -383,6 +398,7 @@ fn test_join() {
     );
 }
 
+#[test]
 fn test_sort() {
     assert_eq!(
         v!([1, 2, 3, 4]),
@@ -399,6 +415,7 @@ fn test_sort() {
     );
 }
 
+#[test]
 fn test_sort_with_nils() {
     assert_eq!(
         v!([1, 2, 3, 4, nil]),
@@ -415,6 +432,7 @@ fn test_sort_with_nils() {
     );
 }
 
+#[test]
 fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": 4, "handle": "alpha" },
@@ -444,6 +462,7 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
     assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
 }
 
+#[test]
 fn test_sort_natural() {
     assert_eq!(
         v!(["a", "B", "c", "D"]),
@@ -460,6 +479,7 @@ fn test_sort_natural() {
     );
 }
 
+#[test]
 fn test_sort_natural_with_nils() {
     assert_eq!(
         v!(["a", "B", "c", "D", nil]),
@@ -480,6 +500,7 @@ fn test_sort_natural_with_nils() {
     );
 }
 
+#[test]
 fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
     let input = v!([
       { "price": "4", "handle": "alpha" },
@@ -509,6 +530,7 @@ fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
     assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
 }
 
+#[test]
 fn test_sort_natural_case_check() {
     let input = v!([
       { "key": "X" },
@@ -542,6 +564,7 @@ fn test_sort_natural_case_check() {
     );
 }
 
+#[test]
 fn test_sort_empty_array() {
     assert_eq!(
         v!([]),
@@ -549,6 +572,7 @@ fn test_sort_empty_array() {
     );
 }
 
+#[test]
 fn test_sort_natural_empty_array() {
     assert_eq!(
         v!([]),
@@ -556,6 +580,7 @@ fn test_sort_natural_empty_array() {
     );
 }
 
+#[test]
 fn test_legacy_sort_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
@@ -563,6 +588,7 @@ fn test_legacy_sort_hash() {
     );
 }
 
+#[test]
 fn test_numerical_vs_lexicographical_sort() {
     assert_eq!(
         v!([2, 10]),
@@ -587,6 +613,7 @@ fn test_numerical_vs_lexicographical_sort() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#266
 fn test_uniq() {
     assert_eq!(
@@ -609,6 +636,7 @@ fn test_uniq() {
     //testdrop: Implementation specific: Drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#267
 fn test_uniq_empty_array() {
     assert_eq!(
@@ -617,6 +645,7 @@ fn test_uniq_empty_array() {
     );
 }
 
+#[test]
 fn test_compact_empty_array() {
     assert_eq!(
         v!([]),
@@ -624,12 +653,14 @@ fn test_compact_empty_array() {
     );
 }
 
+#[test]
 fn test_compact_invalid_property() {
     let input = v!([[1], [2], [3]]);
 
     liquid_core::call_filter!(liquid_lib::stdlib::Compact, input, "bar").unwrap_err();
 }
 
+#[test]
 fn test_reverse() {
     assert_eq!(
         v!([4, 3, 2, 1]),
@@ -637,6 +668,7 @@ fn test_reverse() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#256
 fn test_legacy_reverse_hash() {
     assert_eq!(
@@ -645,6 +677,7 @@ fn test_legacy_reverse_hash() {
     );
 }
 
+#[test]
 fn test_map() {
     assert_eq!(
         v!([1, 2, 3, 4]),
@@ -662,16 +695,19 @@ fn test_map() {
     );
 }
 
+#[test]
 #[should_panic]
 fn test_map_doesnt_call_arbitrary_stuff() {
     panic!("Implementation specific: filters can't access arbitrary variables");
 }
 
+#[test]
 #[should_panic]
 fn test_map_calls_to_liquid() {
     panic!("Implementation specific: to_liquid");
 }
 
+#[test]
 #[should_panic] // liquid-rust#255
 fn test_map_on_hashes() {
     assert_template_result!(
@@ -681,6 +717,7 @@ fn test_map_on_hashes() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#255
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
@@ -688,41 +725,49 @@ fn test_legacy_map_on_hashes_with_dynamic_key() {
     assert_template_result!("42", template, o!({ "thing": hash }));
 }
 
+#[test]
 #[should_panic]
 fn test_sort_calls_to_liquid() {
     panic!("Implementation specific: to_liquid");
 }
 
+#[test]
 #[should_panic]
 fn test_map_over_proc() {
     panic!("Implementation specific: proc");
 }
 
+#[test]
 #[should_panic]
 fn test_map_over_drops_returning_procs() {
     panic!("Implementation specific: proc / drops");
 }
 
+#[test]
 #[should_panic]
 fn test_map_works_on_enumerables() {
     panic!("Implementation specific: drops");
 }
 
+#[test]
 #[should_panic]
 fn test_sort_works_on_enumerables() {
     panic!("Implementation specific: drops");
 }
 
+#[test]
 #[should_panic]
 fn test_first_and_last_call_to_liquid() {
     panic!("Implementation specific: to_liquid");
 }
 
+#[test]
 #[should_panic]
 fn test_truncate_calls_to_liquid() {
     panic!("Implementation specific: to_liquid");
 }
 
+#[test]
 #[should_panic] // liquid-rust#252
 fn test_date() {
     assert_eq!(
@@ -831,6 +876,7 @@ fn test_date() {
     );
 }
 
+#[test]
 fn test_first_last() {
     assert_eq!(
         v!(1),
@@ -847,6 +893,7 @@ fn test_first_last() {
     assert_eq!(Nil, call_filter!(liquid_lib::stdlib::Last, v!([])).unwrap());
 }
 
+#[test]
 fn test_replace() {
     assert_eq!(
         v!("2 2 2 2"),
@@ -883,6 +930,7 @@ fn test_replace() {
     );
 }
 
+#[test]
 fn test_remove() {
     assert_eq!(
         v!("   "),
@@ -903,10 +951,12 @@ fn test_remove() {
     assert_template_result!("a a a", r#"{{ "a a a a" | remove_first: "a " }}"#);
 }
 
+#[test]
 fn test_pipes_in_string_arguments() {
     assert_template_result!("foobar", r#"{{ "foo|bar" | remove: "|" }}"#);
 }
 
+#[test]
 fn test_strip() {
     assert_template_result!("ab c", "{{ source | strip }}", o!({"source": " ab c  "}));
     assert_template_result!(
@@ -916,6 +966,7 @@ fn test_strip() {
     );
 }
 
+#[test]
 fn test_lstrip() {
     assert_template_result!("ab c  ", "{{ source | lstrip }}", o!({"source": " ab c  "}));
     assert_template_result!(
@@ -925,6 +976,7 @@ fn test_lstrip() {
     );
 }
 
+#[test]
 fn test_rstrip() {
     assert_template_result!(" ab c", "{{ source | rstrip }}", o!({"source": " ab c  "}));
     assert_template_result!(
@@ -934,6 +986,7 @@ fn test_rstrip() {
     );
 }
 
+#[test]
 fn test_strip_newlines() {
     assert_template_result!(
         "abc",
@@ -947,6 +1000,7 @@ fn test_strip_newlines() {
     );
 }
 
+#[test]
 fn test_newlines_to_br() {
     assert_template_result!(
         "a<br />\nb<br />\nc",
@@ -955,6 +1009,7 @@ fn test_newlines_to_br() {
     );
 }
 
+#[test]
 #[should_panic] // liquid-rust#260
 fn test_plus() {
     assert_template_result!("2", r#"{{ 1 | plus:1 }}"#);
@@ -963,6 +1018,7 @@ fn test_plus() {
     // Implementation specific: use of drops
 }
 
+#[test]
 fn test_minus() {
     assert_template_result!(
         "4",
@@ -974,6 +1030,7 @@ fn test_minus() {
     // Implementation specific: use of drops
 }
 
+#[test]
 fn test_abs() {
     assert_template_result!("17", r#"{{ 17 | abs }}"#);
     assert_template_result!("17", r#"{{ -17 | abs }}"#);
@@ -987,6 +1044,7 @@ fn test_abs() {
     assert_template_result!("17.42", r#"{{ "-17.42" | abs }}"#);
 }
 
+#[test]
 #[should_panic] // liquid-rust#265
 fn test_times() {
     assert_template_result!("12", r#"{{ 3 | times:4 }}"#);
@@ -1002,6 +1060,7 @@ fn test_times() {
     // Implementation specific: use of drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#251
 fn test_divided_by() {
     assert_template_result!("4", r#"{{ 12 | divided_by:3 }}"#);
@@ -1016,6 +1075,7 @@ fn test_divided_by() {
     // Implementation specific: use of drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#251
 fn test_modulo() {
     assert_template_result!("1", r#"{{ 3 | modulo:2 }}"#);
@@ -1024,6 +1084,7 @@ fn test_modulo() {
     // Implementation specific: use of drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#251
 fn test_round() {
     assert_template_result!("5", r#"{{ input | round }}"#, o!({"input": 4.6}));
@@ -1034,6 +1095,7 @@ fn test_round() {
     // Implementation specific: use of drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#251
 fn test_ceil() {
     assert_template_result!("5", r#"{{ input | ceil }}"#, o!({"input": 4.6}));
@@ -1043,6 +1105,7 @@ fn test_ceil() {
     // Implementation specific: use of drops
 }
 
+#[test]
 #[should_panic] // liquid-rust#251
 fn test_floor() {
     assert_template_result!("4", r#"{{ input | floor }}"#, o!({"input": 4.6}));
@@ -1052,6 +1115,7 @@ fn test_floor() {
     // Implementation specific: use of drops
 }
 
+#[test]
 fn test_at_most() {
     assert_template_result!("4", r#"{{ 5 | at_most:4 }}"#);
     assert_template_result!("5", r#"{{ 5 | at_most:5 }}"#);
@@ -1061,6 +1125,7 @@ fn test_at_most() {
     // Implementation specific: use of drops
 }
 
+#[test]
 fn test_at_least() {
     assert_template_result!("5", r#"{{ 5 | at_least:4 }}"#);
     assert_template_result!("5", r#"{{ 5 | at_least:5 }}"#);
@@ -1070,12 +1135,14 @@ fn test_at_least() {
     // Implementation specific: use of drops
 }
 
+#[test]
 fn test_append() {
     let assigns = o!({ "a": "bc", "b": "d" });
     assert_template_result!("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
     assert_template_result!("bcd", r#"{{ a | append: b}}"#, assigns);
 }
 
+#[test]
 fn test_concat() {
     assert_eq!(
         v!([1, 2, 3, 4]),
@@ -1093,12 +1160,14 @@ fn test_concat() {
     liquid_core::call_filter!(liquid_lib::stdlib::Concat, v!([1, 2]), 10).unwrap_err();
 }
 
+#[test]
 fn test_prepend() {
     let assigns = o!({ "a": "bc", "b": "a" });
     assert_template_result!("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
     assert_template_result!("abc", r#"{{ a | prepend: b}}"#, assigns);
 }
 
+#[test]
 fn test_default() {
     assert_eq!(
         v!("foo"),
@@ -1126,16 +1195,19 @@ fn test_default() {
     );
 }
 
+#[test]
 #[should_panic]
 fn test_cannot_access_private_methods() {
     panic!("Implementation specific: filters can't access arbitrary variables");
 }
 
+#[test]
 fn test_date_raises_nothing() {
     assert_template_result!("", r#"{{ "" | date: "%D" }}"#);
     assert_template_result!("abc", r#"{{ "abc" | date: "%D" }}"#);
 }
 
+#[test]
 fn test_where() {
     let input = v!([
       { "handle": "alpha", "ok": true },
@@ -1159,6 +1231,7 @@ fn test_where() {
     );
 }
 
+#[test]
 fn test_where_no_key_set() {
     let input = v!([
       { "handle": "alpha", "ok": true },
@@ -1182,6 +1255,7 @@ fn test_where_no_key_set() {
     );
 }
 
+#[test]
 fn test_where_non_array_map_input() {
     assert_eq!(
         v!([{ "a": "ok" }]),
@@ -1205,11 +1279,13 @@ fn test_where_non_array_map_input() {
     );
 }
 
+#[test]
 fn test_where_indexable_but_non_map_value() {
     liquid_core::call_filter!(liquid_lib::stdlib::Where, 1, "ok", true).unwrap_err();
     liquid_core::call_filter!(liquid_lib::stdlib::Where, 1, "ok").unwrap_err();
 }
 
+#[test]
 fn test_where_non_boolean_value() {
     let input = v!([
       { "message": "Bonjour!", "language": "French" },
@@ -1249,6 +1325,7 @@ fn test_where_non_boolean_value() {
     );
 }
 
+#[test]
 fn test_where_array_of_only_unindexable_values() {
     assert_eq!(
         Nil,
@@ -1260,6 +1337,7 @@ fn test_where_array_of_only_unindexable_values() {
     );
 }
 
+#[test]
 fn test_where_no_target_value() {
     let input = v!([
       { "foo": false },
