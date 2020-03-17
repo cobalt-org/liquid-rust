@@ -3,10 +3,10 @@ use std::fmt;
 
 use kstring::KStringCow;
 
-use crate::ArrayView;
+use crate::array::ArrayView;
+use crate::object::ObjectView;
+use crate::scalar::ScalarCow;
 use crate::DisplayCow;
-use crate::ObjectView;
-use crate::ScalarCow;
 use crate::State;
 use crate::Value;
 
@@ -162,14 +162,14 @@ impl<'v> PartialEq<bool> for ValueViewCmp<'v> {
     }
 }
 
-impl<'v> PartialEq<crate::DateTime> for ValueViewCmp<'v> {
-    fn eq(&self, other: &crate::DateTime) -> bool {
+impl<'v> PartialEq<crate::scalar::DateTime> for ValueViewCmp<'v> {
+    fn eq(&self, other: &crate::scalar::DateTime) -> bool {
         crate::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<crate::Date> for ValueViewCmp<'v> {
-    fn eq(&self, other: &crate::Date) -> bool {
+impl<'v> PartialEq<crate::scalar::Date> for ValueViewCmp<'v> {
+    fn eq(&self, other: &crate::scalar::Date) -> bool {
         crate::value_eq(self.0, other)
     }
 }

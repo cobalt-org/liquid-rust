@@ -4,7 +4,8 @@ pub use liquid_core::Value::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid_core::Value {
-    use liquid_core::value::{Date, Value};
+    use liquid_core::value::scalar::Date;
+    use liquid_core::value::Value;
     Value::scalar(Date::from_ymd(y, m, d))
 }
 

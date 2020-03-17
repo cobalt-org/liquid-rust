@@ -5,10 +5,10 @@ use kstring::KStringCow;
 use super::DisplayCow;
 use super::State;
 use super::Value;
-use super::{Array, ArrayView};
-use super::{Object, ObjectView};
-use super::{Scalar, ScalarCow};
 use super::{ValueView, ValueViewCmp};
+use crate::array::{Array, ArrayView};
+use crate::object::{Object, ObjectView};
+use crate::scalar::{Scalar, ScalarCow};
 
 /// Abstract the lifetime of a `Value`.
 #[derive(Clone, Debug)]
@@ -163,14 +163,14 @@ impl<'v> PartialEq<bool> for ValueCow<'v> {
     }
 }
 
-impl<'v> PartialEq<crate::DateTime> for ValueCow<'v> {
-    fn eq(&self, other: &crate::DateTime) -> bool {
+impl<'v> PartialEq<crate::scalar::DateTime> for ValueCow<'v> {
+    fn eq(&self, other: &crate::scalar::DateTime) -> bool {
         crate::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<crate::Date> for ValueCow<'v> {
-    fn eq(&self, other: &crate::Date) -> bool {
+impl<'v> PartialEq<crate::scalar::Date> for ValueCow<'v> {
+    fn eq(&self, other: &crate::scalar::Date) -> bool {
         crate::value_eq(self.as_view(), other)
     }
 }

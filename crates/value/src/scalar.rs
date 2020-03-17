@@ -1,3 +1,5 @@
+//! A Liquid scalar value
+
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -5,8 +7,11 @@ use kstring::KString;
 use kstring::KStringCow;
 use kstring::KStringRef;
 
-use crate::{Date, DateTime, DisplayCow, State};
+use crate::{DisplayCow, State};
 use crate::{Value, ValueView};
+
+pub use crate::date::*;
+pub use crate::ser::to_scalar;
 
 /// A Liquid scalar value
 #[derive(Clone, Serialize, Deserialize)]

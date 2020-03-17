@@ -11,6 +11,7 @@ use crate::DisplayCow;
 use crate::State;
 use crate::{Value, ValueView};
 
+pub use crate::ser::to_object;
 pub use map::*;
 
 /// Accessor for objects.

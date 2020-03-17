@@ -1,3 +1,5 @@
+//! Type representing a Liquid array, payload of the `BoxedValue::Array` variant
+
 use std::fmt;
 
 use kstring::KStringCow;

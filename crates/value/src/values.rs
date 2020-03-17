@@ -3,10 +3,11 @@ use std::fmt;
 
 use kstring::KStringCow;
 
+use crate::array::{Array, ArrayView};
+use crate::object::{Object, ObjectView};
+use crate::scalar::{Scalar, ScalarCow};
 use crate::DisplayCow;
 use crate::State;
-use crate::{Array, ArrayView, Object, ObjectView};
-use crate::{Scalar, ScalarCow};
 use crate::{ValueView, ValueViewCmp};
 
 /// An enum to represent different value types
@@ -261,14 +262,14 @@ impl PartialEq<bool> for Value {
     }
 }
 
-impl PartialEq<crate::DateTime> for Value {
-    fn eq(&self, other: &crate::DateTime) -> bool {
+impl PartialEq<crate::scalar::DateTime> for Value {
+    fn eq(&self, other: &crate::scalar::DateTime) -> bool {
         crate::value_eq(self.as_view(), other)
     }
 }
 
-impl PartialEq<crate::Date> for Value {
-    fn eq(&self, other: &crate::Date) -> bool {
+impl PartialEq<crate::scalar::Date> for Value {
+    fn eq(&self, other: &crate::scalar::Date) -> bool {
         crate::value_eq(self.as_view(), other)
     }
 }
