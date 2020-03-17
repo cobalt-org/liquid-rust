@@ -231,7 +231,7 @@ where
 /// present in the map.
 ///
 /// ```rust
-/// #     let mut map = liquid_value::object::Object::new();
+/// #     let mut map = liquid_value::Object::new();
 /// #     map.insert("key".into(), liquid_value::Value::Nil);
 /// #
 /// map["key"] = liquid_value::value!("value");
@@ -391,7 +391,7 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// assert_eq!(map.entry("liquid").key(), &"liquid");
     /// ```
     pub fn key(&self) -> &Key {
@@ -407,7 +407,7 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.entry("liquid").or_insert(liquid_value::value!(12));
     ///
     /// assert_eq!(map["liquid"], liquid_value::value!(12));
@@ -426,7 +426,7 @@ impl<'a> Entry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.entry("liquid").or_insert_with(|| liquid_value::value!("hoho"));
     ///
     /// assert_eq!(map["liquid"], liquid_value::value!("hoho"));
@@ -449,9 +449,9 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     ///
     /// match map.entry("liquid") {
     ///     Entry::Vacant(vacant) => {
@@ -471,9 +471,9 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     ///
     /// match map.entry("liquid") {
     ///     Entry::Vacant(vacant) => {
@@ -494,9 +494,9 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
@@ -516,9 +516,9 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
@@ -540,9 +540,9 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_value::ValueView;
     /// #
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!([1, 2, 3]));
     ///
     /// match map.entry("liquid") {
@@ -564,9 +564,9 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_value::ValueView;
     /// #
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!([1, 2, 3]));
     ///
     /// match map.entry("liquid") {
@@ -587,9 +587,9 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
@@ -610,9 +610,9 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_value::object::Entry;
+    /// use liquid_value::Entry;
     ///
-    /// let mut map = liquid_value::object::Object::new();
+    /// let mut map = liquid_value::Object::new();
     /// map.insert("liquid".into(), liquid_value::value!(12));
     ///
     /// match map.entry("liquid") {
@@ -641,7 +641,7 @@ impl<'a> IntoIterator for &'a Object {
     }
 }
 
-/// An iterator over a liquid_value::object::Object's entries.
+/// An iterator over a liquid_value::Object's entries.
 #[derive(Debug)]
 pub struct Iter<'a> {
     iter: IterImpl<'a>,
@@ -662,7 +662,7 @@ impl<'a> IntoIterator for &'a mut Object {
     }
 }
 
-/// A mutable iterator over a liquid_value::object::Object's entries.
+/// A mutable iterator over a liquid_value::Object's entries.
 #[derive(Debug)]
 pub struct IterMut<'a> {
     iter: IterMutImpl<'a>,
@@ -683,7 +683,7 @@ impl IntoIterator for Object {
     }
 }
 
-/// An owning iterator over a liquid_value::object::Object's entries.
+/// An owning iterator over a liquid_value::Object's entries.
 #[derive(Debug)]
 pub struct IntoIter {
     iter: IntoIterImpl,
@@ -693,7 +693,7 @@ delegate_iterator!((IntoIter) => (Key, Value));
 
 //////////////////////////////////////////////////////////////////////////////
 
-/// An iterator over a liquid_value::object::Object's keys.
+/// An iterator over a liquid_value::Object's keys.
 #[derive(Debug)]
 pub struct Keys<'a> {
     iter: KeysImpl<'a>,
@@ -703,7 +703,7 @@ delegate_iterator!((Keys<'a>) => &'a Key);
 
 //////////////////////////////////////////////////////////////////////////////
 
-/// An iterator over a liquid_value::object::Object's values.
+/// An iterator over a liquid_value::Object's values.
 #[derive(Debug)]
 pub struct Values<'a> {
     iter: ValuesImpl<'a>,
@@ -713,7 +713,7 @@ delegate_iterator!((Values<'a>) => &'a Value);
 
 //////////////////////////////////////////////////////////////////////////////
 
-/// A mutable iterator over a liquid_value::object::Object's values.
+/// A mutable iterator over a liquid_value::Object's values.
 #[derive(Debug)]
 pub struct ValuesMut<'a> {
     iter: ValuesMutImpl<'a>,

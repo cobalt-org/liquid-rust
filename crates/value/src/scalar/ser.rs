@@ -12,7 +12,7 @@ use crate::Scalar;
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_value::to_scalar(&s).unwrap();
+/// let value = liquid_value::scalar::to_scalar(&s).unwrap();
 /// assert_eq!(value, liquid_value::Scalar::new(s));
 /// ```
 pub fn to_scalar<T>(value: &T) -> Result<Scalar, liquid_error::Error>
