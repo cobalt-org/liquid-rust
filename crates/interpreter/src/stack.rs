@@ -1,6 +1,6 @@
 use itertools;
 use liquid_error::{Error, Result};
-use liquid_value::{Object, ObjectView, PathRef, Scalar, Value, ValueCow, ValueView};
+use liquid_value::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
@@ -81,14 +81,14 @@ impl<'g> Stack<'g> {
     }
 
     /// Recursively index into the stack.
-    pub fn try_get(&self, path: PathRef<'_, '_>) -> Option<ValueCow<'_>> {
+    pub fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
         let frame = self.find_path_frame(path)?;
 
         liquid_value::try_find(frame.as_value(), path)
     }
 
     /// Recursively index into the stack.
-    pub fn get(&self, path: PathRef<'_, '_>) -> Result<ValueCow<'_>> {
+    pub fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
         let frame = self.find_path_frame(path).ok_or_else(|| {
             let key = path
                 .iter()
@@ -117,7 +117,7 @@ impl<'g> Stack<'g> {
         roots
     }
 
-    fn find_path_frame<'a>(&'a self, path: PathRef<'_, '_>) -> Option<&'a dyn ObjectView> {
+    fn find_path_frame<'a>(&'a self, path: &[ScalarCow<'_>]) -> Option<&'a dyn ObjectView> {
         let key = path.iter().next()?;
         let key = key.to_kstr();
         self.find_frame(key.as_str())

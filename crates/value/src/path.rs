@@ -115,11 +115,8 @@ impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
     }
 }
 
-/// Path to a value in an `Object`.
-pub type PathRef<'p, 's> = &'p [ScalarCow<'s>];
-
 /// Find a `ValueView` nested in an `ObjectView`
-pub fn try_find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Option<ValueCow<'o>> {
+pub fn try_find<'o>(value: &'o dyn ValueView, path: &[ScalarCow<'_>]) -> Option<ValueCow<'o>> {
     let indexes = path.iter();
     try_find_borrowed(value, indexes)
 }
@@ -160,7 +157,7 @@ fn try_find_owned<'o, 'i>(
     }
 }
 
-fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow) -> Option<ValueCow<'o>> {
+fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow<'_>) -> Option<ValueCow<'o>> {
     if let Some(arr) = value.as_array() {
         if let Some(index) = index.to_integer() {
             arr.get(index).map(ValueCow::Borrowed)
@@ -194,7 +191,7 @@ fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow) -> Option<Valu
 }
 
 /// Find a `ValueView` nested in an `ObjectView`
-pub fn find<'o>(value: &'o dyn ValueView, path: PathRef<'_, '_>) -> Result<ValueCow<'o>> {
+pub fn find<'o>(value: &'o dyn ValueView, path: &[ScalarCow<'_>]) -> Result<ValueCow<'o>> {
     if let Some(res) = try_find(value, path) {
         Ok(res)
     } else {
