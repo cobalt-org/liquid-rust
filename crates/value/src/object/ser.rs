@@ -2,9 +2,8 @@ use kstring::KString;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
-use crate::ser::{
-    SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant, ValueSerializer,
-};
+use crate::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
+use crate::value::ser::ValueSerializer;
 use crate::Object;
 
 /// Convert a `T` into `liquid_value::Object`.
