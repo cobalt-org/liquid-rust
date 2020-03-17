@@ -109,17 +109,17 @@ pub trait ObjectIndex:
     fmt::Debug + fmt::Display + Ord + std::hash::Hash + Eq + std::borrow::Borrow<str>
 {
     /// Borrow the index
-    fn as_str(&self) -> &str;
+    fn as_index(&self) -> &str;
 }
 
 impl ObjectIndex for String {
-    fn as_str(&self) -> &str {
+    fn as_index(&self) -> &str {
         self.as_str()
     }
 }
 
 impl ObjectIndex for kstring::KString {
-    fn as_str(&self) -> &str {
+    fn as_index(&self) -> &str {
         self.as_str()
     }
 }
@@ -152,7 +152,7 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for Ha
     fn to_value(&self) -> Value {
         Value::Object(
             self.iter()
-                .map(|(k, v)| (kstring::KString::from_ref(k.as_str()), v.to_value()))
+                .map(|(k, v)| (kstring::KString::from_ref(k.as_index()), v.to_value()))
                 .collect(),
         )
     }
@@ -172,7 +172,7 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
-        let keys = HashMap::keys(self).map(|s| s.as_str().into());
+        let keys = HashMap::keys(self).map(|s| s.as_index().into());
         Box::new(keys)
     }
 
@@ -182,7 +182,7 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = HashMap::iter(self).map(|(k, v)| (k.as_str().into(), as_view(v)));
+        let i = HashMap::iter(self).map(|(k, v)| (k.as_index().into(), as_view(v)));
         Box::new(i)
     }
 
@@ -223,7 +223,7 @@ impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
     fn to_value(&self) -> Value {
         Value::Object(
             self.iter()
-                .map(|(k, v)| (kstring::KString::from_ref(k.as_str()), v.to_value()))
+                .map(|(k, v)| (kstring::KString::from_ref(k.as_index()), v.to_value()))
                 .collect(),
         )
     }
@@ -243,7 +243,7 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
-        let keys = BTreeMap::keys(self).map(|s| s.as_str().into());
+        let keys = BTreeMap::keys(self).map(|s| s.as_index().into());
         Box::new(keys)
     }
 
@@ -253,7 +253,7 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
-        let i = BTreeMap::iter(self).map(|(k, v)| (k.as_str().into(), as_view(v)));
+        let i = BTreeMap::iter(self).map(|(k, v)| (k.as_index().into(), as_view(v)));
         Box::new(i)
     }
 
