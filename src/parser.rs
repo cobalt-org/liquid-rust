@@ -13,10 +13,7 @@ use liquid_core::partials;
 #[cfg(feature = "stdlib")]
 use liquid_lib::stdlib;
 
-/// Storage for partial-templates.
-///
-/// This is the recommended policy.  See `liquid::partials` for more options.
-pub type Partials = partials::EagerCompiler<partials::InMemorySource>;
+type Partials = partials::EagerCompiler<partials::InMemorySource>;
 
 pub struct ParserBuilder<P = Partials>
 where

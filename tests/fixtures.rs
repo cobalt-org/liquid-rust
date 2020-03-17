@@ -7,11 +7,13 @@ use std::io::Read;
 
 use liquid::*;
 
+pub type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
+
 fn compare_by_file(name: &str, globals: &Object) {
     let input_file = format!("tests/fixtures/input/{}.txt", name);
     let output_file = format!("tests/fixtures/output/{}.txt", name);
 
-    let mut partials = liquid::Partials::empty();
+    let mut partials = Partials::empty();
     partials.add("tests/fixtures/input/example.txt", r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}
 "#);
     partials.add(
