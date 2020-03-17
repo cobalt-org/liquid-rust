@@ -1,7 +1,7 @@
 use std::fmt;
 
 use liquid_error::{Error, Result};
-use liquid_value::Path;
+use liquid_value::find::Path;
 use liquid_value::Scalar;
 use liquid_value::{ValueCow, ValueView};
 

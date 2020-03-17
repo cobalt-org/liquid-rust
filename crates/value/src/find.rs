@@ -1,3 +1,5 @@
+//! Find a `ValueView` nested in an `ObjectView`
+
 use std::fmt;
 use std::slice;
 
