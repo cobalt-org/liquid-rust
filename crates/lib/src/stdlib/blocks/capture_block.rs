@@ -94,7 +94,7 @@ impl ParseBlock for CaptureBlock {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::value::Scalar;
 
@@ -114,7 +114,7 @@ mod test {
             "{% endcapture %}"
         );
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -138,7 +138,7 @@ mod test {
             "{% endcapture %}"
         );
         let options = options();
-        let template = compiler::parse(text, &options).map(interpreter::Template::new);
+        let template = parser::parse(text, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

@@ -2,7 +2,6 @@
 members = [
   "crates/error",
   "crates/value",
-  "crates/compiler",
   "crates/interpreter",
   "crates/derive",
   "crates/core",

@@ -19,9 +19,3 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 syn = "1.0"
 proc-quote = "0.3"
 proc-macro2 = "1.0"
-
-# Exposed in API
-liquid-error = { version = "0.20.0-alpha.0", path = "../error" }
-liquid-value = { version = "0.20.0-alpha.0", path = "../value" }
-liquid-interpreter = { version = "0.20.0-alpha.0", path = "../interpreter" }
-liquid-compiler = { version = "0.20.0-alpha.0", path = "../compiler" }

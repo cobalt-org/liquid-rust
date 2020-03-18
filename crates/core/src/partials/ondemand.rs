@@ -1,8 +1,8 @@
 use std::fmt;
 use std::sync;
 
-use crate::compiler;
-use crate::compiler::Language;
+use crate::parser;
+use crate::parser::Language;
 use crate::error::Result;
 use crate::interpreter;
 use crate::interpreter::PartialStore;
@@ -111,7 +111,7 @@ where
     fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
         let s = self.source.try_get(name)?;
         let s = s.as_ref();
-        let template = compiler::parse(s, &self.language)
+        let template = parser::parse(s, &self.language)
             .map(interpreter::Template::new)
             .map(sync::Arc::new)
             .ok()?;
@@ -121,7 +121,7 @@ where
     fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
         let s = self.source.get(name)?;
         let s = s.as_ref();
-        let template = compiler::parse(s, &self.language)
+        let template = parser::parse(s, &self.language)
             .map(interpreter::Template::new)
             .map(sync::Arc::new)?;
         Ok(template)

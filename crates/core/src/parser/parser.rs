@@ -16,11 +16,11 @@ use super::Language;
 use super::Text;
 use super::{Filter, FilterArguments, FilterChain};
 
-use pest::Parser;
+use ::pest::Parser;
 
 mod pest {
     #[derive(Parser)]
-    #[grammar = "grammar.pest"]
+    #[grammar = "parser/grammar.pest"]
     pub struct LiquidParser;
 }
 
@@ -626,7 +626,7 @@ impl<'a> InvalidLiquidToken<'a> {
         self,
         next_elements: &mut dyn Iterator<Item = Pair>,
     ) -> Result<Box<dyn Renderable>> {
-        use pest::error::LineColLocation;
+        use ::pest::error::LineColLocation;
 
         let invalid_token_span = self.element.as_span();
         let invalid_token_position = invalid_token_span.start_pos();

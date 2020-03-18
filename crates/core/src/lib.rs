@@ -1,6 +1,6 @@
-pub mod compiler {
-    pub use liquid_compiler::*;
-}
+#[macro_use]
+extern crate pest_derive;
+
 pub mod error {
     pub use liquid_error::*;
 }
@@ -12,12 +12,13 @@ pub mod value {
 }
 
 pub mod partials;
+pub mod parser;
 
-pub use liquid_compiler::Language;
-pub use liquid_compiler::TagTokenIter;
-pub use liquid_compiler::{BlockReflection, ParseBlock, TagBlock};
-pub use liquid_compiler::{Filter, FilterParameters, FilterReflection, ParseFilter};
-pub use liquid_compiler::{ParseTag, TagReflection};
+pub use parser::Language;
+pub use parser::TagTokenIter;
+pub use parser::{BlockReflection, ParseBlock, TagBlock};
+pub use parser::{Filter, FilterParameters, FilterReflection, ParseFilter};
+pub use parser::{ParseTag, TagReflection};
 pub use liquid_derive::{
     Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
@@ -39,7 +40,7 @@ macro_rules! call_filter {
     ($filter:expr, $input:expr, $($args:expr),*) => {{
         let positional = Box::new(vec![$($crate::Expression::Literal($crate::value!($args))),*].into_iter());
         let keyword = Box::new(Vec::new().into_iter());
-        let args = $crate::compiler::FilterArguments { positional, keyword };
+        let args = $crate::parser::FilterArguments { positional, keyword };
 
         let runtime = $crate::Runtime::default();
 

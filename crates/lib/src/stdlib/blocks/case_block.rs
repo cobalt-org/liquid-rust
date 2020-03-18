@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use itertools;
-use liquid_core::compiler::BlockElement;
-use liquid_core::compiler::TryMatchToken;
+use liquid_core::parser::BlockElement;
+use liquid_core::parser::TryMatchToken;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::value::{ValueView, ValueViewCmp};
 use liquid_core::Expression;
@@ -196,7 +196,7 @@ impl ParseBlock for CaseBlock {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::value::Value;
 
@@ -221,7 +221,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -250,7 +250,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -272,7 +272,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = compiler::parse(text, &options).map(interpreter::Template::new);
+        let template = parser::parse(text, &options).map(interpreter::Template::new);
         assert!(template.is_err());
     }
 }

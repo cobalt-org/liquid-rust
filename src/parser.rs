@@ -3,7 +3,7 @@ use std::io::prelude::Read;
 use std::path;
 use std::sync;
 
-use liquid_core::compiler;
+use liquid_core::parser;
 use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter;
 
@@ -19,9 +19,9 @@ pub struct ParserBuilder<P = Partials>
 where
     P: partials::PartialCompiler,
 {
-    blocks: compiler::PluginRegistry<Box<dyn compiler::ParseBlock>>,
-    tags: compiler::PluginRegistry<Box<dyn compiler::ParseTag>>,
-    filters: compiler::PluginRegistry<Box<dyn compiler::ParseFilter>>,
+    blocks: parser::PluginRegistry<Box<dyn parser::ParseBlock>>,
+    tags: parser::PluginRegistry<Box<dyn parser::ParseTag>>,
+    filters: parser::PluginRegistry<Box<dyn parser::ParseFilter>>,
     partials: Option<P>,
 }
 
@@ -110,7 +110,7 @@ where
     }
 
     /// Inserts a new custom block into the parser
-    pub fn block<B: Into<Box<dyn compiler::ParseBlock>>>(mut self, block: B) -> Self {
+    pub fn block<B: Into<Box<dyn parser::ParseBlock>>>(mut self, block: B) -> Self {
         let block = block.into();
         self.blocks
             .register(block.reflection().start_tag().to_owned(), block);
@@ -118,14 +118,14 @@ where
     }
 
     /// Inserts a new custom tag into the parser
-    pub fn tag<T: Into<Box<dyn compiler::ParseTag>>>(mut self, tag: T) -> Self {
+    pub fn tag<T: Into<Box<dyn parser::ParseTag>>>(mut self, tag: T) -> Self {
         let tag = tag.into();
         self.tags.register(tag.reflection().tag().to_owned(), tag);
         self
     }
 
     /// Inserts a new custom filter into the parser
-    pub fn filter<F: Into<Box<dyn compiler::ParseFilter>>>(mut self, filter: F) -> Self {
+    pub fn filter<F: Into<Box<dyn parser::ParseFilter>>>(mut self, filter: F) -> Self {
         let filter = filter.into();
         self.filters
             .register(filter.reflection().name().to_owned(), filter);
@@ -157,7 +157,7 @@ where
             partials,
         } = self;
 
-        let mut options = compiler::Language::empty();
+        let mut options = parser::Language::empty();
         options.blocks = blocks;
         options.tags = tags;
         options.filters = filters;
@@ -189,15 +189,15 @@ impl<P> reflection::ParserReflection for ParserBuilder<P>
 where
     P: partials::PartialCompiler,
 {
-    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::BlockReflection> + 'r> {
+    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + 'r> {
         Box::new(self.blocks.plugins().map(|p| p.reflection()))
     }
 
-    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::TagReflection> + 'r> {
+    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + 'r> {
         Box::new(self.tags.plugins().map(|p| p.reflection()))
     }
 
-    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::FilterReflection> + 'r> {
+    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + 'r> {
         Box::new(self.filters.plugins().map(|p| p.reflection()))
     }
 
@@ -213,7 +213,7 @@ where
 
 #[derive(Default, Clone)]
 pub struct Parser {
-    options: sync::Arc<compiler::Language>,
+    options: sync::Arc<parser::Language>,
     partials: Option<sync::Arc<dyn interpreter::PartialStore + Send + Sync>>,
 }
 
@@ -238,7 +238,7 @@ impl Parser {
     /// ```
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
-        let template = compiler::parse(text, &self.options).map(interpreter::Template::new)?;
+        let template = parser::parse(text, &self.options).map(interpreter::Template::new)?;
         Ok(Template {
             template,
             partials: self.partials.clone(),
@@ -290,15 +290,15 @@ impl Parser {
 }
 
 impl reflection::ParserReflection for Parser {
-    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::BlockReflection> + 'r> {
+    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + 'r> {
         Box::new(self.options.blocks.plugins().map(|p| p.reflection()))
     }
 
-    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::TagReflection> + 'r> {
+    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + 'r> {
         Box::new(self.options.tags.plugins().map(|p| p.reflection()))
     }
 
-    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn compiler::FilterReflection> + 'r> {
+    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + 'r> {
         Box::new(self.options.filters.plugins().map(|p| p.reflection()))
     }
 

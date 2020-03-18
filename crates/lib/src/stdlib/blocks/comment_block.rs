@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_core::compiler::BlockElement;
+use liquid_core::parser::BlockElement;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
@@ -76,7 +76,7 @@ impl ParseBlock for CommentBlock {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
 
     fn options() -> Language {
@@ -89,7 +89,7 @@ mod test {
 
     fn unit_parse(text: &str) -> String {
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

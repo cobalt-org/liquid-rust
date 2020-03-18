@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
-use liquid_core::compiler::TagToken;
-use liquid_core::compiler::TryMatchToken;
+use liquid_core::parser::TagToken;
+use liquid_core::parser::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::Expression;
 use liquid_core::Language;
@@ -167,7 +167,7 @@ impl State {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::value::Value;
 
@@ -179,7 +179,7 @@ mod test {
 
     #[test]
     fn unnamed_cycle_gets_a_name() {
-        let tag = compiler::Tag::new("{% cycle this, cycle, has, no, name %}").unwrap();
+        let tag = parser::Tag::new("{% cycle this, cycle, has, no, name %}").unwrap();
         let cycle = parse_cycle(tag.into_tokens(), &options()).unwrap();
         assert!(!cycle.name.is_empty());
     }
@@ -192,7 +192,7 @@ mod test {
             "{% cycle 'b': 'one', 'two', 'three' %}\n",
             "{% cycle 'b': 'one', 'two', 'three' %}\n"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -210,7 +210,7 @@ mod test {
             "{% cycle 'one', 'two', 'three' %}\n",
             "{% cycle 'one', 'two', 'three' %}\n"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -228,7 +228,7 @@ mod test {
             "{% cycle alpha, beta, gamma %}\n",
             "{% cycle alpha, beta, gamma %}\n"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -248,7 +248,7 @@ mod test {
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n");
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
         let output = template.render(&mut Default::default());

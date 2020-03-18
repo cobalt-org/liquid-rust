@@ -11,11 +11,11 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
     let filter_struct_name = filter_struct_name.as_ref().map_err(|err| err.clone())?;
 
     let impl_parse_filter =
-        filter_parser.generate_impl(quote! { ::liquid_core::compiler::ParseFilter });
+        filter_parser.generate_impl(quote! { ::liquid_core::parser::ParseFilter });
 
     if let Some(parameters_struct_name) = parameters_struct_name {
         let build_filter_parameters = quote_spanned! {parameters_struct_name.span()=>
-            let args = <#parameters_struct_name as ::liquid_core::compiler::FilterParameters>::from_args(args)?;
+            let args = <#parameters_struct_name as ::liquid_core::parser::FilterParameters>::from_args(args)?;
         };
 
         let return_expr = quote_spanned! {filter_struct_name.span()=>
@@ -24,12 +24,12 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
 
         Ok(quote! {
             #impl_parse_filter {
-                fn parse(&self, args: ::liquid_core::compiler::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::compiler::Filter>> {
+                fn parse(&self, args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::parser::Filter>> {
                     #build_filter_parameters
                     #return_expr
                 }
 
-                fn reflection(&self) -> &::liquid_core::compiler::FilterReflection {
+                fn reflection(&self) -> &::liquid_core::parser::FilterReflection {
                     self
                 }
             }
@@ -40,7 +40,7 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
         };
         Ok(quote! {
             #impl_parse_filter {
-                fn parse(&self, mut args: ::liquid_core::compiler::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::compiler::Filter>> {
+                fn parse(&self, mut args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::parser::Filter>> {
                     if let ::std::option::Option::Some(arg) = args.positional.next() {
                         return ::std::result::Result::Err(::liquid_core::error::Error::with_msg("Invalid number of positional arguments")
                             .context("cause", concat!("expected at most 0 positional arguments"))
@@ -53,7 +53,7 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
                     #return_expr
                 }
 
-                fn reflection(&self) -> &::liquid_core::compiler::FilterReflection {
+                fn reflection(&self) -> &::liquid_core::parser::FilterReflection {
                     self
                 }
             }

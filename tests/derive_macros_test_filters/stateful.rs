@@ -1,4 +1,4 @@
-use liquid_core::compiler::FilterArguments;
+use liquid_core::parser::FilterArguments;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;

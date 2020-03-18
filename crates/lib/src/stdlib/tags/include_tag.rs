@@ -83,7 +83,7 @@ impl ParseTag for IncludeTag {
 mod test {
     use std::borrow;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::interpreter::RuntimeBuilder;
     use liquid_core::partials;
@@ -158,7 +158,7 @@ mod test {
         options
             .filters
             .register("size".to_string(), Box::new(SizeFilterParser));
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -183,7 +183,7 @@ mod test {
         options
             .filters
             .register("size".to_string(), Box::new(SizeFilterParser));
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

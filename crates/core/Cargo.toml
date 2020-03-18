@@ -12,9 +12,12 @@ license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [dependencies]
+itertools = "0.8.0"
+pest = "2.0"
+pest_derive = "2.0"
+
+# Exposed in API
 liquid-error = { version = "0.20.0-alpha.0", path = "../error" }
 liquid-value = { version = "0.20.0-alpha.0", path = "../value" }
-liquid-compiler = { version = "0.20.0-alpha.0", path = "../compiler" }
 liquid-interpreter = { version = "0.20.0-alpha.0", path = "../interpreter" }
 liquid-derive = { version = "0.20.0-alpha.0", path = "../derive" }
-itertools = "0.8.0"

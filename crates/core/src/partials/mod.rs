@@ -4,7 +4,7 @@ use std::sync;
 
 use itertools;
 
-use crate::compiler::Language;
+use crate::parser::Language;
 use crate::error::Error;
 use crate::error::Result;
 use crate::interpreter::PartialStore;

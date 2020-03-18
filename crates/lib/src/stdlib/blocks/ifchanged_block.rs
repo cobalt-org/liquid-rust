@@ -104,7 +104,7 @@ impl State {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
 
     use crate::stdlib;
@@ -135,7 +135,7 @@ mod test {
             "{% endifchanged %}",
             "{% endfor %}",
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

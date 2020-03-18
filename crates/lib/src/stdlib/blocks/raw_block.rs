@@ -67,7 +67,7 @@ impl ParseBlock for RawBlock {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
 
     fn options() -> Language {
@@ -78,7 +78,7 @@ mod test {
 
     fn unit_parse(text: &str) -> String {
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

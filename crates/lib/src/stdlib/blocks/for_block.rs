@@ -2,8 +2,8 @@ use std::fmt;
 use std::io::Write;
 
 use itertools;
-use liquid_core::compiler::BlockElement;
-use liquid_core::compiler::TryMatchToken;
+use liquid_core::parser::BlockElement;
+use liquid_core::parser::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::interpreter::Interrupt;
 use liquid_core::value::{Object, Value, ValueView};
@@ -561,7 +561,7 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 
 #[cfg(test)]
 mod test {
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::interpreter::RuntimeBuilder;
     use liquid_core::value::ValueView;
@@ -587,7 +587,7 @@ mod test {
     fn loop_over_array() {
         let text = concat!("{% for name in array %}", "test {{name}} ", "{% endfor %}",);
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -613,7 +613,7 @@ mod test {
             "{% endfor %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -632,7 +632,7 @@ mod test {
             "#{{forloop.index}} test {{x}}, ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -664,7 +664,7 @@ mod test {
             ">>{{outer}}>>\n",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -692,7 +692,7 @@ mod test {
             "empty outer",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -715,7 +715,7 @@ mod test {
         // make sure that a degenerate range (i.e. where max < min)
         // doesn't result in an infinte loop
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -731,7 +731,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -747,7 +747,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -763,7 +763,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -779,7 +779,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -795,7 +795,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -813,7 +813,7 @@ mod test {
             "There are no items!",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -825,7 +825,7 @@ mod test {
     #[test]
     fn limit_greater_than_iterator_length() {
         let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -849,7 +849,7 @@ mod test {
             "{% endfor %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -891,7 +891,7 @@ mod test {
         options
             .filters
             .register("shout".to_string(), Box::new(ShoutFilterParser));
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -918,7 +918,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -935,7 +935,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -961,7 +961,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -992,7 +992,7 @@ mod test {
             "{{ i }} ",
             "{% endtablerow %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -1020,7 +1020,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 

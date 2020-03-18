@@ -1,7 +1,7 @@
 use liquid;
 
 use liquid::{Parser, ParserBuilder};
-use liquid_core::compiler::FilterReflection;
+use liquid_core::parser::FilterReflection;
 
 mod derive_macros_test_filters;
 

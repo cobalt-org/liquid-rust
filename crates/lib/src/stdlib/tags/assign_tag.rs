@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_core::compiler::FilterChain;
+use liquid_core::parser::FilterChain;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -88,7 +88,7 @@ impl ParseTag for AssignTag {
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::value::Scalar;
     use liquid_core::value::Value;
@@ -112,7 +112,7 @@ mod test {
     #[test]
     fn assign() {
         let options = options();
-        let template = compiler::parse("{% assign freestyle = false %}{{ freestyle }}", &options)
+        let template = parser::parse("{% assign freestyle = false %}{{ freestyle }}", &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -126,7 +126,7 @@ mod test {
     fn assign_array_indexing() {
         let text = concat!("{% assign freestyle = tags[1] %}", "{{ freestyle }}");
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -151,7 +151,7 @@ mod test {
             "{{ freestyle }}"
         );
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -182,7 +182,7 @@ mod test {
         );
 
         let options = options();
-        let template = compiler::parse(text, &options)
+        let template = parser::parse(text, &options)
             .map(interpreter::Template::new)
             .unwrap();
 

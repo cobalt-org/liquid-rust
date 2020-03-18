@@ -653,10 +653,10 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
         });
 
     quote! {
-        impl<'a> ::liquid_core::compiler::FilterParameters<'a> for #name {
+        impl<'a> ::liquid_core::parser::FilterParameters<'a> for #name {
             type EvaluatedFilterParameters = #evaluated_name<'a>;
 
-            fn from_args(mut args: ::liquid_core::compiler::FilterArguments) -> ::liquid_core::error::Result<Self> {
+            fn from_args(mut args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<Self> {
                 #(#construct_positional_fields)*
                 if let ::std::option::Option::Some(arg) = args.positional.next() {
                     return ::std::result::Result::Err(#too_many_args);
@@ -729,7 +729,7 @@ fn generate_parameter_reflection(field: &FilterParameter<'_>) -> TokenStream {
     let is_optional = field.is_optional();
 
     quote! {
-        ::liquid_core::compiler::ParameterReflection {
+        ::liquid_core::parser::ParameterReflection {
             name: #name,
             description: #description,
             is_optional: #is_optional,
@@ -754,12 +754,12 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenSt
         .map(generate_parameter_reflection);
 
     quote! {
-        impl ::liquid_core::compiler::FilterParametersReflection for #name {
-            fn positional_parameters() -> &'static [::liquid_core::compiler::ParameterReflection] {
+        impl ::liquid_core::parser::FilterParametersReflection for #name {
+            fn positional_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
                 &[ #(#pos_params_reflection)* ]
             }
 
-            fn keyword_parameters() -> &'static [::liquid_core::compiler::ParameterReflection] {
+            fn keyword_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
                 &[ #(#kw_params_reflection)* ]
             }
         }

@@ -4,8 +4,8 @@ use std::sync;
 
 use itertools;
 
-use crate::compiler;
-use crate::compiler::Language;
+use crate::parser;
+use crate::parser::Language;
 use crate::error::Error;
 use crate::error::Result;
 use crate::interpreter;
@@ -90,7 +90,7 @@ where
             .into_iter()
             .map(|name| {
                 let source = self.source.get(name).and_then(|s| {
-                    compiler::parse(s.as_ref(), &language)
+                    parser::parse(s.as_ref(), &language)
                         .map(interpreter::Template::new)
                         .map(|t| {
                             let t: sync::Arc<dyn interpreter::Renderable> = sync::Arc::new(t);

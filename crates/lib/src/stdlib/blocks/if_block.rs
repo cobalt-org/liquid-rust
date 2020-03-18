@@ -1,8 +1,8 @@
 use std::fmt;
 use std::io::Write;
 
-use liquid_core::compiler::BlockElement;
-use liquid_core::compiler::TagToken;
+use liquid_core::parser::BlockElement;
+use liquid_core::parser::TagToken;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::value::{ValueView, ValueViewCmp};
 use liquid_core::Expression;
@@ -461,7 +461,7 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 mod test {
     use super::*;
 
-    use liquid_core::compiler;
+    use liquid_core::parser;
     use liquid_core::interpreter;
     use liquid_core::value::Object;
     use liquid_core::value::Value;
@@ -478,7 +478,7 @@ mod test {
     #[test]
     fn number_comparison() {
         let text = "{% if 6 < 7  %}if true{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -487,7 +487,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -499,7 +499,7 @@ mod test {
     #[test]
     fn string_comparison() {
         let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -508,7 +508,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -527,7 +527,7 @@ mod test {
             "{% endif %}"
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -567,7 +567,7 @@ mod test {
             "{% endunless %}"
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -600,7 +600,7 @@ mod test {
             "nope",
             "{% endif %}"
         );
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -629,7 +629,7 @@ mod test {
             "{% endif %}"
         );
 
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -657,7 +657,7 @@ mod test {
     #[test]
     fn string_contains_with_literals() {
         let text = "{% if \"Star Wars\" contains \"Star\" %}if true{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -666,7 +666,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -678,7 +678,7 @@ mod test {
     #[test]
     fn string_contains_with_variables() {
         let text = "{% if movie contains \"Star\"  %}if true{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -690,7 +690,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -705,7 +705,7 @@ mod test {
     #[test]
     fn contains_with_object_and_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -720,7 +720,7 @@ mod test {
     #[test]
     fn contains_with_object_and_missing_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -734,7 +734,7 @@ mod test {
     #[test]
     fn contains_with_array_and_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -752,7 +752,7 @@ mod test {
     #[test]
     fn contains_with_array_and_no_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -766,7 +766,7 @@ mod test {
     #[test]
     fn multiple_conditions_and() {
         let text = "{% if 1 == 1 and 2 == 2 %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -775,7 +775,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 1 == 1 and 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -787,7 +787,7 @@ mod test {
     #[test]
     fn multiple_conditions_or() {
         let text = "{% if 1 == 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -796,7 +796,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if 1 != 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
@@ -808,7 +808,7 @@ mod test {
     #[test]
     fn multiple_conditions_and_or() {
         let text = "{% if 1 == 1 or 2 == 2 and 3 != 3 %}if true{% else %}if false{% endif %}";
-        let template = compiler::parse(text, &options())
+        let template = parser::parse(text, &options())
             .map(interpreter::Template::new)
             .unwrap();
 
