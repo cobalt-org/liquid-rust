@@ -31,7 +31,7 @@ use proc_macro::TokenStream;
 ///
 /// `TYPE` will be either `Expression` or `Option<Expression>`, marking the
 /// parameter, respectively, as either required or optional. Note `Expression`
-/// here is the type `::liquid_core::interpreter::Expression`.
+/// here is the type `::liquid_core::runtime::Expression`.
 ///
 /// Inside the `#[parameter(...)]` attribute there may be some information
 /// about the parameter, such as:

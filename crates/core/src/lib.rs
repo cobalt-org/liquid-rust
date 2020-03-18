@@ -4,13 +4,11 @@ extern crate pest_derive;
 pub mod error {
     pub use liquid_error::*;
 }
-pub mod interpreter {
-    pub use liquid_interpreter::*;
-}
 pub mod value {
     pub use liquid_value::*;
 }
 
+pub mod runtime;
 pub mod partials;
 pub mod parser;
 
@@ -23,10 +21,10 @@ pub use liquid_derive::{
     Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
 pub use liquid_error::{Error, Result};
-pub use liquid_interpreter::Expression;
-pub use liquid_interpreter::Renderable;
-pub use liquid_interpreter::Runtime;
-pub use liquid_interpreter::Template;
+pub use runtime::Expression;
+pub use runtime::Renderable;
+pub use runtime::Runtime;
+pub use runtime::Template;
 pub use liquid_value::{object, to_object, Object};
 pub use liquid_value::{to_value, value, Value, ValueCow};
 pub use liquid_value::{ObjectView, ValueView};

@@ -1,5 +1,5 @@
 use liquid_error::Result;
-use liquid_interpreter::Renderable;
+use crate::runtime::Renderable;
 
 use super::Language;
 use super::TagTokenIter;

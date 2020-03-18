@@ -89,7 +89,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
     use liquid_core::value::Scalar;
     use liquid_core::value::Value;
 
@@ -113,7 +113,7 @@ mod test {
     fn assign() {
         let options = options();
         let template = parser::parse("{% assign freestyle = false %}{{ freestyle }}", &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -127,7 +127,7 @@ mod test {
         let text = concat!("{% assign freestyle = tags[1] %}", "{{ freestyle }}");
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -152,7 +152,7 @@ mod test {
         );
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -183,7 +183,7 @@ mod test {
 
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         // test one: no matching value in `tags`

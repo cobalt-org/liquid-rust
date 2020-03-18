@@ -5,7 +5,7 @@ use std::sync;
 
 use liquid_core::parser;
 use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::interpreter;
+use liquid_core::runtime;
 
 use super::Template;
 use crate::reflection;
@@ -214,7 +214,7 @@ where
 #[derive(Default, Clone)]
 pub struct Parser {
     options: sync::Arc<parser::Language>,
-    partials: Option<sync::Arc<dyn interpreter::PartialStore + Send + Sync>>,
+    partials: Option<sync::Arc<dyn runtime::PartialStore + Send + Sync>>,
 }
 
 impl Parser {
@@ -238,7 +238,7 @@ impl Parser {
     /// ```
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
-        let template = parser::parse(text, &self.options).map(interpreter::Template::new)?;
+        let template = parser::parse(text, &self.options).map(runtime::Template::new)?;
         Ok(Template {
             template,
             partials: self.partials.clone(),

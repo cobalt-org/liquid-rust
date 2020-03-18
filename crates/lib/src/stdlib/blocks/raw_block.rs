@@ -68,7 +68,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -79,7 +79,7 @@ mod test {
     fn unit_parse(text: &str) -> String {
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();

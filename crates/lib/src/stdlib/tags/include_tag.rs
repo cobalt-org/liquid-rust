@@ -84,8 +84,8 @@ mod test {
     use std::borrow;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
-    use liquid_core::interpreter::RuntimeBuilder;
+    use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
     use liquid_core::partials;
     use liquid_core::partials::PartialCompiler;
     use liquid_core::Value;
@@ -159,7 +159,7 @@ mod test {
             .filters
             .register("size".to_string(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
@@ -184,7 +184,7 @@ mod test {
             .filters
             .register("size".to_string(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let partials = partials::OnDemandCompiler::<TestSource>::empty()

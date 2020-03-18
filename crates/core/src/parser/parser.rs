@@ -7,9 +7,9 @@ use std;
 
 use itertools;
 use liquid_error::{Error, Result, ResultLiquidExt};
-use liquid_interpreter::Expression;
-use liquid_interpreter::Renderable;
-use liquid_interpreter::Variable;
+use crate::runtime::Expression;
+use crate::runtime::Renderable;
+use crate::runtime::Variable;
 use liquid_value::Value;
 
 use super::Language;
@@ -1034,7 +1034,7 @@ impl<'a> TagToken<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use liquid_interpreter::{Runtime, Template};
+    use crate::runtime::{Runtime, Template};
 
     #[test]
     fn test_parse_literal() {

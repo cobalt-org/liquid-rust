@@ -195,7 +195,7 @@ impl<'a> FilterParameter<'a> {
     const ERROR_INVALID_TYPE: &'static str = "Invalid type. All fields in FilterParameters must be either of type `Expression` or `Option<Expression>`";
 
     /// Helper function for `validate_filter_parameter_fields()`.
-    /// Given `::liquid_core::interpreter::Expression`, returns `Expression`.
+    /// Given `::liquid_core::runtime::Expression`, returns `Expression`.
     fn get_type_name(ty: &Type) -> Result<&PathSegment> {
         match ty {
             Type::Path(ty) => {
@@ -675,7 +675,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
                 Ok( #name { #comma_separated_field_names } )
             }
 
-            fn evaluate(&'a self, runtime: &'a ::liquid_core::interpreter::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
+            fn evaluate(&'a self, runtime: &'a ::liquid_core::runtime::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
                #(#evaluate_fields)*
 
                 Ok( #evaluated_name { #comma_separated_field_names __phantom_data: ::std::marker::PhantomData } )
@@ -821,9 +821,9 @@ fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStrea
 
                 let positional = positional
                     .iter()
-                    .filter_map(|p: &::std::option::Option<&::liquid_core::interpreter::Expression>| p.as_ref())
+                    .filter_map(|p: &::std::option::Option<&::liquid_core::runtime::Expression>| p.as_ref())
                     .map(|p| p.to_string());
-                let keyword = keyword.iter().filter_map(|p: &(&str, ::std::option::Option<&::liquid_core::interpreter::Expression>)| match p.1 {
+                let keyword = keyword.iter().filter_map(|p: &(&str, ::std::option::Option<&::liquid_core::runtime::Expression>)| match p.1 {
                     ::std::option::Option::Some(p1) => ::std::option::Option::Some(format!("{}: {}", p.0, p1)),
                     ::std::option::Option::None => ::std::option::Option::None,
                 });

@@ -7,7 +7,7 @@ use liquid_value::ValueCow;
 use liquid_value::ValueView;
 
 use super::Runtime;
-use crate::variable::Variable;
+use super::variable::Variable;
 
 /// An un-evaluated `Value`.
 #[derive(Debug, Clone, PartialEq)]

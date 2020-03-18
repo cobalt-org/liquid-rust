@@ -168,7 +168,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
     use liquid_core::value::Value;
 
     fn options() -> Language {
@@ -193,7 +193,7 @@ mod test {
             "{% cycle 'b': 'one', 'two', 'three' %}\n"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -211,7 +211,7 @@ mod test {
             "{% cycle 'one', 'two', 'three' %}\n"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -229,7 +229,7 @@ mod test {
             "{% cycle alpha, beta, gamma %}\n"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -249,7 +249,7 @@ mod test {
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n");
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
         let output = template.render(&mut Default::default());
         assert!(output.is_err());

@@ -5,9 +5,9 @@ use itertools;
 
 use super::Filter;
 use liquid_error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_interpreter::Expression;
-use liquid_interpreter::Renderable;
-use liquid_interpreter::Runtime;
+use crate::runtime::Expression;
+use crate::runtime::Renderable;
+use crate::runtime::Runtime;
 use liquid_value::{ValueCow, ValueView};
 
 /// A `Value` expression.

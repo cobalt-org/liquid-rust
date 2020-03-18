@@ -2,7 +2,6 @@
 members = [
   "crates/error",
   "crates/value",
-  "crates/interpreter",
   "crates/derive",
   "crates/core",
   "crates/help-md",

@@ -4,9 +4,9 @@ use std::sync;
 use crate::parser;
 use crate::parser::Language;
 use crate::error::Result;
-use crate::interpreter;
-use crate::interpreter::PartialStore;
-use crate::interpreter::Renderable;
+use crate::runtime;
+use crate::runtime::PartialStore;
+use crate::runtime::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;
@@ -112,7 +112,7 @@ where
         let s = self.source.try_get(name)?;
         let s = s.as_ref();
         let template = parser::parse(s, &self.language)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .map(sync::Arc::new)
             .ok()?;
         Some(template)
@@ -122,7 +122,7 @@ where
         let s = self.source.get(name)?;
         let s = s.as_ref();
         let template = parser::parse(s, &self.language)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .map(sync::Arc::new)?;
         Ok(template)
     }

@@ -2,12 +2,12 @@ use std::io::Write;
 use std::sync;
 
 use liquid_core::error::Result;
-use liquid_core::interpreter;
-use liquid_core::interpreter::PartialStore;
-use liquid_core::interpreter::Renderable;
+use liquid_core::runtime;
+use liquid_core::runtime::PartialStore;
+use liquid_core::runtime::Renderable;
 
 pub struct Template {
-    pub(crate) template: interpreter::Template,
+    pub(crate) template: runtime::Template,
     pub(crate) partials: Option<sync::Arc<dyn PartialStore + Send + Sync>>,
 }
 
@@ -23,7 +23,7 @@ impl Template {
 
     /// Renders an instance of the Template, using the given globals.
     pub fn render_to(&self, writer: &mut dyn Write, globals: &dyn crate::ObjectView) -> Result<()> {
-        let runtime = interpreter::RuntimeBuilder::new().set_globals(globals);
+        let runtime = runtime::RuntimeBuilder::new().set_globals(globals);
         let runtime = match self.partials {
             Some(ref partials) => runtime.set_partials(partials.as_ref()),
             None => runtime,

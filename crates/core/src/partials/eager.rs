@@ -8,9 +8,9 @@ use crate::parser;
 use crate::parser::Language;
 use crate::error::Error;
 use crate::error::Result;
-use crate::interpreter;
-use crate::interpreter::PartialStore;
-use crate::interpreter::Renderable;
+use crate::runtime;
+use crate::runtime::PartialStore;
+use crate::runtime::Renderable;
 
 use super::PartialCompiler;
 use super::PartialSource;
@@ -91,9 +91,9 @@ where
             .map(|name| {
                 let source = self.source.get(name).and_then(|s| {
                     parser::parse(s.as_ref(), &language)
-                        .map(interpreter::Template::new)
+                        .map(runtime::Template::new)
                         .map(|t| {
-                            let t: sync::Arc<dyn interpreter::Renderable> = sync::Arc::new(t);
+                            let t: sync::Arc<dyn runtime::Renderable> = sync::Arc::new(t);
                             t
                         })
                 });
@@ -110,7 +110,7 @@ where
 }
 
 struct EagerStore {
-    store: HashMap<String, Result<sync::Arc<dyn interpreter::Renderable>>>,
+    store: HashMap<String, Result<sync::Arc<dyn runtime::Renderable>>>,
 }
 
 impl PartialStore for EagerStore {

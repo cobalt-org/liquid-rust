@@ -143,7 +143,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
 
     use crate::stdlib;
 
@@ -165,7 +165,7 @@ mod test {
     fn increment() {
         let text = "{% increment val %}{{ val }}";
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -177,7 +177,7 @@ mod test {
     fn decrement() {
         let text = "{% decrement val %}{{ val }}";
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -189,7 +189,7 @@ mod test {
     fn increment_and_decrement() {
         let text = "{% increment val %}{% increment val %}{% decrement val %}{% decrement val %}";
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -201,7 +201,7 @@ mod test {
     fn assign_and_increment() {
         let text = "{%- assign val = 9 -%}{% increment val %}{% increment val %}{{ val }}";
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();

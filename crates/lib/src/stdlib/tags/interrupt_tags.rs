@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use liquid_core::interpreter::Interrupt;
+use liquid_core::runtime::Interrupt;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
@@ -102,7 +102,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
 
     use crate::stdlib;
 
@@ -131,7 +131,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut rt = Runtime::new();
@@ -156,7 +156,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut rt = Runtime::new();
@@ -182,7 +182,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut rt = Runtime::new();
@@ -214,7 +214,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut rt = Runtime::new();

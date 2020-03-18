@@ -5,7 +5,7 @@ use itertools;
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::interpreter::Interrupt;
+use liquid_core::runtime::Interrupt;
 use liquid_core::value::{Object, Value, ValueView};
 use liquid_core::Expression;
 use liquid_core::Language;
@@ -562,8 +562,8 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 #[cfg(test)]
 mod test {
     use liquid_core::parser;
-    use liquid_core::interpreter;
-    use liquid_core::interpreter::RuntimeBuilder;
+    use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
     use liquid_core::value::ValueView;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
@@ -588,7 +588,7 @@ mod test {
         let text = concat!("{% for name in array %}", "test {{name}} ", "{% endfor %}",);
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime: Runtime<'_> = Default::default();
@@ -614,7 +614,7 @@ mod test {
         );
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Default::default();
@@ -633,7 +633,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -665,7 +665,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -693,7 +693,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -716,7 +716,7 @@ mod test {
         // doesn't result in an infinte loop
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -732,7 +732,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -748,7 +748,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -764,7 +764,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -780,7 +780,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -796,7 +796,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -814,7 +814,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -826,7 +826,7 @@ mod test {
     fn limit_greater_than_iterator_length() {
         let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -850,7 +850,7 @@ mod test {
         );
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime: Runtime<'_> = Default::default();
@@ -892,7 +892,7 @@ mod test {
             .filters
             .register("shout".to_string(), Box::new(ShoutFilterParser));
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = RuntimeBuilder::new().build();
@@ -919,7 +919,7 @@ mod test {
             "{% endfor %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -936,7 +936,7 @@ mod test {
         );
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime: Runtime<'_> = Default::default();
@@ -962,7 +962,7 @@ mod test {
         );
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime: Runtime<'_> = Default::default();
@@ -993,7 +993,7 @@ mod test {
             "{% endtablerow %}"
         );
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -1021,7 +1021,7 @@ mod test {
         );
 
         let template = parser::parse(text, &options())
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime: Runtime<'_> = Default::default();

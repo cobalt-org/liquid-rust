@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use liquid_error::{Result, ResultLiquidReplaceExt};
-use liquid_interpreter::Renderable;
-use liquid_interpreter::Runtime;
+use crate::runtime::Renderable;
+use crate::runtime::Runtime;
 
 /// A raw template expression.
 #[derive(Clone, Debug, Eq, PartialEq)]

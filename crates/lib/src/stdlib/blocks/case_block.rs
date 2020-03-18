@@ -197,7 +197,7 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::interpreter;
+    use liquid_core::runtime;
     use liquid_core::value::Value;
 
     fn options() -> Language {
@@ -222,7 +222,7 @@ mod test {
         );
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -251,7 +251,7 @@ mod test {
         );
         let options = options();
         let template = parser::parse(text, &options)
-            .map(interpreter::Template::new)
+            .map(runtime::Template::new)
             .unwrap();
 
         let mut runtime = Runtime::new();
@@ -272,7 +272,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = parser::parse(text, &options).map(interpreter::Template::new);
+        let template = parser::parse(text, &options).map(runtime::Template::new);
         assert!(template.is_err());
     }
 }
