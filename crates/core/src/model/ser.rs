@@ -9,14 +9,14 @@ use crate::model::Object;
 use crate::model::Value;
 
 #[derive(Debug)]
-pub(crate) struct SerError(liquid_error::Error);
+pub(crate) struct SerError(crate::error::Error);
 
 impl SerError {
-    pub(crate) fn new(e: liquid_error::Error) -> Self {
+    pub(crate) fn new(e: crate::error::Error) -> Self {
         Self(e)
     }
 
-    pub(crate) fn into(self) -> liquid_error::Error {
+    pub(crate) fn into(self) -> crate::error::Error {
         self.0
     }
 }
@@ -38,7 +38,7 @@ impl serde::ser::Error for SerError {
     where
         T: fmt::Display,
     {
-        SerError(liquid_error::Error::with_msg(format!("{}", msg)))
+        SerError(crate::error::Error::with_msg(format!("{}", msg)))
     }
 }
 
@@ -178,7 +178,7 @@ impl<O: From<Object>> serde::ser::SerializeMap for SerializeMap<O> {
 struct MapKeySerializer;
 
 fn key_must_be_a_string() -> SerError {
-    SerError::new(liquid_error::Error::with_msg("Key must be a string."))
+    SerError::new(crate::error::Error::with_msg("Key must be a string."))
 }
 
 impl serde::Serializer for MapKeySerializer {

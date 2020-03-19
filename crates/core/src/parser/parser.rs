@@ -5,12 +5,12 @@
 
 use std;
 
+use crate::error::{Error, Result, ResultLiquidExt};
 use crate::model::Value;
 use crate::runtime::Expression;
 use crate::runtime::Renderable;
 use crate::runtime::Variable;
 use itertools;
-use liquid_error::{Error, Result, ResultLiquidExt};
 
 use super::Language;
 use super::Text;

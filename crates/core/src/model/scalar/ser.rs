@@ -15,7 +15,7 @@ use crate::model::Scalar;
 /// let value = liquid_core::model::scalar::to_scalar(&s).unwrap();
 /// assert_eq!(value, liquid_core::model::Scalar::new(s));
 /// ```
-pub fn to_scalar<T>(value: &T) -> Result<Scalar, liquid_error::Error>
+pub fn to_scalar<T>(value: &T) -> Result<Scalar, crate::error::Error>
 where
     T: Serialize,
 {
@@ -25,7 +25,7 @@ where
 pub(crate) struct ScalarSerializer;
 
 fn scalar_must_be_a_string() -> SerError {
-    SerError::new(liquid_error::Error::with_msg("Scalar must be a string."))
+    SerError::new(crate::error::Error::with_msg("Scalar must be a string."))
 }
 
 impl serde::Serializer for ScalarSerializer {
@@ -214,6 +214,6 @@ impl serde::Serializer for ScalarSerializer {
 #[inline]
 fn serialize_as_i32<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
     let value = num_traits::cast::cast::<T, i32>(value)
-        .ok_or_else(|| SerError::new(liquid_error::Error::with_msg("Cannot fit number")))?;
+        .ok_or_else(|| SerError::new(crate::error::Error::with_msg("Cannot fit number")))?;
     Ok(Scalar::new(value))
 }

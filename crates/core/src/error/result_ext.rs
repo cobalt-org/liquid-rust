@@ -25,8 +25,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidReplaceExt;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidReplaceExt;
     ///
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.lossy_chain("Missing liquid partial");
@@ -39,8 +39,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidReplaceExt;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidReplaceExt;
     ///
     /// let filename = "foo";
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
@@ -57,8 +57,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidReplaceExt;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidReplaceExt;
     ///
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.replace("Missing liquid partial");
@@ -71,8 +71,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidReplaceExt;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidReplaceExt;
     ///
     /// let filename = "foo";
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
@@ -127,19 +127,19 @@ where
     }
 }
 
-/// Add context to a `liquid_error::Error`.
+/// Add context to a `crate::error::Error`.
 pub trait ResultLiquidExt<T>
 where
     Self: ::std::marker::Sized,
 {
-    /// Add a new stack frame to the `liquid_error::Error`.
+    /// Add a new stack frame to the `crate::error::Error`.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use liquid_error::Error;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidExt;
+    /// use crate::error::Error;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidExt;
     ///
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
     /// let error = error.trace("Within forloop");
@@ -148,14 +148,14 @@ where
     where
         S: Into<kstring::KString>;
 
-    /// Add a new stack frame to the `liquid_error::Error`.
+    /// Add a new stack frame to the `crate::error::Error`.
     ///
     /// # Example
     ///
     /// ```rust
-    /// use liquid_error::Error;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidExt;
+    /// use crate::error::Error;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
@@ -170,9 +170,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use liquid_error::Error;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidExt;
+    /// use crate::error::Error;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
@@ -193,9 +193,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use liquid_error::Error;
-    /// use liquid_error::Result;
-    /// use liquid_error::ResultLiquidExt;
+    /// use crate::error::Error;
+    /// use crate::error::Result;
+    /// use crate::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));

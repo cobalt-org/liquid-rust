@@ -15,7 +15,7 @@ use crate::model::Value;
 /// let value = liquid_core::model::to_value(&s).unwrap();
 /// assert_eq!(value, liquid_core::model::Value::scalar(s));
 /// ```
-pub fn to_value<T>(value: &T) -> Result<Value, liquid_error::Error>
+pub fn to_value<T>(value: &T) -> Result<Value, crate::error::Error>
 where
     T: Serialize,
 {

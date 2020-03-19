@@ -1,10 +1,10 @@
 use std::fmt;
 
+use crate::error::Result;
 use crate::model::Scalar;
 use crate::model::Value;
 use crate::model::ValueCow;
 use crate::model::ValueView;
-use liquid_error::Result;
 
 use super::variable::Variable;
 use super::Runtime;

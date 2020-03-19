@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::io::Write;
 
-use liquid_error::Result;
+use crate::error::Result;
 
 use super::Runtime;
 

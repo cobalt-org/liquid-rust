@@ -1,9 +1,9 @@
 use std::fmt;
 
+use crate::error::{Error, Result};
 use crate::model::find::Path;
 use crate::model::Scalar;
 use crate::model::{ValueCow, ValueView};
-use liquid_error::{Error, Result};
 
 use super::Expression;
 use super::Runtime;

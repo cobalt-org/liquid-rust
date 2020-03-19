@@ -1,9 +1,9 @@
 use std::sync;
 
+use crate::error::Error;
+use crate::error::Result;
 use crate::model::ObjectView;
 use anymap;
-use liquid_error::Error;
-use liquid_error::Result;
 
 use super::PartialStore;
 use super::Renderable;

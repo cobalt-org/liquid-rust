@@ -1,19 +1,16 @@
 #[macro_use]
 extern crate pest_derive;
 
-pub mod error {
-    pub use liquid_error::*;
-}
-
+pub mod error;
 pub mod model;
 pub mod parser;
 pub mod partials;
 pub mod runtime;
 
+pub use error::{Error, Result};
 pub use liquid_derive::{
     Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
-pub use liquid_error::{Error, Result};
 pub use model::{to_object, Object};
 pub use model::{to_value, Value, ValueCow};
 pub use model::{ObjectView, ValueView};

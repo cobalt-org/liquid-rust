@@ -7,7 +7,7 @@ use crate::model::value::ser::ValueSerializer;
 use crate::model::Object;
 
 /// Convert a `T` into `liquid_core::model::Object`.
-pub fn to_object<T>(value: &T) -> Result<Object, liquid_error::Error>
+pub fn to_object<T>(value: &T) -> Result<Object, crate::error::Error>
 where
     T: Serialize,
 {
@@ -17,11 +17,11 @@ where
 struct ObjectSerializer;
 
 fn object_cannot_be_a_scalar() -> SerError {
-    SerError::new(liquid_error::Error::with_msg("Object cannot be a scalar."))
+    SerError::new(crate::error::Error::with_msg("Object cannot be a scalar."))
 }
 
 fn object_cannot_be_an_array() -> SerError {
-    SerError::new(liquid_error::Error::with_msg("Object cannot be an array."))
+    SerError::new(crate::error::Error::with_msg("Object cannot be an array."))
 }
 
 impl serde::Serializer for ObjectSerializer {

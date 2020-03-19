@@ -3,9 +3,9 @@
 use std::fmt;
 use std::slice;
 
+use crate::error::{Error, Result};
 use itertools;
 use kstring::KStringCow;
-use liquid_error::{Error, Result};
 
 use super::ScalarCow;
 use super::Value;

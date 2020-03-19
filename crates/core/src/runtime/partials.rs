@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync;
 
-use liquid_error::Result;
+use crate::error::Result;
 
 use super::Renderable;
 
