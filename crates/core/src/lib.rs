@@ -8,6 +8,7 @@ pub mod partials;
 pub mod runtime;
 
 pub use error::{Error, Result};
+#[doc(hidden)]
 pub use liquid_derive::{
     Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
