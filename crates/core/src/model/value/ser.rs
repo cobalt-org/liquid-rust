@@ -1,10 +1,10 @@
 use kstring::KString;
 use serde::{self, Serialize};
 
+use super::Value;
 use crate::model::scalar::ser::ScalarSerializer;
 use crate::model::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
 use crate::model::Object;
-use crate::model::Value;
 
 /// Convert a `T` into `liquid_core::model::Value`.
 ///

@@ -3,12 +3,12 @@ use std::fmt;
 
 use kstring::KStringCow;
 
+use super::DisplayCow;
+use super::State;
+use super::{ValueView, ValueViewCmp};
 use crate::model::array::{Array, ArrayView};
 use crate::model::object::{Object, ObjectView};
 use crate::model::scalar::{Scalar, ScalarCow};
-use crate::model::DisplayCow;
-use crate::model::State;
-use crate::model::{ValueView, ValueViewCmp};
 
 /// An enum to represent different value types
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -118,7 +118,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.source(),
             Value::Object(ref x) => x.source(),
             Value::State(ref x) => x.source(),
-            Value::Nil => DisplayCow::Owned(Box::new(crate::model::StrDisplay {
+            Value::Nil => DisplayCow::Owned(Box::new(super::StrDisplay {
                 s: self.type_name(),
             })),
         }
@@ -234,7 +234,7 @@ impl Default for Value {
 
 impl PartialEq<Value> for Value {
     fn eq(&self, other: &Self) -> bool {
-        crate::model::value_eq(self.as_view(), other.as_view())
+        super::value_eq(self.as_view(), other.as_view())
     }
 }
 
@@ -246,68 +246,68 @@ impl<'v> PartialEq<ValueViewCmp<'v>> for Value {
 
 impl PartialEq<i32> for Value {
     fn eq(&self, other: &i32) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<f64> for Value {
     fn eq(&self, other: &f64) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<bool> for Value {
     fn eq(&self, other: &bool) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<crate::model::scalar::DateTime> for Value {
     fn eq(&self, other: &crate::model::scalar::DateTime) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<crate::model::scalar::Date> for Value {
     fn eq(&self, other: &crate::model::scalar::Date) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<str> for Value {
     fn eq(&self, other: &str) -> bool {
         let other = KStringCow::from_ref(other);
-        crate::model::value_eq(self.as_view(), &other)
+        super::value_eq(self.as_view(), &other)
     }
 }
 
 impl<'s> PartialEq<&'s str> for Value {
     fn eq(&self, other: &&str) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'s> PartialEq<String> for Value {
     fn eq(&self, other: &String) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl PartialEq<kstring::KString> for Value {
     fn eq(&self, other: &kstring::KString) -> bool {
-        crate::model::value_eq(self.as_view(), &other.as_ref())
+        super::value_eq(self.as_view(), &other.as_ref())
     }
 }
 
 impl<'s> PartialEq<kstring::KStringRef<'s>> for Value {
     fn eq(&self, other: &kstring::KStringRef<'s>) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'s> PartialEq<kstring::KStringCow<'s>> for Value {
     fn eq(&self, other: &kstring::KStringCow<'s>) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
@@ -315,7 +315,7 @@ impl Eq for Value {}
 
 impl PartialOrd<Value> for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        crate::model::value_cmp(self.as_view(), other)
+        super::value_cmp(self.as_view(), other)
     }
 }
 

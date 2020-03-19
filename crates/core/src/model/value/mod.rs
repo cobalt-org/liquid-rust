@@ -1,3 +1,5 @@
+//! A liquid value`
+
 mod cow;
 mod display;
 mod state;

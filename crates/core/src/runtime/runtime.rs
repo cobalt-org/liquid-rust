@@ -218,9 +218,9 @@ impl<'g> Default for Runtime<'g> {
 mod test {
     use super::*;
 
+    use crate::model::value::ValueViewCmp;
     use crate::model::Scalar;
     use crate::model::Value;
-    use crate::model::ValueViewCmp;
 
     #[test]
     fn scoped_variables() {

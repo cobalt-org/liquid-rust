@@ -1,6 +1,6 @@
 use std::cmp;
 
-use liquid_core::model::ValueViewCmp;
+use liquid_core::model::value::ValueViewCmp;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;

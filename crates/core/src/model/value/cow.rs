@@ -129,7 +129,7 @@ impl<'v> Default for ValueCow<'v> {
 
 impl<'v> PartialEq<ValueCow<'v>> for ValueCow<'v> {
     fn eq(&self, other: &Self) -> bool {
-        crate::model::value_eq(self.as_view(), other.as_view())
+        super::value_eq(self.as_view(), other.as_view())
     }
 }
 
@@ -141,73 +141,73 @@ impl<'v> PartialEq<ValueViewCmp<'v>> for ValueCow<'v> {
 
 impl<'v> PartialEq<Value> for ValueCow<'v> {
     fn eq(&self, other: &Value) -> bool {
-        crate::model::value_eq(self.as_view(), other.as_view())
+        super::value_eq(self.as_view(), other.as_view())
     }
 }
 
 impl<'v> PartialEq<i32> for ValueCow<'v> {
     fn eq(&self, other: &i32) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<f64> for ValueCow<'v> {
     fn eq(&self, other: &f64) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<bool> for ValueCow<'v> {
     fn eq(&self, other: &bool) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<crate::model::scalar::DateTime> for ValueCow<'v> {
     fn eq(&self, other: &crate::model::scalar::DateTime) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<crate::model::scalar::Date> for ValueCow<'v> {
     fn eq(&self, other: &crate::model::scalar::Date) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<str> for ValueCow<'v> {
     fn eq(&self, other: &str) -> bool {
         let other = KStringCow::from_ref(other);
-        crate::model::value_eq(self.as_view(), &other)
+        super::value_eq(self.as_view(), &other)
     }
 }
 
 impl<'v> PartialEq<&'v str> for ValueCow<'v> {
     fn eq(&self, other: &&str) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<String> for ValueCow<'v> {
     fn eq(&self, other: &String) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<kstring::KString> for ValueCow<'v> {
     fn eq(&self, other: &kstring::KString) -> bool {
-        crate::model::value_eq(self.as_view(), &other.as_ref())
+        super::value_eq(self.as_view(), &other.as_ref())
     }
 }
 
 impl<'v> PartialEq<kstring::KStringRef<'v>> for ValueCow<'v> {
     fn eq(&self, other: &kstring::KStringRef<'v>) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }
 
 impl<'v> PartialEq<kstring::KStringCow<'v>> for ValueCow<'v> {
     fn eq(&self, other: &kstring::KStringCow<'v>) -> bool {
-        crate::model::value_eq(self.as_view(), other)
+        super::value_eq(self.as_view(), other)
     }
 }

@@ -9,7 +9,7 @@ use std::fmt;
 
 use kstring::KStringCow;
 
-use crate::model::DisplayCow;
+use crate::model::value::DisplayCow;
 use crate::model::State;
 use crate::model::{Value, ValueView};
 

@@ -2,8 +2,8 @@ use std::fmt;
 
 use kstring::KStringCow;
 
-use crate::model::DisplayCow;
-use crate::model::{Value, ValueView};
+use super::DisplayCow;
+use super::{Value, ValueView};
 
 /// Queryable state for a `Value`.
 ///
@@ -73,7 +73,7 @@ impl ValueView for State {
         DisplayCow::Borrowed(self)
     }
     fn source(&self) -> DisplayCow<'_> {
-        DisplayCow::Owned(Box::new(crate::model::StrDisplay {
+        DisplayCow::Owned(Box::new(super::StrDisplay {
             s: self.type_name(),
         }))
     }

@@ -10,7 +10,7 @@ use kstring::KString;
 use kstring::KStringCow;
 use kstring::KStringRef;
 
-use crate::model::{DisplayCow, State};
+use crate::model::value::{DisplayCow, State};
 use crate::model::{Value, ValueView};
 
 pub use date::*;

@@ -203,7 +203,7 @@ impl<'g> Default for Stack<'g> {
 mod test {
     use super::*;
 
-    use crate::model::ValueViewCmp;
+    use crate::model::value::ValueViewCmp;
 
     #[test]
     fn stack_find_frame() {

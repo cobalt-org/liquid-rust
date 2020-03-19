@@ -95,8 +95,8 @@ impl fmt::Display for Variable {
 mod test {
     use super::*;
 
+    use crate::model::value::ValueViewCmp;
     use crate::model::Object;
-    use crate::model::ValueViewCmp;
     use serde_yaml;
 
     use super::super::RuntimeBuilder;

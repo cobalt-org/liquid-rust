@@ -7,14 +7,14 @@
 #[macro_use]
 mod macros;
 
-mod object;
 mod ser;
-mod value;
 
 pub mod array;
 pub mod find;
+pub mod object;
 pub mod scalar;
+pub mod value;
 
-pub use object::*;
+pub use object::{to_object, Object, ObjectView};
 pub use scalar::{Scalar, ScalarCow};
-pub use value::*;
+pub use value::{to_value, State, Value, ValueCow, ValueView};
