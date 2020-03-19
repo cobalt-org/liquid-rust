@@ -787,41 +787,6 @@ impl<'s> PartialOrd<KStringRef<'s>> for ScalarCow<'s> {
 
 impl<'s> Eq for ScalarCow<'s> {}
 
-/// A `Display` for a `Scalar` as source code.
-#[derive(Debug)]
-pub struct ScalarSource<'s>(&'s ScalarCowEnum<'s>);
-
-impl<'s> fmt::Display for ScalarSource<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.0 {
-            ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::DateTime(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Date(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Str(ref x) => write!(f, r#""{}""#, x),
-        }
-    }
-}
-
-/// A `Display` for a `Scalar` rendered for the user.
-#[derive(Debug)]
-pub struct ScalarRendered<'s>(&'s ScalarCowEnum<'s>);
-
-impl<'s> fmt::Display for ScalarRendered<'s> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Must match `ScalarCow::to_str`
-        match self.0 {
-            ScalarCowEnum::Integer(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Float(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Bool(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::DateTime(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Date(ref x) => write!(f, "{}", x),
-            ScalarCowEnum::Str(ref x) => write!(f, "{}", x),
-        }
-    }
-}
-
 fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
     match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
