@@ -1,6 +1,6 @@
 [package]
 name = "liquid-core"
-version = "0.20.0-alpha.7"
+version = "0.20.0-alpha.8"
 authors = ["Ed Page <eopage@gmail.com>"]
 description = "Core liquid functionality"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/crate/core"
