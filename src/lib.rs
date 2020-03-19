@@ -43,6 +43,7 @@ pub use liquid_core::to_object;
 pub use liquid_core::Error;
 pub use liquid_core::Object;
 pub use liquid_core::{ObjectView, ValueView};
+#[doc(hidden)]
 pub use liquid_derive::{ObjectView, ValueView};
 
 #[macro_use]
