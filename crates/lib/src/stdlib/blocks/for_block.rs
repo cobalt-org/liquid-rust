@@ -2,11 +2,11 @@ use std::fmt;
 use std::io::Write;
 
 use itertools;
+use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
+use liquid_core::model::{Object, Value, ValueView};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
-use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::runtime::Interrupt;
-use liquid_core::value::{Object, Value, ValueView};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -561,10 +561,10 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 
 #[cfg(test)]
 mod test {
+    use liquid_core::model::ValueView;
     use liquid_core::parser;
     use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
-    use liquid_core::value::ValueView;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
     use crate::stdlib;

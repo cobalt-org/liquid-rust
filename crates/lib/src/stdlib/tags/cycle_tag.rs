@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::io::Write;
 
 use itertools;
+use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::parser::TagToken;
 use liquid_core::parser::TryMatchToken;
-use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -167,9 +167,9 @@ impl State {
 mod test {
     use super::*;
 
+    use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
-    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

@@ -1,8 +1,8 @@
 use std::fmt::{Debug, Display};
 
-use liquid_error::Result;
+use crate::model::{Value, ValueView};
 use crate::runtime::{Expression, Runtime};
-use liquid_value::{Value, ValueView};
+use liquid_error::Result;
 
 /// A structure that holds the information of a single parameter in a filter.
 /// This includes its name, description and whether it is optional or required.

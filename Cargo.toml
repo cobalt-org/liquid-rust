@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "crates/error",
-  "crates/value",
   "crates/derive",
   "crates/core",
   "crates/help-md",

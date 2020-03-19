@@ -27,8 +27,14 @@ mod template;
 pub mod reflection;
 
 pub use liquid_core::partials;
-#[doc(hidden)]
-pub use liquid_core::value;
+/// Liquid data model.
+pub mod model {
+    pub use liquid_core::array;
+    pub use liquid_core::model::*;
+    pub use liquid_core::object;
+    pub use liquid_core::scalar;
+    pub use liquid_core::value;
+}
 
 pub use crate::parser::*;
 pub use crate::template::*;

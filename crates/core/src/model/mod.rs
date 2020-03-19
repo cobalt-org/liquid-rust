@@ -1,11 +1,8 @@
-//! Liquid Value type.
+//! Liquid data model.
 
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(unused_extern_crates)]
-
-#[macro_use]
-extern crate serde;
 
 #[macro_use]
 mod macros;
@@ -18,6 +15,6 @@ pub mod array;
 pub mod find;
 pub mod scalar;
 
-pub use crate::object::*;
-pub use crate::scalar::{Scalar, ScalarCow};
-pub use crate::value::*;
+pub use object::*;
+pub use scalar::{Scalar, ScalarCow};
+pub use value::*;

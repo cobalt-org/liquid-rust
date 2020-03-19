@@ -1,9 +1,9 @@
 use std::fmt;
 
+use crate::model::find::Path;
+use crate::model::Scalar;
+use crate::model::{ValueCow, ValueView};
 use liquid_error::{Error, Result};
-use liquid_value::find::Path;
-use liquid_value::Scalar;
-use liquid_value::{ValueCow, ValueView};
 
 use super::Expression;
 use super::Runtime;
@@ -95,8 +95,8 @@ impl fmt::Display for Variable {
 mod test {
     use super::*;
 
-    use liquid_value::Object;
-    use liquid_value::ValueViewCmp;
+    use crate::model::Object;
+    use crate::model::ValueViewCmp;
     use serde_yaml;
 
     use super::super::RuntimeBuilder;

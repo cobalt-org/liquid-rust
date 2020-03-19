@@ -84,10 +84,10 @@ mod test {
     use std::borrow;
 
     use liquid_core::parser;
-    use liquid_core::runtime;
-    use liquid_core::runtime::RuntimeBuilder;
     use liquid_core::partials;
     use liquid_core::partials::PartialCompiler;
+    use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
     use liquid_core::Value;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 

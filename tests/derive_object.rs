@@ -11,12 +11,12 @@ fn test_empty_value() {
     assert_eq!(uut.render().to_string(), "");
     assert_eq!(uut.source().to_string(), "{}");
     assert_eq!(uut.type_name(), "object");
-    assert_eq!(uut.query_state(liquid::value::State::Truthy), true);
-    assert_eq!(uut.query_state(liquid::value::State::DefaultValue), true);
-    assert_eq!(uut.query_state(liquid::value::State::Empty), true);
-    assert_eq!(uut.query_state(liquid::value::State::Blank), true);
+    assert_eq!(uut.query_state(liquid::model::State::Truthy), true);
+    assert_eq!(uut.query_state(liquid::model::State::DefaultValue), true);
+    assert_eq!(uut.query_state(liquid::model::State::Empty), true);
+    assert_eq!(uut.query_state(liquid::model::State::Blank), true);
     assert_eq!(uut.to_kstr(), "");
-    assert_eq!(uut.to_value(), liquid::value::value!({}));
+    assert_eq!(uut.to_value(), liquid::model::value!({}));
     assert!(uut.as_object().is_some());
 }
 
@@ -64,12 +64,12 @@ fn test_static_value() {
     assert_ne!(uut.render().to_string(), "");
     assert_ne!(uut.source().to_string(), "{}");
     assert_eq!(uut.type_name(), "object");
-    assert_eq!(uut.query_state(liquid::value::State::Truthy), true);
-    assert_eq!(uut.query_state(liquid::value::State::DefaultValue), false);
-    assert_eq!(uut.query_state(liquid::value::State::Empty), false);
-    assert_eq!(uut.query_state(liquid::value::State::Blank), false);
+    assert_eq!(uut.query_state(liquid::model::State::Truthy), true);
+    assert_eq!(uut.query_state(liquid::model::State::DefaultValue), false);
+    assert_eq!(uut.query_state(liquid::model::State::Empty), false);
+    assert_eq!(uut.query_state(liquid::model::State::Blank), false);
     assert_ne!(uut.to_kstr(), "");
-    assert_ne!(uut.to_value(), liquid::value::value!({}));
+    assert_ne!(uut.to_value(), liquid::model::value!({}));
     assert!(uut.as_object().is_some());
 }
 

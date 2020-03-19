@@ -14,14 +14,17 @@ edition = "2018"
 [dependencies]
 anymap = "0.12"
 itertools = "0.8.0"
+num-traits = "0.2"
 pest = "2.0"
 pest_derive = "2.0"
 
 # Exposed in API
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
 kstring = { version = "0.1.0-alpha.0", path = "../kstring" }
 liquid-error = { version = "0.20.0-alpha.0", path = "../error" }
-liquid-value = { version = "0.20.0-alpha.0", path = "../value" }
 liquid-derive = { version = "0.20.0-alpha.0", path = "../derive" }
 
 [dev-dependencies]
+difference = "2.0"
 serde_yaml = "0.8"

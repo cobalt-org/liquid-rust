@@ -4,30 +4,28 @@ extern crate pest_derive;
 pub mod error {
     pub use liquid_error::*;
 }
-pub mod value {
-    pub use liquid_value::*;
-}
 
-pub mod runtime;
-pub mod partials;
+pub mod model;
 pub mod parser;
+pub mod partials;
+pub mod runtime;
 
+pub use liquid_derive::{
+    Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
+};
+pub use liquid_error::{Error, Result};
+pub use model::{to_object, Object};
+pub use model::{to_value, Value, ValueCow};
+pub use model::{ObjectView, ValueView};
 pub use parser::Language;
 pub use parser::TagTokenIter;
 pub use parser::{BlockReflection, ParseBlock, TagBlock};
 pub use parser::{Filter, FilterParameters, FilterReflection, ParseFilter};
 pub use parser::{ParseTag, TagReflection};
-pub use liquid_derive::{
-    Display_filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
-};
-pub use liquid_error::{Error, Result};
 pub use runtime::Expression;
 pub use runtime::Renderable;
 pub use runtime::Runtime;
 pub use runtime::Template;
-pub use liquid_value::{object, to_object, Object};
-pub use liquid_value::{to_value, value, Value, ValueCow};
-pub use liquid_value::{ObjectView, ValueView};
 
 #[allow(unused_macros)]
 #[macro_export]

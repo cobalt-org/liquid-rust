@@ -15,30 +15,30 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 self
             }
 
-            fn render(&self) -> ::liquid::value::DisplayCow<'_> {
-                ::liquid::value::DisplayCow::Owned(Box::new(::liquid::value::ObjectRender::new(self)))
+            fn render(&self) -> ::liquid::model::DisplayCow<'_> {
+                ::liquid::model::DisplayCow::Owned(Box::new(::liquid::model::ObjectRender::new(self)))
             }
-            fn source(&self) -> ::liquid::value::DisplayCow<'_> {
-                ::liquid::value::DisplayCow::Owned(Box::new(::liquid::value::ObjectSource::new(self)))
+            fn source(&self) -> ::liquid::model::DisplayCow<'_> {
+                ::liquid::model::DisplayCow::Owned(Box::new(::liquid::model::ObjectSource::new(self)))
             }
             fn type_name(&self) -> &'static str {
                 "object"
             }
-            fn query_state(&self, state: ::liquid::value::State) -> bool {
+            fn query_state(&self, state: ::liquid::model::State) -> bool {
                 match state {
-                    ::liquid::value::State::Truthy => true,
-                    ::liquid::value::State::DefaultValue |
-                    ::liquid::value::State::Empty |
-                    ::liquid::value::State::Blank => self.size() == 0,
+                    ::liquid::model::State::Truthy => true,
+                    ::liquid::model::State::DefaultValue |
+                    ::liquid::model::State::Empty |
+                    ::liquid::model::State::Blank => self.size() == 0,
                 }
             }
 
             fn to_kstr(&self) -> ::kstring::KStringCow<'_> {
-                let s = ::liquid::value::ObjectRender::new(self).to_string();
+                let s = ::liquid::model::ObjectRender::new(self).to_string();
                 ::kstring::KStringCow::from_string(s)
             }
-            fn to_value(&self) -> ::liquid::value::Value {
-                ::liquid::value::to_value(self).unwrap()
+            fn to_value(&self) -> ::liquid::model::Value {
+                ::liquid::model::to_value(self).unwrap()
             }
 
             fn as_object(&self) -> Option<&dyn ::liquid::ObjectView> {

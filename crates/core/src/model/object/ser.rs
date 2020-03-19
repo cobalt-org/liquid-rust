@@ -2,11 +2,11 @@ use kstring::KString;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
-use crate::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
-use crate::value::ser::ValueSerializer;
-use crate::Object;
+use crate::model::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
+use crate::model::value::ser::ValueSerializer;
+use crate::model::Object;
 
-/// Convert a `T` into `liquid_value::Object`.
+/// Convert a `T` into `liquid_core::model::Object`.
 pub fn to_object<T>(value: &T) -> Result<Object, liquid_error::Error>
 where
     T: Serialize,

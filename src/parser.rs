@@ -3,8 +3,8 @@ use std::io::prelude::Read;
 use std::path;
 use std::sync;
 
-use liquid_core::parser;
 use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
+use liquid_core::parser;
 use liquid_core::runtime;
 
 use super::Template;

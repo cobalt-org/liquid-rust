@@ -9,9 +9,9 @@ use std::fmt;
 
 use kstring::KStringCow;
 
-use crate::DisplayCow;
-use crate::State;
-use crate::{Value, ValueView};
+use crate::model::DisplayCow;
+use crate::model::State;
+use crate::model::{Value, ValueView};
 
 pub use map::*;
 pub use ser::to_object;

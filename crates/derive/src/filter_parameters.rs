@@ -695,13 +695,13 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
 
     let field_types = fields.parameters.iter().map(|field| {
         let ty = match &field.meta.ty {
-            FilterParameterType::Value => quote! { ::liquid_core::value::ValueCow<'a> },
-            FilterParameterType::Scalar => quote! { ::liquid_core::value::ScalarCow<'a> },
+            FilterParameterType::Value => quote! { ::liquid_core::model::ValueCow<'a> },
+            FilterParameterType::Scalar => quote! { ::liquid_core::model::ScalarCow<'a> },
             FilterParameterType::Integer => quote! { i32 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
-            FilterParameterType::DateTime => quote! { ::liquid_core::value::scalar::DateTime },
-            FilterParameterType::Date => quote! { ::liquid_core::value::scalar::Date },
+            FilterParameterType::DateTime => quote! { ::liquid_core::model::scalar::DateTime },
+            FilterParameterType::Date => quote! { ::liquid_core::model::scalar::Date },
             FilterParameterType::Str => quote! { ::kstring::KStringCow<'a> },
         };
 

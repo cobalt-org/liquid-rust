@@ -7,10 +7,10 @@ use itertools;
 use kstring::KStringCow;
 use liquid_error::{Error, Result};
 
-use crate::ScalarCow;
-use crate::Value;
-use crate::ValueCow;
-use crate::ValueView;
+use super::ScalarCow;
+use super::Value;
+use super::ValueCow;
+use super::ValueView;
 
 /// Path to a value in an `Object`.
 ///

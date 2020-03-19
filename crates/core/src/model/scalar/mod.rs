@@ -10,14 +10,14 @@ use kstring::KString;
 use kstring::KStringCow;
 use kstring::KStringRef;
 
-use crate::{DisplayCow, State};
-use crate::{Value, ValueView};
+use crate::model::{DisplayCow, State};
+use crate::model::{Value, ValueView};
 
 pub use date::*;
 pub use ser::to_scalar;
 
 /// A Liquid scalar value
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
@@ -26,7 +26,7 @@ pub struct ScalarCow<'s>(ScalarCowEnum<'s>);
 pub type Scalar = ScalarCow<'static>;
 
 /// An enum to represent different value types
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 enum ScalarCowEnum<'s> {
     Integer(i32),

@@ -1,9 +1,9 @@
 use std::fmt;
 use std::sync;
 
+use crate::error::Result;
 use crate::parser;
 use crate::parser::Language;
-use crate::error::Result;
 use crate::runtime;
 use crate::runtime::PartialStore;
 use crate::runtime::Renderable;

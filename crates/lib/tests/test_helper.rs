@@ -4,8 +4,8 @@ pub use liquid_core::Value::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid_core::Value {
-    use liquid_core::value::scalar::Date;
-    use liquid_core::value::Value;
+    use liquid_core::model::scalar::Date;
+    use liquid_core::model::Value;
     Value::scalar(Date::from_ymd(y, m, d))
 }
 
@@ -18,7 +18,7 @@ pub fn with_time(_time: &str) -> liquid_core::Value {
 #[macro_export]
 macro_rules! v {
     ($($value:tt)+) => {
-        ::liquid_core::value::value!($($value)+)
+        ::liquid_core::value!($($value)+)
     };
 }
 
@@ -34,6 +34,6 @@ macro_rules! o {
 #[macro_export]
 macro_rules! a {
     ($($value:tt)+) => {
-        ::liquid_core::value::array!($($value)+)
+        ::liquid_core::array!($($value)+)
     };
 }

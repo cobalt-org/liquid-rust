@@ -35,6 +35,3 @@ shopify = []
 jekyll = ["deunicode"]
 extra = []
 all = ["stdlib", "jekyll", "shopify", "extra"]
-
-[dev-dependencies]
-liquid-value = { version = "0.20.0-alpha.0", path = "../value" }

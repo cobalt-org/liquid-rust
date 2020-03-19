@@ -1,6 +1,6 @@
 use std::cmp;
 
-use liquid_core::value::ValueViewCmp;
+use liquid_core::model::ValueViewCmp;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
@@ -245,7 +245,7 @@ impl Filter for WhereFilter {
                 .filter(|object| {
                     object
                         .get(property)
-                        .map_or(false, |v| v.query_state(liquid_core::value::State::Truthy))
+                        .map_or(false, |v| v.query_state(liquid_core::model::State::Truthy))
                 })
                 .map(|object| object.to_value())
                 .collect(),

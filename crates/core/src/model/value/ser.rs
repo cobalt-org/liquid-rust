@@ -1,19 +1,19 @@
 use kstring::KString;
 use serde::{self, Serialize};
 
-use crate::scalar::ser::ScalarSerializer;
-use crate::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
-use crate::Object;
-use crate::Value;
+use crate::model::scalar::ser::ScalarSerializer;
+use crate::model::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
+use crate::model::Object;
+use crate::model::Value;
 
-/// Convert a `T` into `liquid_value::Value`.
+/// Convert a `T` into `liquid_core::model::Value`.
 ///
 /// # Examples
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_value::to_value(&s).unwrap();
-/// assert_eq!(value, liquid_value::Value::scalar(s));
+/// let value = liquid_core::model::to_value(&s).unwrap();
+/// assert_eq!(value, liquid_core::model::Value::scalar(s));
 /// ```
 pub fn to_value<T>(value: &T) -> Result<Value, liquid_error::Error>
 where
@@ -290,158 +290,159 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
 
 #[cfg(test)]
 mod test {
-use std::f64;
+    use std::f64;
 
-use serde_yaml;
+    use serde_yaml;
 
-#[test]
-pub fn serialize_num() {
-    let actual = crate::Value::scalar(1f64);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n1.0", "", 0);
+    #[test]
+    pub fn serialize_num() {
+        let actual = crate::model::Value::scalar(1f64);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n1.0", "", 0);
 
-    let actual = crate::Value::scalar(-100f64);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n-100.0", "", 0);
+        let actual = crate::model::Value::scalar(-100f64);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n-100.0", "", 0);
 
-    let actual = crate::Value::scalar(3.14e_10f64);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n31400000000.0", "", 0);
+        let actual = crate::model::Value::scalar(3.14e_10f64);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n31400000000.0", "", 0);
 
-    let actual = crate::Value::scalar(f64::NAN);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n.nan", "", 0);
+        let actual = crate::model::Value::scalar(f64::NAN);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n.nan", "", 0);
 
-    let actual = crate::Value::scalar(f64::INFINITY);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n.inf", "", 0);
-}
+        let actual = crate::model::Value::scalar(f64::INFINITY);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n.inf", "", 0);
+    }
 
-#[test]
-pub fn deserialize_num() {
-    let actual: crate::Value = serde_yaml::from_str("---\n1").unwrap();
-    assert_eq!(actual, crate::Value::scalar(1f64));
+    #[test]
+    pub fn deserialize_num() {
+        let actual: crate::model::Value = serde_yaml::from_str("---\n1").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(1f64));
 
-    let actual: crate::Value = serde_yaml::from_str("---\n-100").unwrap();
-    assert_eq!(actual, crate::Value::scalar(-100f64));
+        let actual: crate::model::Value = serde_yaml::from_str("---\n-100").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(-100f64));
 
-    let actual: crate::Value = serde_yaml::from_str("---\n31399999488").unwrap();
-    assert_eq!(actual, crate::Value::scalar(31399999488.0f64));
+        let actual: crate::model::Value = serde_yaml::from_str("---\n31399999488").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(31399999488.0f64));
 
-    // Skipping NaN since equality fails
+        // Skipping NaN since equality fails
 
-    let actual: crate::Value = serde_yaml::from_str("---\ninf").unwrap();
-    assert_eq!(actual, crate::Value::scalar(f64::INFINITY));
-}
+        let actual: crate::model::Value = serde_yaml::from_str("---\ninf").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(f64::INFINITY));
+    }
 
-#[test]
-pub fn serialize_bool() {
-    let actual = crate::Value::scalar(true);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\ntrue", "", 0);
+    #[test]
+    pub fn serialize_bool() {
+        let actual = crate::model::Value::scalar(true);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\ntrue", "", 0);
 
-    let actual = crate::Value::scalar(false);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\nfalse", "", 0);
-}
+        let actual = crate::model::Value::scalar(false);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\nfalse", "", 0);
+    }
 
-#[test]
-pub fn deserialize_bool() {
-    let actual: crate::Value = serde_yaml::from_str("---\ntrue").unwrap();
-    assert_eq!(actual, crate::Value::scalar(true));
+    #[test]
+    pub fn deserialize_bool() {
+        let actual: crate::model::Value = serde_yaml::from_str("---\ntrue").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(true));
 
-    let actual: crate::Value = serde_yaml::from_str("---\nfalse").unwrap();
-    assert_eq!(actual, crate::Value::scalar(false));
-}
+        let actual: crate::model::Value = serde_yaml::from_str("---\nfalse").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar(false));
+    }
 
-#[test]
-pub fn serialize_nil() {
-    let actual = crate::Value::Nil;
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n~", "", 0);
-}
+    #[test]
+    pub fn serialize_nil() {
+        let actual = crate::model::Value::Nil;
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n~", "", 0);
+    }
 
-#[test]
-pub fn deserialize_nil() {
-    let actual: crate::Value = serde_yaml::from_str("---\n~").unwrap();
-    assert_eq!(actual, crate::Value::Nil);
+    #[test]
+    pub fn deserialize_nil() {
+        let actual: crate::model::Value = serde_yaml::from_str("---\n~").unwrap();
+        assert_eq!(actual, crate::model::Value::Nil);
 
-    let actual: crate::Value = serde_yaml::from_str("---\n- ").unwrap();
-    assert_eq!(
-        actual,
-        crate::Value::Array(vec![crate::Value::Nil])
-    );
-}
+        let actual: crate::model::Value = serde_yaml::from_str("---\n- ").unwrap();
+        assert_eq!(
+            actual,
+            crate::model::Value::Array(vec![crate::model::Value::Nil])
+        );
+    }
 
-#[test]
-pub fn serialize_str() {
-    let actual = crate::Value::scalar("Hello");
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\nHello", "", 0);
+    #[test]
+    pub fn serialize_str() {
+        let actual = crate::model::Value::scalar("Hello");
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\nHello", "", 0);
 
-    let actual = crate::Value::scalar("10");
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n\"10\"", "", 0);
+        let actual = crate::model::Value::scalar("10");
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n\"10\"", "", 0);
 
-    let actual = crate::Value::scalar("false");
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n\"false\"", "", 0);
-}
+        let actual = crate::model::Value::scalar("false");
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n\"false\"", "", 0);
+    }
 
-#[test]
-pub fn deserialize_str() {
-    let actual: crate::Value = serde_yaml::from_str("---\nHello").unwrap();
-    assert_eq!(actual, crate::Value::scalar("Hello"));
+    #[test]
+    pub fn deserialize_str() {
+        let actual: crate::model::Value = serde_yaml::from_str("---\nHello").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar("Hello"));
 
-    let actual: crate::Value = serde_yaml::from_str("\"10\"\n").unwrap();
-    assert_eq!(actual, crate::Value::scalar("10"));
+        let actual: crate::model::Value = serde_yaml::from_str("\"10\"\n").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar("10"));
 
-    let actual: crate::Value = serde_yaml::from_str("---\n\"false\"").unwrap();
-    assert_eq!(actual, crate::Value::scalar("false"));
-}
+        let actual: crate::model::Value = serde_yaml::from_str("---\n\"false\"").unwrap();
+        assert_eq!(actual, crate::model::Value::scalar("false"));
+    }
 
-#[test]
-pub fn serialize_array() {
-    let actual = vec![
-        crate::Value::scalar(1f64),
-        crate::Value::scalar(true),
-        crate::Value::scalar("true"),
-    ];
-    let actual = crate::Value::Array(actual);
-    let actual = serde_yaml::to_string(&actual).unwrap();
-    difference::assert_diff!(&actual, "---\n- 1.0\n- true\n- \"true\"", "", 0);
-}
+    #[test]
+    pub fn serialize_array() {
+        let actual = vec![
+            crate::model::Value::scalar(1f64),
+            crate::model::Value::scalar(true),
+            crate::model::Value::scalar("true"),
+        ];
+        let actual = crate::model::Value::Array(actual);
+        let actual = serde_yaml::to_string(&actual).unwrap();
+        difference::assert_diff!(&actual, "---\n- 1.0\n- true\n- \"true\"", "", 0);
+    }
 
-#[test]
-pub fn deserialize_array() {
-    let actual: crate::Value = serde_yaml::from_str("---\n- 1\n- true\n- \"true\"").unwrap();
-    let expected = vec![
-        crate::Value::scalar(1f64),
-        crate::Value::scalar(true),
-        crate::Value::scalar("true"),
-    ];
-    let expected = crate::Value::Array(expected);
-    assert_eq!(actual, expected);
-}
+    #[test]
+    pub fn deserialize_array() {
+        let actual: crate::model::Value =
+            serde_yaml::from_str("---\n- 1\n- true\n- \"true\"").unwrap();
+        let expected = vec![
+            crate::model::Value::scalar(1f64),
+            crate::model::Value::scalar(true),
+            crate::model::Value::scalar("true"),
+        ];
+        let expected = crate::model::Value::Array(expected);
+        assert_eq!(actual, expected);
+    }
 
-#[test]
-pub fn serialize_object() {
-    // Skipping due to HashMap ordering issues
-}
+    #[test]
+    pub fn serialize_object() {
+        // Skipping due to HashMap ordering issues
+    }
 
-#[test]
-pub fn deserialize_object() {
-    let actual: crate::Value =
-        serde_yaml::from_str("---\nNum: 1\nBool: true\nStr: \"true\"").unwrap();
-    let expected: crate::Object = [
-        ("Num".into(), crate::Value::scalar(1f64)),
-        ("Bool".into(), crate::Value::scalar(true)),
-        ("Str".into(), crate::Value::scalar("true")),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-    let expected = crate::Value::Object(expected);
-    assert_eq!(actual, expected);
-}
+    #[test]
+    pub fn deserialize_object() {
+        let actual: crate::model::Value =
+            serde_yaml::from_str("---\nNum: 1\nBool: true\nStr: \"true\"").unwrap();
+        let expected: crate::model::Object = [
+            ("Num".into(), crate::model::Value::scalar(1f64)),
+            ("Bool".into(), crate::model::Value::scalar(true)),
+            ("Str".into(), crate::model::Value::scalar("true")),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        let expected = crate::model::Value::Object(expected);
+        assert_eq!(actual, expected);
+    }
 }

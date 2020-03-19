@@ -1,9 +1,9 @@
 use std::sync;
 
+use crate::model::ObjectView;
 use anymap;
 use liquid_error::Error;
 use liquid_error::Result;
-use liquid_value::ObjectView;
 
 use super::PartialStore;
 use super::Renderable;
@@ -218,9 +218,9 @@ impl<'g> Default for Runtime<'g> {
 mod test {
     use super::*;
 
-    use liquid_value::Scalar;
-    use liquid_value::Value;
-    use liquid_value::ValueViewCmp;
+    use crate::model::Scalar;
+    use crate::model::Value;
+    use crate::model::ValueViewCmp;
 
     #[test]
     fn scoped_variables() {

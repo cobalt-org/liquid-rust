@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use liquid_core::error::ResultLiquidExt;
-use liquid_core::value::Value;
+use liquid_core::model::Value;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
@@ -94,9 +94,9 @@ impl ParseBlock for CaptureBlock {
 mod test {
     use super::*;
 
+    use liquid_core::model::Scalar;
     use liquid_core::parser;
     use liquid_core::runtime;
-    use liquid_core::value::Scalar;
 
     fn options() -> Language {
         let mut options = Language::default();

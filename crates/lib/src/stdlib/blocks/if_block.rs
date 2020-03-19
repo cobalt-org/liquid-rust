@@ -1,10 +1,10 @@
 use std::fmt;
 use std::io::Write;
 
+use liquid_core::error::ResultLiquidExt;
+use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TagToken;
-use liquid_core::error::ResultLiquidExt;
-use liquid_core::value::{ValueView, ValueViewCmp};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -97,7 +97,7 @@ impl ExistenceCondition {
     pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<bool> {
         let a = self.lh.try_evaluate(runtime);
         let a = a.unwrap_or_default();
-        let is_truthy = a.query_state(liquid_core::value::State::Truthy);
+        let is_truthy = a.query_state(liquid_core::model::State::Truthy);
         Ok(is_truthy)
     }
 }
@@ -461,10 +461,10 @@ fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Erro
 mod test {
     use super::*;
 
+    use liquid_core::model::Object;
+    use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
-    use liquid_core::value::Object;
-    use liquid_core::value::Value;
 
     fn options() -> Language {
         let mut options = Language::default();

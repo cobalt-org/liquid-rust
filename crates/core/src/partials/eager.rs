@@ -4,10 +4,10 @@ use std::sync;
 
 use itertools;
 
-use crate::parser;
-use crate::parser::Language;
 use crate::error::Error;
 use crate::error::Result;
+use crate::parser;
+use crate::parser::Language;
 use crate::runtime;
 use crate::runtime::PartialStore;
 use crate::runtime::Renderable;

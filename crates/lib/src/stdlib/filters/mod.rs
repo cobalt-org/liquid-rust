@@ -82,7 +82,7 @@ impl Filter for DefaultFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        if input.query_state(liquid_core::value::State::DefaultValue) {
+        if input.query_state(liquid_core::model::State::DefaultValue) {
             Ok(args.default.to_value())
         } else {
             Ok(input.to_value())

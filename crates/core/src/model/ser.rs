@@ -4,9 +4,9 @@ use kstring::KString;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
-use crate::value::ser::ValueSerializer;
-use crate::Object;
-use crate::Value;
+use crate::model::value::ser::ValueSerializer;
+use crate::model::Object;
+use crate::model::Value;
 
 #[derive(Debug)]
 pub(crate) struct SerError(liquid_error::Error);

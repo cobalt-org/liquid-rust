@@ -3,17 +3,17 @@ use num_traits;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
-use crate::ser::SerError;
-use crate::Scalar;
+use crate::model::ser::SerError;
+use crate::model::Scalar;
 
-/// Convert a `T` into `liquid_value::Scalar`.
+/// Convert a `T` into `liquid_core::model::Scalar`.
 ///
 /// # Examples
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_value::scalar::to_scalar(&s).unwrap();
-/// assert_eq!(value, liquid_value::Scalar::new(s));
+/// let value = liquid_core::model::scalar::to_scalar(&s).unwrap();
+/// assert_eq!(value, liquid_core::model::Scalar::new(s));
 /// ```
 pub fn to_scalar<T>(value: &T) -> Result<Scalar, liquid_error::Error>
 where

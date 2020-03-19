@@ -1,13 +1,13 @@
 use std::fmt;
 
+use crate::model::Scalar;
+use crate::model::Value;
+use crate::model::ValueCow;
+use crate::model::ValueView;
 use liquid_error::Result;
-use liquid_value::Scalar;
-use liquid_value::Value;
-use liquid_value::ValueCow;
-use liquid_value::ValueView;
 
-use super::Runtime;
 use super::variable::Variable;
+use super::Runtime;
 
 /// An un-evaluated `Value`.
 #[derive(Debug, Clone, PartialEq)]

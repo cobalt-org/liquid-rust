@@ -1,6 +1,6 @@
+use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
 use itertools;
 use liquid_error::{Error, Result};
-use liquid_value::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
 
 #[derive(Clone, Default, Debug)]
 struct Frame {
@@ -84,7 +84,7 @@ impl<'g> Stack<'g> {
     pub fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
         let frame = self.find_path_frame(path)?;
 
-        liquid_value::find::try_find(frame.as_value(), path)
+        crate::model::find::try_find(frame.as_value(), path)
     }
 
     /// Recursively index into the stack.
@@ -101,7 +101,7 @@ impl<'g> Stack<'g> {
                 .context("available variables", globals)
         })?;
 
-        liquid_value::find::find(frame.as_value(), path)
+        crate::model::find::find(frame.as_value(), path)
     }
 
     fn roots(&self) -> Vec<kstring::KStringCow<'_>> {
@@ -203,7 +203,7 @@ impl<'g> Default for Stack<'g> {
 mod test {
     use super::*;
 
-    use liquid_value::ValueViewCmp;
+    use crate::model::ValueViewCmp;
 
     #[test]
     fn stack_find_frame() {

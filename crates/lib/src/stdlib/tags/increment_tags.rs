@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use liquid_core::error::ResultLiquidReplaceExt;
-use liquid_core::value::{Value, ValueView};
+use liquid_core::model::{Value, ValueView};
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
