@@ -1,4 +1,4 @@
-//! Type representing a Liquid array, payload of the `BoxedValue::Array` variant
+//! Type representing a Liquid array, payload of the `Value::Array` variant
 
 use std::fmt;
 
@@ -20,7 +20,7 @@ pub trait ArrayView: ValueView {
     /// Returns an iterator .
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k>;
 
-    /// Access a contained `BoxedValue`.
+    /// Access a contained `Value`.
     fn contains_key(&self, index: i32) -> bool;
     /// Access a contained `Value`.
     fn get(&self, index: i32) -> Option<&dyn ValueView>;
@@ -34,7 +34,7 @@ pub trait ArrayView: ValueView {
     }
 }
 
-/// Type representing a Liquid array, payload of the `BoxedValue::Array` variant
+/// Type representing a Liquid array, payload of the `Value::Array` variant
 pub type Array = Vec<Value>;
 
 impl<T: ValueView> ValueView for Vec<T> {
