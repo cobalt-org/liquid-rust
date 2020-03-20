@@ -25,71 +25,6 @@ macro_rules! value {
     };
 }
 
-/// A value::Object literal.
-///
-/// # Example
-///
-/// ```rust
-/// # fn main() {
-/// liquid_core::object!({"foo": 5});
-/// # }
-/// ```
-#[macro_export(local_inner_macros)]
-macro_rules! object {
-    ($($value:tt)+) => {
-        object_internal!($($value)+)
-    };
-}
-
-/// A value::Array literal.
-///
-/// # Example
-///
-/// ```rust
-/// # use liquid_core::model::ValueView;
-/// #
-/// # fn main() {
-/// liquid_core::array!([1, "2", 3]);
-/// # }
-/// ```
-#[macro_export(local_inner_macros)]
-macro_rules! array {
-    ($($value:tt)+) => {
-        array_internal!($($value)+)
-    };
-}
-
-/// A value::Scalar literal.
-///
-/// # Example
-///
-/// ```rust
-/// # use liquid_core::model::ValueView;
-/// #
-/// # fn main() {
-/// liquid_core::scalar!(5)
-///     .to_integer().unwrap();
-/// liquid_core::scalar!("foo")
-///     .to_kstr();
-/// # }
-/// ```
-#[macro_export(local_inner_macros)]
-macro_rules! scalar {
-    ($value:literal) => {
-        $crate::model::Scalar::new($value)
-    };
-
-    ($other:ident) => {
-        $other
-    };
-
-    // Any Serialize type: numbers, strings, struct literals, variables etc.
-    // Must be below every other rule.
-    ($other:expr) => {
-        $crate::model::to_scalar(&$other).unwrap()
-    };
-}
-
 #[macro_export(local_inner_macros)]
 #[doc(hidden)]
 macro_rules! value_internal {
@@ -146,6 +81,22 @@ macro_rules! value_internal {
 #[doc(hidden)]
 macro_rules! value_unexpected {
     () => {};
+}
+
+/// A value::Object literal.
+///
+/// # Example
+///
+/// ```rust
+/// # fn main() {
+/// liquid_core::object!({"foo": 5});
+/// # }
+/// ```
+#[macro_export(local_inner_macros)]
+macro_rules! object {
+    ($($value:tt)+) => {
+        object_internal!($($value)+)
+    };
 }
 
 #[macro_export(local_inner_macros)]
@@ -286,6 +237,24 @@ macro_rules! object_unexpected {
     () => {};
 }
 
+/// A value::Array literal.
+///
+/// # Example
+///
+/// ```rust
+/// # use liquid_core::model::ValueView;
+/// #
+/// # fn main() {
+/// liquid_core::array!([1, "2", 3]);
+/// # }
+/// ```
+#[macro_export(local_inner_macros)]
+macro_rules! array {
+    ($($value:tt)+) => {
+        array_internal!($($value)+)
+    };
+}
+
 #[macro_export(local_inner_macros)]
 #[doc(hidden)]
 macro_rules! array_internal {
@@ -375,4 +344,55 @@ macro_rules! array_internal_vec {
 #[doc(hidden)]
 macro_rules! array_unexpected {
     () => {};
+}
+
+/// A value::Scalar literal.
+///
+/// # Example
+///
+/// ```rust
+/// # use liquid_core::model::ValueView;
+/// #
+/// # fn main() {
+/// liquid_core::scalar!(5)
+///     .to_integer().unwrap();
+/// liquid_core::scalar!("foo")
+///     .to_kstr();
+/// # }
+/// ```
+#[macro_export]
+macro_rules! scalar {
+    ($value:literal) => {
+        $crate::model::Scalar::new($value)
+    };
+
+    ($other:ident) => {
+        $other
+    };
+
+    // Any Serialize type: numbers, strings, struct literals, variables etc.
+    // Must be below every other rule.
+    ($other:expr) => {
+        $crate::model::to_scalar(&$other).unwrap()
+    };
+}
+
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! call_filter {
+    ($filter:expr, $input:expr) => {{
+        $crate::call_filter!($filter, $input, )
+    }};
+    ($filter:expr, $input:expr, $($args:expr),*) => {{
+        let positional = Box::new(vec![$($crate::Expression::Literal($crate::value!($args))),*].into_iter());
+        let keyword = Box::new(Vec::new().into_iter());
+        let args = $crate::parser::FilterArguments { positional, keyword };
+
+        let runtime = $crate::Runtime::default();
+
+        let input = $crate::value!($input);
+
+        $crate::ParseFilter::parse(&$filter, args)
+            .and_then(|filter| $crate::Filter::evaluate(&*filter, &input, &runtime))
+    }};
 }

@@ -4,16 +4,13 @@
 #![warn(missing_debug_implementations)]
 #![warn(unused_extern_crates)]
 
-#[macro_use]
-mod macros;
-
-mod ser;
-
 pub mod array;
 pub mod find;
 pub mod object;
 pub mod scalar;
 pub mod value;
+
+mod ser;
 
 pub use array::{Array, ArrayView};
 pub use object::{to_object, Object, ObjectView};
