@@ -1,6 +1,7 @@
 //! A Liquid scalar value
 
 mod date;
+mod datetime;
 pub(crate) mod ser;
 
 use std::cmp::Ordering;
@@ -14,6 +15,7 @@ use crate::model::value::{DisplayCow, State};
 use crate::model::{Value, ValueView};
 
 pub use date::*;
+pub use datetime::*;
 pub use ser::to_scalar;
 
 /// A Liquid scalar value
