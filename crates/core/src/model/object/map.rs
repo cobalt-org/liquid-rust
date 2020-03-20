@@ -449,7 +449,7 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     ///
@@ -471,7 +471,7 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     ///
@@ -494,7 +494,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -516,7 +516,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -540,7 +540,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_core::model::ValueView;
     /// #
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!([1, 2, 3]));
@@ -564,7 +564,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_core::model::ValueView;
     /// #
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!([1, 2, 3]));
@@ -587,7 +587,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -610,7 +610,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::Entry;
+    /// use liquid_core::model::object::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));

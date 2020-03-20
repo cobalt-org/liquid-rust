@@ -25,8 +25,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidReplaceExt;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidReplaceExt;
     ///
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.lossy_chain("Missing liquid partial");
@@ -39,8 +39,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidReplaceExt;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidReplaceExt;
     ///
     /// let filename = "foo";
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
@@ -57,8 +57,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidReplaceExt;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidReplaceExt;
     ///
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
     /// let error: Result<i32> = error.replace("Missing liquid partial");
@@ -71,8 +71,8 @@ pub trait ResultLiquidReplaceExt<T> {
     ///
     /// ```rust
     /// use std::io;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidReplaceExt;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidReplaceExt;
     ///
     /// let filename = "foo";
     /// let error = Err(io::Error::new(io::ErrorKind::NotFound, "Oops"));
@@ -137,9 +137,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use crate::error::Error;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidExt;
+    /// use liquid_core::error::Error;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidExt;
     ///
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
     /// let error = error.trace("Within forloop");
@@ -153,9 +153,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use crate::error::Error;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidExt;
+    /// use liquid_core::error::Error;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
@@ -170,9 +170,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use crate::error::Error;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidExt;
+    /// use liquid_core::error::Error;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
@@ -193,9 +193,9 @@ where
     /// # Example
     ///
     /// ```rust
-    /// use crate::error::Error;
-    /// use crate::error::Result;
-    /// use crate::error::ResultLiquidExt;
+    /// use liquid_core::error::Error;
+    /// use liquid_core::error::Result;
+    /// use liquid_core::error::ResultLiquidExt;
     ///
     /// let for_var = "foo";
     /// let error: Result<i32> = Err(Error::with_msg("Oops"));
