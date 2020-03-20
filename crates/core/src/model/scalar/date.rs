@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops;
 
 /// Liquid's native date only type.
 #[derive(
@@ -33,6 +34,19 @@ impl Date {
 impl fmt::Display for Date {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.format(DATE_FORMAT).fmt(f)
+    }
+}
+
+impl ops::Deref for Date {
+    type Target = chrono::NaiveDate;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for Date {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 

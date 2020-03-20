@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops;
 
 use chrono::TimeZone;
 
@@ -75,6 +76,19 @@ impl Default for DateTime {
 impl fmt::Display for DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.format(DATE_TIME_FORMAT).fmt(f)
+    }
+}
+
+impl ops::Deref for DateTime {
+    type Target = chrono::DateTime<chrono::FixedOffset>;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for DateTime {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
