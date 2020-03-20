@@ -6,9 +6,9 @@ use kstring::KStringCow;
 use super::DisplayCow;
 use super::State;
 use super::Value;
-use crate::model::array::ArrayView;
-use crate::model::object::ObjectView;
-use crate::model::scalar::ScalarCow;
+use crate::model::ArrayView;
+use crate::model::ObjectView;
+use crate::model::ScalarCow;
 
 /// Accessor for Values.
 pub trait ValueView: fmt::Debug {

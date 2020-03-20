@@ -15,6 +15,7 @@ pub mod object;
 pub mod scalar;
 pub mod value;
 
+pub use array::{Array, ArrayView};
 pub use object::{to_object, Object, ObjectView};
 pub use scalar::{Scalar, ScalarCow};
 pub use value::{to_value, State, Value, ValueCow, ValueView};
