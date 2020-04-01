@@ -20,7 +20,7 @@ azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 [dependencies]
 liquid-core = { version = "0.20.0-alpha.0", path = "../core" }
 kstring = { version = "0.1.0-alpha.0", path = "../kstring" }
-itertools = "0.8.0"
+itertools = "0.9.0"
 regex = "1.0"
 unicode-segmentation = "1.2"
 url = "1.5"
