@@ -72,13 +72,15 @@ impl Filter for TruncateFilter {
         let args = self.args.evaluate(runtime)?;
 
         let lenght = args.lenght.unwrap_or(50) as usize;
-
         let truncate_string = args.ellipsis.unwrap_or_else(|| "...".into());
-
-        let l = cmp::max(lenght - truncate_string.len(), 0);
+        let diff = if lenght >= truncate_string.len() {
+            lenght - truncate_string.len()
+        } else {
+            0
+        };
+        let l = cmp::max(diff, 0);
 
         let input_string = input.to_kstr();
-
         let result = if lenght < input_string.len() {
             let result = UnicodeSegmentation::graphemes(input_string.as_str(), true)
                 .take(l)

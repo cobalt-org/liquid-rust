@@ -142,7 +142,6 @@ fn test_slice_on_arrays() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#264
 fn test_truncate() {
     assert_eq!(
         v!("1234..."),
