@@ -1059,7 +1059,6 @@ fn test_times() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#251
 fn test_divided_by() {
     assert_template_result!("4", r#"{{ 12 | divided_by:3 }}"#);
     assert_template_result!("4", r#"{{ 14 | divided_by:3 }}"#);
@@ -1074,7 +1073,6 @@ fn test_divided_by() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#251
 fn test_modulo() {
     assert_template_result!("1", r#"{{ 3 | modulo:2 }}"#);
     assert_render_error!("{{ 1 | modulo:0 }}");
@@ -1083,7 +1081,6 @@ fn test_modulo() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#251
 fn test_round() {
     assert_template_result!("5", r#"{{ input | round }}"#, o!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | round }}"#);
@@ -1094,7 +1091,6 @@ fn test_round() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#251
 fn test_ceil() {
     assert_template_result!("5", r#"{{ input | ceil }}"#, o!({"input": 4.6}));
     assert_template_result!("5", r#"{{ "4.3" | ceil }}"#);
@@ -1104,7 +1100,6 @@ fn test_ceil() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#251
 fn test_floor() {
     assert_template_result!("4", r#"{{ input | floor }}"#, o!({"input": 4.6}));
     assert_template_result!("4", r#"{{ "4.3" | floor }}"#);
