@@ -313,6 +313,16 @@ impl Filter for DividedByFilter {
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
+        if let Some(o) = operand.to_integer() {
+            if o == 0 {
+                return Err(invalid_argument("operand", "Can't divide by zero"));
+            }
+        } else if let Some(o) = operand.to_float() {
+            if o == 0.0 {
+                return Err(invalid_argument("operand", "Can't divide by zero"));
+            }
+        }
+
         let result = input
             .to_integer()
             .and_then(|i| operand.to_integer().map(|o| Value::scalar(i / o)))
@@ -361,6 +371,16 @@ impl Filter for ModuloFilter {
             .operand
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
+
+        if let Some(o) = operand.to_integer() {
+            if o == 0 {
+                return Err(invalid_argument("operand", "Can't divide by zero"));
+            }
+        } else if let Some(o) = operand.to_float() {
+            if o == 0.0 {
+                return Err(invalid_argument("operand", "Can't divide by zero"));
+            }
+        }
 
         let result = input
             .to_integer()
