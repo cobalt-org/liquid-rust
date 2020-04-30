@@ -170,7 +170,6 @@ fn test_truncate() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#263
 fn test_split() {
     assert_eq!(
         v!(["12", "34"]),

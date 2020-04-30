@@ -42,13 +42,17 @@ impl Filter for SplitFilter {
 
         let input = input.to_kstr();
 
-        // Split and construct resulting Array
-        Ok(Value::Array(
-            input
-                .split(args.pattern.as_str())
-                .map(|s| Value::scalar(s.to_owned()))
-                .collect(),
-        ))
+        if input.is_empty() {
+            Ok(Value::Array(Vec::new()))
+        } else {
+            // Split and construct resulting Array
+            Ok(Value::Array(
+                input
+                    .split(args.pattern.as_str())
+                    .map(|s| Value::scalar(s.to_owned()))
+                    .collect(),
+            ))
+        }
     }
 }
 
