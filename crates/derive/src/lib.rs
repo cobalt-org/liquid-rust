@@ -2,8 +2,6 @@
 
 extern crate proc_macro;
 
-use syn;
-
 mod filter;
 mod filter_parameters;
 pub(crate) mod helpers;
@@ -167,7 +165,7 @@ pub fn derive_filter_parameters(item: TokenStream) -> TokenStream {
 #[proc_macro_derive(ParseFilter, attributes(filter))]
 pub fn derive_parse_filter(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::DeriveInput);
-    parse_filter::parse_filter::derive(&input).into()
+    parse_filter::parse::derive(&input).into()
 }
 
 /// Implements `FilterReflection` for a structure that intends to implement

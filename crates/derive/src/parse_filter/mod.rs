@@ -4,7 +4,7 @@ use proc_quote::*;
 use syn::*;
 
 pub mod filter_reflection;
-pub mod parse_filter;
+pub mod parse;
 
 /// Struct that contains information to generate the necessary code for `ParseFilter`.
 struct ParseFilter<'a> {

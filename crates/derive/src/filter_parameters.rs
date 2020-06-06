@@ -139,8 +139,7 @@ impl<'a> FilterParametersFields<'a> {
             .iter()
             .filter(|parameter| parameter.is_positional())
             .skip_while(|parameter| parameter.is_required())
-            .skip_while(|parameter| parameter.is_optional())
-            .next()
+            .find(|parameter| !parameter.is_optional())
     }
 
     /// Tries to create a new `FilterParametersFields` from the given `Fields`
