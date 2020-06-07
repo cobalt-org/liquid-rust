@@ -29,6 +29,7 @@ impl DateTime {
     }
 
     /// Convert a `str` to `Self`
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(other: &str) -> Option<Self> {
         parse_date_time(other).map(|d| Self { inner: d })
     }

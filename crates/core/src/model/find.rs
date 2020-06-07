@@ -4,7 +4,6 @@ use std::fmt;
 use std::slice;
 
 use crate::error::{Error, Result};
-use itertools;
 use kstring::KStringCow;
 
 use super::ScalarCow;

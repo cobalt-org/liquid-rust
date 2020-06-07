@@ -1,8 +1,6 @@
 use std::fmt;
 use std::io::Write;
 
-use itertools;
-
 use super::Filter;
 use crate::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use crate::model::{ValueCow, ValueView};
