@@ -1,6 +1,5 @@
 use std::cmp;
 
-use itertools;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;

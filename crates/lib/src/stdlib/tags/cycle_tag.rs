@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io::Write;
 
-use itertools;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::parser::TagToken;
 use liquid_core::parser::TryMatchToken;

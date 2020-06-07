@@ -2,7 +2,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
-use percent_encoding;
 use percent_encoding::EncodeSet;
 
 use crate::invalid_input;

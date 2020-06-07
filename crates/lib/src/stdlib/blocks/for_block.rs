@@ -1,7 +1,6 @@
 use std::fmt;
 use std::io::Write;
 
-use itertools;
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::model::{Object, Value, ValueView};
 use liquid_core::parser::BlockElement;
