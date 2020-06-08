@@ -1,3 +1,17 @@
+<a name="0.20.1"></a>
+## 0.20.1 (2020-06-08)
+
+### Highlights
+
+#### Conformance improvements
+
+- Support `split` on `nil` (see #403)
+
+#### Bug fixes
+
+- Fix overflow in truncate (see #402)
+- Don't panic on divide-by-zero (see #404)
+
 <a name="0.20.0"></a>
 ## 0.20.0 (2020-03-12)
 
