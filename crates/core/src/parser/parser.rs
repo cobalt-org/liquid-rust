@@ -3,28 +3,25 @@
 //! This module contains functions than can be used for writing plugins
 //! but should be ignored for simple usage.
 
-use std;
-
 use crate::error::{Error, Result, ResultLiquidExt};
 use crate::model::Value;
 use crate::runtime::Expression;
 use crate::runtime::Renderable;
 use crate::runtime::Variable;
-use itertools;
 
 use super::Language;
 use super::Text;
 use super::{Filter, FilterArguments, FilterChain};
 
-use ::pest::Parser;
+use pest::Parser;
 
-mod pest {
+mod inner {
     #[derive(Parser)]
     #[grammar = "parser/grammar.pest"]
     pub struct LiquidParser;
 }
 
-use self::pest::*;
+use self::inner::*;
 
 type Pair<'a> = ::pest::iterators::Pair<'a, Rule>;
 type Pairs<'a> = ::pest::iterators::Pairs<'a, Rule>;
@@ -266,6 +263,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
     ///
     /// However, if the input text reaches its end and the block is not closed,
     /// an error is returned instead.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<Option<BlockElement<'a>>> {
         if self.closed {
             return Ok(None);
@@ -626,7 +624,7 @@ impl<'a> InvalidLiquidToken<'a> {
         self,
         next_elements: &mut dyn Iterator<Item = Pair>,
     ) -> Result<Box<dyn Renderable>> {
-        use ::pest::error::LineColLocation;
+        use pest::error::LineColLocation;
 
         let invalid_token_span = self.element.as_span();
         let invalid_token_position = invalid_token_span.start_pos();

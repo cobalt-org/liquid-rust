@@ -3,7 +3,6 @@ use std::sync;
 use crate::error::Error;
 use crate::error::Result;
 use crate::model::ObjectView;
-use anymap;
 
 use super::PartialStore;
 use super::Renderable;

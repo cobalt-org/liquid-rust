@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync;
 
-use itertools;
-
 use crate::error::Error;
 use crate::error::Result;
 use crate::parser;

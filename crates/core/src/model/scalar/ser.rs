@@ -1,5 +1,4 @@
 use kstring::KString;
-use num_traits;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 

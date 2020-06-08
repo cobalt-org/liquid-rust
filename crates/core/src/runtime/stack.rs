@@ -1,6 +1,5 @@
 use crate::error::{Error, Result};
 use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
-use itertools;
 
 #[derive(Clone, Default, Debug)]
 struct Frame {

@@ -1,9 +1,6 @@
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
 
-use serde_json;
-use serde_yaml;
-
 use std::ffi;
 use std::fs;
 use std::io::Write;
@@ -31,12 +28,10 @@ fn load_json(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error::Er
 
 fn build_context(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error::Error>> {
     let extension = path.extension().unwrap_or_else(|| ffi::OsStr::new(""));
-    let value = if extension == ffi::OsStr::new("yaml") {
-        load_yaml(path)
-    } else if extension == ffi::OsStr::new("yaml") {
-        load_json(path)
-    } else {
-        Err(Error::new("Unsupported file type"))?
+    let value = match extension.to_str() {
+        Some("yaml") => load_yaml(path),
+        Some("json") => load_json(path),
+        _ => Err(Error::new("Unsupported file type").into()),
     }?;
 
     Ok(value)
