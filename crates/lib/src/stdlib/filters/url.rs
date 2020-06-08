@@ -2,34 +2,13 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 use liquid_core::{Value, ValueView};
-use percent_encoding::EncodeSet;
 
 use crate::invalid_input;
 
-#[derive(Clone)]
-struct UrlEncodeSet(String);
-
-impl UrlEncodeSet {
-    fn safe_bytes(&self) -> &[u8] {
-        let &UrlEncodeSet(ref safe) = self;
-        safe.as_bytes()
-    }
-}
-
-impl EncodeSet for UrlEncodeSet {
-    fn contains(&self, byte: u8) -> bool {
-        let is_digit = 48 <= byte && byte <= 57;
-        let is_upper = 65 <= byte && byte <= 90;
-        let is_lower = 97 <= byte && byte <= 122;
-        // -, . or _
-        let is_special = byte == 45 || byte == 46 || byte == 95;
-        if is_digit || is_upper || is_lower || is_special {
-            false
-        } else {
-            !self.safe_bytes().contains(&byte)
-        }
-    }
-}
+const FRAGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'.')
+    .remove(b'_');
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
@@ -43,9 +22,6 @@ pub struct UrlEncode;
 #[name = "url_encode"]
 struct UrlEncodeFilter;
 
-static URL_ENCODE_SET: once_cell::sync::Lazy<UrlEncodeSet> =
-    once_cell::sync::Lazy::new(|| UrlEncodeSet("".to_owned()));
-
 impl Filter for UrlEncodeFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if input.is_nil() {
@@ -54,8 +30,7 @@ impl Filter for UrlEncodeFilter {
 
         let s = input.to_kstr();
 
-        let result: String =
-            percent_encoding::utf8_percent_encode(s.as_str(), URL_ENCODE_SET.clone()).collect();
+        let result: String = percent_encoding::utf8_percent_encode(s.as_str(), FRAGMENT).collect();
         Ok(Value::scalar(result))
     }
 }
