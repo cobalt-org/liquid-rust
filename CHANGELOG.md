@@ -1,3 +1,10 @@
+<a name="0.20.2"></a>
+## 0.20.2 (2020-06-08)
+
+#### Bug fixes
+
+- Don't crash on bad date formats (see #409)
+
 <a name="0.20.1"></a>
 ## 0.20.1 (2020-06-08)
 
