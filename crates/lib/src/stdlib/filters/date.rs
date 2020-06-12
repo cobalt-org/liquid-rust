@@ -1,9 +1,11 @@
+use std::fmt::Write;
+
 use liquid_core::Expression;
-use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
+use liquid_core::{Error, Result};
 use liquid_core::{Value, ValueView};
 
 #[derive(Debug, FilterParameters)]
@@ -35,11 +37,22 @@ impl Filter for DateFilter {
         let date = input.as_scalar().and_then(|s| s.to_date_time());
         match date {
             Some(date) if !args.format.is_empty() => {
-                Ok(Value::scalar(date.format(args.format.as_str()).to_string()))
+                let d = date.format(args.format.as_str());
+                let s = try_to_string(d).ok_or_else(|| {
+                    Error::with_msg(format!("Invalid date-format string: {}", args.format))
+                })?;
+                Ok(Value::scalar(s))
             }
             _ => Ok(input.to_value()),
         }
     }
+}
+
+fn try_to_string(f: impl std::fmt::Display) -> Option<String> {
+    let mut buf = String::new();
+    buf.write_fmt(format_args!("{}", f)).ok()?;
+    buf.shrink_to_fit();
+    Some(buf)
 }
 
 #[cfg(test)]
@@ -52,6 +65,11 @@ mod tests {
             liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "%Y-%m-%d").unwrap(),
             liquid_core::value!("2016-06-13")
         );
+    }
+
+    #[test]
+    fn unit_date_invalid_format() {
+        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "%Y %h %8").unwrap_err();
     }
 
     #[test]
