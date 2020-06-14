@@ -75,6 +75,12 @@ impl<'s> KStringCow<'s> {
         self.inner.as_str()
     }
 
+    /// Returns a string slice, only if this is borrowed
+    #[inline]
+    pub fn as_borrowed(&self) -> Option<&'s str> {
+        self.inner.as_borrowed()
+    }
+
     /// Convert to a mutable string type, cloning the data if necessary.
     #[inline]
     pub fn into_string(self) -> StdString {
@@ -118,6 +124,14 @@ impl<'s> KStringCowInner<'s> {
         match self {
             Self::Owned(s) => s.into_boxed_str(),
             Self::Borrowed(s) => BoxedStr::from(s),
+        }
+    }
+
+    #[inline]
+    fn as_borrowed(&self) -> Option<&'s str> {
+        match self {
+            KStringCowInner::Owned(_) => None,
+            KStringCowInner::Borrowed(s) => Some(s),
         }
     }
 }

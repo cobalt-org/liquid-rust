@@ -93,6 +93,14 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
+    /// Interpret as a string, if possible
+    pub fn to_string(self) -> Option<KStringCow<'s>> {
+        match self.0 {
+            ScalarCowEnum::Str(x) => Some(x),
+            _ => None,
+        }
+    }
+
     /// Interpret as an integer, if possible
     pub fn to_integer(&self) -> Option<i32> {
         match self.0 {
