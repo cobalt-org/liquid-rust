@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use crate::KString;
 use crate::KStringRef;
@@ -86,6 +86,12 @@ impl<'s> KStringCow<'s> {
     pub fn into_boxed_str(self) -> BoxedStr {
         self.inner.into_boxed_str()
     }
+
+    /// Convert to a Cow str
+    #[inline]
+    pub fn into_cow_str(self) -> Cow<'s, str> {
+        self.inner.into_cow_str()
+    }
 }
 
 impl<'s> KStringCowInner<'s> {
@@ -118,6 +124,15 @@ impl<'s> KStringCowInner<'s> {
         match self {
             Self::Owned(s) => s.into_boxed_str(),
             Self::Borrowed(s) => BoxedStr::from(s),
+        }
+    }
+
+    /// Convert to a Cow str
+    #[inline]
+    fn into_cow_str(self) -> Cow<'s, str> {
+        match self {
+            Self::Owned(s) => s.into_cow_str(),
+            Self::Borrowed(s) => Cow::Borrowed(s),
         }
     }
 }

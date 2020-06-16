@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use crate::FixedString1;
 use crate::FixedString2;
@@ -105,6 +105,12 @@ impl KString {
     pub fn into_boxed_str(self) -> BoxedStr {
         self.inner.into_boxed_str()
     }
+
+    /// Convert to a Cow str
+    #[inline]
+    pub fn into_cow_str(self) -> Cow<'static, str> {
+        self.inner.into_cow_str()
+    }
 }
 
 impl KStringInner {
@@ -153,6 +159,23 @@ impl KStringInner {
             Self::Fixed6(s) => s.to_boxed_str(),
             Self::Fixed7(s) => s.to_boxed_str(),
             Self::Fixed8(s) => s.to_boxed_str(),
+        }
+    }
+
+    /// Convert to a Cow str
+    #[inline]
+    fn into_cow_str(self) -> Cow<'static, str> {
+        match self {
+            Self::Owned(s) => Cow::Owned(s.into()),
+            Self::Singleton(s) => Cow::Borrowed(s),
+            Self::Fixed1(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed2(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed3(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed4(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed5(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed6(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed7(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed8(s) => Cow::Owned(s.to_boxed_str().into()),
         }
     }
 }

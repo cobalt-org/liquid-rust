@@ -5,7 +5,7 @@ mod datetime;
 pub(crate) mod ser;
 
 use std::cmp::Ordering;
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use kstring::KString;
 use kstring::KStringCow;
@@ -136,6 +136,14 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Date(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
+        }
+    }
+
+    /// Interpret as a Cow str, borrowing if possible
+    pub fn into_cow_str(self) -> Cow<'s, str> {
+        match self {
+            Self(ScalarCowEnum::Str(x)) => x.into_cow_str(),
+            other => other.into_string().into_cow_str(),
         }
     }
 }
@@ -1035,5 +1043,34 @@ mod test {
         assert_eq!(TRUE, empty);
         assert_eq!(empty, TRUE);
         assert!(empty.query_state(State::Truthy));
+    }
+
+    #[test]
+    fn borrows_from_scalar_cow() {
+        fn is_borrowed(cow: Cow<'_, str>) -> bool {
+            match cow {
+                Cow::Borrowed(_) => true,
+                Cow::Owned(_) => false,
+            }
+        }
+
+        let s: String = "gamma".into();
+        let sc: ScalarCow<'_> = s.into();
+
+        // clones instead of borrowing
+        {
+            fn extract_cow_str<'s>(value: &'s dyn ValueView) -> Cow<'s, str> {
+                value.to_kstr().into_cow_str()
+            }
+            assert_eq!(is_borrowed(extract_cow_str(sc.as_view())), false);
+        }
+
+        // borrows succesfully!
+        {
+            fn extract_cow_str<'s>(value: &'s dyn ValueView) -> Cow<'s, str> {
+                value.as_scalar().unwrap().into_cow_str()
+            }
+            assert_eq!(is_borrowed(extract_cow_str(&sc)), true);
+        }
     }
 }
