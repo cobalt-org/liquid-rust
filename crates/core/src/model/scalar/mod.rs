@@ -253,6 +253,67 @@ impl<'s> PartialOrd<i64> for ScalarCow<'s> {
     }
 }
 
+macro_rules! impl_copyable {
+    ($user: ty, $internal: ty) => {
+        impl ValueView for $user {
+            fn as_debug(&self) -> &dyn fmt::Debug {
+                self
+            }
+
+            fn render(&self) -> DisplayCow<'_> {
+                DisplayCow::Borrowed(self)
+            }
+            fn source(&self) -> DisplayCow<'_> {
+                DisplayCow::Borrowed(self)
+            }
+            fn type_name(&self) -> &'static str {
+                <$internal>::from(*self).type_name()
+            }
+            fn query_state(&self, state: State) -> bool {
+                <$internal>::from(*self).query_state(state)
+            }
+
+            fn to_kstr(&self) -> KStringCow<'_> {
+                self.render().to_string().into()
+            }
+            fn to_value(&self) -> Value {
+                <$internal>::from(*self).to_value()
+            }
+
+            fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+                Some(ScalarCow::new(<$internal>::from(*self)))
+            }
+        }
+
+        impl<'s> From<$user> for ScalarCow<'s> {
+            fn from(s: $user) -> Self {
+                ScalarCow::from(<$internal>::from(s))
+            }
+        }
+
+        impl<'s> PartialEq<$user> for ScalarCow<'s> {
+            fn eq(&self, other: &$user) -> bool {
+                let other = <$internal>::from(*other).into();
+                scalar_eq(self, &other)
+            }
+        }
+
+        impl<'s> PartialOrd<$user> for ScalarCow<'s> {
+            fn partial_cmp(&self, other: &$user) -> Option<Ordering> {
+                let other = <$internal>::from(*other).into();
+                scalar_cmp(self, &other)
+            }
+        }
+    };
+}
+
+impl_copyable!(u8, i64);
+impl_copyable!(i8, i64);
+impl_copyable!(u16, i64);
+impl_copyable!(i16, i64);
+impl_copyable!(u32, i64);
+impl_copyable!(i32, i64);
+
 impl ValueView for f64 {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
@@ -309,6 +370,8 @@ impl<'s> PartialOrd<f64> for ScalarCow<'s> {
         scalar_cmp(self, &other)
     }
 }
+
+impl_copyable!(f32, f64);
 
 impl ValueView for bool {
     fn as_debug(&self) -> &dyn fmt::Debug {
