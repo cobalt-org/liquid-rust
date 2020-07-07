@@ -31,7 +31,7 @@ pub type Scalar = ScalarCow<'static>;
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 enum ScalarCowEnum<'s> {
-    Integer(i32),
+    Integer(i64),
     Float(f64),
     Bool(bool),
     DateTime(DateTime),
@@ -94,10 +94,10 @@ impl<'s> ScalarCow<'s> {
     }
 
     /// Interpret as an integer, if possible
-    pub fn to_integer(&self) -> Option<i32> {
+    pub fn to_integer(&self) -> Option<i64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => x.parse::<i32>().ok(),
+            ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
             _ => None,
         }
     }
@@ -105,7 +105,7 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a float, if possible
     pub fn to_float(&self) -> Option<f64> {
         match self.0 {
-            ScalarCowEnum::Integer(ref x) => Some(f64::from(*x)),
+            ScalarCowEnum::Integer(ref x) => Some(*x as f64),
             ScalarCowEnum::Float(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
             _ => None,
@@ -196,7 +196,7 @@ impl<'s> PartialOrd<ScalarCow<'s>> for ScalarCow<'s> {
     }
 }
 
-impl ValueView for i32 {
+impl ValueView for i64 {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -231,23 +231,23 @@ impl ValueView for i32 {
     }
 }
 
-impl<'s> From<i32> for ScalarCow<'s> {
-    fn from(s: i32) -> Self {
+impl<'s> From<i64> for ScalarCow<'s> {
+    fn from(s: i64) -> Self {
         ScalarCow {
             0: ScalarCowEnum::Integer(s),
         }
     }
 }
 
-impl<'s> PartialEq<i32> for ScalarCow<'s> {
-    fn eq(&self, other: &i32) -> bool {
+impl<'s> PartialEq<i64> for ScalarCow<'s> {
+    fn eq(&self, other: &i64) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<i32> for ScalarCow<'s> {
-    fn partial_cmp(&self, other: &i32) -> Option<Ordering> {
+impl<'s> PartialOrd<i64> for ScalarCow<'s> {
+    fn partial_cmp(&self, other: &i64) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
     }
@@ -800,8 +800,8 @@ impl<'s> Eq for ScalarCow<'s> {}
 fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
     match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x == y,
-        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)) == y,
-        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (f64::from(y)),
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (x as f64) == y,
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x == (y as f64),
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x == y,
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x == y,
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x == y,
@@ -818,8 +818,8 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
 fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> {
     match (&lhs.0, &rhs.0) {
         (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&y),
-        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (f64::from(x)).partial_cmp(&y),
-        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&(f64::from(y))),
+        (&ScalarCowEnum::Integer(x), &ScalarCowEnum::Float(y)) => (x as f64).partial_cmp(&y),
+        (&ScalarCowEnum::Float(x), &ScalarCowEnum::Integer(y)) => x.partial_cmp(&(y as f64)),
         (&ScalarCowEnum::Float(x), &ScalarCowEnum::Float(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::Bool(x), &ScalarCowEnum::Bool(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::DateTime(y)) => x.partial_cmp(&y),
@@ -845,7 +845,7 @@ mod test {
 
     #[test]
     fn test_to_str_integer() {
-        let val: ScalarCow<'_> = 42i32.into();
+        let val: ScalarCow<'_> = 42i64.into();
         assert_eq!(val.to_kstr(), "42");
     }
 
@@ -871,8 +871,8 @@ mod test {
 
     #[test]
     fn test_to_integer_integer() {
-        let val: ScalarCow<'_> = 42i32.into();
-        assert_eq!(val.to_integer(), Some(42i32));
+        let val: ScalarCow<'_> = 42i64.into();
+        assert_eq!(val.to_integer(), Some(42i64));
     }
 
     #[test]
@@ -903,7 +903,7 @@ mod test {
 
     #[test]
     fn test_to_float_integer() {
-        let val: ScalarCow<'_> = 42i32.into();
+        let val: ScalarCow<'_> = 42i64.into();
         assert_eq!(val.to_float(), Some(42f64));
     }
 
@@ -935,7 +935,7 @@ mod test {
 
     #[test]
     fn test_to_bool_integer() {
-        let val: ScalarCow<'_> = 42i32.into();
+        let val: ScalarCow<'_> = 42i64.into();
         assert_eq!(val.to_bool(), None);
     }
 
@@ -962,8 +962,8 @@ mod test {
 
     #[test]
     fn integer_equality() {
-        let val: ScalarCow<'_> = 42i32.into();
-        let zero: ScalarCow<'_> = 0i32.into();
+        let val: ScalarCow<'_> = 42i64.into();
+        let zero: ScalarCow<'_> = 0i64.into();
         assert_eq!(val, val);
         assert_eq!(zero, zero);
         assert!(val != zero);
@@ -972,8 +972,8 @@ mod test {
 
     #[test]
     fn integers_have_ruby_truthiness() {
-        let val: ScalarCow<'_> = 42i32.into();
-        let zero: ScalarCow<'_> = 0i32.into();
+        let val: ScalarCow<'_> = 42i64.into();
+        let zero: ScalarCow<'_> = 0i64.into();
         assert_eq!(TRUE, val);
         assert_eq!(val, TRUE);
         assert!(val.query_state(State::Truthy));

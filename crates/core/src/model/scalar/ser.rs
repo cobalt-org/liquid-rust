@@ -46,41 +46,41 @@ impl serde::Serializer for ScalarSerializer {
 
     #[inline]
     fn serialize_i8(self, value: i8) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
     fn serialize_i16(self, value: i16) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
     fn serialize_i32(self, value: i32) -> Result<Scalar, SerError> {
-        Ok(Scalar::new(value))
+        serialize_as_i64(value)
     }
 
     fn serialize_i64(self, value: i64) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        Ok(Scalar::new(value))
     }
 
     #[inline]
     fn serialize_u8(self, value: u8) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
     fn serialize_u16(self, value: u16) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
     fn serialize_u32(self, value: u32) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
     fn serialize_u64(self, value: u64) -> Result<Scalar, SerError> {
-        serialize_as_i32(value)
+        serialize_as_i64(value)
     }
 
     #[inline]
@@ -211,8 +211,8 @@ impl serde::Serializer for ScalarSerializer {
 }
 
 #[inline]
-fn serialize_as_i32<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
-    let value = num_traits::cast::cast::<T, i32>(value)
+fn serialize_as_i64<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
+    let value = num_traits::cast::cast::<T, i64>(value)
         .ok_or_else(|| SerError::new(crate::error::Error::with_msg("Cannot fit number")))?;
     Ok(Scalar::new(value))
 }

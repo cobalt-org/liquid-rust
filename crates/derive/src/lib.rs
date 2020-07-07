@@ -53,7 +53,7 @@ use proc_macro::TokenStream;
 ///     - "any" -> any `Value` is accepted, this is the default option and `evaluate` will
 /// only convert `Expression` to `Value`.
 ///     - "integer" -> only `Scalar(Integer)` is accepted, `evaluate` will unwrap `Value`
-/// into `i32`.
+/// into `i64`.
 ///     - "float" -> only `Scalar(Float)` is accepted, `evaluate` will unwrap `Value`
 /// into `f64`.
 ///     - "bool" -> only `Scalar(Bool)` is accepted, `evaluate` will unwrap `Value`

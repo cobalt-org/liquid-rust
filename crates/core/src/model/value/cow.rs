@@ -145,8 +145,8 @@ impl<'v> PartialEq<Value> for ValueCow<'v> {
     }
 }
 
-impl<'v> PartialEq<i32> for ValueCow<'v> {
-    fn eq(&self, other: &i32) -> bool {
+impl<'v> PartialEq<i64> for ValueCow<'v> {
+    fn eq(&self, other: &i64) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }

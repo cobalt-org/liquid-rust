@@ -244,8 +244,8 @@ impl<'v> PartialEq<ValueViewCmp<'v>> for Value {
     }
 }
 
-impl PartialEq<i32> for Value {
-    fn eq(&self, other: &i32) -> bool {
+impl PartialEq<i64> for Value {
+    fn eq(&self, other: &i64) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }

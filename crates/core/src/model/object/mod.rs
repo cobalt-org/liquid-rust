@@ -22,7 +22,7 @@ pub trait ObjectView: ValueView {
     fn as_value(&self) -> &dyn ValueView;
 
     /// Returns the number of elements.
-    fn size(&self) -> i32;
+    fn size(&self) -> i64;
 
     /// Keys available for lookup.
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k>;
@@ -76,8 +76,8 @@ impl ObjectView for Object {
         self
     }
 
-    fn size(&self) -> i32 {
-        self.len() as i32
+    fn size(&self) -> i64 {
+        self.len() as i64
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
@@ -167,8 +167,8 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ObjectView for H
         self
     }
 
-    fn size(&self) -> i32 {
-        self.len() as i32
+    fn size(&self) -> i64 {
+        self.len() as i64
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
@@ -238,8 +238,8 @@ impl<K: ObjectIndex, V: ValueView> ObjectView for BTreeMap<K, V> {
         self
     }
 
-    fn size(&self) -> i32 {
-        self.len() as i32
+    fn size(&self) -> i64 {
+        self.len() as i64
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {

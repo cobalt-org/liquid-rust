@@ -24,8 +24,8 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 self
             }
 
-            fn size(&self) -> i32 {
-                #num_fields as i32
+            fn size(&self) -> i64 {
+                #num_fields as i64
             }
 
             fn keys<'liquid_derive_k>(&'liquid_derive_k self) -> Box<dyn Iterator<Item = ::kstring::KStringCow<'liquid_derive_k>> + 'liquid_derive_k> {

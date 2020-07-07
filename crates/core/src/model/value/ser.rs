@@ -101,7 +101,7 @@ impl serde::Serializer for ValueSerializer {
     }
 
     fn serialize_bytes(self, value: &[u8]) -> Result<Value, SerError> {
-        let vec = value.iter().map(|&b| Value::scalar(i32::from(b))).collect();
+        let vec = value.iter().map(|&b| Value::scalar(i64::from(b))).collect();
         Ok(Value::Array(vec))
     }
 

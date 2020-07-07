@@ -58,22 +58,22 @@ mod tests {
     #[test]
     fn unit_pluralize() {
         assert_eq!(
-            liquid_core::call_filter!(Pluralize, 1i32, "one", "many").unwrap(),
+            liquid_core::call_filter!(Pluralize, 1i64, "one", "many").unwrap(),
             liquid_core::value!("one")
         );
 
         assert_eq!(
-            liquid_core::call_filter!(Pluralize, 0i32, "one", "many").unwrap(),
+            liquid_core::call_filter!(Pluralize, 0i64, "one", "many").unwrap(),
             liquid_core::value!("many")
         );
 
         assert_eq!(
-            liquid_core::call_filter!(Pluralize, 2i32, "one", "many").unwrap(),
+            liquid_core::call_filter!(Pluralize, 2i64, "one", "many").unwrap(),
             liquid_core::value!("many")
         );
 
         assert_eq!(
-            liquid_core::call_filter!(Pluralize, 10i32, "one", "many").unwrap(),
+            liquid_core::call_filter!(Pluralize, 10i64, "one", "many").unwrap(),
             liquid_core::value!("many")
         );
     }

@@ -158,7 +158,7 @@ mod tests {
             liquid_core::call_filter!(
                 Truncate,
                 "I often quote myself.  It adds spice to my conversation.",
-                17i32
+                17i64
             )
             .unwrap(),
             liquid_core::value!("I often quote ...")
@@ -171,7 +171,7 @@ mod tests {
             liquid_core::call_filter!(
                 Truncate,
                 "I often quote myself.  It adds spice to my conversation.",
-                -17i32
+                -17i64
             )
             .unwrap(),
             liquid_core::value!("I often quote myself.  It adds spice to my conversation.")
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn unit_truncate_non_string() {
         assert_eq!(
-            liquid_core::call_filter!(Truncate, 10000000f64, 5i32).unwrap(),
+            liquid_core::call_filter!(Truncate, 10000000f64, 5i64).unwrap(),
             liquid_core::value!("10...")
         );
     }
@@ -192,17 +192,17 @@ mod tests {
         let input = "Ground control to Major Tom.";
 
         assert_eq!(
-            liquid_core::call_filter!(Truncate, input, 20i32).unwrap(),
+            liquid_core::call_filter!(Truncate, input, 20i64).unwrap(),
             liquid_core::value!("Ground control to...")
         );
 
         assert_eq!(
-            liquid_core::call_filter!(Truncate, input, 25i32, ", and so on").unwrap(),
+            liquid_core::call_filter!(Truncate, input, 25i64, ", and so on").unwrap(),
             liquid_core::value!("Ground control, and so on")
         );
 
         assert_eq!(
-            liquid_core::call_filter!(Truncate, input, 20i32, "").unwrap(),
+            liquid_core::call_filter!(Truncate, input, 20i64, "").unwrap(),
             liquid_core::value!("Ground control to Ma")
         );
     }
@@ -212,9 +212,9 @@ mod tests {
         liquid_core::call_filter!(
             Truncate,
             "I often quote myself.  It adds spice to my conversation.",
-            17i32,
+            17i64,
             "...",
-            0i32
+            0i64
         )
         .unwrap_err();
     }
@@ -232,7 +232,7 @@ mod tests {
             liquid_core::call_filter!(
                 Truncate,
                 "Here is an a\u{310}, e\u{301}, and o\u{308}\u{332}.",
-                20i32
+                20i64
             )
             .unwrap(),
             liquid_core::value!("Here is an a\u{310}, e\u{301}, ...")
@@ -240,7 +240,7 @@ mod tests {
 
         // Note that the 🇷🇺🇸🇹 is treated as a single grapheme cluster.
         assert_eq!(
-            liquid_core::call_filter!(Truncate, "Here is a RUST: 🇷🇺🇸🇹.", 20i32).unwrap(),
+            liquid_core::call_filter!(Truncate, "Here is a RUST: 🇷🇺🇸🇹.", 20i64).unwrap(),
             liquid_core::value!("Here is a RUST: 🇷🇺...")
         );
     }
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn unit_truncatewords_negative_length() {
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "one two three", -1_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "one two three", -1_i64).unwrap(),
             liquid_core::value!("one two three")
         );
     }
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn unit_truncatewords_zero_length() {
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "one two three", 0_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "one two three", 0_i64).unwrap(),
             liquid_core::value!("...")
         );
     }
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn unit_truncatewords_no_truncation() {
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "one two three", 4_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "one two three", 4_i64).unwrap(),
             liquid_core::value!("one two three")
         );
     }
@@ -284,11 +284,11 @@ mod tests {
     #[test]
     fn unit_truncatewords_truncate() {
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "one two three", 2_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "one two three", 2_i64).unwrap(),
             liquid_core::value!("one two...")
         );
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "one two three", 2_i32, 1_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "one two three", 2_i64, 1_i64).unwrap(),
             liquid_core::value!("one two1")
         );
     }
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn unit_truncatewords_empty_string() {
         assert_eq!(
-            liquid_core::call_filter!(TruncateWords, "", 1_i32).unwrap(),
+            liquid_core::call_filter!(TruncateWords, "", 1_i64).unwrap(),
             liquid_core::value!("")
         );
     }

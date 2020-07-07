@@ -45,13 +45,13 @@ struct SizeFilter;
 impl Filter for SizeFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
         if let Some(x) = input.as_scalar() {
-            Ok(Value::scalar(x.to_kstr().len() as i32))
+            Ok(Value::scalar(x.to_kstr().len() as i64))
         } else if let Some(x) = input.as_array() {
             Ok(Value::scalar(x.size()))
         } else if let Some(x) = input.as_object() {
             Ok(Value::scalar(x.size()))
         } else {
-            Ok(Value::scalar(0i32))
+            Ok(Value::scalar(0i64))
         }
     }
 }
