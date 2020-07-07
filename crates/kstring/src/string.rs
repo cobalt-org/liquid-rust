@@ -1,13 +1,6 @@
 use std::{borrow::Cow, fmt};
 
-use crate::FixedString1;
-use crate::FixedString2;
-use crate::FixedString3;
-use crate::FixedString4;
-use crate::FixedString5;
-use crate::FixedString6;
-use crate::FixedString7;
-use crate::FixedString8;
+use crate::fixed::*;
 use crate::KStringCow;
 use crate::KStringRef;
 
@@ -33,6 +26,14 @@ pub(crate) enum KStringInner {
     Fixed6(FixedString6),
     Fixed7(FixedString7),
     Fixed8(FixedString8),
+    Fixed9(FixedString9),
+    Fixed10(FixedString10),
+    Fixed11(FixedString11),
+    Fixed12(FixedString12),
+    Fixed13(FixedString13),
+    Fixed14(FixedString14),
+    Fixed15(FixedString15),
+    Fixed16(FixedString16),
 }
 
 impl KString {
@@ -69,6 +70,14 @@ impl KString {
             6 => KStringInner::Fixed6(FixedString6::new(other)),
             7 => KStringInner::Fixed7(FixedString7::new(other)),
             8 => KStringInner::Fixed8(FixedString8::new(other)),
+            9 => KStringInner::Fixed9(FixedString9::new(other)),
+            10 => KStringInner::Fixed10(FixedString10::new(other)),
+            11 => KStringInner::Fixed11(FixedString11::new(other)),
+            12 => KStringInner::Fixed12(FixedString12::new(other)),
+            13 => KStringInner::Fixed13(FixedString13::new(other)),
+            14 => KStringInner::Fixed14(FixedString14::new(other)),
+            15 => KStringInner::Fixed15(FixedString15::new(other)),
+            16 => KStringInner::Fixed16(FixedString16::new(other)),
             _ => KStringInner::Owned(BoxedStr::from(other)),
         };
         Self { inner }
@@ -127,6 +136,14 @@ impl KStringInner {
             Self::Fixed6(ref s) => KStringRef::from_ref(s.as_str()),
             Self::Fixed7(ref s) => KStringRef::from_ref(s.as_str()),
             Self::Fixed8(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed9(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed10(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed11(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed12(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed13(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed14(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed15(ref s) => KStringRef::from_ref(s.as_str()),
+            Self::Fixed16(ref s) => KStringRef::from_ref(s.as_str()),
         }
     }
 
@@ -143,6 +160,14 @@ impl KStringInner {
             Self::Fixed6(ref s) => s.as_str(),
             Self::Fixed7(ref s) => s.as_str(),
             Self::Fixed8(ref s) => s.as_str(),
+            Self::Fixed9(ref s) => s.as_str(),
+            Self::Fixed10(ref s) => s.as_str(),
+            Self::Fixed11(ref s) => s.as_str(),
+            Self::Fixed12(ref s) => s.as_str(),
+            Self::Fixed13(ref s) => s.as_str(),
+            Self::Fixed14(ref s) => s.as_str(),
+            Self::Fixed15(ref s) => s.as_str(),
+            Self::Fixed16(ref s) => s.as_str(),
         }
     }
 
@@ -159,6 +184,14 @@ impl KStringInner {
             Self::Fixed6(s) => s.to_boxed_str(),
             Self::Fixed7(s) => s.to_boxed_str(),
             Self::Fixed8(s) => s.to_boxed_str(),
+            Self::Fixed9(s) => s.to_boxed_str(),
+            Self::Fixed10(s) => s.to_boxed_str(),
+            Self::Fixed11(s) => s.to_boxed_str(),
+            Self::Fixed12(s) => s.to_boxed_str(),
+            Self::Fixed13(s) => s.to_boxed_str(),
+            Self::Fixed14(s) => s.to_boxed_str(),
+            Self::Fixed15(s) => s.to_boxed_str(),
+            Self::Fixed16(s) => s.to_boxed_str(),
         }
     }
 
@@ -176,6 +209,14 @@ impl KStringInner {
             Self::Fixed6(s) => Cow::Owned(s.to_boxed_str().into()),
             Self::Fixed7(s) => Cow::Owned(s.to_boxed_str().into()),
             Self::Fixed8(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed9(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed10(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed11(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed12(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed13(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed14(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed15(s) => Cow::Owned(s.to_boxed_str().into()),
+            Self::Fixed16(s) => Cow::Owned(s.to_boxed_str().into()),
         }
     }
 }
