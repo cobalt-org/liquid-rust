@@ -103,7 +103,7 @@ fn parse_literal(literal: Pair) -> Value {
         Rule::IntegerLiteral => Value::scalar(
             literal
                 .as_str()
-                .parse::<i32>()
+                .parse::<i64>()
                 .expect("Grammar ensures matches are parseable as integers."),
         ),
         Rule::FloatLiteral => Value::scalar(

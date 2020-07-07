@@ -35,12 +35,12 @@ fn test_empty_object() {
 #[derive(ObjectView, ValueView, serde::Serialize, serde::Deserialize, Debug)]
 struct TestStatic {
     boolean: bool,
-    int: i32,
+    int: i64,
     float: f64,
     static_str: &'static str,
     string: String,
     kstring: kstring::KString,
-    array: Vec<i32>,
+    array: Vec<i64>,
 }
 
 impl TestStatic {
@@ -77,7 +77,7 @@ fn test_static_value() {
 fn test_static_object() {
     let uut = TestStatic::non_default();
 
-    assert_eq!(uut.size(), 7i32);
+    assert_eq!(uut.size(), 7i64);
     assert!(!uut.keys().collect::<Vec<_>>().is_empty());
     assert!(!uut.values().collect::<Vec<_>>().is_empty());
     assert!(!uut.iter().collect::<Vec<_>>().is_empty());
@@ -108,7 +108,7 @@ fn test_borrow_object() {
         s: fixture.as_str(),
     };
 
-    assert_eq!(uut.size(), 1i32);
+    assert_eq!(uut.size(), 1i64);
     assert!(!uut.keys().collect::<Vec<_>>().is_empty());
     assert!(!uut.values().collect::<Vec<_>>().is_empty());
     assert!(!uut.iter().collect::<Vec<_>>().is_empty());

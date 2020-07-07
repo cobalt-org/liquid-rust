@@ -182,7 +182,7 @@ fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow<'_>) -> Option<
         let index = index.to_kstr();
         match index.as_str() {
             "size" => Some(ValueCow::Owned(Value::scalar(
-                scalar.to_kstr().as_str().len() as i32,
+                scalar.to_kstr().as_str().len() as i64,
             ))),
             _ => None,
         }

@@ -15,15 +15,15 @@ pub trait ArrayView: ValueView {
     fn as_value(&self) -> &dyn ValueView;
 
     /// Returns the number of elements.
-    fn size(&self) -> i32;
+    fn size(&self) -> i64;
 
     /// Returns an iterator .
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k>;
 
     /// Access a contained `Value`.
-    fn contains_key(&self, index: i32) -> bool;
+    fn contains_key(&self, index: i64) -> bool;
     /// Access a contained `Value`.
-    fn get(&self, index: i32) -> Option<&dyn ValueView>;
+    fn get(&self, index: i64) -> Option<&dyn ValueView>;
     /// Returns the first element.
     fn first(&self) -> Option<&dyn ValueView> {
         self.get(0)
@@ -77,8 +77,8 @@ impl<T: ValueView> ArrayView for Vec<T> {
         self
     }
 
-    fn size(&self) -> i32 {
-        self.len() as i32
+    fn size(&self) -> i64 {
+        self.len() as i64
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
@@ -86,12 +86,12 @@ impl<T: ValueView> ArrayView for Vec<T> {
         Box::new(i)
     }
 
-    fn contains_key(&self, index: i32) -> bool {
+    fn contains_key(&self, index: i64) -> bool {
         let index = convert_index(index, self.size());
         index < self.size()
     }
 
-    fn get(&self, index: i32) -> Option<&dyn ValueView> {
+    fn get(&self, index: i64) -> Option<&dyn ValueView> {
         let index = convert_index(index, self.size());
         let value = self.as_slice().get(index as usize);
         value.map(|v| convert_value(v))
@@ -102,7 +102,7 @@ fn convert_value(s: &dyn ValueView) -> &dyn ValueView {
     s
 }
 
-fn convert_index(index: i32, max_size: i32) -> i32 {
+fn convert_index(index: i64, max_size: i64) -> i64 {
     if 0 <= index {
         index
     } else {

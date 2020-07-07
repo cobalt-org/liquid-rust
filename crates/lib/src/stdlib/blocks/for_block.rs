@@ -29,7 +29,7 @@ impl Range {
                 let start = int_argument(start_arg, runtime, "start")?;
                 let stop = int_argument(stop_arg, runtime, "end")?;
                 let range = start..=stop;
-                range.map(|x| Value::scalar(x as i32)).collect()
+                range.map(|x| Value::scalar(x as i64)).collect()
             }
         };
 
@@ -174,14 +174,14 @@ impl Renderable for For {
             range_len => {
                 runtime.run_in_scope(|mut scope| -> Result<()> {
                     let mut helper_vars = Object::new();
-                    helper_vars.insert("length".into(), Value::scalar(range_len as i32));
+                    helper_vars.insert("length".into(), Value::scalar(range_len as i64));
 
                     for (i, v) in range.into_iter().enumerate() {
-                        helper_vars.insert("index0".into(), Value::scalar(i as i32));
-                        helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
+                        helper_vars.insert("index0".into(), Value::scalar(i as i64));
+                        helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
                         helper_vars
-                            .insert("rindex0".into(), Value::scalar((range_len - i - 1) as i32));
-                        helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i32));
+                            .insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
+                        helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
                         helper_vars.insert("first".into(), Value::scalar(i == 0));
                         helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
 
@@ -406,7 +406,7 @@ impl Renderable for TableRow {
             let mut helper_vars = Object::new();
 
             let range_len = range.len();
-            helper_vars.insert("length".into(), Value::scalar(range_len as i32));
+            helper_vars.insert("length".into(), Value::scalar(range_len as i64));
 
             for (i, v) in range.into_iter().enumerate() {
                 let (col_index, row_index) = match cols {
@@ -419,14 +419,14 @@ impl Renderable for TableRow {
                 let col_first = col_index == 0;
                 let col_last = cols.filter(|&cols| col_index + 1 == cols).is_some() || last;
 
-                helper_vars.insert("index0".into(), Value::scalar(i as i32));
-                helper_vars.insert("index".into(), Value::scalar((i + 1) as i32));
-                helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i32));
-                helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i32));
+                helper_vars.insert("index0".into(), Value::scalar(i as i64));
+                helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
+                helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
+                helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
                 helper_vars.insert("first".into(), Value::scalar(first));
                 helper_vars.insert("last".into(), Value::scalar(last));
-                helper_vars.insert("col0".into(), Value::scalar(col_index as i32));
-                helper_vars.insert("col".into(), Value::scalar((col_index + 1) as i32));
+                helper_vars.insert("col0".into(), Value::scalar(col_index as i64));
+                helper_vars.insert("col".into(), Value::scalar((col_index + 1) as i64));
                 helper_vars.insert("col_first".into(), Value::scalar(col_first));
                 helper_vars.insert("col_last".into(), Value::scalar(col_last));
                 scope
@@ -638,10 +638,10 @@ mod test {
         let mut runtime = Runtime::new();
         runtime
             .stack_mut()
-            .set_global("alpha", Value::scalar(42i32));
+            .set_global("alpha", Value::scalar(42i64));
         runtime
             .stack_mut()
-            .set_global("omega", Value::scalar(46i32));
+            .set_global("omega", Value::scalar(46i64));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(
             output,
@@ -703,7 +703,7 @@ mod test {
 
         runtime
             .stack_mut()
-            .set_global("i", Value::Array(vec![Value::scalar(1i32)]));
+            .set_global("i", Value::Array(vec![Value::scalar(1i64)]));
         runtime.stack_mut().set_global("j", Value::Array(vec![]));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "empty inner");

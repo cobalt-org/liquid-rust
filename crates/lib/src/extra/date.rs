@@ -65,7 +65,7 @@ mod tests {
             DateInTz,
             "13 Jun 2016 12:00:00 +0000",
             "%Y-%m-%d %H:%M:%S %z",
-            3i32
+            3i64
         )
         .unwrap();
         let desired_result = liquid_core::value!("2016-06-13 15:00:00 +0300");
@@ -78,7 +78,7 @@ mod tests {
             DateInTz,
             "13 Jun 2016 12:00:00 +0000",
             "%Y-%m-%d %H:%M:%S %z",
-            -13i32
+            -13i64
         )
         .unwrap();
         let desired_result = liquid_core::value!("2016-06-12 23:00:00 -1300");
@@ -91,7 +91,7 @@ mod tests {
             DateInTz,
             "13 Jun 2016 12:00:00 +0000",
             "%Y-%m-%d %H:%M:%S %z",
-            13i32
+            13i64
         )
         .unwrap();
         let desired_result = liquid_core::value!("2016-06-14 01:00:00 +1300");
@@ -100,12 +100,12 @@ mod tests {
 
     #[test]
     fn unit_date_in_tz_input_not_a_string() {
-        liquid_core::call_filter!(DateInTz, 0f64, "%Y-%m-%d %H:%M:%S %z", 0i32).unwrap_err();
+        liquid_core::call_filter!(DateInTz, 0f64, "%Y-%m-%d %H:%M:%S %z", 0i64).unwrap_err();
     }
 
     #[test]
     fn unit_date_in_tz_input_not_a_date_string() {
-        liquid_core::call_filter!(DateInTz, "blah blah blah", "%Y-%m-%d %H:%M:%S %z", 0i32)
+        liquid_core::call_filter!(DateInTz, "blah blah blah", "%Y-%m-%d %H:%M:%S %z", 0i64)
             .unwrap_err();
     }
 

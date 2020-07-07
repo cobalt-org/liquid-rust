@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
@@ -433,10 +435,13 @@ impl Filter for RoundFilter {
             .ok_or_else(|| invalid_input("Number expected"))?;
 
         match n.cmp(&0) {
-            std::cmp::Ordering::Equal => Ok(Value::scalar(input.round() as i32)),
-            std::cmp::Ordering::Less => Ok(Value::scalar(input.round() as i32)),
+            std::cmp::Ordering::Equal => Ok(Value::scalar(input.round() as i64)),
+            std::cmp::Ordering::Less => Ok(Value::scalar(input.round() as i64)),
             _ => {
-                let multiplier = 10.0_f64.powi(n);
+                let multiplier = 10.0_f64.powi(
+                    n.try_into()
+                        .map_err(|_| invalid_input("decimal-places was too large"))?,
+                );
                 Ok(Value::scalar((input * multiplier).round() / multiplier))
             }
         }
@@ -461,7 +466,7 @@ impl Filter for CeilFilter {
             .as_scalar()
             .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
-        Ok(Value::scalar(n.ceil() as i32))
+        Ok(Value::scalar(n.ceil() as i64))
     }
 }
 
@@ -483,7 +488,7 @@ impl Filter for FloorFilter {
             .as_scalar()
             .and_then(|s| s.to_float())
             .ok_or_else(|| invalid_input("Number expected"))?;
-        Ok(Value::scalar(n.floor() as i32))
+        Ok(Value::scalar(n.floor() as i64))
     }
 }
 
@@ -675,15 +680,15 @@ mod tests {
     fn unit_round() {
         assert_eq!(
             liquid_core::call_filter!(Round, 1.1f64).unwrap(),
-            Value::scalar(1i32)
+            Value::scalar(1i64)
         );
         assert_eq!(
             liquid_core::call_filter!(Round, 1.5f64).unwrap(),
-            Value::scalar(2i32)
+            Value::scalar(2i64)
         );
         assert_eq!(
             liquid_core::call_filter!(Round, 2f64).unwrap(),
-            Value::scalar(2i32)
+            Value::scalar(2i64)
         );
         liquid_core::call_filter!(Round, true).unwrap_err();
     }
@@ -691,15 +696,15 @@ mod tests {
     #[test]
     fn unit_round_precision() {
         assert_eq!(
-            liquid_core::call_filter!(Round, 1.1f64, 0i32).unwrap(),
+            liquid_core::call_filter!(Round, 1.1f64, 0i64).unwrap(),
             Value::scalar(1f64)
         );
         assert_eq!(
-            liquid_core::call_filter!(Round, 1.5f64, 1i32).unwrap(),
+            liquid_core::call_filter!(Round, 1.5f64, 1i64).unwrap(),
             Value::scalar(1.5f64)
         );
         assert_eq!(
-            liquid_core::call_filter!(Round, 3.14159f64, 3i32).unwrap(),
+            liquid_core::call_filter!(Round, 3.14159f64, 3i64).unwrap(),
             Value::scalar(3.142f64)
         );
     }
