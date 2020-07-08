@@ -21,7 +21,7 @@ pest_derive = "2.0"
 # Exposed in API
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-kstring = { version = "0.1.0-alpha.0", path = "../kstring" }
+kstring = "1.0"
 liquid-derive = { version = "0.20.0-alpha.0", path = "../derive" }
 
 [dev-dependencies]
