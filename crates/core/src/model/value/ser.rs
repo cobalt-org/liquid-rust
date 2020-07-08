@@ -1,10 +1,11 @@
-use kstring::KString;
-use serde::{self, Serialize};
+use kstring::{KString, KStringCow};
+use serde::{self, de::IntoDeserializer, Deserialize, Serialize};
 
-use super::Value;
+use super::{Value, ValueView};
 use crate::model::scalar::ser::ScalarSerializer;
 use crate::model::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
 use crate::model::Object;
+use crate::model::{ArrayView, ObjectView};
 
 /// Convert a `T` into `liquid_core::model::Value`.
 ///
@@ -20,6 +21,15 @@ where
     T: Serialize,
 {
     value.serialize(ValueSerializer).map_err(|e| e.into())
+}
+
+/// Convert a value into `T`.
+pub fn from_value<'a, T>(v: &'a dyn ValueView) -> Result<T, crate::error::Error>
+where
+    T: Deserialize<'a>,
+{
+    let mut deserializer = ValueDeserializer::from_value(v);
+    T::deserialize(&mut deserializer).map_err(|e| e.into())
 }
 
 pub(crate) struct ValueSerializer;
@@ -285,6 +295,365 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
 
     fn end(self) -> Result<Value, SerError> {
         serde::ser::SerializeSeq::end(self)
+    }
+}
+
+pub(crate) struct ValueDeserializer<'de> {
+    input: &'de (dyn ValueView + 'de),
+}
+
+impl<'de> ValueDeserializer<'de> {
+    fn from_value(input: &'de (dyn ValueView + 'de)) -> Self {
+        Self { input }
+    }
+}
+
+impl<'de, 'a> serde::Deserializer<'de> for &'a mut ValueDeserializer<'de> {
+    type Error = SerError;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        if let Some(scalar) = self.input.as_scalar() {
+            if scalar.to_integer().is_some() {
+                self.deserialize_i64(visitor)
+            } else if scalar.to_float().is_some() {
+                self.deserialize_f64(visitor)
+            } else if scalar.to_bool().is_some() {
+                self.deserialize_bool(visitor)
+            } else {
+                self.deserialize_str(visitor)
+            }
+        } else if self.input.is_array() {
+            self.deserialize_seq(visitor)
+        } else if self.input.is_object() {
+            self.deserialize_map(visitor)
+        } else if self.input.is_state() || self.input.is_nil() {
+            self.deserialize_unit(visitor)
+        } else {
+            Err(SerError::unknown_type(self.input))
+        }
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let scalar = self
+            .input
+            .as_scalar()
+            .ok_or_else(|| SerError::invalid_type(self.input, "bool"))?;
+        let v = scalar
+            .to_bool()
+            .ok_or_else(|| SerError::invalid_type(self.input, "bool"))?;
+        visitor.visit_bool(v)
+    }
+
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let scalar = self
+            .input
+            .as_scalar()
+            .ok_or_else(|| SerError::invalid_type(self.input, "integer"))?;
+        let v = scalar
+            .to_integer()
+            .ok_or_else(|| SerError::invalid_type(self.input, "integer"))?;
+        visitor.visit_i64(v)
+    }
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_i64(visitor)
+    }
+
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_f64(visitor)
+    }
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let scalar = self
+            .input
+            .as_scalar()
+            .ok_or_else(|| SerError::invalid_type(self.input, "float"))?;
+        let v = scalar
+            .to_float()
+            .ok_or_else(|| SerError::invalid_type(self.input, "float"))?;
+        visitor.visit_f64(v)
+    }
+
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let s = self.input.to_kstr();
+        if let Some(c) = s.as_str().chars().next() {
+            visitor.visit_char(c)
+        } else {
+            Err(SerError::invalid_type(self.input, "char"))
+        }
+    }
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let scalar = self
+            .input
+            .as_scalar()
+            .ok_or_else(|| SerError::invalid_type(self.input, "string"))?;
+        match scalar.into_cow_str() {
+            std::borrow::Cow::Borrowed(s) => visitor.visit_borrowed_str(s),
+            std::borrow::Cow::Owned(s) => visitor.visit_string(s),
+        }
+    }
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_str(visitor)
+    }
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        Err(SerError::invalid_type(self.input, "bytes"))
+    }
+    fn deserialize_byte_buf<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        Err(SerError::invalid_type(self.input, "bytes"))
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        if self.input.is_state() || self.input.is_nil() {
+            visitor.visit_none()
+        } else {
+            visitor.visit_some(self)
+        }
+    }
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        if self.input.is_state() || self.input.is_nil() {
+            visitor.visit_unit()
+        } else {
+            Err(SerError::invalid_type(self.input, "nil"))
+        }
+    }
+    fn deserialize_unit_struct<V>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_unit(visitor)
+    }
+
+    fn deserialize_newtype_struct<V>(
+        self,
+        _name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_newtype_struct(self)
+    }
+
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let input = self
+            .input
+            .as_array()
+            .ok_or_else(|| SerError::invalid_type(self.input, "array"))?;
+        visitor.visit_seq(ArrayDeserializer::new(input))
+    }
+    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_seq(visitor)
+    }
+    fn deserialize_tuple_struct<V>(
+        self,
+        _name: &'static str,
+        _len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_seq(visitor)
+    }
+
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        let input = self
+            .input
+            .as_object()
+            .ok_or_else(|| SerError::invalid_type(self.input, "object"))?;
+        visitor.visit_map(ObjectDeserializer::new(input))
+    }
+    fn deserialize_struct<V>(
+        self,
+        _name: &'static str,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_map(visitor)
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        _visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        Err(SerError::invalid_type(self.input, "enum"))
+    }
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_str(visitor)
+    }
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        visitor.visit_unit()
+    }
+}
+
+struct ObjectDeserializer<'de> {
+    iter: Box<dyn Iterator<Item = (KStringCow<'de>, &'de (dyn ValueView + 'de))> + 'de>,
+    value: Option<&'de (dyn ValueView + 'de)>,
+}
+
+impl<'de> ObjectDeserializer<'de> {
+    fn new(input: &'de dyn ObjectView) -> Self {
+        Self {
+            iter: input.iter(),
+            value: None,
+        }
+    }
+}
+
+impl<'de> serde::de::MapAccess<'de> for ObjectDeserializer<'de> {
+    type Error = SerError;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+    where
+        K: serde::de::DeserializeSeed<'de>,
+    {
+        match self.iter.next() {
+            Some((k, v)) => {
+                self.value = Some(v);
+                seed.deserialize(k.as_str().into_deserializer()).map(Some)
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde::de::DeserializeSeed<'de>,
+    {
+        match self.value {
+            Some(v) => seed.deserialize(&mut ValueDeserializer::from_value(v)),
+            None => {
+                panic!("no more values in next_value_seed, internal error in ValueDeserializer")
+            }
+        }
+    }
+}
+
+struct ArrayDeserializer<'de> {
+    iter: Box<dyn Iterator<Item = &'de dyn ValueView> + 'de>,
+}
+
+impl<'de> ArrayDeserializer<'de> {
+    fn new(input: &'de dyn ArrayView) -> Self {
+        Self {
+            iter: input.values(),
+        }
+    }
+}
+
+impl<'de> serde::de::SeqAccess<'de> for ArrayDeserializer<'de> {
+    type Error = SerError;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, SerError>
+    where
+        T: serde::de::DeserializeSeed<'de>,
+    {
+        match self.iter.next() {
+            Some(v) => seed
+                .deserialize(&mut ValueDeserializer::from_value(v))
+                .map(Some),
+            None => Ok(None),
+        }
     }
 }
 

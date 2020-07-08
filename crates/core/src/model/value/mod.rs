@@ -10,7 +10,7 @@ pub(crate) mod ser;
 
 pub use cow::*;
 pub use display::*;
-pub use ser::to_value;
+pub use ser::*;
 pub use state::*;
 pub use values::*;
 pub use view::*;

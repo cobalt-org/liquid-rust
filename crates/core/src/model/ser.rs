@@ -6,7 +6,7 @@ use serde::{self, Serialize};
 
 use crate::model::value::ser::ValueSerializer;
 use crate::model::Object;
-use crate::model::Value;
+use crate::model::{Value, ValueView};
 
 #[derive(Debug)]
 pub(crate) struct SerError(crate::error::Error);
@@ -16,8 +16,22 @@ impl SerError {
         Self(e)
     }
 
+    // Somehow `From` breaks `liquid-derive`.
     pub(crate) fn into(self) -> crate::error::Error {
         self.0
+    }
+
+    pub(crate) fn unknown_type(unexpected: &dyn ValueView) -> Self {
+        crate::error::Error::with_msg(format!("Unknown type: {}", unexpected.type_name())).into()
+    }
+
+    pub(crate) fn invalid_type(unexpected: &dyn ValueView, expected: &str) -> Self {
+        crate::error::Error::with_msg(format!(
+            "Invalid type: {}, expected {}",
+            unexpected.type_name(),
+            expected
+        ))
+        .into()
     }
 }
 
@@ -39,6 +53,21 @@ impl serde::ser::Error for SerError {
         T: fmt::Display,
     {
         SerError(crate::error::Error::with_msg(format!("{}", msg)))
+    }
+}
+
+impl serde::de::Error for SerError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: fmt::Display,
+    {
+        SerError(crate::error::Error::with_msg(format!("{}", msg)))
+    }
+}
+
+impl From<crate::error::Error> for SerError {
+    fn from(e: crate::error::Error) -> Self {
+        SerError::new(e)
     }
 }
 
