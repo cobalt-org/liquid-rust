@@ -1,3 +1,18 @@
+<a name="0.21.0"></a>
+## 0.21.0 (2020-07-09)
+
+### Breaking Changes
+
+- Switched from `ScalarCow` using `i32` to `i64`.
+
+### Highlights
+
+API
+
+- Switched from `ScalarCow` using `i32` to `i64`.
+- Added `from_value(&dyn ValueView)` to complement `to_value(...) -> Vaue`
+- `ValueView` support was added to all integer types
+
 <a name="0.20.2"></a>
 ## 0.20.2 (2020-06-12)
 
