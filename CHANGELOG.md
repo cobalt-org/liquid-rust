@@ -1,3 +1,10 @@
+<a name="0.21.1"></a>
+## 0.21.1 (2020-07-15)
+
+### Highlights
+
+- `where` filter is now being included when stdlib is requested.
+
 <a name="0.21.0"></a>
 ## 0.21.0 (2020-07-09)
 
