@@ -107,6 +107,7 @@ where
             .filter(stdlib::Upcase)
             .filter(stdlib::UrlDecode)
             .filter(stdlib::UrlEncode)
+            .filter(stdlib::Where)
     }
 
     /// Inserts a new custom block into the parser
