@@ -1,3 +1,10 @@
+<a name="0.21.2"></a>
+## 0.21.2 (2020-07-15)
+
+### Highlights
+
+- Fix compilation error in lib "extras"
+
 <a name="0.21.1"></a>
 ## 0.21.1 (2020-07-15)
 
