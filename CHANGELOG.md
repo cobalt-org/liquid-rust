@@ -1,3 +1,10 @@
+<a name="0.21.3"></a>
+## 0.21.3 (2020-08-03)
+
+### Highlights
+
+- Fix date serialization
+
 <a name="0.21.2"></a>
 ## 0.21.2 (2020-07-15)
 

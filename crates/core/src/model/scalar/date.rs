@@ -135,7 +135,7 @@ mod friendly_date {
     where
         S: Serializer,
     {
-        let s = date.to_string();
+        let s = date.format(DATE_FORMAT).to_string();
         serializer.serialize_str(&s)
     }
 
@@ -169,16 +169,22 @@ mod test {
     use super::*;
     #[test]
     fn parse_date_time_empty_is_bad() {
-        assert!(parse_date("").is_none());
+        let input = "";
+        let actual = parse_date(input);
+        assert!(actual.is_none());
     }
 
     #[test]
     fn parse_date_time_bad() {
-        assert!(parse_date("aaaaa").is_none());
+        let input = "aaaaa";
+        let actual = parse_date(input);
+        assert!(actual.is_none());
     }
 
     #[test]
     fn parse_date_today() {
-        assert!(parse_date("today").is_some());
+        let input = "today";
+        let actual = parse_date(input);
+        assert!(actual.is_some());
     }
 }

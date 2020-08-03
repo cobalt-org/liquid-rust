@@ -216,7 +216,7 @@ mod friendly_date_time {
     where
         S: Serializer,
     {
-        let s = date.to_string();
+        let s = date.format(DATE_TIME_FORMAT).to_string();
         serializer.serialize_str(&s)
     }
 
@@ -251,18 +251,40 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
     fn parse_date_time_empty_is_bad() {
-        assert!(parse_date_time("").is_none());
+        let input = "";
+        let actual = parse_date_time(input);
+        assert!(actual.is_none());
     }
 
     #[test]
     fn parse_date_time_bad() {
-        assert!(parse_date_time("aaaaa").is_none());
+        let input = "aaaaa";
+        let actual = parse_date_time(input);
+        assert!(actual.is_none());
     }
 
     #[test]
     fn parse_date_time_now() {
-        assert!(parse_date_time("now").is_some());
+        let input = "now";
+        let actual = parse_date_time(input);
+        assert!(actual.is_some());
+    }
+
+    #[test]
+    fn parse_date_time_serialized_format() {
+        let input = "2016-02-16 10:00:00 +0100";
+        let actual = parse_date_time(input);
+        assert!(actual.is_some());
+    }
+
+    #[test]
+    fn parse_date_time_to_string() {
+        let date = DateTime::now();
+        let input = date.to_string();
+        let actual = parse_date_time(&input);
+        assert!(actual.is_some());
     }
 }
