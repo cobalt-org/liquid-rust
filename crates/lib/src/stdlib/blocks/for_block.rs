@@ -132,7 +132,7 @@ fn get_array(runtime: &Runtime<'_>, array_id: &Expression) -> Result<Vec<Value>>
             })
             .collect();
         Ok(x)
-    } else if array.is_state() || array.to_value() == Value::Nil {
+    } else if array.is_state() || array.is_nil() {
         Ok(vec![])
     } else {
         Err(unexpected_value_error("array", Some(array.type_name())))
