@@ -171,7 +171,6 @@ fn test_for_and_if() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#294
 fn test_for_else() {
     assert_template_result!(
         "+++",

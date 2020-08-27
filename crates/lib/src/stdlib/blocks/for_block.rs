@@ -132,7 +132,7 @@ fn get_array(runtime: &Runtime<'_>, array_id: &Expression) -> Result<Vec<Value>>
             })
             .collect();
         Ok(x)
-    } else if array.is_state() {
+    } else if array.is_state() || array.is_nil() {
         Ok(vec![])
     } else {
         Err(unexpected_value_error("array", Some(array.type_name())))
@@ -807,6 +807,24 @@ mod test {
     fn empty_loop_invokes_else_template() {
         let text = concat!(
             "{% for i in (1..10) limit:0 %}",
+            "{{ i }} ",
+            "{% else %}",
+            "There are no items!",
+            "{% endfor %}"
+        );
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let mut runtime = Runtime::new();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "There are no items!");
+    }
+
+    #[test]
+    fn nil_loop_invokes_else_template() {
+        let text = concat!(
+            "{% for i in nil %}",
             "{{ i }} ",
             "{% else %}",
             "There are no items!",
