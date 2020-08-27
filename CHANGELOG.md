@@ -1,3 +1,10 @@
+<a name="0.21.4"></a>
+## 0.21.4 (2020-08-27)
+
+### Highlights
+
+- Conformance: support looping over `nil` (Fixes #294)
+
 <a name="0.21.3"></a>
 ## 0.21.3 (2020-08-03)
 
