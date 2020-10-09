@@ -1,17 +1,18 @@
 use std::io::Write;
 
-use liquid_core::error::ResultLiquidExt;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
 use liquid_core::ValueView;
+use liquid_core::{error::ResultLiquidExt, Object, Value};
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
 struct Include {
     partial: Expression,
+    vars: Vec<(String, Expression)>,
 }
 
 impl Renderable for Include {
@@ -23,11 +24,36 @@ impl Renderable for Include {
                 .into_err();
         }
         let name = value.to_kstr().into_owned();
+
+        let mut varaibles_evaluated = Vec::new();
+        for (id, expr) in &self.vars {
+            varaibles_evaluated.push((
+                id.to_owned(),
+                expr.try_evaluate(runtime)
+                    .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                    .into_owned(),
+            ));
+        }
+
         runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
+            // if there our additional varaibles creates a include object to access all the varaibles
+            // from e.g. { include 'image.html' path="foo.png" }
+            // then in image.html you could have <img src="{{include.path}}" />
+            if !varaibles_evaluated.is_empty() {
+                let mut helper_vars = Object::new();
+
+                for (id, val) in varaibles_evaluated {
+                    helper_vars.insert(id.into(), val);
+                }
+
+                scope.stack_mut().set("include", Value::Object(helper_vars));
+            }
+
             let partial = scope
                 .partials()
                 .get(&name)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+
             partial
                 .render_to(writer, &mut scope)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())
@@ -68,10 +94,25 @@ impl ParseTag for IncludeTag {
 
         let partial = partial.expect_value().into_result()?;
 
-        // no more arguments should be supplied, trying to supply them is an error
-        arguments.expect_nothing()?;
+        let mut vars = Vec::new();
+        while let Ok(next) = arguments.expect_next("") {
+            let id = next.expect_value().into_result()?.to_string();
 
-        Ok(Box::new(Include { partial }))
+            arguments
+                .expect_next("expected string")?
+                .expect_str("=")
+                .into_result_custom_msg("expected '=' to be used for the assignment")?;
+
+            vars.push((
+                id,
+                arguments
+                    .expect_next("expected expression/value")?
+                    .expect_value()
+                    .into_result()?,
+            ));
+        }
+
+        Ok(Box::new(Include { partial, vars }))
     }
 
     fn reflection(&self) -> &dyn TagReflection {

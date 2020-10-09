@@ -17,7 +17,8 @@ impl liquid::partials::PartialSource for TestFileSystem {
     fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
         let template = match name {
             "product" => "Product: {{ product.title }} ".into(),
-            "locale_variables" => "Locale: {{echo1}} {{echo2}}".into(),
+            "locale_variables" => "Locale: {{include.echo1}} {{include.echo2}}".into(),
+            "single_locale_variable" => "Single Locale: {{include.echo1}}".into(),
             "variant" => "Variant: {{ variant.title }}".into(),
             "nested_template" => {
                 "{% include 'header' %} {% include 'body' %} {% include 'footer' %}".into()
@@ -81,33 +82,41 @@ fn test_include_tag_for() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
-fn test_include_tag_with_local_variables() {
+fn test_include_tag_with_single_local_variable() {
     assert_template_result!(
-        "Locale: test123 ",
-        "{% include 'locale_variables' echo1: 'test123' %}",
+        "Single Locale: test123",
+        "{% include 'single_locale_variable' echo1='test123' %}",
         o!({}),
         liquid()
     );
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
+#[should_panic]
+fn test_include_tag_with_local_variables() {
+    assert_template_result!(
+        "Locale: test123",
+        "{% include 'locale_variables' echo1='test123' %}",
+        o!({}),
+        liquid()
+    );
+}
+
+#[test]
 fn test_include_tag_with_multiple_local_variables() {
     assert_template_result!(
         "Locale: test123 test321",
-        "{% include 'locale_variables' echo1: 'test123', echo2: 'test321' %}",
+        "{% include 'locale_variables' echo1='test123' echo2='test321' %}",
         o!({}),
         liquid()
     );
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_include_tag_with_multiple_local_variables_from_runtime() {
     assert_template_result!(
         "Locale: test123 test321",
-        "{% include 'locale_variables' echo1: echo1, echo2: more_echos.echo2 %}",
+        "{% include 'locale_variables' echo1=echo1 echo2=more_echos.echo2 %}",
         o!({"echo1": "test123", "more_echos": { "echo2": "test321" }}),
         liquid()
     );
