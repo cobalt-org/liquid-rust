@@ -151,6 +151,7 @@ mod test {
         fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
+                "example_var.txt" => Some(r#"{{inlcude.example_var}}"#.into()),
                 _ => None
             }
         }
@@ -215,6 +216,24 @@ mod test {
             .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
+    }
+
+    #[test]
+    fn include_varaible() {
+        let text = "{% include 'example_var.txt' example_var=\"hello\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello");
     }
 
     #[test]

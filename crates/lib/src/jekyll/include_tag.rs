@@ -13,16 +13,39 @@ use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 #[derive(Debug)]
 struct Include {
     partial: Expression,
+    vars: Vec<(String, Expression)>,
 }
 
 impl Renderable for Include {
     fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let name = self.partial.evaluate(runtime)?.render().to_string();
+
+        let mut varaibles_evaluated = Vec::new();
+        for (id, expr) in &self.vars {
+            varaibles_evaluated.push((
+                id.to_owned(),
+                expr.try_evaluate(runtime)
+                    .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                    .into_owned(),
+            ));
+        }
+
         runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
+            if !varaibles_evaluated.is_empty() {
+                let mut helper_vars = Object::new();
+
+                for (id, val) in varaibles_evaluated {
+                    helper_vars.insert(id.into(), val);
+                }
+
+                scope.stack_mut().set("include", Value::Object(helper_vars));
+            }
+
             let partial = scope
                 .partials()
                 .get(&name)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+
             partial
                 .render_to(writer, &mut scope)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())
@@ -69,10 +92,25 @@ impl ParseTag for IncludeTag {
             TryMatchToken::Fails(name) => name.as_str().to_string(),
         };
 
-        // no more arguments should be supplied, trying to supply them is an error
-        arguments.expect_nothing()?;
-
         let partial = Expression::with_literal(name);
+
+        let mut vars = Vec::new();
+        while let Ok(next) = arguments.expect_next("") {
+            let id = next.expect_value().into_result()?.to_string();
+
+            arguments
+                .expect_next("expected string")?
+                .expect_str("=")
+                .into_result_custom_msg("expected '=' to be used for the assignment")?;
+
+            vars.push((
+                id,
+                arguments
+                    .expect_next("expected expression/value")?
+                    .expect_value()
+                    .into_result()?,
+            ));
+        }
 
         Ok(Box::new(Include { partial }))
     }
@@ -113,6 +151,7 @@ mod test {
         fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
+                "example_var.txt" => Some(r#"{{inlcude.example_var}}"#.into()),
                 _ => None
             }
         }
@@ -177,6 +216,24 @@ mod test {
             .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
+    }
+
+    #[test]
+    fn include_varaible() {
+        let text = "{% include example_var.txt example_var=\"hello\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello");
     }
 
     #[test]
