@@ -1,41 +1,37 @@
 use std::io::Write;
 
-use liquid_core::error::ResultLiquidExt;
+use kstring::KString;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
-use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::ValueView;
+use liquid_core::{error::ResultLiquidExt, Object, Value};
+use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
 struct Include {
     partial: Expression,
-    vars: Vec<(String, Expression)>,
+    vars: Vec<(KString, Expression)>,
 }
 
 impl Renderable for Include {
     fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
         let name = self.partial.evaluate(runtime)?.render().to_string();
 
-        let mut varaibles_evaluated = Vec::new();
-        for (id, expr) in &self.vars {
-            varaibles_evaluated.push((
-                id.to_owned(),
-                expr.try_evaluate(runtime)
-                    .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                    .into_owned(),
-            ));
-        }
-
         runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
-            if !varaibles_evaluated.is_empty() {
+            if !self.vars.is_empty() {
                 let mut helper_vars = Object::new();
 
-                for (id, val) in varaibles_evaluated {
-                    helper_vars.insert(id.into(), val);
+                for (id, val) in &self.vars {
+                    helper_vars.insert(
+                        id.to_owned().into(),
+                        val.try_evaluate(scope)
+                            .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                            .into_owned(),
+                    );
                 }
 
                 scope.stack_mut().set("include", Value::Object(helper_vars));
@@ -94,25 +90,25 @@ impl ParseTag for IncludeTag {
 
         let partial = Expression::with_literal(name);
 
-        let mut vars = Vec::new();
+        let mut vars: Vec<(KString, Expression)> = Vec::new();
         while let Ok(next) = arguments.expect_next("") {
-            let id = next.expect_value().into_result()?.to_string();
+            let id = next.expect_identifier().into_result()?.to_string();
 
             arguments
-                .expect_next("expected string")?
+                .expect_next("\"=\" expected.")?
                 .expect_str("=")
-                .into_result_custom_msg("expected '=' to be used for the assignment")?;
+                .into_result_custom_msg("expected \"=\" to be used for the assignment")?;
 
             vars.push((
-                id,
+                id.into(),
                 arguments
-                    .expect_next("expected expression/value")?
+                    .expect_next("expected value")?
                     .expect_value()
                     .into_result()?,
             ));
         }
 
-        Ok(Box::new(Include { partial }))
+        Ok(Box::new(Include { partial, vars }))
     }
 
     fn reflection(&self) -> &dyn TagReflection {
@@ -151,7 +147,7 @@ mod test {
         fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
-                "example_var.txt" => Some(r#"{{inlcude.example_var}}"#.into()),
+                "example_var.txt" => Some(r#"{{include.example_var}}"#.into()),
                 _ => None
             }
         }

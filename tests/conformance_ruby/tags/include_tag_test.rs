@@ -25,7 +25,7 @@ impl liquid::partials::PartialSource for TestFileSystem {
             }
             "body" => "body {% include 'body_detail' %}".into(),
             "nested_product_template" => {
-                "Product: {{ nested_product_template.title }} {%include 'details'%} ".into()
+                "Product= {{ nested_product_template.title }} {%include 'details'%} ".into()
             }
             "recursively_nested_template" => "-{% include 'recursively_nested_template' %}".into(),
             "pick_a_source" => "from TestFileSystem".into(),
@@ -85,7 +85,7 @@ fn test_include_tag_for() {
 fn test_include_tag_with_single_local_variable() {
     assert_template_result!(
         "Single Locale: test123",
-        "{% include 'single_locale_variable' echo1='test123' %}",
+        "{% include 'single_locale_variable' echo1:'test123' %}",
         o!({}),
         liquid()
     );
@@ -96,7 +96,7 @@ fn test_include_tag_with_single_local_variable() {
 fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123",
-        "{% include 'locale_variables' echo1='test123' %}",
+        "{% include 'locale_variables' echo1:'test123' %}",
         o!({}),
         liquid()
     );
@@ -106,7 +106,7 @@ fn test_include_tag_with_local_variables() {
 fn test_include_tag_with_multiple_local_variables() {
     assert_template_result!(
         "Locale: test123 test321",
-        "{% include 'locale_variables' echo1='test123' echo2='test321' %}",
+        "{% include 'locale_variables' echo1:'test123' echo2:'test321' %}",
         o!({}),
         liquid()
     );
@@ -116,7 +116,7 @@ fn test_include_tag_with_multiple_local_variables() {
 fn test_include_tag_with_multiple_local_variables_from_runtime() {
     assert_template_result!(
         "Locale: test123 test321",
-        "{% include 'locale_variables' echo1=echo1 echo2=more_echos.echo2 %}",
+        "{% include 'locale_variables' echo1:echo1 echo2:more_echos.echo2 %}",
         o!({"echo1": "test123", "more_echos": { "echo2": "test321" }}),
         liquid()
     );
