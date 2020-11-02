@@ -6,7 +6,7 @@ use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
 use liquid_core::ValueView;
-use liquid_core::{error::ResultLiquidExt, Object, Value};
+use liquid_core::error::ResultLiquidExt;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
@@ -31,18 +31,14 @@ impl Renderable for Include {
             // from e.g. { include 'image.html' path="foo.png" }
             // then in image.html you could have <img src="{{include.path}}" />
             if !self.vars.is_empty() {
-                let mut helper_vars = Object::new();
-
                 for (id, val) in &self.vars {
-                    helper_vars.insert(
-                        id.to_owned().into(),
-                        val.try_evaluate(scope)
-                            .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                            .into_owned(),
-                    );
-                }
+                    let value = val
+                        .try_evaluate(scope)
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                        .into_owned();
 
-                scope.stack_mut().set("include", Value::Object(helper_vars));
+                    scope.stack_mut().set(id.clone(), value);
+                }
             }
 
             let partial = scope
@@ -106,7 +102,17 @@ impl ParseTag for IncludeTag {
                     .expect_value()
                     .into_result()?,
             ));
+
+            if let Ok(comma) = arguments.expect_next(""){
+                // stop looking for varaibles if there is no comma
+                // currently allows for one trailing comma
+                if comma.expect_str(",").into_result().is_err(){
+                    break;
+                }
+            }
         }
+
+        arguments.expect_nothing()?;
 
         Ok(Box::new(Include { partial, vars }))
     }
@@ -147,7 +153,8 @@ mod test {
         fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
-                "example_var.txt" => Some(r#"{{include.example_var}}"#.into()),
+                "example_var.txt" => Some(r#"{{example_var}}"#.into()),
+                "example_multi_var.txt" => Some(r#"{{example_var}} {{example}}"#.into()),
                 _ => None
             }
         }
@@ -230,6 +237,42 @@ mod test {
             .build();
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "hello");
+    }
+
+    #[test]
+    fn include_multiple_varaibles() {
+        let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"world\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello world");
+    }
+
+    #[test]
+    fn include_multiple_varaibles_trailing_commma() {
+        let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"dogs\", %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello dogs");
     }
 
     #[test]

@@ -27,7 +27,7 @@ impl Renderable for Include {
 
                 for (id, val) in &self.vars {
                     helper_vars.insert(
-                        id.to_owned().into(),
+                        id.clone(),
                         val.try_evaluate(scope)
                             .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
                             .into_owned(),
@@ -108,6 +108,8 @@ impl ParseTag for IncludeTag {
             ));
         }
 
+        arguments.expect_nothing()?;
+
         Ok(Box::new(Include { partial, vars }))
     }
 
@@ -148,6 +150,7 @@ mod test {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
                 "example_var.txt" => Some(r#"{{include.example_var}}"#.into()),
+                "example_multi_var.txt" => Some(r#"{{include.example_var}} {{include.example}}"#.into()),
                 _ => None
             }
         }
@@ -230,6 +233,24 @@ mod test {
             .build();
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "hello");
+    }
+
+    #[test]
+    fn include_mulitple_varaible() {
+        let text = "{% include example_multi_var.txt example_var=\"hello\" example=\"world\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello world");
     }
 
     #[test]
