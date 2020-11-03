@@ -175,6 +175,14 @@ impl Renderable for For {
                 runtime.run_in_scope(|mut scope| -> Result<()> {
                     let mut helper_vars = Object::new();
                     helper_vars.insert("length".into(), Value::scalar(range_len as i64));
+                    if let Ok(v) = scope
+                        .stack()
+                        .get(&[liquid_core::model::Scalar::new("forloop")])
+                    {
+                        helper_vars.insert("parentloop".into(), v.into_owned());
+                    } else {
+                        helper_vars.insert("parentloop".into(), Value::Nil);
+                    }
 
                     for (i, v) in range.into_iter().enumerate() {
                         helper_vars.insert("index0".into(), Value::scalar(i as i64));
@@ -1052,5 +1060,71 @@ mod test {
     "<td class=\"col2\">length: 4, index: 4, index0: 3, rindex: 1, rindex0: 0, col: 2, col0: 1, value: 103, first: false, last: true, col_first: false, col_last: true</td></tr>",
     )
             );
+    }
+
+    #[test]
+    fn test_for_parentloop_nil_when_not_present() {
+        //NOTE: this test differs slightly from the liquid conformity test
+        let text = concat!(
+            "{% for inner in outer %}",
+            // the liquid test has `forloop.parentloop.index` here
+            "{{ forloop.parentloop }}.{{ forloop.index }} ",
+            "{% endfor %}"
+        );
+
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let mut runtime: Runtime<'_> = Default::default();
+        runtime.stack_mut().set_global(
+            "outer",
+            Value::Array(vec![
+                Value::Array(vec![
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                ]),
+                Value::Array(vec![
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                ]),
+            ]),
+        );
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, ".1 .2 ");
+    }
+
+    #[test]
+    fn test_for_parentloop_references_parent_loop() {
+        let text = concat!(
+            "{% for inner in outer %}{% for k in inner %}",
+            "{{ forloop.parentloop.index }}.{{ forloop.index }} ",
+            "{% endfor %}{% endfor %}"
+        );
+
+        let template = parser::parse(text, &options())
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let mut runtime: Runtime<'_> = Default::default();
+        runtime.stack_mut().set_global(
+            "outer",
+            Value::Array(vec![
+                Value::Array(vec![
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                ]),
+                Value::Array(vec![
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                    Value::scalar(1f64),
+                ]),
+            ]),
+        );
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "1.1 1.2 1.3 2.1 2.2 2.3 ");
     }
 }

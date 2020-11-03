@@ -456,7 +456,6 @@ fn test_for_tag_string() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#271
 fn test_for_parentloop_references_parent_loop() {
     assert_template_result!(
         "1.1 1.2 1.3 2.1 2.2 2.3 ",
