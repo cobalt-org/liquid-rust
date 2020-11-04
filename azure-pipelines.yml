@@ -75,7 +75,7 @@ stages:
       - template: install-rust.yml@templates
         parameters:
           rust: ${{ variables.minrust }}
-      - script: cargo check --all
+      - script: cargo check --all --bins --examples --tests
         displayName: cargo check
 - stage: style
   displayName: Style checks
@@ -97,11 +97,23 @@ stages:
       displayName: Committed
     condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
   - job: style
-    displayName: Style linting
+    displayName: Style checking
+    pool:
+      vmImage: ${{ variables.linux_vm }}
+    steps:
+    - template: install-rust.yml@templates
+      parameters:
+        rust: stable
+        components:
+          - rustfmt
+    - script: cargo fmt --all -- --check
+      displayName: rustfmt
+  - job: lint
+    displayName: Linting
     strategy:
       matrix:
         current:
-          channel: stable
+          channel: ${{ variables.minrust }}
         next:
           channel: beta
     continueOnError: ${{ eq(variables.channel, 'beta') }}
@@ -112,15 +124,12 @@ stages:
       parameters:
         rust: $(channel)
         components:
-          - rustfmt
           - clippy
-    - script: cargo fmt --all -- --check
-      displayName: rustfmt
-    - script: cargo check --all
+    - script: cargo check --all --bins --examples --tests
       displayName: Warnings
       env:
         RUSTFLAGS: "-D warnings"
-    - script: cargo clippy --all -- -D warnings
+    - script: cargo clippy --all --bins --examples --tests -- -D warnings
       displayName: clippy
 - ${{ if ne('', variables.codecov_token) }}:
   - stage: coverage
