@@ -81,7 +81,7 @@ fn test_include_tag_for() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
+#[should_panic] // fails due to strict_varaibles
 fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123 ",
@@ -92,7 +92,6 @@ fn test_include_tag_with_local_variables() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_include_tag_with_multiple_local_variables() {
     assert_template_result!(
         "Locale: test123 test321",
@@ -103,7 +102,6 @@ fn test_include_tag_with_multiple_local_variables() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_include_tag_with_multiple_local_variables_from_runtime() {
     assert_template_result!(
         "Locale: test123 test321",

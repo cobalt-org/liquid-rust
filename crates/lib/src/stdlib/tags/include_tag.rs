@@ -1,17 +1,19 @@
 use std::io::Write;
 
-use liquid_core::error::ResultLiquidExt;
+use kstring::KString;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
 use liquid_core::ValueView;
+use liquid_core::error::ResultLiquidExt;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
 #[derive(Debug)]
 struct Include {
     partial: Expression,
+    vars: Vec<(KString, Expression)>,
 }
 
 impl Renderable for Include {
@@ -23,11 +25,27 @@ impl Renderable for Include {
                 .into_err();
         }
         let name = value.to_kstr().into_owned();
+
         runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
+            // if there our additional varaibles creates a include object to access all the varaibles
+            // from e.g. { include 'image.html' path="foo.png" }
+            // then in image.html you could have <img src="{{include.path}}" />
+            if !self.vars.is_empty() {
+                for (id, val) in &self.vars {
+                    let value = val
+                        .try_evaluate(scope)
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                        .into_owned();
+
+                    scope.stack_mut().set(id.clone(), value);
+                }
+            }
+
             let partial = scope
                 .partials()
                 .get(&name)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+
             partial
                 .render_to(writer, &mut scope)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())
@@ -68,10 +86,35 @@ impl ParseTag for IncludeTag {
 
         let partial = partial.expect_value().into_result()?;
 
-        // no more arguments should be supplied, trying to supply them is an error
+        let mut vars: Vec<(KString, Expression)> = Vec::new();
+        while let Ok(next) = arguments.expect_next("") {
+            let id = next.expect_identifier().into_result()?.to_string();
+
+            arguments
+                .expect_next("\":\" expected.")?
+                .expect_str(":")
+                .into_result_custom_msg("expected \":\" to be used for the assignment")?;
+
+            vars.push((
+                id.into(),
+                arguments
+                    .expect_next("expected value")?
+                    .expect_value()
+                    .into_result()?,
+            ));
+
+            if let Ok(comma) = arguments.expect_next(""){
+                // stop looking for varaibles if there is no comma
+                // currently allows for one trailing comma
+                if comma.expect_str(",").into_result().is_err(){
+                    break;
+                }
+            }
+        }
+
         arguments.expect_nothing()?;
 
-        Ok(Box::new(Include { partial }))
+        Ok(Box::new(Include { partial, vars }))
     }
 
     fn reflection(&self) -> &dyn TagReflection {
@@ -110,6 +153,8 @@ mod test {
         fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
             match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
+                "example_var.txt" => Some(r#"{{example_var}}"#.into()),
+                "example_multi_var.txt" => Some(r#"{{example_var}} {{example}}"#.into()),
                 _ => None
             }
         }
@@ -174,6 +219,60 @@ mod test {
             .set_global("numTwo", Value::scalar(10f64));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
+    }
+
+    #[test]
+    fn include_varaible() {
+        let text = "{% include 'example_var.txt' example_var:\"hello\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello");
+    }
+
+    #[test]
+    fn include_multiple_varaibles() {
+        let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"world\" %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello world");
+    }
+
+    #[test]
+    fn include_multiple_varaibles_trailing_commma() {
+        let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"dogs\", %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::<TestSource>::empty()
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let mut runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+        let output = template.render(&mut runtime).unwrap();
+        assert_eq!(output, "hello dogs");
     }
 
     #[test]
