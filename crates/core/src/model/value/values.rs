@@ -1,3 +1,5 @@
+#![allow(clippy::eq_op)]
+
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -195,10 +197,7 @@ impl ValueView for Value {
         }
     }
     fn is_nil(&self) -> bool {
-        match self {
-            Value::Nil => true,
-            _ => false,
-        }
+        matches!(self, Value::Nil)
     }
 }
 

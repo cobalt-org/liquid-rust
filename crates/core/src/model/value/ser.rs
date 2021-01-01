@@ -298,6 +298,7 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub(crate) struct ValueDeserializer<'de> {
     input: &'de (dyn ValueView + 'de),
 }
@@ -660,8 +661,6 @@ impl<'de> serde::de::SeqAccess<'de> for ArrayDeserializer<'de> {
 #[cfg(test)]
 mod test {
     use std::f64;
-
-    use serde_yaml;
 
     #[test]
     pub fn serialize_num() {

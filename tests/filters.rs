@@ -1,5 +1,3 @@
-use liquid;
-
 #[test]
 pub fn upcase() {
     let text = "{{ text | upcase}}";

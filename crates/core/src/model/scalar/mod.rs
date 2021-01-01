@@ -1,5 +1,7 @@
 //! A Liquid scalar value
 
+#![allow(clippy::eq_op)]
+
 mod date;
 mod datetime;
 pub(crate) mod ser;
@@ -1122,7 +1124,7 @@ mod test {
 
         // clones instead of borrowing
         {
-            fn extract_cow_str<'s>(value: &'s dyn ValueView) -> Cow<'s, str> {
+            fn extract_cow_str(value: &dyn ValueView) -> Cow<'_, str> {
                 value.to_kstr().into_cow_str()
             }
             assert_eq!(is_borrowed(extract_cow_str(sc.as_view())), false);
@@ -1130,7 +1132,7 @@ mod test {
 
         // borrows succesfully!
         {
-            fn extract_cow_str<'s>(value: &'s dyn ValueView) -> Cow<'s, str> {
+            fn extract_cow_str(value: &dyn ValueView) -> Cow<'_, str> {
                 value.as_scalar().unwrap().into_cow_str()
             }
             assert_eq!(is_borrowed(extract_cow_str(&sc)), true);

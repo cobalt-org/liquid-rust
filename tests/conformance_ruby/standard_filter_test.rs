@@ -101,43 +101,43 @@ fn test_slice_on_arrays() {
     let input = v!(["f", "o", "o", "b", "a", "r"]);
     assert_eq!(
         v!(["o", "o", "b"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(1), v!(3)).unwrap()
     );
     assert_eq!(
         v!(["o", "o", "b", "a", "r"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(1000)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(1), v!(1000)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(0)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(1), v!(0)).unwrap()
     );
     assert_eq!(
         v!(["o"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(1), v!(1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(1), v!(1)).unwrap()
     );
     assert_eq!(
         v!(["b", "a", "r"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(3), v!(3)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(3), v!(3)).unwrap()
     );
     assert_eq!(
         v!(["a", "r"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-2), v!(2)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(-2), v!(2)).unwrap()
     );
     assert_eq!(
         v!(["a", "r"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-2), v!(1000)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(-2), v!(1000)).unwrap()
     );
     assert_eq!(
         v!(["r"]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-1)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(-1)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(100), v!(10)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(100), v!(10)).unwrap()
     );
     assert_eq!(
         v!([]),
-        call_filter!(liquid_lib::stdlib::Slice, input.clone(), v!(-100), v!(10)).unwrap()
+        call_filter!(liquid_lib::stdlib::Slice, input, v!(-100), v!(10)).unwrap()
     );
 }
 
@@ -1131,7 +1131,7 @@ fn test_at_least() {
 #[test]
 fn test_append() {
     let assigns = o!({ "a": "bc", "b": "d" });
-    assert_template_result!("bcd", r#"{{ a | append: "d"}}"#, assigns.clone());
+    assert_template_result!("bcd", r#"{{ a | append: "d"}}"#, assigns);
     assert_template_result!("bcd", r#"{{ a | append: b}}"#, assigns);
 }
 
@@ -1156,7 +1156,7 @@ fn test_concat() {
 #[test]
 fn test_prepend() {
     let assigns = o!({ "a": "bc", "b": "a" });
-    assert_template_result!("abc", r#"{{ a | prepend: "a"}}"#, assigns.clone());
+    assert_template_result!("abc", r#"{{ a | prepend: "a"}}"#, assigns);
     assert_template_result!("abc", r#"{{ a | prepend: b}}"#, assigns);
 }
 
@@ -1216,11 +1216,11 @@ fn test_where() {
 
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok"), v!(true)).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, v!("ok"), v!(true)).unwrap()
     );
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok")).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, v!("ok")).unwrap()
     );
 }
 
@@ -1240,11 +1240,11 @@ fn test_where_no_key_set() {
 
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok"), v!(true)).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, v!("ok"), v!(true)).unwrap()
     );
     assert_eq!(
         expectation,
-        call_filter!(liquid_lib::stdlib::Where, input.clone(), v!("ok")).unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, v!("ok")).unwrap()
     );
 }
 
@@ -1288,19 +1288,13 @@ fn test_where_non_boolean_value() {
 
     assert_eq!(
         v!([{ "message": "Bonjour!", "language": "French" }]),
-        call_filter!(
-            liquid_lib::stdlib::Where,
-            input.clone(),
-            "language",
-            "French"
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, "language", "French").unwrap()
     );
     assert_eq!(
         v!([{ "message": "Hallo!", "language": "German" }]),
         call_filter!(
             liquid_lib::stdlib::Where,
-            input.clone(),
+            input,
             v!("language"),
             v!("German")
         )
@@ -1308,13 +1302,7 @@ fn test_where_non_boolean_value() {
     );
     assert_eq!(
         v!([{ "message": "Hello!", "language": "English" }]),
-        call_filter!(
-            liquid_lib::stdlib::Where,
-            input.clone(),
-            "language",
-            "English"
-        )
-        .unwrap()
+        call_filter!(liquid_lib::stdlib::Where, input, "language", "English").unwrap()
     );
 }
 

@@ -5,7 +5,7 @@ schedules:
     include:
     - master
 variables:
-  minrust: 1.37.0
+  minrust: 1.44.0
   # Crashes for some reason. Note: does not run in PRs, so needs to be tested
   # in `master`.
   #codecov_token: $(CODECOV_TOKEN_SECRET)
@@ -108,21 +108,31 @@ stages:
           - rustfmt
     - script: cargo fmt --all -- --check
       displayName: rustfmt
-  - job: lint
-    displayName: Linting
-    strategy:
-      matrix:
-        current:
-          channel: ${{ variables.minrust }}
-        next:
-          channel: beta
-    continueOnError: ${{ eq(variables.channel, 'beta') }}
+  - job: lint_current
+    displayName: Linting (current)
     pool:
       vmImage: ${{ variables.linux_vm }}
     steps:
     - template: install-rust.yml@templates
       parameters:
-        rust: $(channel)
+        rust: ${{ variables.minrust }}
+        components:
+          - clippy
+    - script: cargo check --all --bins --examples --tests
+      displayName: Warnings
+      env:
+        RUSTFLAGS: "-D warnings"
+    - script: cargo clippy --all --bins --examples --tests -- -D warnings
+      displayName: clippy
+  - job: lint_next
+    displayName: Linting (next)
+    continueOnError: true
+    pool:
+      vmImage: ${{ variables.linux_vm }}
+    steps:
+    - template: install-rust.yml@templates
+      parameters:
+        rust: beta
         components:
           - clippy
     - script: cargo check --all --bins --examples --tests

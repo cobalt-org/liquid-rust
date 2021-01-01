@@ -51,16 +51,26 @@ pub struct TestMixedFilter {
     args: TestMixedFilterParameters,
 }
 
+#[allow(clippy::many_single_char_names)]
 impl Filter for TestMixedFilter {
     fn evaluate(&self, _input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let a = args.a.map(|i| i.to_string()).unwrap_or("None".to_string());
+        let a = args
+            .a
+            .map(|i| i.to_string())
+            .unwrap_or_else(|| "None".to_string());
         let b = args.b.to_string();
-        let c = args.c.map(|i| i.to_string()).unwrap_or("None".to_string());
+        let c = args
+            .c
+            .map(|i| i.to_string())
+            .unwrap_or_else(|| "None".to_string());
         let d = args.d.to_string();
         let e = args.e.to_string();
-        let f = args.f.map(|i| i.to_string()).unwrap_or("None".to_string());
+        let f = args
+            .f
+            .map(|i| i.to_string())
+            .unwrap_or_else(|| "None".to_string());
         let g = args.g.to_kstr();
 
         let result = format!(

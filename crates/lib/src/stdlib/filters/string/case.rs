@@ -1,3 +1,5 @@
+#![allow(clippy::zero_width_space)]
+
 use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};

@@ -25,9 +25,9 @@ fn test_empty_object() {
     let uut = TestEmpty {};
 
     assert_eq!(uut.size(), 0);
-    assert!(uut.keys().collect::<Vec<_>>().is_empty());
-    assert!(uut.values().collect::<Vec<_>>().is_empty());
-    assert!(uut.iter().collect::<Vec<_>>().is_empty());
+    assert!(uut.keys().next().is_none());
+    assert!(uut.values().next().is_none());
+    assert!(uut.iter().next().is_none());
     assert_eq!(uut.contains_key("non-existent"), false);
     assert!(uut.get("non-existent").is_none());
 }
@@ -78,9 +78,9 @@ fn test_static_object() {
     let uut = TestStatic::non_default();
 
     assert_eq!(uut.size(), 7i64);
-    assert!(!uut.keys().collect::<Vec<_>>().is_empty());
-    assert!(!uut.values().collect::<Vec<_>>().is_empty());
-    assert!(!uut.iter().collect::<Vec<_>>().is_empty());
+    assert!(uut.keys().next().is_some());
+    assert!(uut.values().next().is_some());
+    assert!(uut.iter().next().is_some());
     assert_eq!(uut.contains_key("non-existent"), false);
     assert_eq!(uut.contains_key("boolean"), true);
     assert!(uut.get("boolean").is_some());
@@ -109,9 +109,9 @@ fn test_borrow_object() {
     };
 
     assert_eq!(uut.size(), 1i64);
-    assert!(!uut.keys().collect::<Vec<_>>().is_empty());
-    assert!(!uut.values().collect::<Vec<_>>().is_empty());
-    assert!(!uut.iter().collect::<Vec<_>>().is_empty());
+    assert!(uut.keys().next().is_some());
+    assert!(uut.values().next().is_some());
+    assert!(uut.iter().next().is_some());
     assert_eq!(uut.contains_key("non-existent"), false);
     assert_eq!(uut.contains_key("s"), true);
     assert!(uut.get("s").is_some());
