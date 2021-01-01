@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 anymap = "0.12"
-itertools = "0.9.0"
+itertools = "0.10.0"
 num-traits = "0.2"
 pest = "2.0"
 pest_derive = "2.0"
