@@ -65,7 +65,7 @@ pub struct AddSmileyFilter {
 impl Filter for AddSmileyFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
-        let smiley = args.smiley.unwrap_or(":-)".into()).to_string();
+        let smiley = args.smiley.unwrap_or_else(|| ":-)".into()).to_string();
         Ok(Value::scalar(format!("{} {}", input.render(), smiley)))
     }
 }
@@ -99,8 +99,8 @@ impl Filter for AddTagFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let tag = args.tag.unwrap_or("p".into()).to_string();
-        let id = args.id.unwrap_or("foo".into()).to_string();
+        let tag = args.tag.unwrap_or_else(|| "p".into()).to_string();
+        let id = args.id.unwrap_or_else(|| "foo".into()).to_string();
         Ok(Value::scalar(format!(
             r#"<{} id="{}">{}</{}>"#,
             tag,
@@ -156,7 +156,7 @@ impl Filter for LinkToFilter {
         let args = self.args.evaluate(runtime)?;
 
         let name = input;
-        let url = args.url.unwrap_or(":-)".into()).to_string();
+        let url = args.url.unwrap_or_else(|| ":-)".into()).to_string();
         Ok(Value::scalar(format!(
             r#"<a href="{}">{}</a>"#,
             url,

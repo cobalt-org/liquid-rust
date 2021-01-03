@@ -1,5 +1,3 @@
-use regex;
-
 #[test]
 #[should_panic]
 fn test_templates_parsed_with_line_numbers_renders_them_in_errors() {
@@ -71,9 +69,8 @@ fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
     );
     let err = err.to_string();
 
-    let expected = regex::Regex::new(r#"4 \|"#).unwrap();
     println!("err={}", err);
-    assert!(expected.is_match(&err));
+    assert!(err.contains("4 |"));
 }
 
 #[test]

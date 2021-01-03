@@ -704,8 +704,8 @@ mod tests {
             Value::scalar(1.5f64)
         );
         assert_eq!(
-            liquid_core::call_filter!(Round, 3.14159f64, 3i64).unwrap(),
-            Value::scalar(3.142f64)
+            liquid_core::call_filter!(Round, 1.23456f64, 3i64).unwrap(),
+            Value::scalar(1.235f64)
         );
     }
 }

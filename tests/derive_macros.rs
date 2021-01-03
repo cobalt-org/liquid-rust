@@ -1,5 +1,3 @@
-use liquid;
-
 use liquid::{Parser, ParserBuilder};
 use liquid_core::parser::FilterReflection;
 

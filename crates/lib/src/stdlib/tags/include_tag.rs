@@ -1,12 +1,12 @@
 use std::io::Write;
 
 use kstring::KString;
+use liquid_core::error::ResultLiquidExt;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
 use liquid_core::ValueView;
-use liquid_core::error::ResultLiquidExt;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
@@ -103,10 +103,10 @@ impl ParseTag for IncludeTag {
                     .into_result()?,
             ));
 
-            if let Ok(comma) = arguments.expect_next(""){
+            if let Ok(comma) = arguments.expect_next("") {
                 // stop looking for varaibles if there is no comma
                 // currently allows for one trailing comma
-                if comma.expect_str(",").into_result().is_err(){
+                if comma.expect_str(",").into_result().is_err() {
                     break;
                 }
             }

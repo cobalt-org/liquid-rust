@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate difference;
-use liquid;
 
 use std::fs::File;
 use std::io::Read;
@@ -32,12 +31,9 @@ pub fn pass_between_threads() {
 
             let mut comp = String::new();
             File::open(&output_file)
-                .expect(&format!(
-                    "Expected output file does not exist: {}",
-                    output_file
-                ))
+                .unwrap_or_else(|_| panic!("Expected output file does not exist: {}", output_file))
                 .read_to_string(&mut comp)
-                .expect(&format!("Failed to read file: {}", output_file));
+                .unwrap_or_else(|_| panic!("Failed to read file: {}", output_file));
 
             assert_diff!(&comp, &output, " ", 0);
         }));

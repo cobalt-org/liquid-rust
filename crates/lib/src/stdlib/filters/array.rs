@@ -580,6 +580,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::float_cmp)] // Need to dig into this
     fn unit_first() {
         assert_eq!(
             liquid_core::call_filter!(First, liquid_core::value!([0f64, 1f64, 2f64, 3f64, 4f64,]))
@@ -656,6 +657,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::float_cmp)] // Need to dig into this
     fn unit_last() {
         assert_eq!(
             liquid_core::call_filter!(Last, liquid_core::value!([0f64, 1f64, 2f64, 3f64, 4f64,]))

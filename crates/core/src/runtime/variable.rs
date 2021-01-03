@@ -97,7 +97,6 @@ mod test {
 
     use crate::model::value::ValueViewCmp;
     use crate::model::Object;
-    use serde_yaml;
 
     use super::super::RuntimeBuilder;
 

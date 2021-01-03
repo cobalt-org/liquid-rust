@@ -1,5 +1,3 @@
-use liquid_core;
-
 pub use liquid_core::Value::Nil;
 
 #[allow(dead_code)]

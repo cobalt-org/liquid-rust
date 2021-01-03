@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate difference;
-use liquid;
 
 use std::fs::File;
 use std::io::Read;

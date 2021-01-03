@@ -155,10 +155,7 @@ impl<'a> FilterStructField<'a> {
 
     /// Returns whether this is a field marked with `#[parameters]`
     fn is_filter_parameters(&self) -> bool {
-        match self {
-            FilterStructField::FilterParameters(_) => true,
-            _ => false,
-        }
+        matches!(self, FilterStructField::FilterParameters(_))
     }
 }
 

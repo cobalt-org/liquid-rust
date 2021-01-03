@@ -1,7 +1,5 @@
 use std::borrow;
 
-use liquid;
-
 const N: usize = 10;
 
 fn wrap_in_for<S: AsRef<str>>(body: S) -> String {

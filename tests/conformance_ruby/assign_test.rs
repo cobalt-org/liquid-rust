@@ -1,5 +1,3 @@
-use liquid;
-
 #[test]
 fn test_assign_with_hyphen_in_variable_name() {
     let template_source = r#"
