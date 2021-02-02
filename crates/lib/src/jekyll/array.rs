@@ -164,7 +164,7 @@ impl Filter for ArrayToSentenceStringFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let connector = args.connector.unwrap_or("and".into());
+        let connector = args.connector.unwrap_or_else(|| "and".into());
 
         let mut array = input
             .as_array()

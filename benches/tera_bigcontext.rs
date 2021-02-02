@@ -73,12 +73,12 @@ fn bench_macro_big_object(c: &mut Criterion) {
     With that in mind, let’s learn about borrowing.",
             });
             liquid::object!({
-                "field_a": data_wrapper.clone(),
-                "field_b": data_wrapper.clone(),
-                "field_c": data_wrapper.clone(),
-                "field_d": data_wrapper.clone(),
-                "field_e": data_wrapper.clone(),
-                "field_f": data_wrapper.clone(),
+                "field_a": data_wrapper,
+                "field_b": data_wrapper,
+                "field_c": data_wrapper,
+                "field_d": data_wrapper,
+                "field_e": data_wrapper,
+                "field_f": data_wrapper,
             })
         }).collect();
         let data = liquid::object!({

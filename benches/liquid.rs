@@ -1,5 +1,3 @@
-use liquid;
-
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 pub static FIXTURES: &[&str] = &["Hello World"];

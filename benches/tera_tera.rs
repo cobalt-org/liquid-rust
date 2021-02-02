@@ -1,13 +1,12 @@
 #[macro_use]
 extern crate serde_derive;
-use serde_json;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use tera::{escape_html, Context, Template, Tera, Value};
 
-static VARIABLE_ONLY: &'static str = "{{product.name}}";
+static VARIABLE_ONLY: &str = "{{product.name}}";
 
-static SIMPLE_TEMPLATE: &'static str = "
+static SIMPLE_TEMPLATE: &str = "
 <html>
   <head>
     <title>{{ product.name }}</title>
@@ -22,7 +21,7 @@ static SIMPLE_TEMPLATE: &'static str = "
 </html>
 ";
 
-static PARENT_TEMPLATE: &'static str = "
+static PARENT_TEMPLATE: &str = "
 <html>
   <head>
     <title>{% block title %}Hello{% endblock title%}</title>
@@ -33,7 +32,7 @@ static PARENT_TEMPLATE: &'static str = "
 </html>
 ";
 
-static MACRO_TEMPLATE: &'static str = "
+static MACRO_TEMPLATE: &str = "
 {% macro render_product(product) %}
     <h1>{{ product.name }} - {{ product.manufacturer | upper }}</h1>
     <p>{{ product.summary }}</p>
@@ -42,13 +41,13 @@ static MACRO_TEMPLATE: &'static str = "
 {% endmacro render_product %}
 ";
 
-static CHILD_TEMPLATE: &'static str = r#"{% extends "parent.html" %}
+static CHILD_TEMPLATE: &str = r#"{% extends "parent.html" %}
 {% block title %}{{ super() }} - {{ username | lower }}{% endblock title %}
 
 {% block body %}body{% endblock body %}
 "#;
 
-static CHILD_TEMPLATE_WITH_MACRO: &'static str = r#"{% extends "parent.html" %}
+static CHILD_TEMPLATE_WITH_MACRO: &str = r#"{% extends "parent.html" %}
 {% import "macros.html" as macros %}
 
 {% block title %}{{ super() }} - {{ username | lower }}{% endblock title %}
@@ -58,7 +57,7 @@ static CHILD_TEMPLATE_WITH_MACRO: &'static str = r#"{% extends "parent.html" %}
 {% endblock body %}
 "#;
 
-static USE_MACRO_TEMPLATE: &'static str = r#"
+static USE_MACRO_TEMPLATE: &str = r#"
 {% import "macros.html" as macros %}
 {{ macros::render_product(product=product) }}
 "#;
@@ -240,13 +239,11 @@ fn bench_huge_loop(c: &mut Criterion) {
             dummy: Vec<DataWrapper>,
         }
         let real: Vec<DataWrapper> = (1..1000)
-            .into_iter()
             .map(|i| DataWrapper {
                 v: format!("n={}", i),
             })
             .collect();
         let dummy: Vec<DataWrapper> = (1..1000)
-            .into_iter()
             .map(|i| DataWrapper {
                 v: format!("n={}", i),
             })

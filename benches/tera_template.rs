@@ -51,12 +51,12 @@ pub fn bench_big_table(c: &mut Criterion) {
     group.finish();
 }
 
-static BIG_TABLE_TEMPLATE_TERA: &'static str = "<table>
+static BIG_TABLE_TEMPLATE_TERA: &str = "<table>
 {% for row in table %}
 <tr>{% for col in row %}<td>{{ col }}</td>{% endfor %}</tr>
 {% endfor %}
 </table>";
-static BIG_TABLE_TEMPLATE_LIQUID: &'static str = "<table>
+static BIG_TABLE_TEMPLATE_LIQUID: &str = "<table>
 {% for row in table %}
 <tr>{% for col in row %}<td>{{ col }}</td>{% endfor %}</tr>
 {% endfor %}
@@ -115,7 +115,7 @@ struct Team {
     score: u8,
 }
 
-static TEAMS_TEMPLATE_TERA: &'static str = "<html>
+static TEAMS_TEMPLATE_TERA: &str = "<html>
   <head>
     <title>{{ year }}</title>
   </head>
@@ -131,7 +131,7 @@ static TEAMS_TEMPLATE_TERA: &'static str = "<html>
   </body>
 </html>";
 
-static TEAMS_DATA_LIQUID: &'static str = "
+static TEAMS_DATA_LIQUID: &str = "
 year: 2015
 teams:
   - name: Jiangsu
@@ -144,7 +144,7 @@ teams:
     score: 12
 ";
 
-static TEAMS_TEMPLATE_LIQUID: &'static str = "<html>
+static TEAMS_TEMPLATE_LIQUID: &str = "<html>
   <head>
     <title>{{ year }}</title>
   </head>

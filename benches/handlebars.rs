@@ -7,7 +7,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use handlebars::{to_json, Handlebars, Template};
 use serde_json::value::Value as Json;
 
-static SOURCE_HANDLEBARS: &'static str = "<html>
+static SOURCE_HANDLEBARS: &str = "<html>
   <head>
     <title>{{year}}</title>
   </head>
@@ -49,7 +49,7 @@ fn make_data_handlebars() -> BTreeMap<String, Json> {
     data
 }
 
-static SOURCE_LIQUID: &'static str = "<html>
+static SOURCE_LIQUID: &str = "<html>
   <head>
     <title>{{year}}</title>
   </head>
@@ -64,7 +64,7 @@ static SOURCE_LIQUID: &'static str = "<html>
     </ul>
   </body>
 </html>";
-static DATA_LIQUID: &'static str = "
+static DATA_LIQUID: &str = "
 year: 2015
 teams:
   - name: Jiangsu
@@ -80,17 +80,16 @@ teams:
 fn bench_template(c: &mut Criterion) {
     let mut group = c.benchmark_group("template");
     group.bench_function(BenchmarkId::new("parse", "handlebars"), |b| {
-        b.iter(|| Template::compile(SOURCE_HANDLEBARS).ok().unwrap());
+        b.iter(|| Template::compile(SOURCE_HANDLEBARS).unwrap());
     });
     group.bench_function(BenchmarkId::new("render", "handlebars"), |b| {
         let mut handlebars = Handlebars::new();
         handlebars
             .register_template_string("table", SOURCE_HANDLEBARS)
-            .ok()
             .expect("Invalid template format");
 
         let data = make_data_handlebars();
-        b.iter(|| handlebars.render("table", &data).ok().unwrap())
+        b.iter(|| handlebars.render("table", &data).unwrap())
     });
     group.bench_function(BenchmarkId::new("parse", "liquid"), |b| {
         let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
@@ -128,23 +127,20 @@ fn bench_large_loop(c: &mut Criterion) {
         let mut handlebars = Handlebars::new();
         handlebars
             .register_template_string("test", "BEFORE\n{{#each real}}{{this.v}}{{/each}}AFTER")
-            .ok()
             .expect("Invalid template format");
 
         let real: Vec<DataWrapper> = (1..1000)
-            .into_iter()
             .map(|i| DataWrapper {
                 v: format!("n={}", i),
             })
             .collect();
         let dummy: Vec<DataWrapper> = (1..1000)
-            .into_iter()
             .map(|i| DataWrapper {
                 v: format!("n={}", i),
             })
             .collect();
         let rows = RowWrapper { real, dummy };
-        b.iter(|| handlebars.render("test", &rows).ok().unwrap());
+        b.iter(|| handlebars.render("test", &rows).unwrap());
     });
     group.bench_function(BenchmarkId::new("render", "liquid"), |b| {
         let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
@@ -154,8 +150,8 @@ fn bench_large_loop(c: &mut Criterion) {
 
         let data_wrapper: Vec<_> = (1..1000).map(|i| format!("n={}", i)).collect();
         let row_wrapper = liquid::object!({
-            "real": data_wrapper.clone(),
-            "dummy": data_wrapper.clone(),
+            "real": data_wrapper,
+            "dummy": data_wrapper,
         });
 
         template.render(&row_wrapper).unwrap();
