@@ -666,23 +666,23 @@ mod test {
     pub fn serialize_num() {
         let actual = crate::model::Value::scalar(1f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n1.0", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n1.0", "", 0);
 
         let actual = crate::model::Value::scalar(-100f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n-100.0", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n-100.0", "", 0);
 
         let actual = crate::model::Value::scalar(3.14e_10f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n31400000000.0", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n31400000000.0", "", 0);
 
         let actual = crate::model::Value::scalar(f64::NAN);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n.nan", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n.nan", "", 0);
 
         let actual = crate::model::Value::scalar(f64::INFINITY);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n.inf", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n.inf", "", 0);
     }
 
     #[test]
@@ -703,11 +703,11 @@ mod test {
     pub fn serialize_bool() {
         let actual = crate::model::Value::scalar(true);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\ntrue", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\ntrue", "", 0);
 
         let actual = crate::model::Value::scalar(false);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\nfalse", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\nfalse", "", 0);
     }
 
     #[test]
@@ -723,7 +723,7 @@ mod test {
     pub fn serialize_nil() {
         let actual = crate::model::Value::Nil;
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n~", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n~", "", 0);
     }
 
     #[test]
@@ -742,15 +742,15 @@ mod test {
     pub fn serialize_str() {
         let actual = crate::model::Value::scalar("Hello");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\nHello", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\nHello", "", 0);
 
         let actual = crate::model::Value::scalar("10");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n\"10\"", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n\"10\"", "", 0);
 
         let actual = crate::model::Value::scalar("false");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n\"false\"", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n\"false\"", "", 0);
     }
 
     #[test]
@@ -774,7 +774,7 @@ mod test {
         ];
         let actual = crate::model::Value::Array(actual);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        difference::assert_diff!(&actual, "---\n- 1.0\n- true\n- \"true\"", "", 0);
+        difference::assert_diff!(&actual.trim(), "---\n- 1.0\n- true\n- \"true\"", "", 0);
     }
 
     #[test]
