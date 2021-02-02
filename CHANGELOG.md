@@ -1,33 +1,37 @@
-<a name="0.21.4"></a>
-## 0.21.4 (2020-08-27)
+# Change Log
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
+
+<!-- next-header -->
+## [Unreleased] - ReleaseDate
+
+## [0.21.4] - 2020-08-27
 
 ### Highlights
 
 - Conformance: support looping over `nil` (Fixes #294)
 
-<a name="0.21.3"></a>
-## 0.21.3 (2020-08-03)
+## 0.21.3 - 2020-08-03
 
 ### Highlights
 
 - Fix date serialization
 
-<a name="0.21.2"></a>
-## 0.21.2 (2020-07-15)
+## 0.21.2 - 2020-07-15
 
 ### Highlights
 
 - Fix compilation error in lib "extras"
 
-<a name="0.21.1"></a>
-## 0.21.1 (2020-07-15)
+## 0.21.1 - 2020-07-15
 
 ### Highlights
 
 - `where` filter is now being included when stdlib is requested.
 
-<a name="0.21.0"></a>
-## 0.21.0 (2020-07-09)
+## 0.21.0 - 2020-07-09
 
 ### Breaking Changes
 
@@ -41,15 +45,13 @@ API
 - Added `from_value(&dyn ValueView)` to complement `to_value(...) -> Vaue`
 - `ValueView` support was added to all integer types
 
-<a name="0.20.2"></a>
-## 0.20.2 (2020-06-12)
+## 0.20.2 - 2020-06-12
 
 #### Bug fixes
 
 - Don't crash on bad date formats (see #409)
 
-<a name="0.20.1"></a>
-## 0.20.1 (2020-06-08)
+## 0.20.1 - 2020-06-08
 
 ### Highlights
 
@@ -62,8 +64,7 @@ API
 - Fix overflow in truncate (see #402)
 - Don't panic on divide-by-zero (see #404)
 
-<a name="0.20.0"></a>
-## 0.20.0 (2020-03-12)
+## 0.20.0 - 2020-03-12
 
 This release resolves several planned breaking changes we've been holding off on.  This doesn't make us ready for 1.0 yet but this closes the gap significantly.
 
@@ -190,8 +191,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
   * `sort` order of `nil` was incorrect (#262 fixed in #352).
   * `sort` should work on scalars (#250 fixed in #352).
 
-<a name="0.19.0"></a>
-## 0.19.0 (2019-06-08)
+## 0.19.0 - 2019-06-08
 
 
 #### Features
@@ -209,8 +209,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.18.2"></a>
-## 0.18.2 (2019-02-01)
+## 0.18.2 - 2019-02-01
 
 
 #### Features
@@ -219,8 +218,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.18.1"></a>
-## 0.18.1 (2019-01-23)
+## 0.18.1 - 2019-01-23
 
 
 #### Bug Fixes
@@ -231,8 +229,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.18.0"></a>
-## 0.18.0 (2018-12-27)
+## 0.18.0 - 2018-12-27
 
 
 #### Behavior Features
@@ -355,8 +352,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.17.1"></a>
-## 0.17.1 (2018-11-17)
+## 0.17.1 - 2018-11-17
 
 
 #### Bug Fixes
@@ -375,8 +371,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.17.0"></a>
-## 0.17.0 (2018-10-18)
+## 0.17.0 - 2018-10-18
 
 
 #### Breaking Changes
@@ -403,14 +398,12 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.16.1"></a>
-## 0.16.1 (2018-10-05)
+## 0.16.1 - 2018-10-05
 
 
 
 
-<a name="0.16.0"></a>
-## 0.16.0 (2018-10-04)
+## 0.16.0 - 2018-10-04
 
 
 #### Breaking Changes
@@ -444,8 +437,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 * **value:**  Support `&'static str`'s ([e3aae68d](https://github.com/cobalt-org/liquid-rust/commit/e3aae68d672570db89aeea3daf58423b8f9e6bda)) ([7fd1e62d](https://github.com/cobalt-org/liquid-rust/commit/7fd1e62d7622ea5e61ef52f225b897f318d59b2c))
 
 
-<a name="0.15.0"></a>
-## 0.15.0 (2018-07-30)
+## 0.15.0 - 2018-07-30
 
 
 #### Breaking Changes
@@ -460,8 +452,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.14.3"></a>
-## 0.14.3 (2018-04-10)
+## 0.14.3 - 2018-04-10
 
 
 #### Bug Fixes
@@ -471,8 +462,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.14.2"></a>
-## 0.14.2 (2018-03-16)
+## 0.14.2 - 2018-03-16
 
 
 #### Features
@@ -481,8 +471,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.14.1"></a>
-## 0.14.1 (2018-01-24)
+## 0.14.1 - 2018-01-24
 
 
 #### Features
@@ -493,8 +482,7 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
 
 
 
-<a name="0.14.0"></a>
-## 0.14.0 (2018-01-22)
+## 0.14.0 - 2018-01-22
 
 
 #### Features
@@ -531,8 +519,7 @@ Users
 
 
 
-<a name="0.13.7"></a>
-## 0.13.7 (2018-01-10)
+## 0.13.7 - 2018-01-10
 
 
 #### Features
@@ -541,8 +528,7 @@ Users
 
 
 
-<a name="0.13.6"></a>
-## 0.13.6 (2017-12-29)
+## 0.13.6 - 2017-12-29
 
 
 #### Features
@@ -551,13 +537,11 @@ Users
 
 
 
-<a name="0.13.5"></a>
-## 0.13.5 (2017-12-27)
+## 0.13.5 - 2017-12-27
 
 * Update dependencies
 
-<a name="0.13.4"></a>
-## 0.13.4 (2017-12-27)
+## 0.13.4 - 2017-12-27
 
 
 #### Bug Fixes
@@ -567,8 +551,7 @@ Users
 
 
 
-<a name="0.13.3"></a>
-## 0.13.3 (2017-12-18)
+## 0.13.3 - 2017-12-18
 
 
 #### Bug Fixes
@@ -577,8 +560,7 @@ Users
 
 
 
-<a name="0.13.2"></a>
-## 0.13.2 (2017-12-18)
+## 0.13.2 - 2017-12-18
 
 
 #### Features
@@ -591,14 +573,12 @@ Users
 
 
 
-<a name="0.13.1"></a>
-## 0.13.1 (2017-12-17)
+## 0.13.1 - 2017-12-17
 
 Minor docs change.
 
 
-<a name="0.13.0"></a>
-## 0.13.0 (2017-12-17)
+## 0.13.0 - 2017-12-17
 
 
 #### Features
@@ -616,8 +596,7 @@ Minor docs change.
 
 
 
-<a name="0.12.0"></a>
-## 0.12.0 (2017-11-29)
+## 0.12.0 - 2017-11-29
 
 
 #### Features
@@ -634,8 +613,7 @@ Minor docs change.
 *   Make ParseTag cloneable ([ec59839d](https://github.com/cobalt-org/liquid-rust/commit/ec59839d9d1deff52bb663d0310d5efbca5acace))
 
 
-<a name="0.11.0"></a>
-## 0.11.0 (2017-11-08)
+## 0.11.0 - 2017-11-08
 
 
 #### Features
@@ -648,8 +626,7 @@ Minor docs change.
 * **value:**  Add nil value to support foreign data (PR #140, [89f6660d](https://github.com/cobalt-org/liquid-rust/commit/89f6660d61ee3a59d3e29e7ad8fe6b31791b1d6f))
   * Technically will break anyone matching on `liquid::Value`.
 
-<a name="0.10.1"></a>
-## 0.10.1 (2017-09-24)
+## 0.10.1 - 2017-09-24
 
 
 #### Features
@@ -660,8 +637,7 @@ Minor docs change.
 * Stop recompiling everytime due to Skeptic.
 
 
-<a name="v0.10.0"></a>
-## v0.10.0 (2017-05-27)
+## v0.10.0 - 2017-05-27
 
 
 #### Features
@@ -685,5 +661,5 @@ Minor docs change.
   *  Align behavior with shopify/liquid ([ebd7ebc6](https://github.com/cobalt-org/liquid-rust/commit/ebd7ebc696b6176e6a8f24b3efb58f5683d1c341))
   *  Moved `pluralize` to `extra-filters` ([17d57c09](https://github.com/cobalt-org/liquid-rust/commit/17d57c093fc8771531c13b6f587b44b2b25d2b03))
 
-
-
+<!-- next-url -->
+[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.21.4...HEAD
