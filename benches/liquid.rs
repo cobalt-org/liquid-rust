@@ -1,26 +1,28 @@
-#![feature(test)]
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-extern crate test;
+pub static FIXTURES: &[&str] = &["Hello World"];
 
-use liquid;
+fn bench_fixtures(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fixtures");
+    for fixture in FIXTURES {
+        group.bench_function(BenchmarkId::new("parse", fixture), |b| {
+            let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+            b.iter(|| parser.parse(fixture));
+        });
+        group.bench_function(BenchmarkId::new("render", fixture), |b| {
+            let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+            let template = parser
+                .parse(fixture)
+                .expect("Benchmark template parsing failed");
 
-static TEXT_ONLY: &'static str = "Hello World";
+            let data = liquid::Object::new();
 
-#[bench]
-fn bench_parse_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
-    b.iter(|| parser.parse(TEXT_ONLY));
+            template.render(&data).unwrap();
+            b.iter(|| template.render(&data));
+        });
+    }
+    group.finish();
 }
 
-#[bench]
-fn bench_render_text(b: &mut test::Bencher) {
-    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
-    let template = parser
-        .parse(TEXT_ONLY)
-        .expect("Benchmark template parsing failed");
-
-    let data = liquid::Object::new();
-
-    template.render(&data).unwrap();
-    b.iter(|| template.render(&data));
-}
+criterion_group!(benches, bench_fixtures);
+criterion_main!(benches);

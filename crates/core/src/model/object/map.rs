@@ -359,8 +359,7 @@ macro_rules! delegate_iterator {
 /// A view into a single entry in a map, which may either be vacant or occupied.
 /// This enum is constructed from the [`entry`] method on [`Object`].
 ///
-/// [`entry`]: struct.Object.html#method.entry
-/// [`Object`]: struct.Object.html
+/// [`entry`]: Object::entry()
 #[derive(Debug)]
 pub enum Entry<'a> {
     /// A vacant Entry.
@@ -371,7 +370,6 @@ pub enum Entry<'a> {
 
 /// A vacant Entry. It is part of the [`Entry`] enum.
 ///
-/// [`Entry`]: enum.Entry.html
 #[derive(Debug)]
 pub struct VacantEntry<'a> {
     vacant: VacantEntryImpl<'a>,
@@ -379,7 +377,6 @@ pub struct VacantEntry<'a> {
 
 /// An occupied Entry. It is part of the [`Entry`] enum.
 ///
-/// [`Entry`]: enum.Entry.html
 #[derive(Debug)]
 pub struct OccupiedEntry<'a> {
     occupied: OccupiedEntryImpl<'a>,

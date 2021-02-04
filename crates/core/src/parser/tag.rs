@@ -21,9 +21,9 @@ pub trait TagReflection {
 /// A trait for creating custom tags. This is a simple type alias for a function.
 ///
 /// This function will be called whenever the parser encounters a tag and returns
-/// a new [Renderable](trait.Renderable.html) based on its parameters. The received parameters
-/// specify the name of the tag, the argument [Tokens](lexer/enum.Token.html) passed to
-/// the tag and the global [`Language`](struct.Language.html).
+/// a new [Renderable] based on its parameters. The received parameters
+/// specify the name of the tag, the argument [Tokens](lexer::Token) passed to
+/// the tag and the global [`Language`].
 pub trait ParseTag: Send + Sync + ParseTagClone {
     fn parse(&self, arguments: TagTokenIter, options: &Language) -> Result<Box<dyn Renderable>>;
 

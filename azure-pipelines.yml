@@ -1,3 +1,17 @@
+trigger:
+  branches:
+    include: ['master']
+  tags:
+    include: ['v*']
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - "*.md"
+    - "docs/*"
+    - "LICENSE-*"
 schedules:
 - cron: "12 12 12 * *"
   displayName: Monthly Build
@@ -6,8 +20,6 @@ schedules:
     - master
 variables:
   minrust: 1.44.0
-  # Crashes for some reason. Note: does not run in PRs, so needs to be tested
-  # in `master`.
   #codecov_token: $(CODECOV_TOKEN_SECRET)
   windows_vm: vs2017-win2016
   mac_vm: macos-10.14
@@ -25,7 +37,7 @@ stages:
     - template: install-rust.yml@templates
       parameters:
         rust: stable
-    - script: cargo check --all --bins --examples --tests
+    - script: cargo check --workspace --all-targets
       displayName: Default features
 - stage: test
   displayName: Test
@@ -46,15 +58,25 @@ stages:
           imageName: ${{ variables.linux_vm }}
           target: 'x86_64-unknown-linux-gnu'
           channel: stable
+        # Check for upcoming platform-specific compiler breakages
+        windows_beta:
+          imageName: ${{ variables.windows_vm }}
+          target: 'x86_64-pc-windows-msvc'
+          channel: beta
+        mac_beta:
+          imageName: ${{ variables.mac_vm }}
+          target: 'x86_64-apple-darwin'
+          channel: beta
         linux_beta:
           imageName: ${{ variables.linux_vm }}
           target: 'x86_64-unknown-linux-gnu'
           channel: beta
+        # Check for compiler breakages
         linux_nightly:
           imageName: ${{ variables.linux_vm }}
           target: 'x86_64-unknown-linux-gnu'
           channel: nightly
-    continueOnError: ${{ eq(variables.channel, 'nightly') }}
+    continueOnError: $[ne(variables.rust, 'stable')]
     pool:
       vmImage: $(imageName)
     steps:
@@ -62,9 +84,9 @@ stages:
       parameters:
         rust: $(channel)
         targets: ["$(TARGET)"]
-    - script: cargo test --target $(TARGET) --all
+    - script: cargo test --target $(TARGET) --workspace
       displayName: cargo test
-    - script: cargo doc --target $(TARGET) --no-deps --all
+    - script: cargo doc --target $(TARGET) --workspace --no-deps
       displayName: cargo doc
   - job: msrv
     displayName: "${{ format('Minimum supported Rust version: {0}', variables.minrust) }}"
@@ -82,6 +104,7 @@ stages:
   dependsOn: []
   jobs:
   - job: "Committed"
+    displayName: Linting commit history
     pool:
       vmImage: ${{ variables.linux_vm }}
     steps:
@@ -92,9 +115,16 @@ stages:
         target: 'x86_64-unknown-linux-gnu'
         to: $(Build.StagingDirectory)/tools
     - script: |
-        echo "This project uses Conventional style, see https://www.conventionalcommits.org"
+        echo "Linting commits:"
+        git log --graph --oneline HEAD~..HEAD^2
+        echo "Against 'committed.toml':"
+        $(Build.StagingDirectory)/tools/committed --dump-config -
+        echo ""
+        echo "If this fails, don't sweat it. We're trying to encourage clear communication and not hinder contributions."
+        echo "If it is a reasonable issue and you lack time or feel uncomfortable fixing it yourself,"
+        echo "let us know and we can mentor or fix it."
         $(Build.StagingDirectory)/tools/committed HEAD~..HEAD^2 --no-merge-commit -vv
-      displayName: Committed
+      displayName: Lint commit history
     condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
   - job: style
     displayName: Style checking
@@ -108,47 +138,37 @@ stages:
           - rustfmt
     - script: cargo fmt --all -- --check
       displayName: rustfmt
-  - job: lint_current
-    displayName: Linting (current)
+  - job: lint
+    displayName: Linting
+    strategy:
+      matrix:
+        current:
+          channel: ${{ variables.minrust }}
+        next:
+          channel: stable
+    continueOnError: $[eq(variables.channel, 'stable')]
     pool:
       vmImage: ${{ variables.linux_vm }}
     steps:
     - template: install-rust.yml@templates
       parameters:
-        rust: ${{ variables.minrust }}
+        rust: $(channel)
         components:
           - clippy
-    - script: cargo check --all --bins --examples --tests
+    - script: cargo check --workspace --all-targets --all-features
       displayName: Warnings
       env:
         RUSTFLAGS: "-D warnings"
-    - script: cargo clippy --all --bins --examples --tests -- -D warnings
-      displayName: clippy
-  - job: lint_next
-    displayName: Linting (next)
-    continueOnError: true
-    pool:
-      vmImage: ${{ variables.linux_vm }}
-    steps:
-    - template: install-rust.yml@templates
-      parameters:
-        rust: beta
-        components:
-          - clippy
-    - script: cargo check --all --bins --examples --tests
-      displayName: Warnings
-      env:
-        RUSTFLAGS: "-D warnings"
-    - script: cargo clippy --all --bins --examples --tests -- -D warnings
+    - script:  cargo clippy --workspace --all-features --all-targets -- -D warnings
       displayName: clippy
 - ${{ if ne('', variables.codecov_token) }}:
   - stage: coverage
     displayName: Code coverage
     dependsOn: test
     jobs:
-    - template: coverage.yml@templates
-      parameters:
-        token: ${{ variables.codecov_token }}
+      - template: coverage.yml@templates
+        parameters:
+          token: ${{ variables.codecov_token }}
 
 resources:
   repositories:
