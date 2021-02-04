@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+- `{% include %}`: Support for variable passing for  (#310 closed by #424)
+- `{% forloop %}`: Support for `parentloop` variable (#271 closed by #425)
+
 ## [0.21.4] - 2020-08-27
 
 ### Highlights
