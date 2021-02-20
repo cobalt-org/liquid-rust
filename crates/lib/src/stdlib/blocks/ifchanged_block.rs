@@ -20,14 +20,18 @@ impl IfChanged {
 }
 
 impl Renderable for IfChanged {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let mut rendered = Vec::new();
         self.if_changed
             .render_to(&mut rendered, runtime)
             .trace_with(|| self.trace().into())?;
 
         let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
-        if runtime.get_register_mut::<State>().has_changed(&rendered) {
+        if runtime
+            .registers()
+            .get_mut::<State>()
+            .has_changed(&rendered)
+        {
             write!(writer, "{}", rendered).replace("Failed to render")?;
         }
 
@@ -106,6 +110,7 @@ mod test {
 
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     use crate::stdlib;
 
@@ -139,8 +144,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "\nHey! \nHey! Numbers are now bigger than 5!");
     }
 }

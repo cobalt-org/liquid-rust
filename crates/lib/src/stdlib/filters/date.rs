@@ -31,7 +31,7 @@ struct DateFilter {
 }
 
 impl Filter for DateFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let date = input.as_scalar().and_then(|s| s.to_date_time());

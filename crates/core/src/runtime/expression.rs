@@ -41,23 +41,23 @@ impl Expression {
     }
 
     /// Convert to a `Value`.
-    pub fn try_evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Option<ValueCow<'c>> {
+    pub fn try_evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Option<ValueCow<'c>> {
         match self {
             Expression::Literal(ref x) => Some(ValueCow::Borrowed(x)),
             Expression::Variable(ref x) => {
                 let path = x.try_evaluate(runtime)?;
-                runtime.stack().try_get(&path)
+                runtime.try_get(&path)
             }
         }
     }
 
     /// Convert to a `Value`.
-    pub fn evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Result<ValueCow<'c>> {
+    pub fn evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Result<ValueCow<'c>> {
         let val = match self {
             Expression::Literal(ref x) => ValueCow::Borrowed(x),
             Expression::Variable(ref x) => {
                 let path = x.evaluate(runtime)?;
-                runtime.stack().get(&path)?
+                runtime.get(&path)?
             }
         };
         Ok(val)

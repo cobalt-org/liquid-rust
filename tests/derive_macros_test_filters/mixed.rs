@@ -53,7 +53,7 @@ pub struct TestMixedFilter {
 
 #[allow(clippy::many_single_char_names)]
 impl Filter for TestMixedFilter {
-    fn evaluate(&self, _input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let a = args

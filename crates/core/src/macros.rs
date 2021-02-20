@@ -388,7 +388,7 @@ macro_rules! call_filter {
         let keyword = Box::new(Vec::new().into_iter());
         let args = $crate::parser::FilterArguments { positional, keyword };
 
-        let runtime = $crate::Runtime::default();
+        let runtime = $crate::runtime::RuntimeBuilder::new().build();
 
         let input = $crate::value!($input);
 

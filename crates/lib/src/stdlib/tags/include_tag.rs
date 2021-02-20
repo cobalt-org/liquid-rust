@@ -4,9 +4,10 @@ use kstring::KString;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::Expression;
 use liquid_core::Language;
+use liquid_core::Object;
 use liquid_core::Renderable;
-use liquid_core::Runtime;
 use liquid_core::ValueView;
+use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
@@ -17,7 +18,7 @@ struct Include {
 }
 
 impl Renderable for Include {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let value = self.partial.evaluate(runtime)?;
         if !value.is_scalar() {
             return Error::with_msg("Can only `include` strings")
@@ -26,32 +27,34 @@ impl Renderable for Include {
         }
         let name = value.to_kstr().into_owned();
 
-        runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
-            // if there our additional varaibles creates a include object to access all the varaibles
+        {
+            // if there our additional variables creates a include object to access all the varaibles
             // from e.g. { include 'image.html' path="foo.png" }
             // then in image.html you could have <img src="{{include.path}}" />
+            let mut pass_through = Object::new();
             if !self.vars.is_empty() {
                 for (id, val) in &self.vars {
                     let value = val
-                        .try_evaluate(scope)
+                        .try_evaluate(runtime)
                         .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
                         .into_owned();
 
-                    scope.stack_mut().set(id.clone(), value);
+                    pass_through.insert(id.clone(), value);
                 }
             }
 
+            let scope = StackFrame::new(runtime, &pass_through);
             let partial = scope
                 .partials()
                 .get(&name)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
 
             partial
-                .render_to(writer, &mut scope)
+                .render_to(writer, &scope)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())
                 .context_key_with(|| self.partial.to_string().into())
-                .value_with(|| name.to_string().into())
-        })?;
+                .value_with(|| name.to_string().into())?;
+        }
 
         Ok(())
     }
@@ -183,7 +186,7 @@ mod test {
     pub struct SizeFilter;
 
     impl Filter for SizeFilter {
-        fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
             if let Some(x) = input.as_scalar() {
                 Ok(Value::scalar(x.to_kstr().len() as i64))
             } else if let Some(x) = input.as_array() {
@@ -213,10 +216,8 @@ mod test {
         let mut runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        runtime.stack_mut().set_global("num", Value::scalar(5f64));
-        runtime
-            .stack_mut()
-            .set_global("numTwo", Value::scalar(10f64));
+        runtime.set_global("num".into(), Value::scalar(5f64));
+        runtime.set_global("numTwo".into(), Value::scalar(10f64));
         let output = template.render(&mut runtime).unwrap();
         assert_eq!(output, "5 wat wot");
     }
@@ -292,10 +293,8 @@ mod test {
         let mut runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        runtime.stack_mut().set_global("num", Value::scalar(5f64));
-        runtime
-            .stack_mut()
-            .set_global("numTwo", Value::scalar(10f64));
+        runtime.set_global("num".into(), Value::scalar(5f64));
+        runtime.set_global("numTwo".into(), Value::scalar(10f64));
         let output = template.render(&mut runtime);
         assert!(output.is_err());
     }

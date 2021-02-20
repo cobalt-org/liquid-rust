@@ -674,7 +674,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
                 Ok( #name { #comma_separated_field_names } )
             }
 
-            fn evaluate(&'a self, runtime: &'a ::liquid_core::runtime::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
+            fn evaluate(&'a self, runtime: &'a dyn ::liquid_core::runtime::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
                #(#evaluate_fields)*
 
                 Ok( #evaluated_name { #comma_separated_field_names __phantom_data: ::std::marker::PhantomData } )

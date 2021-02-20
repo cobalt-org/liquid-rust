@@ -67,7 +67,7 @@ struct TruncateFilter {
 }
 
 impl Filter for TruncateFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let length = args.lenght.unwrap_or(50) as usize;
@@ -126,7 +126,7 @@ struct TruncateWordsFilter {
 }
 
 impl Filter for TruncateWordsFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let words = args.lenght.unwrap_or(50) as usize;

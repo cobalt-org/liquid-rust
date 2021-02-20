@@ -40,7 +40,7 @@ pub struct TestKeywordFilter {
 }
 
 impl Filter for TestKeywordFilter {
-    fn evaluate(&self, _input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let required = args.required;

@@ -19,7 +19,7 @@ impl Template {
 }
 
 impl Renderable for Template {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         for el in &self.elements {
             el.render_to(writer, runtime)?;
 
@@ -27,7 +27,11 @@ impl Renderable for Template {
             // need to abandon the rest of our child elements and just
             // return what we've got. This is usually in response to a
             // `break` or `continue` tag being rendered.
-            if runtime.interrupt().interrupted() {
+            if runtime
+                .registers()
+                .get_mut::<super::InterruptRegister>()
+                .interrupted()
+            {
                 break;
             }
         }

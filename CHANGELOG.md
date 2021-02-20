@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Breaking Changes
+
+- `core::runtime` went through significant changes
+  - `Renderable::render_to` now takes `&dyn Runtime` instead of `&Runtime<'_>`
+  - Adding a new stack frame is now a `StackFrame::new` instead of `Runtime.run_in_scope`
+    - This opens up taking references to layers lower in the stack.
+    - `runtime.` to access stack functions instead of `runtime.stack_mut()`
+- `InterruptState` is now `InterruptRegister` and accessed via `runtime.registers()`
+  - Functions were renamed while at it.
+
 ## [0.21.5] - 2021-02-03
 
 ### Features

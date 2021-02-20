@@ -35,7 +35,7 @@ struct PluralizeFilter {
 }
 
 impl Filter for PluralizeFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let n = input

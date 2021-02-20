@@ -23,7 +23,7 @@ impl CaseOption {
         CaseOption { args, template }
     }
 
-    fn evaluate(&self, value: &dyn ValueView, runtime: &Runtime<'_>) -> Result<bool> {
+    fn evaluate(&self, value: &dyn ValueView, runtime: &dyn Runtime) -> Result<bool> {
         for a in &self.args {
             let v = a.evaluate(runtime)?;
             if v == ValueViewCmp::new(value) {
@@ -52,7 +52,7 @@ impl Case {
 }
 
 impl Renderable for Case {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let value = self.target.evaluate(runtime)?.to_value();
         for case in &self.cases {
             if case.evaluate(&value, runtime)? {
@@ -198,6 +198,7 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -224,18 +225,18 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("x", Value::scalar(2f64));
-        assert_eq!(template.render(&mut runtime).unwrap(), "two");
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar(2f64));
+        assert_eq!(template.render(&runtime).unwrap(), "two");
 
-        runtime.stack_mut().set_global("x", Value::scalar(3f64));
-        assert_eq!(template.render(&mut runtime).unwrap(), "three and a half");
+        runtime.set_global("x".into(), Value::scalar(3f64));
+        assert_eq!(template.render(&runtime).unwrap(), "three and a half");
 
-        runtime.stack_mut().set_global("x", Value::scalar(4f64));
-        assert_eq!(template.render(&mut runtime).unwrap(), "three and a half");
+        runtime.set_global("x".into(), Value::scalar(4f64));
+        assert_eq!(template.render(&runtime).unwrap(), "three and a half");
 
-        runtime.stack_mut().set_global("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut runtime).unwrap(), "otherwise");
+        runtime.set_global("x".into(), Value::scalar("nope"));
+        assert_eq!(template.render(&runtime).unwrap(), "otherwise");
     }
 
     #[test]
@@ -253,9 +254,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("x", Value::scalar("nope"));
-        assert_eq!(template.render(&mut runtime).unwrap(), "");
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("x".into(), Value::scalar("nope"));
+        assert_eq!(template.render(&runtime).unwrap(), "");
     }
 
     #[test]

@@ -58,7 +58,7 @@ pub trait FilterReflection {
 pub trait FilterParameters<'a>: Sized + FilterParametersReflection + Debug + Display {
     type EvaluatedFilterParameters;
     fn from_args(args: FilterArguments) -> Result<Self>;
-    fn evaluate(&'a self, runtime: &'a Runtime) -> Result<Self::EvaluatedFilterParameters>;
+    fn evaluate(&'a self, runtime: &'a dyn Runtime) -> Result<Self::EvaluatedFilterParameters>;
 }
 
 /// Structure that holds the unparsed arguments of a filter, both positional and keyword.
@@ -94,7 +94,7 @@ pub struct FilterArguments<'a> {
 /// struct AbsFilter; // There are no parameters, so implements `Default`.
 ///
 /// impl Filter for AbsFilter {
-///     fn evaluate(&self, input: &dyn  ValueView, _runtime: &Runtime) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn  ValueView, _runtime: &dyn Runtime) -> Result<Value> {
 ///         // Implementation of the filter here
 ///     }
 /// }
@@ -110,7 +110,7 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &ValueViwe, runtime: &Runtime) -> Result<Value> {
+///     fn evaluate(&self, input: &ValueViwe, runtime: &dyn Runtime) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
 ///         let args = self.args.evaluate(runtime)?;
 ///
@@ -132,7 +132,7 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime) -> Result<Value> {
+///     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
 ///         let args = self.args.evaluate(runtime)?;
 ///
@@ -142,7 +142,7 @@ pub struct FilterArguments<'a> {
 /// ```
 pub trait Filter: Send + Sync + Debug + Display {
     // This will evaluate the expressions and evaluate the filter.
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime) -> Result<Value>;
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value>;
 }
 
 /// A trait to register a new filter in the `liquid::Parser`.

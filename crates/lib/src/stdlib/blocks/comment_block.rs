@@ -11,7 +11,7 @@ use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 struct Comment;
 
 impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut dyn Write, _runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, _writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
         Ok(())
     }
 }
@@ -78,6 +78,7 @@ mod test {
 
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -93,9 +94,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
+        let runtime = RuntimeBuilder::new().build();
 
-        template.render(&mut runtime).unwrap()
+        template.render(&runtime).unwrap()
     }
 
     #[test]

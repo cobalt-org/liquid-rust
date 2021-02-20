@@ -28,8 +28,8 @@ impl Template {
             Some(ref partials) => runtime.set_partials(partials.as_ref()),
             None => runtime,
         };
-        let mut runtime = runtime.build();
-        self.template.render_to(writer, &mut runtime)
+        let runtime = runtime.build();
+        self.template.render_to(writer, &runtime)
     }
 }
 

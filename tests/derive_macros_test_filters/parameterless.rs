@@ -16,7 +16,7 @@ pub struct TestParameterlessFilterParser;
 pub struct TestParameterlessFilter;
 
 impl Filter for TestParameterlessFilter {
-    fn evaluate(&self, _input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         let result = "<>";
 
         Ok(Value::scalar(result))

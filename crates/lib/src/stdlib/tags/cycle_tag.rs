@@ -28,9 +28,10 @@ impl Cycle {
 }
 
 impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let expr = runtime
-            .get_register_mut::<State>()
+            .registers()
+            .get_mut::<State>()
             .cycle(&self.name, &self.values)
             .trace_with(|| self.trace().into())?;
         let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
@@ -169,6 +170,7 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -195,8 +197,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime);
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\none\ntwo\n");
     }
@@ -213,8 +215,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime);
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\nthree\none\n");
     }
@@ -231,12 +233,12 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("alpha", Value::scalar(1f64));
-        runtime.stack_mut().set_global("beta", Value::scalar(2f64));
-        runtime.stack_mut().set_global("gamma", Value::scalar(3f64));
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("alpha".into(), Value::scalar(1f64));
+        runtime.set_global("beta".into(), Value::scalar(2f64));
+        runtime.set_global("gamma".into(), Value::scalar(3f64));
 
-        let output = template.render(&mut runtime);
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "1\n2\n3\n1\n");
     }
@@ -247,10 +249,11 @@ mod test {
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n");
 
+        let runtime = RuntimeBuilder::new().build();
         let template = parser::parse(text, &options())
             .map(runtime::Template::new)
             .unwrap();
-        let output = template.render(&mut Default::default());
+        let output = template.render(&runtime);
         assert!(output.is_err());
     }
 }

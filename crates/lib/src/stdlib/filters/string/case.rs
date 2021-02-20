@@ -18,7 +18,7 @@ pub struct Downcase;
 struct DowncaseFilter;
 
 impl Filter for DowncaseFilter {
-    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         let s = input.to_kstr();
         Ok(Value::scalar(s.to_lowercase()))
     }
@@ -37,7 +37,7 @@ pub struct Upcase;
 struct UpcaseFilter;
 
 impl Filter for UpcaseFilter {
-    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         let s = input.to_kstr();
         Ok(Value::scalar(s.to_uppercase()))
     }
@@ -56,7 +56,7 @@ pub struct Capitalize;
 struct CapitalizeFilter;
 
 impl Filter for CapitalizeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         let s = input.to_kstr().to_owned();
         let mut chars = s.chars();
         let capitalized = match chars.next() {

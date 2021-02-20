@@ -34,7 +34,7 @@ struct ReplaceFilter {
 }
 
 impl Filter for ReplaceFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let input = input.to_kstr();
@@ -75,7 +75,7 @@ struct ReplaceFirstFilter {
 }
 
 impl Filter for ReplaceFirstFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let input = input.to_kstr();
@@ -117,7 +117,7 @@ struct RemoveFilter {
 }
 
 impl Filter for RemoveFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let input = input.to_kstr();
@@ -149,7 +149,7 @@ struct RemoveFirstFilter {
 }
 
 impl Filter for RemoveFirstFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let input = input.to_kstr();
@@ -183,7 +183,7 @@ struct AppendFilter {
 }
 
 impl Filter for AppendFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let mut input = input.to_kstr().into_string();
@@ -216,7 +216,7 @@ struct PrependFilter {
 }
 
 impl Filter for PrependFilter {
-    fn evaluate(&self, input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let input = input.to_kstr();
