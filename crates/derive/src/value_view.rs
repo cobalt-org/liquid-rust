@@ -4,10 +4,18 @@ use syn::*;
 
 pub fn derive(input: &DeriveInput) -> TokenStream {
     let DeriveInput {
-        ident, generics, ..
+        ident,
+        data,
+        generics,
+        ..
     } = input;
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let fields = match crate::object_view::get_fields(data) {
+        Ok(fields) => fields,
+        Err(err) => return err.to_compile_error(),
+    };
 
     quote! {
         impl #impl_generics ::liquid::ValueView for #ident #ty_generics #where_clause {
@@ -38,7 +46,11 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 ::kstring::KStringCow::from_string(s)
             }
             fn to_value(&self) -> ::liquid::model::Value {
-                ::liquid::model::to_value(self).unwrap()
+                let mut object = ::liquid::model::Object::new();
+                #(
+                    object.insert(stringify!(#fields).into(), ::liquid::model::ValueView::to_value(&self.#fields));
+                )*
+                ::liquid::model::Value::Object(object)
             }
 
             fn as_object(&self) -> Option<&dyn ::liquid::ObjectView> {
@@ -50,10 +62,18 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
 
 pub fn core_derive(input: &DeriveInput) -> TokenStream {
     let DeriveInput {
-        ident, generics, ..
+        ident,
+        data,
+        generics,
+        ..
     } = input;
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let fields = match crate::object_view::get_fields(data) {
+        Ok(fields) => fields,
+        Err(err) => return err.to_compile_error(),
+    };
 
     quote! {
         impl #impl_generics ::liquid_core::ValueView for #ident #ty_generics #where_clause {
@@ -84,7 +104,11 @@ pub fn core_derive(input: &DeriveInput) -> TokenStream {
                 ::kstring::KStringCow::from_string(s)
             }
             fn to_value(&self) -> ::liquid_core::model::Value {
-                ::liquid_core::model::to_value(self).unwrap()
+                let mut object = ::liquid_core::model::Object::new();
+                #(
+                    object.insert(stringify!(#fields).into(), ::liquid_core::model::ValueView::to_value(&self.#fields));
+                )*
+                ::liquid_core::model::Value::Object(object)
             }
 
             fn as_object(&self) -> Option<&dyn ::liquid_core::ObjectView> {

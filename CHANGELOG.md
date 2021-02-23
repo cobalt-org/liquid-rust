@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 API
 - Allow `#[derive(liquid_core::ObjectView, liquid_core::ValueView)]` (previously only worked from `liquid`, making it unusable for the `lib` crate)
 
+### Fixes
+
+- Remove `serde` requirement for `derive(ValueView)`, making it work with more types (like `field: &dyn ValueView`).
+
+### Performance
+
+- Reduce overhead from `derive(ValueView)` generating `to_value`
+
 ### Breaking Changes
 
 - `core::runtime` went through significant changes
@@ -22,6 +30,7 @@ API
 - `InterruptState` is now `InterruptRegister` and accessed via `runtime.registers()`
   - Functions were renamed while at it.
 - `core::model` has been flattened
+- `derive(ValueView)` now requires being used with `impl ObjectView`
 
 ## [0.21.5] - 2021-02-03
 

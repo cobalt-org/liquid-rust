@@ -150,7 +150,7 @@ pub fn core_derive(input: &DeriveInput) -> TokenStream {
     }
 }
 
-fn get_fields(data: &Data) -> Result<Vec<&Ident>> {
+pub(crate) fn get_fields(data: &Data) -> Result<Vec<&Ident>> {
     let fields = match data {
         Data::Struct(data) => &data.fields,
         Data::Enum(data) => {
