@@ -154,6 +154,18 @@ impl ObjectIndex for kstring::KString {
     }
 }
 
+impl<'s> ObjectIndex for kstring::KStringRef<'s> {
+    fn as_index(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl<'s> ObjectIndex for kstring::KStringCow<'s> {
+    fn as_index(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for HashMap<K, V, S> {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
