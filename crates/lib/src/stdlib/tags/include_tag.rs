@@ -4,7 +4,6 @@ use kstring::KString;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::Expression;
 use liquid_core::Language;
-use liquid_core::Object;
 use liquid_core::Renderable;
 use liquid_core::ValueView;
 use liquid_core::{runtime::StackFrame, Runtime};
@@ -31,15 +30,14 @@ impl Renderable for Include {
             // if there our additional variables creates a include object to access all the varaibles
             // from e.g. { include 'image.html' path="foo.png" }
             // then in image.html you could have <img src="{{include.path}}" />
-            let mut pass_through = Object::new();
+            let mut pass_through = std::collections::HashMap::new();
             if !self.vars.is_empty() {
                 for (id, val) in &self.vars {
                     let value = val
                         .try_evaluate(runtime)
-                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                        .into_owned();
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?;
 
-                    pass_through.insert(id.clone(), value);
+                    pass_through.insert(id.as_ref(), value);
                 }
             }
 

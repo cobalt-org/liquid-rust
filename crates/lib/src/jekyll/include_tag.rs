@@ -1,12 +1,12 @@
 use std::io::Write;
 
 use kstring::KString;
+use liquid_core::error::ResultLiquidExt;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::ValueView;
-use liquid_core::{error::ResultLiquidExt, Object, Value};
 use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
@@ -22,20 +22,20 @@ impl Renderable for Include {
         let name = self.partial.evaluate(runtime)?.render().to_string();
 
         {
-            let mut pass_through = Object::new();
+            let mut pass_through =
+                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            let mut helper_vars = std::collections::HashMap::new();
             if !self.vars.is_empty() {
-                let mut helper_vars = Object::new();
-
                 for (id, val) in &self.vars {
-                    helper_vars.insert(
-                        id.clone(),
-                        val.try_evaluate(runtime)
-                            .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                            .into_owned(),
-                    );
+                    let value = val
+                        .try_evaluate(runtime)
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                        .into_owned();
+
+                    helper_vars.insert(id.as_ref(), value);
                 }
 
-                pass_through.insert("include".into(), Value::Object(helper_vars));
+                pass_through.insert("include".into(), &helper_vars);
             }
 
             let scope = StackFrame::new(runtime, &pass_through);
