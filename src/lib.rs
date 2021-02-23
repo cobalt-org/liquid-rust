@@ -38,11 +38,11 @@ pub mod model {
 
 pub use crate::parser::*;
 pub use crate::template::*;
+pub use liquid_core::model::{_ObjectView as ObjectView, _ValueView as ValueView};
 pub use liquid_core::object;
 pub use liquid_core::to_object;
 pub use liquid_core::Error;
 pub use liquid_core::Object;
-pub use liquid_core::{ObjectView, ValueView};
 #[doc(hidden)]
 pub use liquid_derive::{ObjectView, ValueView};
 

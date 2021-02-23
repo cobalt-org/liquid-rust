@@ -250,6 +250,18 @@ pub fn derive_display_filter(item: TokenStream) -> TokenStream {
     filter::display::derive(&input).into()
 }
 
+#[proc_macro_derive(CoreValueView)]
+pub fn derive_core_value_view(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::DeriveInput);
+    value_view::core_derive(&input).into()
+}
+
+#[proc_macro_derive(CoreObjectView)]
+pub fn derive_core_object_view(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::DeriveInput);
+    object_view::core_derive(&input).into()
+}
+
 #[proc_macro_derive(ValueView)]
 pub fn derive_value_view(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::DeriveInput);

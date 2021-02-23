@@ -17,3 +17,12 @@ pub use find::*;
 pub use object::*;
 pub use scalar::*;
 pub use value::*;
+
+#[doc(hidden)]
+pub use liquid_derive::CoreObjectView as ObjectView;
+#[doc(hidden)]
+pub use liquid_derive::CoreValueView as ValueView;
+#[doc(hidden)]
+pub use object::ObjectView as _ObjectView;
+#[doc(hidden)]
+pub use value::ValueView as _ValueView;

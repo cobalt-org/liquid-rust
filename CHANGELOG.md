@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+API
+- Allow `#[derive(liquid_core::ObjectView, liquid_core::ValueView)]` (previously only worked from `liquid`, making it unusable for the `lib` crate)
+
 ### Breaking Changes
 
 - `core::runtime` went through significant changes
