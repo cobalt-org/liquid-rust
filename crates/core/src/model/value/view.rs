@@ -73,6 +73,52 @@ pub trait ValueView: fmt::Debug {
     }
 }
 
+impl<'v, V: ValueView + ?Sized> ValueView for &'v V {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        <V as ValueView>::as_debug(self)
+    }
+
+    fn render(&self) -> DisplayCow<'_> {
+        <V as ValueView>::render(self)
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        <V as ValueView>::source(self)
+    }
+    fn type_name(&self) -> &'static str {
+        <V as ValueView>::type_name(self)
+    }
+    fn query_state(&self, state: State) -> bool {
+        <V as ValueView>::query_state(self, state)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        <V as ValueView>::to_kstr(self)
+    }
+    fn to_value(&self) -> Value {
+        <V as ValueView>::to_value(self)
+    }
+
+    fn as_scalar(&self) -> Option<ScalarCow<'_>> {
+        <V as ValueView>::as_scalar(self)
+    }
+
+    fn as_array(&self) -> Option<&dyn ArrayView> {
+        <V as ValueView>::as_array(self)
+    }
+
+    fn as_object(&self) -> Option<&dyn ObjectView> {
+        <V as ValueView>::as_object(self)
+    }
+
+    fn as_state(&self) -> Option<State> {
+        <V as ValueView>::as_state(self)
+    }
+
+    fn is_nil(&self) -> bool {
+        <V as ValueView>::is_nil(self)
+    }
+}
+
 static NIL: Value = Value::Nil;
 
 impl<T: ValueView> ValueView for Option<T> {

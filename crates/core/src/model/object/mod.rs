@@ -104,6 +104,36 @@ impl ObjectView for Object {
     }
 }
 
+impl<'o, O: ObjectView + ?Sized> ObjectView for &'o O {
+    fn as_value(&self) -> &dyn ValueView {
+        <O as ObjectView>::as_value(self)
+    }
+
+    fn size(&self) -> i64 {
+        <O as ObjectView>::size(self)
+    }
+
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
+        <O as ObjectView>::keys(self)
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        <O as ObjectView>::values(self)
+    }
+
+    fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+        <O as ObjectView>::iter(self)
+    }
+
+    fn contains_key(&self, index: &str) -> bool {
+        <O as ObjectView>::contains_key(self, index)
+    }
+
+    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+        <O as ObjectView>::get(self, index)
+    }
+}
+
 /// Owned object index
 pub trait ObjectIndex:
     fmt::Debug + fmt::Display + Ord + std::hash::Hash + Eq + std::borrow::Borrow<str>

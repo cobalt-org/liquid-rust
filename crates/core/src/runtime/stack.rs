@@ -3,15 +3,15 @@ use crate::error::Result;
 use crate::model::{Object, ObjectView, ScalarCow, Value, ValueCow, ValueView};
 
 /// Layer variables on top of the existing runtime
-pub struct StackFrame<'p, 'o> {
-    parent: &'p dyn super::Runtime,
+pub struct StackFrame<P, O> {
+    parent: P,
     name: Option<kstring::KString>,
-    data: &'o dyn ObjectView,
+    data: O,
 }
 
-impl<'p, 'o> StackFrame<'p, 'o> {
+impl<P: super::Runtime, O: ObjectView> StackFrame<P, O> {
     /// Layer variables on top of the existing runtime
-    pub fn new(parent: &'p dyn super::Runtime, data: &'o dyn ObjectView) -> Self {
+    pub fn new(parent: P, data: O) -> Self {
         Self {
             parent,
             name: None,
@@ -26,7 +26,7 @@ impl<'p, 'o> StackFrame<'p, 'o> {
     }
 }
 
-impl<'p, 'o> super::Runtime for StackFrame<'p, 'o> {
+impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     fn partials(&self) -> &dyn super::PartialStore {
         self.parent.partials()
     }
@@ -47,7 +47,7 @@ impl<'p, 'o> super::Runtime for StackFrame<'p, 'o> {
     fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
         let key = path.first()?;
         let key = key.to_kstr();
-        let data = self.data;
+        let data = &self.data;
         if data.contains_key(key.as_str()) {
             crate::model::find::try_find(data.as_value(), path)
         } else {
@@ -60,83 +60,9 @@ impl<'p, 'o> super::Runtime for StackFrame<'p, 'o> {
             Error::with_msg("Unknown variable").context("requested variable", "nil")
         })?;
         let key = key.to_kstr();
-        let data = self.data;
+        let data = &self.data;
         if data.contains_key(key.as_str()) {
             crate::model::find::find(data.as_value(), path).map(|v| v.into_owned().into())
-        } else {
-            self.parent.get(path)
-        }
-    }
-
-    fn set_global(
-        &self,
-        name: kstring::KString,
-        val: crate::model::Value,
-    ) -> Option<crate::model::Value> {
-        self.parent.set_global(name, val)
-    }
-
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
-        self.parent.set_index(name, val)
-    }
-
-    fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
-        self.parent.get_index(name)
-    }
-
-    fn registers(&self) -> &super::Registers {
-        self.parent.registers()
-    }
-}
-
-pub(crate) struct ConstantFrame<'o, P> {
-    parent: P,
-    data: Option<&'o dyn ObjectView>,
-}
-
-impl<'o, P: super::Runtime> ConstantFrame<'o, P> {
-    /// Layer variables on top of the existing runtime
-    pub fn new(parent: P, data: Option<&'o dyn ObjectView>) -> Self {
-        Self { parent, data }
-    }
-}
-
-impl<'o, P: super::Runtime> super::Runtime for ConstantFrame<'o, P> {
-    fn partials(&self) -> &dyn super::PartialStore {
-        self.parent.partials()
-    }
-
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
-        self.parent.name()
-    }
-
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
-        let mut roots = self.parent.roots();
-        if let Some(data) = self.data {
-            roots.extend(data.keys());
-        }
-        roots
-    }
-
-    fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
-        let key = path.first()?;
-        let key = key.to_kstr();
-        let data = self.data;
-        if data.map(|d| d.contains_key(key.as_str())).unwrap_or(false) {
-            crate::model::find::try_find(data.unwrap().as_value(), path)
-        } else {
-            self.parent.try_get(path)
-        }
-    }
-
-    fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        let key = path.first().ok_or_else(|| {
-            Error::with_msg("Unknown variable").context("requested variable", "nil")
-        })?;
-        let key = key.to_kstr();
-        let data = self.data;
-        if data.map(|d| d.contains_key(key.as_str())).unwrap_or(false) {
-            crate::model::find::find(data.unwrap().as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.get(path)
         }

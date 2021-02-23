@@ -2,7 +2,7 @@ use std::sync;
 
 use crate::error::Error;
 use crate::error::Result;
-use crate::model::{ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
+use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
 
 use super::PartialStore;
 use super::Renderable;
@@ -38,25 +38,25 @@ pub trait Runtime {
     fn registers(&self) -> &Registers;
 }
 
-impl Runtime for Box<dyn Runtime> {
+impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
     fn partials(&self) -> &dyn super::PartialStore {
-        self.as_ref().partials()
+        <R as Runtime>::partials(self)
     }
 
     fn name(&self) -> Option<kstring::KStringRef<'_>> {
-        self.as_ref().name()
+        <R as Runtime>::name(self)
     }
 
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
-        self.as_ref().roots()
+    fn roots<'s>(&'s self) -> std::collections::BTreeSet<kstring::KStringCow<'s>> {
+        <R as Runtime>::roots(self)
     }
 
     fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
-        self.as_ref().try_get(path)
+        <R as Runtime>::try_get(self, path)
     }
 
     fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        self.as_ref().get(path)
+        <R as Runtime>::get(self, path)
     }
 
     fn set_global(
@@ -64,19 +64,19 @@ impl Runtime for Box<dyn Runtime> {
         name: kstring::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value> {
-        self.as_ref().set_global(name, val)
+        <R as Runtime>::set_global(self, name, val)
     }
 
     fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
-        self.as_ref().set_index(name, val)
+        <R as Runtime>::set_index(self, name, val)
     }
 
     fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
-        self.as_ref().get_index(name)
+        <R as Runtime>::get_index(self, name)
     }
 
     fn registers(&self) -> &super::Registers {
-        self.as_ref().registers()
+        <R as Runtime>::registers(self)
     }
 }
 
@@ -117,9 +117,82 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         let mut runtime = RuntimeCore::default();
         runtime.partials = partials;
         let runtime = super::IndexFrame::new(runtime);
-        let runtime = super::ConstantFrame::new(runtime, self.globals);
+        let runtime = super::StackFrame::new(runtime, self.globals.unwrap_or(&NullObject));
         let runtime = super::GlobalFrame::new(runtime);
         runtime
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct NullObject;
+
+impl ValueView for NullObject {
+    fn as_debug(&self) -> &dyn std::fmt::Debug {
+        self
+    }
+
+    fn render(&self) -> crate::model::value::DisplayCow<'_> {
+        Value::Nil.render()
+    }
+    fn source(&self) -> crate::model::value::DisplayCow<'_> {
+        Value::Nil.source()
+    }
+    fn type_name(&self) -> &'static str {
+        "object"
+    }
+    fn query_state(&self, state: crate::model::State) -> bool {
+        match state {
+            crate::model::State::Truthy => true,
+            crate::model::State::DefaultValue
+            | crate::model::State::Empty
+            | crate::model::State::Blank => false,
+        }
+    }
+
+    fn to_kstr(&self) -> kstring::KStringCow<'_> {
+        kstring::KStringCow::from_static("")
+    }
+    fn to_value(&self) -> Value {
+        Value::Object(Object::new())
+    }
+
+    fn as_object(&self) -> Option<&dyn ObjectView> {
+        Some(self)
+    }
+}
+
+impl ObjectView for NullObject {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
+    fn size(&self) -> i64 {
+        0
+    }
+
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = kstring::KStringCow<'k>> + 'k> {
+        let keys = Vec::new().into_iter();
+        Box::new(keys)
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        let i = Vec::new().into_iter();
+        Box::new(i)
+    }
+
+    fn iter<'k>(
+        &'k self,
+    ) -> Box<dyn Iterator<Item = (kstring::KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+        let i = Vec::new().into_iter();
+        Box::new(i)
+    }
+
+    fn contains_key(&self, _index: &str) -> bool {
+        false
+    }
+
+    fn get<'s>(&'s self, _index: &str) -> Option<&'s dyn ValueView> {
+        None
     }
 }
 
