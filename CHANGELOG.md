@@ -18,6 +18,7 @@ API
 
 ### Performance
 
+- Reduce allocations for for-loop variables
 - Reduce overhead from `derive(ValueView)` generating `to_value`
 
 ### Breaking Changes

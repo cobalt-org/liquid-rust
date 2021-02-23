@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::model::{Object, Value, ValueView};
+use liquid_core::model::{Object, ObjectView, Value, ValueView};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::runtime::{Interrupt, InterruptRegister};
@@ -152,6 +152,42 @@ fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Resu
     Ok(value as isize)
 }
 
+#[derive(Debug, Clone, ValueView, ObjectView)]
+struct ForloopObject<'p> {
+    length: i64,
+    parentloop: Option<&'p dyn ValueView>,
+    index0: i64,
+    index: i64,
+    rindex0: i64,
+    rindex: i64,
+    first: bool,
+    last: bool,
+}
+
+impl<'p> ForloopObject<'p> {
+    fn new(i: usize, len: usize) -> Self {
+        let i = i as i64;
+        let len = len as i64;
+        let first = i == 0;
+        let last = i == (len - 1);
+        Self {
+            length: len,
+            parentloop: None,
+            index0: i,
+            index: i + 1,
+            rindex0: len - i - 1,
+            rindex: len - i,
+            first,
+            last,
+        }
+    }
+
+    fn parentloop(mut self, parentloop: Option<&'p dyn ValueView>) -> Self {
+        self.parentloop = parentloop;
+        self
+    }
+}
+
 impl Renderable for For {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let range = self
@@ -172,27 +208,16 @@ impl Renderable for For {
             }
 
             range_len => {
-                let mut helper_vars = Object::new();
-                helper_vars.insert("length".into(), Value::scalar(range_len as i64));
-                if let Ok(v) = runtime.get(&[liquid_core::model::Scalar::new("forloop")]) {
-                    helper_vars.insert("parentloop".into(), v.into_owned());
-                } else {
-                    helper_vars.insert("parentloop".into(), Value::Nil);
-                }
-
+                let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
+                let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
                 for (i, v) in range.into_iter().enumerate() {
-                    helper_vars.insert("index0".into(), Value::scalar(i as i64));
-                    helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
-                    helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
-                    helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
-                    helper_vars.insert("first".into(), Value::scalar(i == 0));
-                    helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
+                    let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
+                    let mut root =
+                        std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+                    root.insert("forloop".into(), &forloop);
+                    root.insert(self.var_name.as_ref(), &v);
 
-                    let mut vars = Object::new();
-                    vars.insert("forloop".into(), Value::Object(helper_vars.clone()));
-                    vars.insert(self.var_name.clone(), v);
-
-                    let scope = StackFrame::new(runtime, &vars);
+                    let scope = StackFrame::new(runtime, &root);
                     self.item_template
                         .render_to(writer, &scope)
                         .trace_with(|| self.trace().into())
@@ -395,6 +420,47 @@ fn trace_tablerow_tag(
     )
 }
 
+#[derive(Debug, Clone, ValueView, ObjectView)]
+struct TableRowObject {
+    length: i64,
+    index0: i64,
+    index: i64,
+    rindex0: i64,
+    rindex: i64,
+    first: bool,
+    last: bool,
+    col0: i64,
+    col: i64,
+    col_first: bool,
+    col_last: bool,
+}
+
+impl TableRowObject {
+    fn new(i: usize, len: usize, col: usize, cols: usize) -> Self {
+        let i = i as i64;
+        let len = len as i64;
+        let col = col as i64;
+        let cols = cols as i64;
+        let first = i == 0;
+        let last = i == (len - 1);
+        let col_first = col == 0;
+        let col_last = col == (cols - 1) || last;
+        Self {
+            length: len,
+            index0: i,
+            index: i + 1,
+            rindex0: len - i - 1,
+            rindex: len - i,
+            first,
+            last,
+            col0: col,
+            col: (col + 1),
+            col_first,
+            col_last,
+        }
+    }
+}
+
 impl Renderable for TableRow {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let range = self
@@ -412,38 +478,23 @@ impl Renderable for TableRow {
         helper_vars.insert("length".into(), Value::scalar(range_len as i64));
 
         for (i, v) in range.into_iter().enumerate() {
-            let (col_index, row_index) = match cols {
-                Some(cols) => (i % cols, i / cols),
-                None => (i, 0),
-            };
+            let cols = cols.unwrap_or(range_len);
+            let col_index = i % cols;
+            let row_index = i / cols;
 
-            let first = i == 0;
-            let last = i == (range_len - 1);
-            let col_first = col_index == 0;
-            let col_last = cols.filter(|&cols| col_index + 1 == cols).is_some() || last;
+            let tablerow = TableRowObject::new(i, range_len, col_index, cols);
+            let mut root =
+                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            root.insert("tablerow".into(), &tablerow);
+            root.insert(self.var_name.as_ref(), &v);
 
-            helper_vars.insert("index0".into(), Value::scalar(i as i64));
-            helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
-            helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
-            helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
-            helper_vars.insert("first".into(), Value::scalar(first));
-            helper_vars.insert("last".into(), Value::scalar(last));
-            helper_vars.insert("col0".into(), Value::scalar(col_index as i64));
-            helper_vars.insert("col".into(), Value::scalar((col_index + 1) as i64));
-            helper_vars.insert("col_first".into(), Value::scalar(col_first));
-            helper_vars.insert("col_last".into(), Value::scalar(col_last));
-
-            if col_first {
+            if tablerow.col_first {
                 write!(writer, "<tr class=\"row{}\">", row_index + 1)
                     .replace("Failed to render")?;
             }
             write!(writer, "<td class=\"col{}\">", col_index + 1).replace("Failed to render")?;
 
-            let mut vars = Object::new();
-            vars.insert("tablerow".into(), Value::Object(helper_vars.clone()));
-            vars.insert(self.var_name.clone(), v);
-
-            let scope = StackFrame::new(runtime, &vars);
+            let scope = StackFrame::new(runtime, &root);
             self.item_template
                 .render_to(writer, &scope)
                 .trace_with(|| self.trace().into())
@@ -451,7 +502,7 @@ impl Renderable for TableRow {
                 .value_with(|| format!("{}", i + 1).into())?;
 
             write!(writer, "</td>").replace("Failed to render")?;
-            if col_last {
+            if tablerow.col_last {
                 write!(writer, "</tr>").replace("Failed to render")?;
             }
         }
