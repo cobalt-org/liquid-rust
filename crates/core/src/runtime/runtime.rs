@@ -131,10 +131,10 @@ impl ValueView for NullObject {
         self
     }
 
-    fn render(&self) -> crate::model::value::DisplayCow<'_> {
+    fn render(&self) -> crate::model::DisplayCow<'_> {
         Value::Nil.render()
     }
-    fn source(&self) -> crate::model::value::DisplayCow<'_> {
+    fn source(&self) -> crate::model::DisplayCow<'_> {
         Value::Nil.source()
     }
     fn type_name(&self) -> &'static str {
@@ -366,9 +366,9 @@ impl PartialStore for NullPartials {
 mod test {
     use super::*;
 
-    use crate::model::value::ValueViewCmp;
     use crate::model::Scalar;
     use crate::model::Value;
+    use crate::model::ValueViewCmp;
 
     #[test]
     fn mask_variables() {

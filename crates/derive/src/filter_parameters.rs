@@ -699,8 +699,8 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
             FilterParameterType::Integer => quote! { i64 },
             FilterParameterType::Float => quote! { f64 },
             FilterParameterType::Bool => quote! { bool },
-            FilterParameterType::DateTime => quote! { ::liquid_core::model::scalar::DateTime },
-            FilterParameterType::Date => quote! { ::liquid_core::model::scalar::Date },
+            FilterParameterType::DateTime => quote! { ::liquid_core::model::DateTime },
+            FilterParameterType::Date => quote! { ::liquid_core::model::Date },
             FilterParameterType::Str => quote! { ::kstring::KStringCow<'a> },
         };
 

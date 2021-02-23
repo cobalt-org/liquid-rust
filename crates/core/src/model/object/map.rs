@@ -1,3 +1,5 @@
+//! Type representing a Liquid object, payload of the `Value::Object` variant
+
 use std::borrow::Borrow;
 use std::collections::hash_map;
 use std::fmt::{self, Debug};
@@ -446,7 +448,7 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     ///
@@ -468,7 +470,7 @@ impl<'a> VacantEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     ///
@@ -491,7 +493,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -513,7 +515,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -537,7 +539,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_core::model::ValueView;
     /// #
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!([1, 2, 3]));
@@ -561,7 +563,7 @@ impl<'a> OccupiedEntry<'a> {
     /// ```rust
     /// # use liquid_core::model::ValueView;
     /// #
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!([1, 2, 3]));
@@ -584,7 +586,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));
@@ -607,7 +609,7 @@ impl<'a> OccupiedEntry<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// use liquid_core::model::object::Entry;
+    /// use liquid_core::model::map::Entry;
     ///
     /// let mut map = liquid_core::model::Object::new();
     /// map.insert("liquid".into(), liquid_core::value!(12));

@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use liquid_core::error::ResultLiquidExt;
-use liquid_core::model::{value::ValueViewCmp, ValueView};
+use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::Expression;

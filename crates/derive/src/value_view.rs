@@ -15,11 +15,11 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 self
             }
 
-            fn render(&self) -> ::liquid::model::value::DisplayCow<'_> {
-                ::liquid::model::value::DisplayCow::Owned(Box::new(::liquid::model::object::ObjectRender::new(self)))
+            fn render(&self) -> ::liquid::model::DisplayCow<'_> {
+                ::liquid::model::DisplayCow::Owned(Box::new(::liquid::model::ObjectRender::new(self)))
             }
-            fn source(&self) -> ::liquid::model::value::DisplayCow<'_> {
-                ::liquid::model::value::DisplayCow::Owned(Box::new(::liquid::model::object::ObjectSource::new(self)))
+            fn source(&self) -> ::liquid::model::DisplayCow<'_> {
+                ::liquid::model::DisplayCow::Owned(Box::new(::liquid::model::ObjectSource::new(self)))
             }
             fn type_name(&self) -> &'static str {
                 "object"
@@ -34,7 +34,7 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
             }
 
             fn to_kstr(&self) -> ::kstring::KStringCow<'_> {
-                let s = ::liquid::model::object::ObjectRender::new(self).to_string();
+                let s = ::liquid::model::ObjectRender::new(self).to_string();
                 ::kstring::KStringCow::from_string(s)
             }
             fn to_value(&self) -> ::liquid::model::Value {

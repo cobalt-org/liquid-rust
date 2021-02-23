@@ -49,7 +49,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
         let key = key.to_kstr();
         let data = &self.data;
         if data.contains_key(key.as_str()) {
-            crate::model::find::try_find(data.as_value(), path)
+            crate::model::try_find(data.as_value(), path)
         } else {
             self.parent.try_get(path)
         }
@@ -62,7 +62,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
         let key = key.to_kstr();
         let data = &self.data;
         if data.contains_key(key.as_str()) {
-            crate::model::find::find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.get(path)
         }
@@ -123,7 +123,7 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::find::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.try_get(path)
         }
@@ -136,7 +136,7 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::find::find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.get(path)
         }
@@ -198,7 +198,7 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::find::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.try_get(path)
         }
@@ -211,7 +211,7 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::find::find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
         } else {
             self.parent.get(path)
         }

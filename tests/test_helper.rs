@@ -2,7 +2,7 @@ pub use liquid_core::Value::Nil;
 
 #[allow(dead_code)]
 pub fn date(y: i32, m: u32, d: u32) -> liquid_core::Value {
-    use liquid_core::model::scalar::Date;
+    use liquid_core::model::Date;
     use liquid_core::model::Value;
     Value::scalar(Date::from_ymd(y, m, d))
 }

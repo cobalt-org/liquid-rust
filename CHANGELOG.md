@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     - `runtime.` to access stack functions instead of `runtime.stack_mut()`
 - `InterruptState` is now `InterruptRegister` and accessed via `runtime.registers()`
   - Functions were renamed while at it.
+- `core::model` has been flattened
 
 ## [0.21.5] - 2021-02-03
 
