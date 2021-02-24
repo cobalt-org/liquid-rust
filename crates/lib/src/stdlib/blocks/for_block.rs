@@ -556,13 +556,13 @@ enum Range<'r> {
 }
 
 impl<'r> Range<'r> {
-    pub fn evaluate(&self) -> Result<Vec<Value>> {
+    pub fn evaluate<'s>(&'s self) -> Result<Vec<ValueCow<'s>>> {
         let range = match self {
-            Range::Array(ref array) => get_array(array.clone())?,
+            Range::Array(array) => get_array(array.as_view())?,
 
             Range::Counted(start, stop) => {
                 let range = (*start)..=(*stop);
-                range.map(|x| Value::scalar(x as i64)).collect()
+                range.map(|x| Value::scalar(x).into()).collect()
             }
         };
 
@@ -570,16 +570,16 @@ impl<'r> Range<'r> {
     }
 }
 
-fn get_array(array: ValueCow<'_>) -> Result<Vec<Value>> {
+fn get_array(array: &dyn ValueView) -> Result<Vec<ValueCow<'_>>> {
     if let Some(x) = array.as_array() {
-        Ok(x.values().map(|v| v.to_value()).collect())
+        Ok(x.values().map(|v| ValueCow::Borrowed(v)).collect())
     } else if let Some(x) = array.as_object() {
         let x = x
             .iter()
             .map(|(k, v)| {
                 let k = k.into_owned();
                 let arr = vec![Value::scalar(k), v.to_value()];
-                Value::Array(arr)
+                Value::Array(arr).into()
             })
             .collect();
         Ok(x)
@@ -604,17 +604,17 @@ fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Resu
 }
 
 fn iter_array(
-    mut range: Vec<Value>,
+    mut range: Vec<ValueCow<'_>>,
     limit: Option<usize>,
     offset: usize,
     reversed: bool,
-) -> Vec<Value> {
+) -> Vec<ValueCow<'_>> {
     let offset = ::std::cmp::min(offset, range.len());
     let limit = limit
         .map(|l| ::std::cmp::min(l, range.len()))
         .unwrap_or_else(|| range.len() - offset);
     range.drain(0..offset);
-    range.resize(limit, Value::Nil);
+    range.resize(limit, Value::Nil.into());
 
     if reversed {
         range.reverse();
