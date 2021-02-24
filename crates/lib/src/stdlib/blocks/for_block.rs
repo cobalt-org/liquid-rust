@@ -2,7 +2,7 @@ use std::fmt;
 use std::io::Write;
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::model::{Object, ObjectView, Value, ValueView};
+use liquid_core::model::{Object, ObjectView, Value, ValueCow, ValueView};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::runtime::{Interrupt, InterruptRegister};
@@ -56,9 +56,9 @@ impl ParseBlock for ForBlock {
 
         let range = arguments.expect_next("Array or range expected.")?;
         let range = match range.expect_value() {
-            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Matches(array) => RangeExpression::Array(array),
             TryMatchToken::Fails(range) => match range.expect_range() {
-                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Matches((start, stop)) => RangeExpression::Counted(start, stop),
                 TryMatchToken::Fails(range) => return range.raise_error().into_err(),
             },
         };
@@ -125,7 +125,7 @@ impl ParseBlock for ForBlock {
 #[derive(Debug)]
 struct For {
     var_name: kstring::KString,
-    range: Range,
+    range: RangeExpression,
     item_template: Template,
     else_template: Option<Template>,
     limit: Option<Expression>,
@@ -147,7 +147,7 @@ impl For {
 
 fn trace_for_tag(
     var_name: &str,
-    range: &Range,
+    range: &RangeExpression,
     limit: &Option<Expression>,
     offset: &Option<Expression>,
     reversed: bool,
@@ -176,11 +176,12 @@ impl Renderable for For {
             .range
             .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
+        let array = range.evaluate()?;
         let limit = evaluate_attr(&self.limit, runtime)?;
         let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, self.reversed);
+        let array = iter_array(array, limit, offset, self.reversed);
 
-        match range.len() {
+        match array.len() {
             0 => {
                 if let Some(ref t) = self.else_template {
                     t.render_to(writer, runtime)
@@ -192,7 +193,7 @@ impl Renderable for For {
             range_len => {
                 let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
                 let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
-                for (i, v) in range.into_iter().enumerate() {
+                for (i, v) in array.into_iter().enumerate() {
                     let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
                     let mut root =
                         std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
@@ -300,9 +301,9 @@ impl ParseBlock for TableRowBlock {
 
         let range = arguments.expect_next("Array or range expected.")?;
         let range = match range.expect_value() {
-            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Matches(array) => RangeExpression::Array(array),
             TryMatchToken::Fails(range) => match range.expect_range() {
-                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Matches((start, stop)) => RangeExpression::Counted(start, stop),
                 TryMatchToken::Fails(range) => return range.raise_error().into_err(),
             },
         };
@@ -349,7 +350,7 @@ impl ParseBlock for TableRowBlock {
 #[derive(Debug)]
 struct TableRow {
     var_name: kstring::KString,
-    range: Range,
+    range: RangeExpression,
     item_template: Template,
     cols: Option<Expression>,
     limit: Option<Expression>,
@@ -370,7 +371,7 @@ impl TableRow {
 
 fn trace_tablerow_tag(
     var_name: &str,
-    range: &Range,
+    range: &RangeExpression,
     cols: &Option<Expression>,
     limit: &Option<Expression>,
     offset: &Option<Expression>,
@@ -399,17 +400,18 @@ impl Renderable for TableRow {
             .range
             .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
+        let array = range.evaluate()?;
         let cols = evaluate_attr(&self.cols, runtime)?;
         let limit = evaluate_attr(&self.limit, runtime)?;
         let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, false);
+        let array = iter_array(array, limit, offset, false);
 
         let mut helper_vars = Object::new();
 
-        let range_len = range.len();
+        let range_len = array.len();
         helper_vars.insert("length".into(), Value::scalar(range_len as i64));
 
-        for (i, v) in range.into_iter().enumerate() {
+        for (i, v) in array.into_iter().enumerate() {
             let cols = cols.unwrap_or(range_len);
             let col_index = i % cols;
             let row_index = i / cols;
@@ -514,20 +516,52 @@ fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Opt
 }
 
 #[derive(Clone, Debug)]
-enum Range {
+enum RangeExpression {
     Array(Expression),
     Counted(Expression, Expression),
 }
 
-impl Range {
-    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<Vec<Value>> {
+impl RangeExpression {
+    pub fn evaluate<'r>(&'r self, runtime: &'r dyn Runtime) -> Result<Range<'r>> {
         let range = match *self {
-            Range::Array(ref array_id) => get_array(runtime, array_id)?,
+            RangeExpression::Array(ref array_id) => {
+                let array = array_id.evaluate(runtime)?;
+                Range::Array(array)
+            }
 
-            Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = int_argument(start_arg, runtime, "start")?;
-                let stop = int_argument(stop_arg, runtime, "end")?;
-                let range = start..=stop;
+            RangeExpression::Counted(ref start_arg, ref stop_arg) => {
+                let start = int_argument(start_arg, runtime, "start")? as i64;
+                let stop = int_argument(stop_arg, runtime, "end")? as i64;
+                Range::Counted(start, stop)
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+impl fmt::Display for RangeExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RangeExpression::Array(ref arr) => write!(f, "{}", arr),
+            RangeExpression::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Range<'r> {
+    Array(ValueCow<'r>),
+    Counted(i64, i64),
+}
+
+impl<'r> Range<'r> {
+    pub fn evaluate(&self) -> Result<Vec<Value>> {
+        let range = match self {
+            Range::Array(ref array) => get_array(array.clone())?,
+
+            Range::Counted(start, stop) => {
+                let range = (*start)..=(*stop);
                 range.map(|x| Value::scalar(x as i64)).collect()
             }
         };
@@ -536,17 +570,7 @@ impl Range {
     }
 }
 
-impl fmt::Display for Range {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Range::Array(ref arr) => write!(f, "{}", arr),
-            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
-        }
-    }
-}
-
-fn get_array(runtime: &dyn Runtime, array_id: &Expression) -> Result<Vec<Value>> {
-    let array = array_id.evaluate(runtime)?;
+fn get_array(array: ValueCow<'_>) -> Result<Vec<Value>> {
     if let Some(x) = array.as_array() {
         Ok(x.values().map(|v| v.to_value()).collect())
     } else if let Some(x) = array.as_object() {
