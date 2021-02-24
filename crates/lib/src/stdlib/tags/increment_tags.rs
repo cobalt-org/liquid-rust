@@ -8,25 +8,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct Increment {
-    id: kstring::KString,
-}
-
-impl Renderable for Increment {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let mut val = runtime
-            .get_index(&self.id)
-            .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
-            .unwrap_or(0);
-
-        write!(writer, "{}", val).replace("Failed to render")?;
-        val += 1;
-        runtime.set_index(self.id.clone(), Value::scalar(val));
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IncrementTag;
 
@@ -71,19 +52,19 @@ impl ParseTag for IncrementTag {
 }
 
 #[derive(Clone, Debug)]
-struct Decrement {
+struct Increment {
     id: kstring::KString,
 }
 
-impl Renderable for Decrement {
+impl Renderable for Increment {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let mut val = runtime
             .get_index(&self.id)
             .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
             .unwrap_or(0);
 
-        val -= 1;
         write!(writer, "{}", val).replace("Failed to render")?;
+        val += 1;
         runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
     }
@@ -129,6 +110,25 @@ impl ParseTag for DecrementTag {
 
     fn reflection(&self) -> &dyn TagReflection {
         self
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Decrement {
+    id: kstring::KString,
+}
+
+impl Renderable for Decrement {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let mut val = runtime
+            .get_index(&self.id)
+            .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
+            .unwrap_or(0);
+
+        val -= 1;
+        write!(writer, "{}", val).replace("Failed to render")?;
+        runtime.set_index(self.id.clone(), Value::scalar(val));
+        Ok(())
     }
 }
 

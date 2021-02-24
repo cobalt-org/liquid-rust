@@ -7,15 +7,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Copy, Clone, Debug)]
-struct Comment;
-
-impl Renderable for Comment {
-    fn render_to(&self, _writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct CommentBlock;
 
@@ -69,6 +60,15 @@ impl ParseBlock for CommentBlock {
 
     fn reflection(&self) -> &dyn BlockReflection {
         self
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct Comment;
+
+impl Renderable for Comment {
+    fn render_to(&self, _writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
+        Ok(())
     }
 }
 

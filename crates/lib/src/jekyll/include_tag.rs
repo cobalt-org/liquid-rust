@@ -11,50 +11,6 @@ use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Debug)]
-struct Include {
-    partial: Expression,
-    vars: Vec<(KString, Expression)>,
-}
-
-impl Renderable for Include {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let name = self.partial.evaluate(runtime)?.render().to_string();
-
-        {
-            let mut pass_through =
-                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
-            let mut helper_vars = std::collections::HashMap::new();
-            if !self.vars.is_empty() {
-                for (id, val) in &self.vars {
-                    let value = val
-                        .try_evaluate(runtime)
-                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                        .into_owned();
-
-                    helper_vars.insert(id.as_ref(), value);
-                }
-
-                pass_through.insert("include".into(), &helper_vars);
-            }
-
-            let scope = StackFrame::new(runtime, &pass_through);
-            let partial = scope
-                .partials()
-                .get(&name)
-                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
-
-            partial
-                .render_to(writer, &scope)
-                .trace_with(|| format!("{{% include {} %}}", self.partial).into())
-                .context_key_with(|| self.partial.to_string().into())
-                .value_with(|| name.to_string().into())?;
-        }
-
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IncludeTag;
 
@@ -117,6 +73,50 @@ impl ParseTag for IncludeTag {
 
     fn reflection(&self) -> &dyn TagReflection {
         self
+    }
+}
+
+#[derive(Debug)]
+struct Include {
+    partial: Expression,
+    vars: Vec<(KString, Expression)>,
+}
+
+impl Renderable for Include {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let name = self.partial.evaluate(runtime)?.render().to_string();
+
+        {
+            let mut pass_through =
+                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            let mut helper_vars = std::collections::HashMap::new();
+            if !self.vars.is_empty() {
+                for (id, val) in &self.vars {
+                    let value = val
+                        .try_evaluate(runtime)
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
+                        .into_owned();
+
+                    helper_vars.insert(id.as_ref(), value);
+                }
+
+                pass_through.insert("include".into(), &helper_vars);
+            }
+
+            let scope = StackFrame::new(runtime, &pass_through);
+            let partial = scope
+                .partials()
+                .get(&name)
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+
+            partial
+                .render_to(writer, &scope)
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())
+                .context_key_with(|| self.partial.to_string().into())
+                .value_with(|| name.to_string().into())?;
+        }
+
+        Ok(())
     }
 }
 

@@ -7,19 +7,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Copy, Clone, Debug)]
-struct Break;
-
-impl Renderable for Break {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        runtime
-            .registers()
-            .get_mut::<InterruptRegister>()
-            .set(Interrupt::Break);
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct BreakTag;
 
@@ -56,14 +43,14 @@ impl ParseTag for BreakTag {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Continue;
+struct Break;
 
-impl Renderable for Continue {
+impl Renderable for Break {
     fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         runtime
             .registers()
             .get_mut::<InterruptRegister>()
-            .set(Interrupt::Continue);
+            .set(Interrupt::Break);
         Ok(())
     }
 }
@@ -100,6 +87,19 @@ impl ParseTag for ContinueTag {
 
     fn reflection(&self) -> &dyn TagReflection {
         self
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct Continue;
+
+impl Renderable for Continue {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        runtime
+            .registers()
+            .get_mut::<InterruptRegister>()
+            .set(Interrupt::Continue);
+        Ok(())
     }
 }
 

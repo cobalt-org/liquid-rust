@@ -14,257 +14,6 @@ use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
 
-#[derive(Clone, Debug)]
-enum Range {
-    Array(Expression),
-    Counted(Expression, Expression),
-}
-
-impl Range {
-    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<Vec<Value>> {
-        let range = match *self {
-            Range::Array(ref array_id) => get_array(runtime, array_id)?,
-
-            Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = int_argument(start_arg, runtime, "start")?;
-                let stop = int_argument(stop_arg, runtime, "end")?;
-                let range = start..=stop;
-                range.map(|x| Value::scalar(x as i64)).collect()
-            }
-        };
-
-        Ok(range)
-    }
-}
-
-impl fmt::Display for Range {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Range::Array(ref arr) => write!(f, "{}", arr),
-            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
-        }
-    }
-}
-
-fn iter_array(
-    mut range: Vec<Value>,
-    limit: Option<usize>,
-    offset: usize,
-    reversed: bool,
-) -> Vec<Value> {
-    let offset = ::std::cmp::min(offset, range.len());
-    let limit = limit
-        .map(|l| ::std::cmp::min(l, range.len()))
-        .unwrap_or_else(|| range.len() - offset);
-    range.drain(0..offset);
-    range.resize(limit, Value::Nil);
-
-    if reversed {
-        range.reverse();
-    };
-
-    range
-}
-
-/// Extracts an integer value or an identifier from the token stream
-fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
-    arguments
-        .expect_next("\":\" expected.")?
-        .expect_str(":")
-        .into_result_custom_msg("\":\" expected.")?;
-
-    arguments
-        .expect_next("Value expected.")?
-        .expect_value()
-        .into_result()
-}
-
-/// Evaluates an attribute, returning Ok(None) if input is also None.
-fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Option<usize>> {
-    match attr {
-        Some(attr) => {
-            let value = attr.evaluate(runtime)?;
-            let value = value
-                .as_scalar()
-                .and_then(|s| s.to_integer())
-                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
-                as usize;
-            Ok(Some(value))
-        }
-        None => Ok(None),
-    }
-}
-
-#[derive(Debug)]
-struct For {
-    var_name: kstring::KString,
-    range: Range,
-    item_template: Template,
-    else_template: Option<Template>,
-    limit: Option<Expression>,
-    offset: Option<Expression>,
-    reversed: bool,
-}
-
-impl For {
-    fn trace(&self) -> String {
-        trace_for_tag(
-            self.var_name.as_str(),
-            &self.range,
-            &self.limit,
-            &self.offset,
-            self.reversed,
-        )
-    }
-}
-
-fn get_array(runtime: &dyn Runtime, array_id: &Expression) -> Result<Vec<Value>> {
-    let array = array_id.evaluate(runtime)?;
-    if let Some(x) = array.as_array() {
-        Ok(x.values().map(|v| v.to_value()).collect())
-    } else if let Some(x) = array.as_object() {
-        let x = x
-            .iter()
-            .map(|(k, v)| {
-                let k = k.into_owned();
-                let arr = vec![Value::scalar(k), v.to_value()];
-                Value::Array(arr)
-            })
-            .collect();
-        Ok(x)
-    } else if array.is_state() || array.is_nil() {
-        Ok(vec![])
-    } else {
-        Err(unexpected_value_error("array", Some(array.type_name())))
-    }
-}
-
-fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Result<isize> {
-    let value = arg.evaluate(runtime)?;
-
-    let value = value
-        .as_scalar()
-        .and_then(|v| v.to_integer())
-        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
-        .context_key_with(|| arg_name.to_owned().into())
-        .value_with(|| value.to_kstr().into_owned())?;
-
-    Ok(value as isize)
-}
-
-#[derive(Debug, Clone, ValueView, ObjectView)]
-struct ForloopObject<'p> {
-    length: i64,
-    parentloop: Option<&'p dyn ValueView>,
-    index0: i64,
-    index: i64,
-    rindex0: i64,
-    rindex: i64,
-    first: bool,
-    last: bool,
-}
-
-impl<'p> ForloopObject<'p> {
-    fn new(i: usize, len: usize) -> Self {
-        let i = i as i64;
-        let len = len as i64;
-        let first = i == 0;
-        let last = i == (len - 1);
-        Self {
-            length: len,
-            parentloop: None,
-            index0: i,
-            index: i + 1,
-            rindex0: len - i - 1,
-            rindex: len - i,
-            first,
-            last,
-        }
-    }
-
-    fn parentloop(mut self, parentloop: Option<&'p dyn ValueView>) -> Self {
-        self.parentloop = parentloop;
-        self
-    }
-}
-
-impl Renderable for For {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let range = self
-            .range
-            .evaluate(runtime)
-            .trace_with(|| self.trace().into())?;
-        let limit = evaluate_attr(&self.limit, runtime)?;
-        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, self.reversed);
-
-        match range.len() {
-            0 => {
-                if let Some(ref t) = self.else_template {
-                    t.render_to(writer, runtime)
-                        .trace("{{% else %}}")
-                        .trace_with(|| self.trace().into())?;
-                }
-            }
-
-            range_len => {
-                let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
-                let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
-                for (i, v) in range.into_iter().enumerate() {
-                    let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
-                    let mut root =
-                        std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
-                    root.insert("forloop".into(), &forloop);
-                    root.insert(self.var_name.as_ref(), &v);
-
-                    let scope = StackFrame::new(runtime, &root);
-                    self.item_template
-                        .render_to(writer, &scope)
-                        .trace_with(|| self.trace().into())
-                        .context_key("index")
-                        .value_with(|| format!("{}", i + 1).into())?;
-
-                    // given that we're at the end of the loop body
-                    // already, dealing with a `continue` signal is just
-                    // clearing the interrupt and carrying on as normal. A
-                    // `break` requires some special handling, though.
-                    let current_interrupt =
-                        scope.registers().get_mut::<InterruptRegister>().reset();
-                    if let Some(Interrupt::Break) = current_interrupt {
-                        break;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-}
-
-fn trace_for_tag(
-    var_name: &str,
-    range: &Range,
-    limit: &Option<Expression>,
-    offset: &Option<Expression>,
-    reversed: bool,
-) -> String {
-    let mut parameters = vec![];
-    if let Some(limit) = limit {
-        parameters.push(format!("limit:{}", limit));
-    }
-    if let Some(offset) = offset {
-        parameters.push(format!("offset:{}", offset));
-    }
-    if reversed {
-        parameters.push("reversed".to_owned());
-    }
-    format!(
-        "{{% for {} in {} {} %}}",
-        var_name,
-        range,
-        itertools::join(parameters.iter(), ", ")
-    )
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ForBlock;
 
@@ -374,43 +123,44 @@ impl ParseBlock for ForBlock {
 }
 
 #[derive(Debug)]
-struct TableRow {
+struct For {
     var_name: kstring::KString,
     range: Range,
     item_template: Template,
-    cols: Option<Expression>,
+    else_template: Option<Template>,
     limit: Option<Expression>,
     offset: Option<Expression>,
+    reversed: bool,
 }
 
-impl TableRow {
+impl For {
     fn trace(&self) -> String {
-        trace_tablerow_tag(
+        trace_for_tag(
             self.var_name.as_str(),
             &self.range,
-            &self.cols,
             &self.limit,
             &self.offset,
+            self.reversed,
         )
     }
 }
 
-fn trace_tablerow_tag(
+fn trace_for_tag(
     var_name: &str,
     range: &Range,
-    cols: &Option<Expression>,
     limit: &Option<Expression>,
     offset: &Option<Expression>,
+    reversed: bool,
 ) -> String {
     let mut parameters = vec![];
-    if let Some(cols) = cols {
-        parameters.push(format!("cols:{}", cols));
-    }
     if let Some(limit) = limit {
         parameters.push(format!("limit:{}", limit));
     }
     if let Some(offset) = offset {
         parameters.push(format!("offset:{}", offset));
+    }
+    if reversed {
+        parameters.push("reversed".to_owned());
     }
     format!(
         "{{% for {} in {} {} %}}",
@@ -420,94 +170,91 @@ fn trace_tablerow_tag(
     )
 }
 
+impl Renderable for For {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let range = self
+            .range
+            .evaluate(runtime)
+            .trace_with(|| self.trace().into())?;
+        let limit = evaluate_attr(&self.limit, runtime)?;
+        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
+        let range = iter_array(range, limit, offset, self.reversed);
+
+        match range.len() {
+            0 => {
+                if let Some(ref t) = self.else_template {
+                    t.render_to(writer, runtime)
+                        .trace("{{% else %}}")
+                        .trace_with(|| self.trace().into())?;
+                }
+            }
+
+            range_len => {
+                let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
+                let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
+                for (i, v) in range.into_iter().enumerate() {
+                    let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
+                    let mut root =
+                        std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+                    root.insert("forloop".into(), &forloop);
+                    root.insert(self.var_name.as_ref(), &v);
+
+                    let scope = StackFrame::new(runtime, &root);
+                    self.item_template
+                        .render_to(writer, &scope)
+                        .trace_with(|| self.trace().into())
+                        .context_key("index")
+                        .value_with(|| format!("{}", i + 1).into())?;
+
+                    // given that we're at the end of the loop body
+                    // already, dealing with a `continue` signal is just
+                    // clearing the interrupt and carrying on as normal. A
+                    // `break` requires some special handling, though.
+                    let current_interrupt =
+                        scope.registers().get_mut::<InterruptRegister>().reset();
+                    if let Some(Interrupt::Break) = current_interrupt {
+                        break;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, ValueView, ObjectView)]
-struct TableRowObject {
+struct ForloopObject<'p> {
     length: i64,
+    parentloop: Option<&'p dyn ValueView>,
     index0: i64,
     index: i64,
     rindex0: i64,
     rindex: i64,
     first: bool,
     last: bool,
-    col0: i64,
-    col: i64,
-    col_first: bool,
-    col_last: bool,
 }
 
-impl TableRowObject {
-    fn new(i: usize, len: usize, col: usize, cols: usize) -> Self {
+impl<'p> ForloopObject<'p> {
+    fn new(i: usize, len: usize) -> Self {
         let i = i as i64;
         let len = len as i64;
-        let col = col as i64;
-        let cols = cols as i64;
         let first = i == 0;
         let last = i == (len - 1);
-        let col_first = col == 0;
-        let col_last = col == (cols - 1) || last;
         Self {
             length: len,
+            parentloop: None,
             index0: i,
             index: i + 1,
             rindex0: len - i - 1,
             rindex: len - i,
             first,
             last,
-            col0: col,
-            col: (col + 1),
-            col_first,
-            col_last,
         }
     }
-}
 
-impl Renderable for TableRow {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let range = self
-            .range
-            .evaluate(runtime)
-            .trace_with(|| self.trace().into())?;
-        let cols = evaluate_attr(&self.cols, runtime)?;
-        let limit = evaluate_attr(&self.limit, runtime)?;
-        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, false);
-
-        let mut helper_vars = Object::new();
-
-        let range_len = range.len();
-        helper_vars.insert("length".into(), Value::scalar(range_len as i64));
-
-        for (i, v) in range.into_iter().enumerate() {
-            let cols = cols.unwrap_or(range_len);
-            let col_index = i % cols;
-            let row_index = i / cols;
-
-            let tablerow = TableRowObject::new(i, range_len, col_index, cols);
-            let mut root =
-                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
-            root.insert("tablerow".into(), &tablerow);
-            root.insert(self.var_name.as_ref(), &v);
-
-            if tablerow.col_first {
-                write!(writer, "<tr class=\"row{}\">", row_index + 1)
-                    .replace("Failed to render")?;
-            }
-            write!(writer, "<td class=\"col{}\">", col_index + 1).replace("Failed to render")?;
-
-            let scope = StackFrame::new(runtime, &root);
-            self.item_template
-                .render_to(writer, &scope)
-                .trace_with(|| self.trace().into())
-                .context_key("index")
-                .value_with(|| format!("{}", i + 1).into())?;
-
-            write!(writer, "</td>").replace("Failed to render")?;
-            if tablerow.col_last {
-                write!(writer, "</tr>").replace("Failed to render")?;
-            }
-        }
-
-        Ok(())
+    fn parentloop(mut self, parentloop: Option<&'p dyn ValueView>) -> Self {
+        self.parentloop = parentloop;
+        self
     }
 }
 
@@ -599,8 +346,261 @@ impl ParseBlock for TableRowBlock {
     }
 }
 
+#[derive(Debug)]
+struct TableRow {
+    var_name: kstring::KString,
+    range: Range,
+    item_template: Template,
+    cols: Option<Expression>,
+    limit: Option<Expression>,
+    offset: Option<Expression>,
+}
+
+impl TableRow {
+    fn trace(&self) -> String {
+        trace_tablerow_tag(
+            self.var_name.as_str(),
+            &self.range,
+            &self.cols,
+            &self.limit,
+            &self.offset,
+        )
+    }
+}
+
+fn trace_tablerow_tag(
+    var_name: &str,
+    range: &Range,
+    cols: &Option<Expression>,
+    limit: &Option<Expression>,
+    offset: &Option<Expression>,
+) -> String {
+    let mut parameters = vec![];
+    if let Some(cols) = cols {
+        parameters.push(format!("cols:{}", cols));
+    }
+    if let Some(limit) = limit {
+        parameters.push(format!("limit:{}", limit));
+    }
+    if let Some(offset) = offset {
+        parameters.push(format!("offset:{}", offset));
+    }
+    format!(
+        "{{% for {} in {} {} %}}",
+        var_name,
+        range,
+        itertools::join(parameters.iter(), ", ")
+    )
+}
+
+impl Renderable for TableRow {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let range = self
+            .range
+            .evaluate(runtime)
+            .trace_with(|| self.trace().into())?;
+        let cols = evaluate_attr(&self.cols, runtime)?;
+        let limit = evaluate_attr(&self.limit, runtime)?;
+        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
+        let range = iter_array(range, limit, offset, false);
+
+        let mut helper_vars = Object::new();
+
+        let range_len = range.len();
+        helper_vars.insert("length".into(), Value::scalar(range_len as i64));
+
+        for (i, v) in range.into_iter().enumerate() {
+            let cols = cols.unwrap_or(range_len);
+            let col_index = i % cols;
+            let row_index = i / cols;
+
+            let tablerow = TableRowObject::new(i, range_len, col_index, cols);
+            let mut root =
+                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            root.insert("tablerow".into(), &tablerow);
+            root.insert(self.var_name.as_ref(), &v);
+
+            if tablerow.col_first {
+                write!(writer, "<tr class=\"row{}\">", row_index + 1)
+                    .replace("Failed to render")?;
+            }
+            write!(writer, "<td class=\"col{}\">", col_index + 1).replace("Failed to render")?;
+
+            let scope = StackFrame::new(runtime, &root);
+            self.item_template
+                .render_to(writer, &scope)
+                .trace_with(|| self.trace().into())
+                .context_key("index")
+                .value_with(|| format!("{}", i + 1).into())?;
+
+            write!(writer, "</td>").replace("Failed to render")?;
+            if tablerow.col_last {
+                write!(writer, "</tr>").replace("Failed to render")?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, ValueView, ObjectView)]
+struct TableRowObject {
+    length: i64,
+    index0: i64,
+    index: i64,
+    rindex0: i64,
+    rindex: i64,
+    first: bool,
+    last: bool,
+    col0: i64,
+    col: i64,
+    col_first: bool,
+    col_last: bool,
+}
+
+impl TableRowObject {
+    fn new(i: usize, len: usize, col: usize, cols: usize) -> Self {
+        let i = i as i64;
+        let len = len as i64;
+        let col = col as i64;
+        let cols = cols as i64;
+        let first = i == 0;
+        let last = i == (len - 1);
+        let col_first = col == 0;
+        let col_last = col == (cols - 1) || last;
+        Self {
+            length: len,
+            index0: i,
+            index: i + 1,
+            rindex0: len - i - 1,
+            rindex: len - i,
+            first,
+            last,
+            col0: col,
+            col: (col + 1),
+            col_first,
+            col_last,
+        }
+    }
+}
+
+/// Extracts an integer value or an identifier from the token stream
+fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
+    arguments
+        .expect_next("\":\" expected.")?
+        .expect_str(":")
+        .into_result_custom_msg("\":\" expected.")?;
+
+    arguments
+        .expect_next("Value expected.")?
+        .expect_value()
+        .into_result()
+}
+
+/// Evaluates an attribute, returning Ok(None) if input is also None.
+fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Option<usize>> {
+    match attr {
+        Some(attr) => {
+            let value = attr.evaluate(runtime)?;
+            let value = value
+                .as_scalar()
+                .and_then(|s| s.to_integer())
+                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
+                as usize;
+            Ok(Some(value))
+        }
+        None => Ok(None),
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Range {
+    Array(Expression),
+    Counted(Expression, Expression),
+}
+
+impl Range {
+    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<Vec<Value>> {
+        let range = match *self {
+            Range::Array(ref array_id) => get_array(runtime, array_id)?,
+
+            Range::Counted(ref start_arg, ref stop_arg) => {
+                let start = int_argument(start_arg, runtime, "start")?;
+                let stop = int_argument(stop_arg, runtime, "end")?;
+                let range = start..=stop;
+                range.map(|x| Value::scalar(x as i64)).collect()
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+impl fmt::Display for Range {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Range::Array(ref arr) => write!(f, "{}", arr),
+            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+        }
+    }
+}
+
+fn get_array(runtime: &dyn Runtime, array_id: &Expression) -> Result<Vec<Value>> {
+    let array = array_id.evaluate(runtime)?;
+    if let Some(x) = array.as_array() {
+        Ok(x.values().map(|v| v.to_value()).collect())
+    } else if let Some(x) = array.as_object() {
+        let x = x
+            .iter()
+            .map(|(k, v)| {
+                let k = k.into_owned();
+                let arr = vec![Value::scalar(k), v.to_value()];
+                Value::Array(arr)
+            })
+            .collect();
+        Ok(x)
+    } else if array.is_state() || array.is_nil() {
+        Ok(vec![])
+    } else {
+        Err(unexpected_value_error("array", Some(array.type_name())))
+    }
+}
+
+fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Result<isize> {
+    let value = arg.evaluate(runtime)?;
+
+    let value = value
+        .as_scalar()
+        .and_then(|v| v.to_integer())
+        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
+        .context_key_with(|| arg_name.to_owned().into())
+        .value_with(|| value.to_kstr().into_owned())?;
+
+    Ok(value as isize)
+}
+
+fn iter_array(
+    mut range: Vec<Value>,
+    limit: Option<usize>,
+    offset: usize,
+    reversed: bool,
+) -> Vec<Value> {
+    let offset = ::std::cmp::min(offset, range.len());
+    let limit = limit
+        .map(|l| ::std::cmp::min(l, range.len()))
+        .unwrap_or_else(|| range.len() - offset);
+    range.drain(0..offset);
+    range.resize(limit, Value::Nil);
+
+    if reversed {
+        range.reverse();
+    };
+
+    range
+}
+
 /// Format an error for an unexpected value.
-pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
     unexpected_value_error_string(expected, actual)
 }

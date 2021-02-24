@@ -7,18 +7,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct RawT {
-    content: String,
-}
-
-impl Renderable for RawT {
-    fn render_to(&self, writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
-        write!(writer, "{}", self.content).replace("Failed to render")?;
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct RawBlock;
 
@@ -60,6 +48,18 @@ impl ParseBlock for RawBlock {
 
     fn reflection(&self) -> &dyn BlockReflection {
         self
+    }
+}
+
+#[derive(Clone, Debug)]
+struct RawT {
+    content: String,
+}
+
+impl Renderable for RawT {
+    fn render_to(&self, writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
+        write!(writer, "{}", self.content).replace("Failed to render")?;
+        Ok(())
     }
 }
 

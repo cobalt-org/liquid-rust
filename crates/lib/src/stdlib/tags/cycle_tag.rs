@@ -12,31 +12,36 @@ use liquid_core::ValueView;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct Cycle {
-    name: String,
-    values: Vec<Expression>,
-}
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CycleTag;
 
-impl Cycle {
-    fn trace(&self) -> String {
-        format!(
-            "{{% cycle {} %}}",
-            itertools::join(self.values.iter(), ", ")
-        )
+impl CycleTag {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
-impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let expr = runtime
-            .registers()
-            .get_mut::<State>()
-            .cycle(&self.name, &self.values)
-            .trace_with(|| self.trace().into())?;
-        let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
-        write!(writer, "{}", value.render()).replace("Failed to render")?;
-        Ok(())
+impl TagReflection for CycleTag {
+    fn tag(&self) -> &'static str {
+        "cycle"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for CycleTag {
+    fn parse(
+        &self,
+        arguments: TagTokenIter<'_>,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
+        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
+    }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
     }
 }
 
@@ -101,46 +106,41 @@ fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<C
     Ok(Cycle { name, values })
 }
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct CycleTag;
+#[derive(Clone, Debug)]
+struct Cycle {
+    name: String,
+    values: Vec<Expression>,
+}
 
-impl CycleTag {
-    pub fn new() -> Self {
-        Self::default()
+impl Cycle {
+    fn trace(&self) -> String {
+        format!(
+            "{{% cycle {} %}}",
+            itertools::join(self.values.iter(), ", ")
+        )
     }
 }
 
-impl TagReflection for CycleTag {
-    fn tag(&self) -> &'static str {
-        "cycle"
-    }
-
-    fn description(&self) -> &'static str {
-        ""
-    }
-}
-
-impl ParseTag for CycleTag {
-    fn parse(
-        &self,
-        arguments: TagTokenIter<'_>,
-        options: &Language,
-    ) -> Result<Box<dyn Renderable>> {
-        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
-    }
-
-    fn reflection(&self) -> &dyn TagReflection {
-        self
+impl Renderable for Cycle {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let expr = runtime
+            .registers()
+            .get_mut::<CycleRegister>()
+            .cycle(&self.name, &self.values)
+            .trace_with(|| self.trace().into())?;
+        let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
+        write!(writer, "{}", value.render()).replace("Failed to render")?;
+        Ok(())
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-struct State {
+struct CycleRegister {
     // The indices of all the cycles encountered during rendering.
     cycles: HashMap<String, usize>,
 }
 
-impl State {
+impl CycleRegister {
     fn cycle<'e>(&mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
         let index = self.cycle_index(name, values.len());
         if index >= values.len() {

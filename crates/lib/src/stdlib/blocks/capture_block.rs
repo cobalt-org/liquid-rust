@@ -9,31 +9,6 @@ use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Debug)]
-struct Capture {
-    id: kstring::KString,
-    template: Template,
-}
-
-impl Capture {
-    fn trace(&self) -> String {
-        format!("{{% capture {} %}}", self.id)
-    }
-}
-
-impl Renderable for Capture {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let mut captured = Vec::new();
-        self.template
-            .render_to(&mut captured, runtime)
-            .trace_with(|| self.trace().into())?;
-
-        let output = String::from_utf8(captured).expect("render only writes UTF-8");
-        runtime.set_global(self.id.clone(), Value::scalar(output));
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct CaptureBlock;
 
@@ -86,6 +61,31 @@ impl ParseBlock for CaptureBlock {
 
     fn reflection(&self) -> &dyn BlockReflection {
         self
+    }
+}
+
+#[derive(Debug)]
+struct Capture {
+    id: kstring::KString,
+    template: Template,
+}
+
+impl Capture {
+    fn trace(&self) -> String {
+        format!("{{% capture {} %}}", self.id)
+    }
+}
+
+impl Renderable for Capture {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let mut captured = Vec::new();
+        self.template
+            .render_to(&mut captured, runtime)
+            .trace_with(|| self.trace().into())?;
+
+        let output = String::from_utf8(captured).expect("render only writes UTF-8");
+        runtime.set_global(self.id.clone(), Value::scalar(output));
+        Ok(())
     }
 }
 

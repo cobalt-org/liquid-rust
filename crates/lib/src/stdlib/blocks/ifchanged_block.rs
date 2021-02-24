@@ -8,37 +8,6 @@ use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Debug)]
-struct IfChanged {
-    if_changed: Template,
-}
-
-impl IfChanged {
-    fn trace(&self) -> String {
-        "{{% ifchanged %}}".to_owned()
-    }
-}
-
-impl Renderable for IfChanged {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let mut rendered = Vec::new();
-        self.if_changed
-            .render_to(&mut rendered, runtime)
-            .trace_with(|| self.trace().into())?;
-
-        let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
-        if runtime
-            .registers()
-            .get_mut::<State>()
-            .has_changed(&rendered)
-        {
-            write!(writer, "{}", rendered).replace("Failed to render")?;
-        }
-
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IfChangedBlock;
 
@@ -83,13 +52,44 @@ impl ParseBlock for IfChangedBlock {
     }
 }
 
+#[derive(Debug)]
+struct IfChanged {
+    if_changed: Template,
+}
+
+impl IfChanged {
+    fn trace(&self) -> String {
+        "{{% ifchanged %}}".to_owned()
+    }
+}
+
+impl Renderable for IfChanged {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let mut rendered = Vec::new();
+        self.if_changed
+            .render_to(&mut rendered, runtime)
+            .trace_with(|| self.trace().into())?;
+
+        let rendered = String::from_utf8(rendered).expect("render only writes UTF-8");
+        if runtime
+            .registers()
+            .get_mut::<ChangedRegister>()
+            .has_changed(&rendered)
+        {
+            write!(writer, "{}", rendered).replace("Failed to render")?;
+        }
+
+        Ok(())
+    }
+}
+
 /// Remembers the content of the last rendered `ifstate` block.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-struct State {
+struct ChangedRegister {
     last_rendered: Option<String>,
 }
 
-impl State {
+impl ChangedRegister {
     /// Checks whether or not a new rendered `&str` is different from
     /// `last_rendered` and updates `last_rendered` value to the new value.
     fn has_changed(&mut self, rendered: &str) -> bool {

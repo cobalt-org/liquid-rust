@@ -8,30 +8,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Debug)]
-struct Assign {
-    dst: kstring::KString,
-    src: FilterChain,
-}
-
-impl Assign {
-    fn trace(&self) -> String {
-        format!("{{% assign {} = {}%}}", self.dst, self.src)
-    }
-}
-
-impl Renderable for Assign {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let value = self
-            .src
-            .evaluate(runtime)
-            .trace_with(|| self.trace().into())?
-            .into_owned();
-        runtime.set_global(self.dst.clone(), value);
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct AssignTag;
 
@@ -82,6 +58,30 @@ impl ParseTag for AssignTag {
 
     fn reflection(&self) -> &dyn TagReflection {
         self
+    }
+}
+
+#[derive(Debug)]
+struct Assign {
+    dst: kstring::KString,
+    src: FilterChain,
+}
+
+impl Assign {
+    fn trace(&self) -> String {
+        format!("{{% assign {} = {}%}}", self.dst, self.src)
+    }
+}
+
+impl Renderable for Assign {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let value = self
+            .src
+            .evaluate(runtime)
+            .trace_with(|| self.trace().into())?
+            .into_owned();
+        runtime.set_global(self.dst.clone(), value);
+        Ok(())
     }
 }
 

@@ -12,101 +12,6 @@ use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Debug)]
-struct CaseOption {
-    args: Vec<Expression>,
-    template: Template,
-}
-
-impl CaseOption {
-    fn new(args: Vec<Expression>, template: Template) -> CaseOption {
-        CaseOption { args, template }
-    }
-
-    fn evaluate(&self, value: &dyn ValueView, runtime: &dyn Runtime) -> Result<bool> {
-        for a in &self.args {
-            let v = a.evaluate(runtime)?;
-            if v == ValueViewCmp::new(value) {
-                return Ok(true);
-            }
-        }
-        Ok(false)
-    }
-
-    fn trace(&self) -> String {
-        format!("{{% when {} %}}", itertools::join(self.args.iter(), " or "))
-    }
-}
-
-#[derive(Debug)]
-struct Case {
-    target: Expression,
-    cases: Vec<CaseOption>,
-    else_block: Option<Template>,
-}
-
-impl Case {
-    fn trace(&self) -> String {
-        format!("{{% case {} %}}", self.target)
-    }
-}
-
-impl Renderable for Case {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let value = self.target.evaluate(runtime)?.to_value();
-        for case in &self.cases {
-            if case.evaluate(&value, runtime)? {
-                return case
-                    .template
-                    .render_to(writer, runtime)
-                    .trace_with(|| case.trace().into())
-                    .trace_with(|| self.trace().into())
-                    .context_key_with(|| self.target.to_string().into())
-                    .value_with(|| value.to_kstr().into_owned());
-            }
-        }
-
-        if let Some(ref t) = self.else_block {
-            return t
-                .render_to(writer, runtime)
-                .trace("{{% else %}}")
-                .trace_with(|| self.trace().into())
-                .context_key_with(|| self.target.to_string().into())
-                .value_with(|| value.to_kstr().into_owned());
-        }
-
-        Ok(())
-    }
-}
-
-fn parse_condition(arguments: &mut TagTokenIter<'_>) -> Result<Vec<Expression>> {
-    let mut values = Vec::new();
-
-    let first_value = arguments
-        .expect_next("Value expected")?
-        .expect_value()
-        .into_result()?;
-    values.push(first_value);
-
-    while let Some(token) = arguments.next() {
-        if let TryMatchToken::Fails(token) = token.expect_str("or") {
-            token
-                .expect_str(",")
-                .into_result_custom_msg("\"or\" or \",\" expected.")?;
-        }
-
-        let value = arguments
-            .expect_next("Value expected")?
-            .expect_value()
-            .into_result()?;
-        values.push(value);
-    }
-
-    // no more arguments should be supplied, trying to supply them is an error
-    arguments.expect_nothing()?;
-    Ok(values)
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct CaseBlock;
 
@@ -188,6 +93,101 @@ impl ParseBlock for CaseBlock {
 
     fn reflection(&self) -> &dyn BlockReflection {
         self
+    }
+}
+
+fn parse_condition(arguments: &mut TagTokenIter<'_>) -> Result<Vec<Expression>> {
+    let mut values = Vec::new();
+
+    let first_value = arguments
+        .expect_next("Value expected")?
+        .expect_value()
+        .into_result()?;
+    values.push(first_value);
+
+    while let Some(token) = arguments.next() {
+        if let TryMatchToken::Fails(token) = token.expect_str("or") {
+            token
+                .expect_str(",")
+                .into_result_custom_msg("\"or\" or \",\" expected.")?;
+        }
+
+        let value = arguments
+            .expect_next("Value expected")?
+            .expect_value()
+            .into_result()?;
+        values.push(value);
+    }
+
+    // no more arguments should be supplied, trying to supply them is an error
+    arguments.expect_nothing()?;
+    Ok(values)
+}
+
+#[derive(Debug)]
+struct Case {
+    target: Expression,
+    cases: Vec<CaseOption>,
+    else_block: Option<Template>,
+}
+
+impl Case {
+    fn trace(&self) -> String {
+        format!("{{% case {} %}}", self.target)
+    }
+}
+
+impl Renderable for Case {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let value = self.target.evaluate(runtime)?.to_value();
+        for case in &self.cases {
+            if case.evaluate(&value, runtime)? {
+                return case
+                    .template
+                    .render_to(writer, runtime)
+                    .trace_with(|| case.trace().into())
+                    .trace_with(|| self.trace().into())
+                    .context_key_with(|| self.target.to_string().into())
+                    .value_with(|| value.to_kstr().into_owned());
+            }
+        }
+
+        if let Some(ref t) = self.else_block {
+            return t
+                .render_to(writer, runtime)
+                .trace("{{% else %}}")
+                .trace_with(|| self.trace().into())
+                .context_key_with(|| self.target.to_string().into())
+                .value_with(|| value.to_kstr().into_owned());
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct CaseOption {
+    args: Vec<Expression>,
+    template: Template,
+}
+
+impl CaseOption {
+    fn new(args: Vec<Expression>, template: Template) -> CaseOption {
+        CaseOption { args, template }
+    }
+
+    fn evaluate(&self, value: &dyn ValueView, runtime: &dyn Runtime) -> Result<bool> {
+        for a in &self.args {
+            let v = a.evaluate(runtime)?;
+            if v == ValueViewCmp::new(value) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    fn trace(&self) -> String {
+        format!("{{% when {} %}}", itertools::join(self.args.iter(), " or "))
     }
 }
 
