@@ -32,6 +32,7 @@ API
   - Functions were renamed while at it.
 - `core::model` has been flattened
 - `derive(ValueView)` now requires being used with `impl ObjectView`
+- `liquid-core` users now need to opt-in to the `derive` feature for derive macros
 
 ## [0.21.5] - 2021-02-03
 

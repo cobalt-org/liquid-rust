@@ -18,8 +18,10 @@ pub use object::*;
 pub use scalar::*;
 pub use value::*;
 
+#[cfg(feature = "derive")]
 #[doc(hidden)]
 pub use liquid_derive::CoreObjectView as ObjectView;
+#[cfg(feature = "derive")]
 #[doc(hidden)]
 pub use liquid_derive::CoreValueView as ValueView;
 #[doc(hidden)]

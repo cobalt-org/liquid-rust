@@ -18,7 +18,7 @@ features = [ "default", "jekyll", "all" ]
 azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
-liquid-core = { version = "^0.21.0", path = "../core" }
+liquid-core = { version = "^0.21.0", path = "../core", features = ["derive"] }
 kstring = "1.0"
 itertools = "0.10.0"
 regex = "1.0"
