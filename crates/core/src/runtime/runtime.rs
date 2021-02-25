@@ -16,7 +16,7 @@ pub trait Runtime {
     fn name(&self) -> Option<kstring::KStringRef<'_>>;
 
     /// All available values
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>>;
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>>;
     /// Recursively index into the stack.
     fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>>;
     /// Recursively index into the stack.
@@ -47,7 +47,7 @@ impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
         <R as Runtime>::name(self)
     }
 
-    fn roots<'s>(&'s self) -> std::collections::BTreeSet<kstring::KStringCow<'s>> {
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
         <R as Runtime>::roots(self)
     }
 
@@ -114,12 +114,13 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
     /// Create the `Runtime`.
     pub fn build(self) -> impl Runtime + 'c {
         let partials = self.partials.unwrap_or(&NullPartials);
-        let mut runtime = RuntimeCore::default();
-        runtime.partials = partials;
+        let runtime = RuntimeCore {
+            partials,
+            ..Default::default()
+        };
         let runtime = super::IndexFrame::new(runtime);
         let runtime = super::StackFrame::new(runtime, self.globals.unwrap_or(&NullObject));
-        let runtime = super::GlobalFrame::new(runtime);
-        runtime
+        super::GlobalFrame::new(runtime)
     }
 }
 
@@ -232,7 +233,7 @@ impl<'g> Runtime for RuntimeCore<'g> {
         None
     }
 
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
         // Indexes don't count
         std::collections::BTreeSet::new()
     }

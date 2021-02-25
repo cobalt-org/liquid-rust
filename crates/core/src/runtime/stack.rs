@@ -38,7 +38,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
             .or_else(|| self.parent.name())
     }
 
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.keys());
         roots
@@ -112,7 +112,7 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         self.parent.name()
     }
 
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
         roots
@@ -187,7 +187,7 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
         self.parent.name()
     }
 
-    fn roots<'r>(&'r self) -> std::collections::BTreeSet<kstring::KStringCow<'r>> {
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
         roots

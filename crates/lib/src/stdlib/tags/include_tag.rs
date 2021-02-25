@@ -211,12 +211,12 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
         runtime.set_global("num".into(), Value::scalar(5f64));
         runtime.set_global("numTwo".into(), Value::scalar(10f64));
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "5 wat wot");
     }
 
@@ -231,10 +231,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello");
     }
 
@@ -249,10 +249,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello world");
     }
 
@@ -267,10 +267,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello dogs");
     }
 
@@ -288,12 +288,12 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
         runtime.set_global("num".into(), Value::scalar(5f64));
         runtime.set_global("numTwo".into(), Value::scalar(10f64));
-        let output = template.render(&mut runtime);
+        let output = template.render(&runtime);
         assert!(output.is_err());
     }
 }
