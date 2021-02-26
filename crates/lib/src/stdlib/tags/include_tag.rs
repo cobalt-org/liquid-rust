@@ -5,57 +5,10 @@ use liquid_core::error::ResultLiquidExt;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
-use liquid_core::Runtime;
 use liquid_core::ValueView;
+use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
-
-#[derive(Debug)]
-struct Include {
-    partial: Expression,
-    vars: Vec<(KString, Expression)>,
-}
-
-impl Renderable for Include {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let value = self.partial.evaluate(runtime)?;
-        if !value.is_scalar() {
-            return Error::with_msg("Can only `include` strings")
-                .context("partial", format!("{}", value.source()))
-                .into_err();
-        }
-        let name = value.to_kstr().into_owned();
-
-        runtime.run_in_named_scope(name.clone(), |mut scope| -> Result<()> {
-            // if there our additional varaibles creates a include object to access all the varaibles
-            // from e.g. { include 'image.html' path="foo.png" }
-            // then in image.html you could have <img src="{{include.path}}" />
-            if !self.vars.is_empty() {
-                for (id, val) in &self.vars {
-                    let value = val
-                        .try_evaluate(scope)
-                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?
-                        .into_owned();
-
-                    scope.stack_mut().set(id.clone(), value);
-                }
-            }
-
-            let partial = scope
-                .partials()
-                .get(&name)
-                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
-
-            partial
-                .render_to(writer, &mut scope)
-                .trace_with(|| format!("{{% include {} %}}", self.partial).into())
-                .context_key_with(|| self.partial.to_string().into())
-                .value_with(|| name.to_string().into())
-        })?;
-
-        Ok(())
-    }
-}
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IncludeTag;
@@ -122,6 +75,54 @@ impl ParseTag for IncludeTag {
     }
 }
 
+#[derive(Debug)]
+struct Include {
+    partial: Expression,
+    vars: Vec<(KString, Expression)>,
+}
+
+impl Renderable for Include {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let value = self.partial.evaluate(runtime)?;
+        if !value.is_scalar() {
+            return Error::with_msg("Can only `include` strings")
+                .context("partial", format!("{}", value.source()))
+                .into_err();
+        }
+        let name = value.to_kstr().into_owned();
+
+        {
+            // if there our additional variables creates a include object to access all the varaibles
+            // from e.g. { include 'image.html' path="foo.png" }
+            // then in image.html you could have <img src="{{include.path}}" />
+            let mut pass_through = std::collections::HashMap::new();
+            if !self.vars.is_empty() {
+                for (id, val) in &self.vars {
+                    let value = val
+                        .try_evaluate(runtime)
+                        .ok_or_else(|| Error::with_msg("failed to evaluate value"))?;
+
+                    pass_through.insert(id.as_ref(), value);
+                }
+            }
+
+            let scope = StackFrame::new(runtime, &pass_through);
+            let partial = scope
+                .partials()
+                .get(&name)
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+
+            partial
+                .render_to(writer, &scope)
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())
+                .context_key_with(|| self.partial.to_string().into())
+                .value_with(|| name.to_string().into())?;
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::borrow;
@@ -183,7 +184,7 @@ mod test {
     pub struct SizeFilter;
 
     impl Filter for SizeFilter {
-        fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
             if let Some(x) = input.as_scalar() {
                 Ok(Value::scalar(x.to_kstr().len() as i64))
             } else if let Some(x) = input.as_array() {
@@ -210,14 +211,12 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        runtime.stack_mut().set_global("num", Value::scalar(5f64));
-        runtime
-            .stack_mut()
-            .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut runtime).unwrap();
+        runtime.set_global("num".into(), Value::scalar(5f64));
+        runtime.set_global("numTwo".into(), Value::scalar(10f64));
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "5 wat wot");
     }
 
@@ -232,10 +231,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello");
     }
 
@@ -250,10 +249,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello world");
     }
 
@@ -268,10 +267,10 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "hello dogs");
     }
 
@@ -289,14 +288,12 @@ mod test {
         let partials = partials::OnDemandCompiler::<TestSource>::empty()
             .compile(::std::sync::Arc::new(options))
             .unwrap();
-        let mut runtime = RuntimeBuilder::new()
+        let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        runtime.stack_mut().set_global("num", Value::scalar(5f64));
-        runtime
-            .stack_mut()
-            .set_global("numTwo", Value::scalar(10f64));
-        let output = template.render(&mut runtime);
+        runtime.set_global("num".into(), Value::scalar(5f64));
+        runtime.set_global("numTwo".into(), Value::scalar(10f64));
+        let output = template.render(&runtime);
         assert!(output.is_err());
     }
 }

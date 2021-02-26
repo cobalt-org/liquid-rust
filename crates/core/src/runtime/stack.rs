@@ -1,232 +1,240 @@
-use crate::error::{Error, Result};
-use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
+use crate::error::Error;
+use crate::error::Result;
+use crate::model::{Object, ObjectView, ScalarCow, Value, ValueCow, ValueView};
 
-#[derive(Clone, Default, Debug)]
-struct Frame {
+/// Layer variables on top of the existing runtime
+pub struct StackFrame<P, O> {
+    parent: P,
     name: Option<kstring::KString>,
-    data: Object,
+    data: O,
 }
 
-impl Frame {
-    fn new() -> Self {
-        Default::default()
-    }
-
-    fn with_name<S: Into<kstring::KString>>(name: S) -> Self {
+impl<P: super::Runtime, O: ObjectView> StackFrame<P, O> {
+    /// Layer variables on top of the existing runtime
+    pub fn new(parent: P, data: O) -> Self {
         Self {
-            name: Some(name.into()),
-            data: Object::new(),
+            parent,
+            name: None,
+            data,
         }
+    }
+
+    /// Name the current context
+    pub fn with_name<S: Into<kstring::KString>>(mut self, name: S) -> Self {
+        self.name = Some(name.into());
+        self
     }
 }
 
-/// Stack of variables.
-#[derive(Debug, Clone)]
-pub struct Stack<'g> {
-    globals: Option<&'g dyn ObjectView>,
-    stack: Vec<Frame>,
-    // State of variables created through increment or decrement tags.
-    indexes: Object,
-}
-
-impl<'g> Stack<'g> {
-    /// Create an empty stack
-    pub fn empty() -> Self {
-        Self {
-            globals: None,
-            indexes: Object::new(),
-            // Mutable frame for globals.
-            stack: vec![Frame::new()],
-        }
+impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
+    fn partials(&self) -> &dyn super::PartialStore {
+        self.parent.partials()
     }
 
-    /// Create a stack initialized with read-only `ObjectView`.
-    pub fn with_globals(globals: &'g dyn ObjectView) -> Self {
-        let mut stack = Self::empty();
-        stack.globals = Some(globals);
-        stack
+    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+        self.name
+            .as_ref()
+            .map(|n| n.as_ref())
+            .or_else(|| self.parent.name())
     }
 
-    /// Creates a new variable scope chained to a parent scope.
-    pub(crate) fn push_frame(&mut self) {
-        self.stack.push(Frame::new());
-    }
-
-    /// Creates a new variable scope chained to a parent scope.
-    pub(crate) fn push_named_frame<S: Into<kstring::KString>>(&mut self, name: S) {
-        self.stack.push(Frame::with_name(name));
-    }
-
-    /// Removes the topmost stack frame from the local variable stack.
-    ///
-    /// # Panics
-    ///
-    /// This method will panic if popping the topmost frame results in an
-    /// empty stack. Given that a runtime is created with a top-level stack
-    /// frame already in place, emptying the stack should never happen in a
-    /// well-formed program.
-    pub(crate) fn pop_frame(&mut self) {
-        if self.stack.pop().is_none() {
-            panic!("Unbalanced push/pop, leaving the stack empty.")
-        };
-    }
-
-    /// The name of the currently active template.
-    pub fn frame_name(&self) -> Option<kstring::KStringRef<'_>> {
-        self.stack
-            .iter()
-            .rev()
-            .find_map(|f| f.name.as_ref().map(|s| s.as_ref()))
-    }
-
-    /// Recursively index into the stack.
-    pub fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
-        let frame = self.find_path_frame(path)?;
-
-        crate::model::find::try_find(frame.as_value(), path)
-    }
-
-    /// Recursively index into the stack.
-    pub fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        let frame = self.find_path_frame(path).ok_or_else(|| {
-            let key = path
-                .iter()
-                .next()
-                .cloned()
-                .unwrap_or_else(|| Scalar::new("nil"));
-            let globals = itertools::join(self.roots().iter(), ", ");
-            Error::with_msg("Unknown variable")
-                .context("requested variable", key.to_kstr())
-                .context("available variables", globals)
-        })?;
-
-        crate::model::find::find(frame.as_value(), path)
-    }
-
-    fn roots(&self) -> Vec<kstring::KStringCow<'_>> {
-        let mut roots = Vec::new();
-        if let Some(globals) = self.globals {
-            roots.extend(globals.keys());
-        }
-        for frame in self.stack.iter() {
-            roots.extend(frame.data.keys().map(kstring::KStringCow::from));
-        }
-        roots.sort();
-        roots.dedup();
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+        let mut roots = self.parent.roots();
+        roots.extend(self.data.keys());
         roots
     }
 
-    fn find_path_frame<'a>(&'a self, path: &[ScalarCow<'_>]) -> Option<&'a dyn ObjectView> {
-        let key = path.iter().next()?;
+    fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
+        let key = path.first()?;
         let key = key.to_kstr();
-        self.find_frame(key.as_str())
-    }
-
-    fn find_frame<'a>(&'a self, name: &str) -> Option<&'a dyn ObjectView> {
-        for frame in self.stack.iter().rev() {
-            if frame.data.contains_key(name) {
-                return Some(&frame.data);
-            }
-        }
-
-        if self.globals.map(|g| g.contains_key(name)).unwrap_or(false) {
-            return self.globals;
-        }
-
-        if self.indexes.contains_key(name) {
-            return Some(&self.indexes);
-        }
-
-        None
-    }
-
-    /// Used by increment and decrement tags
-    pub fn set_index<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<kstring::KString>,
-    {
-        self.indexes.insert(name.into(), val)
-    }
-
-    /// Used by increment and decrement tags
-    pub fn get_index<'a>(&'a self, name: &str) -> Option<&'a Value> {
-        self.indexes.get(name)
-    }
-
-    /// Sets a value in the global runtime.
-    pub fn set_global<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<kstring::KString>,
-    {
-        let name = name.into();
-        self.global_frame().insert(name, val)
-    }
-
-    /// Sets a value to the rendering runtime.
-    /// Note that it needs to be wrapped in a liquid::Value.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there is no frame on the local values stack. Runtime
-    /// instances are created with a top-level stack frame in place, so
-    /// this should never happen in a well-formed program.
-    pub fn set<S>(&mut self, name: S, val: Value) -> Option<Value>
-    where
-        S: Into<kstring::KString>,
-    {
-        self.current_frame().insert(name.into(), val)
-    }
-
-    fn current_frame(&mut self) -> &mut Object {
-        match self.stack.last_mut() {
-            Some(frame) => &mut frame.data,
-            None => panic!("Global frame removed."),
+        let data = &self.data;
+        if data.contains_key(key.as_str()) {
+            crate::model::try_find(data.as_value(), path)
+        } else {
+            self.parent.try_get(path)
         }
     }
 
-    fn global_frame(&mut self) -> &mut Object {
-        match self.stack.first_mut() {
-            Some(frame) => &mut frame.data,
-            None => panic!("Global frame removed."),
+    fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
+        let key = path.first().ok_or_else(|| {
+            Error::with_msg("Unknown variable").context("requested variable", "nil")
+        })?;
+        let key = key.to_kstr();
+        let data = &self.data;
+        if data.contains_key(key.as_str()) {
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+        } else {
+            self.parent.get(path)
+        }
+    }
+
+    fn set_global(
+        &self,
+        name: kstring::KString,
+        val: crate::model::Value,
+    ) -> Option<crate::model::Value> {
+        self.parent.set_global(name, val)
+    }
+
+    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+        self.parent.set_index(name, val)
+    }
+
+    fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
+        self.parent.get_index(name)
+    }
+
+    fn registers(&self) -> &super::Registers {
+        self.parent.registers()
+    }
+}
+
+pub(crate) struct GlobalFrame<P> {
+    parent: P,
+    data: std::cell::RefCell<Object>,
+}
+
+impl<P: super::Runtime> GlobalFrame<P> {
+    pub fn new(parent: P) -> Self {
+        Self {
+            parent,
+            data: Default::default(),
         }
     }
 }
 
-impl<'g> Default for Stack<'g> {
-    fn default() -> Self {
-        Self::empty()
+impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
+    fn partials(&self) -> &dyn super::PartialStore {
+        self.parent.partials()
+    }
+
+    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+        self.parent.name()
+    }
+
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+        let mut roots = self.parent.roots();
+        roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
+        roots
+    }
+
+    fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
+        let key = path.first()?;
+        let key = key.to_kstr();
+        let data = self.data.borrow();
+        if data.contains_key(key.as_str()) {
+            crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+        } else {
+            self.parent.try_get(path)
+        }
+    }
+
+    fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
+        let key = path.first().ok_or_else(|| {
+            Error::with_msg("Unknown variable").context("requested variable", "nil")
+        })?;
+        let key = key.to_kstr();
+        let data = self.data.borrow();
+        if data.contains_key(key.as_str()) {
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+        } else {
+            self.parent.get(path)
+        }
+    }
+
+    fn set_global(
+        &self,
+        name: kstring::KString,
+        val: crate::model::Value,
+    ) -> Option<crate::model::Value> {
+        let mut data = self.data.borrow_mut();
+        data.insert(name, val)
+    }
+
+    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+        self.parent.set_index(name, val)
+    }
+
+    fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
+        self.parent.get_index(name)
+    }
+
+    fn registers(&self) -> &super::Registers {
+        self.parent.registers()
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
+pub(crate) struct IndexFrame<P> {
+    parent: P,
+    data: std::cell::RefCell<Object>,
+}
 
-    use crate::model::value::ValueViewCmp;
+impl<P: super::Runtime> IndexFrame<P> {
+    pub fn new(parent: P) -> Self {
+        Self {
+            parent,
+            data: Default::default(),
+        }
+    }
+}
 
-    #[test]
-    fn stack_find_frame() {
-        let mut stack = Stack::empty();
-        stack.set_global("number", Value::scalar(42f64));
-        assert!(stack.find_frame("number").is_some(),);
+impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
+    fn partials(&self) -> &dyn super::PartialStore {
+        self.parent.partials()
     }
 
-    #[test]
-    fn stack_find_frame_failure() {
-        let mut stack = Stack::empty();
-        let mut post = Object::new();
-        post.insert("number".into(), Value::scalar(42f64));
-        stack.set_global("post", Value::Object(post));
-        assert!(stack.find_frame("post.number").is_none());
+    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+        self.parent.name()
     }
 
-    #[test]
-    fn stack_get() {
-        let mut stack = Stack::empty();
-        let mut post = Object::new();
-        post.insert("number".into(), Value::scalar(42f64));
-        stack.set_global("post", Value::Object(post));
-        let indexes = [Scalar::new("post"), Scalar::new("number")];
-        assert_eq!(&stack.get(&indexes).unwrap(), &ValueViewCmp::new(&42f64));
+    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+        let mut roots = self.parent.roots();
+        roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
+        roots
+    }
+
+    fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
+        let key = path.first()?;
+        let key = key.to_kstr();
+        let data = self.data.borrow();
+        if data.contains_key(key.as_str()) {
+            crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+        } else {
+            self.parent.try_get(path)
+        }
+    }
+
+    fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
+        let key = path.first().ok_or_else(|| {
+            Error::with_msg("Unknown variable").context("requested variable", "nil")
+        })?;
+        let key = key.to_kstr();
+        let data = self.data.borrow();
+        if data.contains_key(key.as_str()) {
+            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+        } else {
+            self.parent.get(path)
+        }
+    }
+
+    fn set_global(
+        &self,
+        name: kstring::KString,
+        val: crate::model::Value,
+    ) -> Option<crate::model::Value> {
+        self.parent.set_global(name, val)
+    }
+
+    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+        let mut data = self.data.borrow_mut();
+        data.insert(name, val)
+    }
+
+    fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
+        self.data.borrow().get(name).map(|v| v.to_value().into())
+    }
+
+    fn registers(&self) -> &super::Registers {
+        self.parent.registers()
     }
 }

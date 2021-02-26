@@ -35,7 +35,7 @@ pub struct TestPositionalFilter {
 }
 
 impl Filter for TestPositionalFilter {
-    fn evaluate(&self, _input: &dyn ValueView, runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, _input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
         let pos1 = args.pos1.to_kstr();

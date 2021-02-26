@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::error::{Error, Result};
-use crate::model::find::Path;
+use crate::model::Path;
 use crate::model::Scalar;
 use crate::model::{ValueCow, ValueView};
 
@@ -31,7 +31,7 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn try_evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Option<Path<'c>> {
+    pub fn try_evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Option<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
@@ -46,7 +46,7 @@ impl Variable {
     }
 
     /// Convert to a `Path`.
-    pub fn evaluate<'c>(&'c self, runtime: &'c Runtime<'_>) -> Result<Path<'c>> {
+    pub fn evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Result<Path<'c>> {
         let mut path = Path::with_index(self.variable.as_ref());
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
@@ -95,10 +95,11 @@ impl fmt::Display for Variable {
 mod test {
     use super::*;
 
-    use crate::model::value::ValueViewCmp;
     use crate::model::Object;
+    use crate::model::ValueViewCmp;
 
     use super::super::RuntimeBuilder;
+    use super::super::StackFrame;
 
     #[test]
     fn identifier_path_array_index() {
@@ -112,9 +113,10 @@ test_a: ["test"]
         let index = vec![Scalar::new(0)];
         var.extend(index);
 
-        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let runtime = RuntimeBuilder::new().build();
+        let runtime = StackFrame::new(&runtime, &globals);
         let actual = var.evaluate(&runtime).unwrap();
-        let actual = runtime.stack().get(&actual).unwrap();
+        let actual = runtime.get(&actual).unwrap();
         assert_eq!(actual, ValueViewCmp::new(&"test"));
     }
 
@@ -130,9 +132,10 @@ test_a: ["test1", "test2"]
         let index = vec![Scalar::new(-1)];
         var.extend(index);
 
-        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let runtime = RuntimeBuilder::new().build();
+        let runtime = StackFrame::new(&runtime, &globals);
         let actual = var.evaluate(&runtime).unwrap();
-        let actual = runtime.stack().get(&actual).unwrap();
+        let actual = runtime.get(&actual).unwrap();
         assert_eq!(actual, ValueViewCmp::new(&"test2"));
     }
 
@@ -149,9 +152,10 @@ test_a:
         let index = vec![Scalar::new(0), Scalar::new("test_h")];
         var.extend(index);
 
-        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let runtime = RuntimeBuilder::new().build();
+        let runtime = StackFrame::new(&runtime, &globals);
         let actual = var.evaluate(&runtime).unwrap();
-        let actual = runtime.stack().get(&actual).unwrap();
+        let actual = runtime.get(&actual).unwrap();
         assert_eq!(actual, ValueViewCmp::new(&5));
     }
 }

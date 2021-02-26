@@ -23,7 +23,7 @@ pub struct UrlEncode;
 struct UrlEncodeFilter;
 
 impl Filter for UrlEncodeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }
@@ -48,7 +48,7 @@ pub struct UrlDecode;
 struct UrlDecodeFilter;
 
 impl Filter for UrlDecodeFilter {
-    fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         if input.is_nil() {
             return Ok(Value::Nil);
         }

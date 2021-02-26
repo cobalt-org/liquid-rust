@@ -1032,7 +1032,7 @@ impl<'a> TagToken<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::runtime::{Runtime, Template};
+    use crate::runtime::{Runtime, RuntimeBuilder, Template};
 
     #[test]
     fn test_parse_literal() {
@@ -1135,30 +1135,30 @@ mod test {
     fn test_whitespace_control() {
         let options = Language::default();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("exp", Value::scalar(5));
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("exp".into(), Value::scalar(5));
 
         let text = "    \n    {{ exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "    \n    5    \n    ");
 
         let text = "    \n    {{- exp }}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "5    \n    ");
 
         let text = "    \n    {{ exp -}}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "    \n    5");
 
         let text = "    \n    {{- exp -}}    \n    ";
         let template = parse(text, &options).map(Template::new).unwrap();
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "5");
     }

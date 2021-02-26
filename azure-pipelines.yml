@@ -39,6 +39,14 @@ stages:
         rust: stable
     - script: cargo check --workspace --all-targets
       displayName: Default features
+    - script: cargo check --all-targets --all-features
+      displayName: All features (core)
+      workingDirectory: crates/core
+    - script: cargo check --all-targets --all-features
+      displayName: All features (lib)
+      workingDirectory: crates/lib
+    - script: cargo doc --workspace --no-deps
+      displayName: Docs
 - stage: test
   displayName: Test
   jobs:
@@ -85,9 +93,13 @@ stages:
         rust: $(channel)
         targets: ["$(TARGET)"]
     - script: cargo test --target $(TARGET) --workspace
-      displayName: cargo test
-    - script: cargo doc --target $(TARGET) --workspace --no-deps
-      displayName: cargo doc
+      displayName: Default features
+    - script: cargo test --target $(TARGET) --all-features
+      displayName: All features (core)
+      workingDirectory: crates/lib
+    - script: cargo test --target $(TARGET) --all-features
+      displayName: All features (lib)
+      workingDirectory: crates/lib
   - job: msrv
     displayName: "${{ format('Minimum supported Rust version: {0}', variables.minrust) }}"
     dependsOn: []

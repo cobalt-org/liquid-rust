@@ -8,30 +8,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Debug)]
-struct Assign {
-    dst: String,
-    src: FilterChain,
-}
-
-impl Assign {
-    fn trace(&self) -> String {
-        format!("{{% assign {} = {}%}}", self.dst, self.src)
-    }
-}
-
-impl Renderable for Assign {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let value = self
-            .src
-            .evaluate(runtime)
-            .trace_with(|| self.trace().into())?
-            .into_owned();
-        runtime.stack_mut().set_global(self.dst.to_owned(), value);
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct AssignTag;
 
@@ -61,7 +37,8 @@ impl ParseTag for AssignTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string();
+            .to_string()
+            .into();
 
         arguments
             .expect_next("Assignment operator \"=\" expected.")?
@@ -84,6 +61,30 @@ impl ParseTag for AssignTag {
     }
 }
 
+#[derive(Debug)]
+struct Assign {
+    dst: kstring::KString,
+    src: FilterChain,
+}
+
+impl Assign {
+    fn trace(&self) -> String {
+        format!("{{% assign {} = {}%}}", self.dst, self.src)
+    }
+}
+
+impl Renderable for Assign {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let value = self
+            .src
+            .evaluate(runtime)
+            .trace_with(|| self.trace().into())?
+            .into_owned();
+        runtime.set_global(self.dst.clone(), value);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -92,6 +93,7 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     use crate::stdlib;
 
@@ -116,9 +118,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
+        let runtime = RuntimeBuilder::new().build();
 
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "false");
     }
 
@@ -130,9 +132,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global(
-            "tags",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "tags".into(),
             Value::Array(vec![
                 Value::scalar("alpha"),
                 Value::scalar("beta"),
@@ -140,7 +142,7 @@ mod test {
             ]),
         );
 
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "beta");
     }
 
@@ -155,9 +157,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global(
-            "tags",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "tags".into(),
             Value::Object(
                 vec![("greek".into(), Value::scalar("alpha"))]
                     .into_iter()
@@ -165,7 +167,7 @@ mod test {
             ),
         );
 
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "alpha");
     }
 
@@ -188,9 +190,9 @@ mod test {
 
         // test one: no matching value in `tags`
         {
-            let mut runtime = Runtime::new();
-            runtime.stack_mut().set_global(
-                "tags",
+            let runtime = RuntimeBuilder::new().build();
+            runtime.set_global(
+                "tags".into(),
                 Value::Array(vec![
                     Value::scalar("alpha"),
                     Value::scalar("beta"),
@@ -198,19 +200,16 @@ mod test {
                 ]),
             );
 
-            let output = template.render(&mut runtime).unwrap();
-            assert_eq!(
-                runtime.stack().get(&[Scalar::new("freestyle")]).unwrap(),
-                false
-            );
+            let output = template.render(&runtime).unwrap();
+            assert_eq!(runtime.get(&[Scalar::new("freestyle")]).unwrap(), false);
             assert_eq!(output, "");
         }
 
         // test two: matching value in `tags`
         {
-            let mut runtime = Runtime::new();
-            runtime.stack_mut().set_global(
-                "tags",
+            let runtime = RuntimeBuilder::new().build();
+            runtime.set_global(
+                "tags".into(),
                 Value::Array(vec![
                     Value::scalar("alpha"),
                     Value::scalar("beta"),
@@ -219,11 +218,8 @@ mod test {
                 ]),
             );
 
-            let output = template.render(&mut runtime).unwrap();
-            assert_eq!(
-                runtime.stack().get(&[Scalar::new("freestyle")]).unwrap(),
-                true
-            );
+            let output = template.render(&runtime).unwrap();
+            assert_eq!(runtime.get(&[Scalar::new("freestyle")]).unwrap(), true);
             assert_eq!(output, "<p>Freestyle!</p>");
         }
     }

@@ -12,30 +12,36 @@ use liquid_core::ValueView;
 use liquid_core::{Error, Result};
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct Cycle {
-    name: String,
-    values: Vec<Expression>,
-}
+#[derive(Copy, Clone, Debug, Default)]
+pub struct CycleTag;
 
-impl Cycle {
-    fn trace(&self) -> String {
-        format!(
-            "{{% cycle {} %}}",
-            itertools::join(self.values.iter(), ", ")
-        )
+impl CycleTag {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
-impl Renderable for Cycle {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let expr = runtime
-            .get_register_mut::<State>()
-            .cycle(&self.name, &self.values)
-            .trace_with(|| self.trace().into())?;
-        let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
-        write!(writer, "{}", value.render()).replace("Failed to render")?;
-        Ok(())
+impl TagReflection for CycleTag {
+    fn tag(&self) -> &'static str {
+        "cycle"
+    }
+
+    fn description(&self) -> &'static str {
+        ""
+    }
+}
+
+impl ParseTag for CycleTag {
+    fn parse(
+        &self,
+        arguments: TagTokenIter<'_>,
+        options: &Language,
+    ) -> Result<Box<dyn Renderable>> {
+        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
+    }
+
+    fn reflection(&self) -> &dyn TagReflection {
+        self
     }
 }
 
@@ -100,46 +106,41 @@ fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<C
     Ok(Cycle { name, values })
 }
 
-#[derive(Copy, Clone, Debug, Default)]
-pub struct CycleTag;
+#[derive(Clone, Debug)]
+struct Cycle {
+    name: String,
+    values: Vec<Expression>,
+}
 
-impl CycleTag {
-    pub fn new() -> Self {
-        Self::default()
+impl Cycle {
+    fn trace(&self) -> String {
+        format!(
+            "{{% cycle {} %}}",
+            itertools::join(self.values.iter(), ", ")
+        )
     }
 }
 
-impl TagReflection for CycleTag {
-    fn tag(&self) -> &'static str {
-        "cycle"
-    }
-
-    fn description(&self) -> &'static str {
-        ""
-    }
-}
-
-impl ParseTag for CycleTag {
-    fn parse(
-        &self,
-        arguments: TagTokenIter<'_>,
-        options: &Language,
-    ) -> Result<Box<dyn Renderable>> {
-        parse_cycle(arguments, options).map(|opt| Box::new(opt) as Box<dyn Renderable>)
-    }
-
-    fn reflection(&self) -> &dyn TagReflection {
-        self
+impl Renderable for Cycle {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let expr = runtime
+            .registers()
+            .get_mut::<CycleRegister>()
+            .cycle(&self.name, &self.values)
+            .trace_with(|| self.trace().into())?;
+        let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
+        write!(writer, "{}", value.render()).replace("Failed to render")?;
+        Ok(())
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-struct State {
+struct CycleRegister {
     // The indices of all the cycles encountered during rendering.
     cycles: HashMap<String, usize>,
 }
 
-impl State {
+impl CycleRegister {
     fn cycle<'e>(&mut self, name: &str, values: &'e [Expression]) -> Result<&'e Expression> {
         let index = self.cycle_index(name, values.len());
         if index >= values.len() {
@@ -169,6 +170,7 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -195,8 +197,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime);
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\none\ntwo\n");
     }
@@ -213,8 +215,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime);
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "one\ntwo\nthree\none\n");
     }
@@ -231,12 +233,12 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("alpha", Value::scalar(1f64));
-        runtime.stack_mut().set_global("beta", Value::scalar(2f64));
-        runtime.stack_mut().set_global("gamma", Value::scalar(3f64));
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("alpha".into(), Value::scalar(1f64));
+        runtime.set_global("beta".into(), Value::scalar(2f64));
+        runtime.set_global("gamma".into(), Value::scalar(3f64));
 
-        let output = template.render(&mut runtime);
+        let output = template.render(&runtime);
 
         assert_eq!(output.unwrap(), "1\n2\n3\n1\n");
     }
@@ -247,10 +249,11 @@ mod test {
         // number of elements
         let text = concat!("{% cycle c: 1, 2 %}\n", "{% cycle c: 1 %}\n");
 
+        let runtime = RuntimeBuilder::new().build();
         let template = parser::parse(text, &options())
             .map(runtime::Template::new)
             .unwrap();
-        let output = template.render(&mut Default::default());
+        let output = template.render(&runtime);
         assert!(output.is_err());
     }
 }

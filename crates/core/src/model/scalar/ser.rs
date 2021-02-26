@@ -11,7 +11,7 @@ use crate::model::Scalar;
 ///
 /// ```rust
 /// let s = "foo";
-/// let value = liquid_core::model::scalar::to_scalar(&s).unwrap();
+/// let value = liquid_core::model::to_scalar(&s).unwrap();
 /// assert_eq!(value, liquid_core::model::Scalar::new(s));
 /// ```
 pub fn to_scalar<T>(value: &T) -> Result<Scalar, crate::error::Error>

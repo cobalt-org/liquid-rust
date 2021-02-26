@@ -7,18 +7,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct RawT {
-    content: String,
-}
-
-impl Renderable for RawT {
-    fn render_to(&self, writer: &mut dyn Write, _runtime: &mut Runtime<'_>) -> Result<()> {
-        write!(writer, "{}", self.content).replace("Failed to render")?;
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct RawBlock;
 
@@ -63,12 +51,25 @@ impl ParseBlock for RawBlock {
     }
 }
 
+#[derive(Clone, Debug)]
+struct RawT {
+    content: String,
+}
+
+impl Renderable for RawT {
+    fn render_to(&self, writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
+        write!(writer, "{}", self.content).replace("Failed to render")?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -82,9 +83,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
+        let runtime = RuntimeBuilder::new().build();
 
-        template.render(&mut runtime).unwrap()
+        template.render(&runtime).unwrap()
     }
 
     #[test]

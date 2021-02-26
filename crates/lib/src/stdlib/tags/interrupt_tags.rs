@@ -1,21 +1,11 @@
 use std::io::Write;
 
-use liquid_core::runtime::Interrupt;
+use liquid_core::runtime::{Interrupt, InterruptRegister};
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
-
-#[derive(Copy, Clone, Debug)]
-struct Break;
-
-impl Renderable for Break {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        runtime.interrupt_mut().set_interrupt(Interrupt::Break);
-        Ok(())
-    }
-}
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct BreakTag;
@@ -53,11 +43,14 @@ impl ParseTag for BreakTag {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Continue;
+struct Break;
 
-impl Renderable for Continue {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        runtime.interrupt_mut().set_interrupt(Interrupt::Continue);
+impl Renderable for Break {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        runtime
+            .registers()
+            .get_mut::<InterruptRegister>()
+            .set(Interrupt::Break);
         Ok(())
     }
 }
@@ -97,12 +90,26 @@ impl ParseTag for ContinueTag {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+struct Continue;
+
+impl Renderable for Continue {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        runtime
+            .registers()
+            .get_mut::<InterruptRegister>()
+            .set(Interrupt::Continue);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     use crate::stdlib;
 
@@ -134,8 +141,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut rt = Runtime::new();
-        let output = template.render(&mut rt).unwrap();
+        let rt = RuntimeBuilder::new().build();
+        let output = template.render(&rt).unwrap();
         assert_eq!(
             output,
             concat!("enter-0;exit-0\n", "enter-1;exit-1\n", "enter-2;break-2\n")
@@ -159,8 +166,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut rt = Runtime::new();
-        let output = template.render(&mut rt).unwrap();
+        let rt = RuntimeBuilder::new().build();
+        let output = template.render(&rt).unwrap();
         assert_eq!(
             output,
             concat!(
@@ -185,8 +192,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut rt = Runtime::new();
-        let output = template.render(&mut rt).unwrap();
+        let rt = RuntimeBuilder::new().build();
+        let output = template.render(&rt).unwrap();
         assert_eq!(
             output,
             concat!(
@@ -217,8 +224,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut rt = Runtime::new();
-        let output = template.render(&mut rt).unwrap();
+        let rt = RuntimeBuilder::new().build();
+        let output = template.render(&rt).unwrap();
         assert_eq!(
             output,
             concat!(

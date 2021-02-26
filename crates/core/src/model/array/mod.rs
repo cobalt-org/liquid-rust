@@ -98,6 +98,28 @@ impl<T: ValueView> ArrayView for Vec<T> {
     }
 }
 
+impl<'a, A: ArrayView + ?Sized> ArrayView for &'a A {
+    fn as_value(&self) -> &dyn ValueView {
+        <A as ArrayView>::as_value(self)
+    }
+
+    fn size(&self) -> i64 {
+        <A as ArrayView>::size(self)
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        <A as ArrayView>::values(self)
+    }
+
+    fn contains_key(&self, index: i64) -> bool {
+        <A as ArrayView>::contains_key(self, index)
+    }
+
+    fn get(&self, index: i64) -> Option<&dyn ValueView> {
+        <A as ArrayView>::get(self, index)
+    }
+}
+
 fn convert_value(s: &dyn ValueView) -> &dyn ValueView {
     s
 }

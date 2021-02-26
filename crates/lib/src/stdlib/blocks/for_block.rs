@@ -2,247 +2,17 @@ use std::fmt;
 use std::io::Write;
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::model::{Object, Value, ValueView};
+use liquid_core::model::{Object, ObjectView, Value, ValueCow, ValueView};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
-use liquid_core::runtime::Interrupt;
+use liquid_core::runtime::{Interrupt, InterruptRegister};
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
-use liquid_core::Runtime;
 use liquid_core::Template;
+use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
-
-#[derive(Clone, Debug)]
-enum Range {
-    Array(Expression),
-    Counted(Expression, Expression),
-}
-
-impl Range {
-    pub fn evaluate(&self, runtime: &Runtime<'_>) -> Result<Vec<Value>> {
-        let range = match *self {
-            Range::Array(ref array_id) => get_array(runtime, array_id)?,
-
-            Range::Counted(ref start_arg, ref stop_arg) => {
-                let start = int_argument(start_arg, runtime, "start")?;
-                let stop = int_argument(stop_arg, runtime, "end")?;
-                let range = start..=stop;
-                range.map(|x| Value::scalar(x as i64)).collect()
-            }
-        };
-
-        Ok(range)
-    }
-}
-
-impl fmt::Display for Range {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            Range::Array(ref arr) => write!(f, "{}", arr),
-            Range::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
-        }
-    }
-}
-
-fn iter_array(
-    mut range: Vec<Value>,
-    limit: Option<usize>,
-    offset: usize,
-    reversed: bool,
-) -> Vec<Value> {
-    let offset = ::std::cmp::min(offset, range.len());
-    let limit = limit
-        .map(|l| ::std::cmp::min(l, range.len()))
-        .unwrap_or_else(|| range.len() - offset);
-    range.drain(0..offset);
-    range.resize(limit, Value::Nil);
-
-    if reversed {
-        range.reverse();
-    };
-
-    range
-}
-
-/// Extracts an integer value or an identifier from the token stream
-fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
-    arguments
-        .expect_next("\":\" expected.")?
-        .expect_str(":")
-        .into_result_custom_msg("\":\" expected.")?;
-
-    arguments
-        .expect_next("Value expected.")?
-        .expect_value()
-        .into_result()
-}
-
-/// Evaluates an attribute, returning Ok(None) if input is also None.
-fn evaluate_attr(attr: &Option<Expression>, runtime: &mut Runtime<'_>) -> Result<Option<usize>> {
-    match attr {
-        Some(attr) => {
-            let value = attr.evaluate(runtime)?;
-            let value = value
-                .as_scalar()
-                .and_then(|s| s.to_integer())
-                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
-                as usize;
-            Ok(Some(value))
-        }
-        None => Ok(None),
-    }
-}
-
-#[derive(Debug)]
-struct For {
-    var_name: kstring::KString,
-    range: Range,
-    item_template: Template,
-    else_template: Option<Template>,
-    limit: Option<Expression>,
-    offset: Option<Expression>,
-    reversed: bool,
-}
-
-impl For {
-    fn trace(&self) -> String {
-        trace_for_tag(
-            self.var_name.as_str(),
-            &self.range,
-            &self.limit,
-            &self.offset,
-            self.reversed,
-        )
-    }
-}
-
-fn get_array(runtime: &Runtime<'_>, array_id: &Expression) -> Result<Vec<Value>> {
-    let array = array_id.evaluate(runtime)?;
-    if let Some(x) = array.as_array() {
-        Ok(x.values().map(|v| v.to_value()).collect())
-    } else if let Some(x) = array.as_object() {
-        let x = x
-            .iter()
-            .map(|(k, v)| {
-                let k = k.into_owned();
-                let arr = vec![Value::scalar(k), v.to_value()];
-                Value::Array(arr)
-            })
-            .collect();
-        Ok(x)
-    } else if array.is_state() || array.is_nil() {
-        Ok(vec![])
-    } else {
-        Err(unexpected_value_error("array", Some(array.type_name())))
-    }
-}
-
-fn int_argument(arg: &Expression, runtime: &Runtime<'_>, arg_name: &str) -> Result<isize> {
-    let value = arg.evaluate(runtime)?;
-
-    let value = value
-        .as_scalar()
-        .and_then(|v| v.to_integer())
-        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
-        .context_key_with(|| arg_name.to_owned().into())
-        .value_with(|| value.to_kstr().into_owned())?;
-
-    Ok(value as isize)
-}
-
-impl Renderable for For {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let range = self
-            .range
-            .evaluate(runtime)
-            .trace_with(|| self.trace().into())?;
-        let limit = evaluate_attr(&self.limit, runtime)?;
-        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, self.reversed);
-
-        match range.len() {
-            0 => {
-                if let Some(ref t) = self.else_template {
-                    t.render_to(writer, runtime)
-                        .trace("{{% else %}}")
-                        .trace_with(|| self.trace().into())?;
-                }
-            }
-
-            range_len => {
-                runtime.run_in_scope(|mut scope| -> Result<()> {
-                    let mut helper_vars = Object::new();
-                    helper_vars.insert("length".into(), Value::scalar(range_len as i64));
-                    if let Ok(v) = scope
-                        .stack()
-                        .get(&[liquid_core::model::Scalar::new("forloop")])
-                    {
-                        helper_vars.insert("parentloop".into(), v.into_owned());
-                    } else {
-                        helper_vars.insert("parentloop".into(), Value::Nil);
-                    }
-
-                    for (i, v) in range.into_iter().enumerate() {
-                        helper_vars.insert("index0".into(), Value::scalar(i as i64));
-                        helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
-                        helper_vars
-                            .insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
-                        helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
-                        helper_vars.insert("first".into(), Value::scalar(i == 0));
-                        helper_vars.insert("last".into(), Value::scalar(i == (range_len - 1)));
-
-                        scope
-                            .stack_mut()
-                            .set("forloop", Value::Object(helper_vars.clone()));
-                        scope.stack_mut().set(self.var_name.clone(), v);
-                        self.item_template
-                            .render_to(writer, &mut scope)
-                            .trace_with(|| self.trace().into())
-                            .context_key("index")
-                            .value_with(|| format!("{}", i + 1).into())?;
-
-                        // given that we're at the end of the loop body
-                        // already, dealing with a `continue` signal is just
-                        // clearing the interrupt and carrying on as normal. A
-                        // `break` requires some special handling, though.
-                        if let Some(Interrupt::Break) = scope.interrupt_mut().pop_interrupt() {
-                            break;
-                        }
-                    }
-                    Ok(())
-                })?;
-            }
-        }
-        Ok(())
-    }
-}
-
-fn trace_for_tag(
-    var_name: &str,
-    range: &Range,
-    limit: &Option<Expression>,
-    offset: &Option<Expression>,
-    reversed: bool,
-) -> String {
-    let mut parameters = vec![];
-    if let Some(limit) = limit {
-        parameters.push(format!("limit:{}", limit));
-    }
-    if let Some(offset) = offset {
-        parameters.push(format!("offset:{}", offset));
-    }
-    if reversed {
-        parameters.push("reversed".to_owned());
-    }
-    format!(
-        "{{% for {} in {} {} %}}",
-        var_name,
-        range,
-        itertools::join(parameters.iter(), ", ")
-    )
-}
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ForBlock;
@@ -286,9 +56,9 @@ impl ParseBlock for ForBlock {
 
         let range = arguments.expect_next("Array or range expected.")?;
         let range = match range.expect_value() {
-            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Matches(array) => RangeExpression::Array(array),
             TryMatchToken::Fails(range) => match range.expect_range() {
-                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Matches((start, stop)) => RangeExpression::Counted(start, stop),
                 TryMatchToken::Fails(range) => return range.raise_error().into_err(),
             },
         };
@@ -353,43 +123,44 @@ impl ParseBlock for ForBlock {
 }
 
 #[derive(Debug)]
-struct TableRow {
+struct For {
     var_name: kstring::KString,
-    range: Range,
+    range: RangeExpression,
     item_template: Template,
-    cols: Option<Expression>,
+    else_template: Option<Template>,
     limit: Option<Expression>,
     offset: Option<Expression>,
+    reversed: bool,
 }
 
-impl TableRow {
+impl For {
     fn trace(&self) -> String {
-        trace_tablerow_tag(
+        trace_for_tag(
             self.var_name.as_str(),
             &self.range,
-            &self.cols,
             &self.limit,
             &self.offset,
+            self.reversed,
         )
     }
 }
 
-fn trace_tablerow_tag(
+fn trace_for_tag(
     var_name: &str,
-    range: &Range,
-    cols: &Option<Expression>,
+    range: &RangeExpression,
     limit: &Option<Expression>,
     offset: &Option<Expression>,
+    reversed: bool,
 ) -> String {
     let mut parameters = vec![];
-    if let Some(cols) = cols {
-        parameters.push(format!("cols:{}", cols));
-    }
     if let Some(limit) = limit {
         parameters.push(format!("limit:{}", limit));
     }
     if let Some(offset) = offset {
         parameters.push(format!("offset:{}", offset));
+    }
+    if reversed {
+        parameters.push("reversed".to_owned());
     }
     format!(
         "{{% for {} in {} {} %}}",
@@ -399,71 +170,92 @@ fn trace_tablerow_tag(
     )
 }
 
-impl Renderable for TableRow {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+impl Renderable for For {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let range = self
             .range
             .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
-        let cols = evaluate_attr(&self.cols, runtime)?;
+        let array = range.evaluate()?;
         let limit = evaluate_attr(&self.limit, runtime)?;
         let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let range = iter_array(range, limit, offset, false);
+        let array = iter_array(array, limit, offset, self.reversed);
 
-        runtime.run_in_scope(|mut scope| -> Result<()> {
-            let mut helper_vars = Object::new();
-
-            let range_len = range.len();
-            helper_vars.insert("length".into(), Value::scalar(range_len as i64));
-
-            for (i, v) in range.into_iter().enumerate() {
-                let (col_index, row_index) = match cols {
-                    Some(cols) => (i % cols, i / cols),
-                    None => (i, 0),
-                };
-
-                let first = i == 0;
-                let last = i == (range_len - 1);
-                let col_first = col_index == 0;
-                let col_last = cols.filter(|&cols| col_index + 1 == cols).is_some() || last;
-
-                helper_vars.insert("index0".into(), Value::scalar(i as i64));
-                helper_vars.insert("index".into(), Value::scalar((i + 1) as i64));
-                helper_vars.insert("rindex0".into(), Value::scalar((range_len - i - 1) as i64));
-                helper_vars.insert("rindex".into(), Value::scalar((range_len - i) as i64));
-                helper_vars.insert("first".into(), Value::scalar(first));
-                helper_vars.insert("last".into(), Value::scalar(last));
-                helper_vars.insert("col0".into(), Value::scalar(col_index as i64));
-                helper_vars.insert("col".into(), Value::scalar((col_index + 1) as i64));
-                helper_vars.insert("col_first".into(), Value::scalar(col_first));
-                helper_vars.insert("col_last".into(), Value::scalar(col_last));
-                scope
-                    .stack_mut()
-                    .set("tablerow", Value::Object(helper_vars.clone()));
-
-                if col_first {
-                    write!(writer, "<tr class=\"row{}\">", row_index + 1)
-                        .replace("Failed to render")?;
-                }
-                write!(writer, "<td class=\"col{}\">", col_index + 1)
-                    .replace("Failed to render")?;
-
-                scope.stack_mut().set(self.var_name.clone(), v);
-                self.item_template
-                    .render_to(writer, &mut scope)
-                    .trace_with(|| self.trace().into())
-                    .context_key("index")
-                    .value_with(|| format!("{}", i + 1).into())?;
-
-                write!(writer, "</td>").replace("Failed to render")?;
-                if col_last {
-                    write!(writer, "</tr>").replace("Failed to render")?;
+        match array.len() {
+            0 => {
+                if let Some(ref t) = self.else_template {
+                    t.render_to(writer, runtime)
+                        .trace("{{% else %}}")
+                        .trace_with(|| self.trace().into())?;
                 }
             }
-            Ok(())
-        })?;
 
+            range_len => {
+                let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
+                let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
+                for (i, v) in array.into_iter().enumerate() {
+                    let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
+                    let mut root =
+                        std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+                    root.insert("forloop".into(), &forloop);
+                    root.insert(self.var_name.as_ref(), &v);
+
+                    let scope = StackFrame::new(runtime, &root);
+                    self.item_template
+                        .render_to(writer, &scope)
+                        .trace_with(|| self.trace().into())
+                        .context_key("index")
+                        .value_with(|| format!("{}", i + 1).into())?;
+
+                    // given that we're at the end of the loop body
+                    // already, dealing with a `continue` signal is just
+                    // clearing the interrupt and carrying on as normal. A
+                    // `break` requires some special handling, though.
+                    let current_interrupt =
+                        scope.registers().get_mut::<InterruptRegister>().reset();
+                    if let Some(Interrupt::Break) = current_interrupt {
+                        break;
+                    }
+                }
+            }
+        }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, ValueView, ObjectView)]
+struct ForloopObject<'p> {
+    length: i64,
+    parentloop: Option<&'p dyn ValueView>,
+    index0: i64,
+    index: i64,
+    rindex0: i64,
+    rindex: i64,
+    first: bool,
+    last: bool,
+}
+
+impl<'p> ForloopObject<'p> {
+    fn new(i: usize, len: usize) -> Self {
+        let i = i as i64;
+        let len = len as i64;
+        let first = i == 0;
+        let last = i == (len - 1);
+        Self {
+            length: len,
+            parentloop: None,
+            index0: i,
+            index: i + 1,
+            rindex0: len - i - 1,
+            rindex: len - i,
+            first,
+            last,
+        }
+    }
+
+    fn parentloop(mut self, parentloop: Option<&'p dyn ValueView>) -> Self {
+        self.parentloop = parentloop;
+        self
     }
 }
 
@@ -509,9 +301,9 @@ impl ParseBlock for TableRowBlock {
 
         let range = arguments.expect_next("Array or range expected.")?;
         let range = match range.expect_value() {
-            TryMatchToken::Matches(array) => Range::Array(array),
+            TryMatchToken::Matches(array) => RangeExpression::Array(array),
             TryMatchToken::Fails(range) => match range.expect_range() {
-                TryMatchToken::Matches((start, stop)) => Range::Counted(start, stop),
+                TryMatchToken::Matches((start, stop)) => RangeExpression::Counted(start, stop),
                 TryMatchToken::Fails(range) => return range.raise_error().into_err(),
             },
         };
@@ -555,8 +347,284 @@ impl ParseBlock for TableRowBlock {
     }
 }
 
+#[derive(Debug)]
+struct TableRow {
+    var_name: kstring::KString,
+    range: RangeExpression,
+    item_template: Template,
+    cols: Option<Expression>,
+    limit: Option<Expression>,
+    offset: Option<Expression>,
+}
+
+impl TableRow {
+    fn trace(&self) -> String {
+        trace_tablerow_tag(
+            self.var_name.as_str(),
+            &self.range,
+            &self.cols,
+            &self.limit,
+            &self.offset,
+        )
+    }
+}
+
+fn trace_tablerow_tag(
+    var_name: &str,
+    range: &RangeExpression,
+    cols: &Option<Expression>,
+    limit: &Option<Expression>,
+    offset: &Option<Expression>,
+) -> String {
+    let mut parameters = vec![];
+    if let Some(cols) = cols {
+        parameters.push(format!("cols:{}", cols));
+    }
+    if let Some(limit) = limit {
+        parameters.push(format!("limit:{}", limit));
+    }
+    if let Some(offset) = offset {
+        parameters.push(format!("offset:{}", offset));
+    }
+    format!(
+        "{{% for {} in {} {} %}}",
+        var_name,
+        range,
+        itertools::join(parameters.iter(), ", ")
+    )
+}
+
+impl Renderable for TableRow {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let range = self
+            .range
+            .evaluate(runtime)
+            .trace_with(|| self.trace().into())?;
+        let array = range.evaluate()?;
+        let cols = evaluate_attr(&self.cols, runtime)?;
+        let limit = evaluate_attr(&self.limit, runtime)?;
+        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
+        let array = iter_array(array, limit, offset, false);
+
+        let mut helper_vars = Object::new();
+
+        let range_len = array.len();
+        helper_vars.insert("length".into(), Value::scalar(range_len as i64));
+
+        for (i, v) in array.into_iter().enumerate() {
+            let cols = cols.unwrap_or(range_len);
+            let col_index = i % cols;
+            let row_index = i / cols;
+
+            let tablerow = TableRowObject::new(i, range_len, col_index, cols);
+            let mut root =
+                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            root.insert("tablerow".into(), &tablerow);
+            root.insert(self.var_name.as_ref(), &v);
+
+            if tablerow.col_first {
+                write!(writer, "<tr class=\"row{}\">", row_index + 1)
+                    .replace("Failed to render")?;
+            }
+            write!(writer, "<td class=\"col{}\">", col_index + 1).replace("Failed to render")?;
+
+            let scope = StackFrame::new(runtime, &root);
+            self.item_template
+                .render_to(writer, &scope)
+                .trace_with(|| self.trace().into())
+                .context_key("index")
+                .value_with(|| format!("{}", i + 1).into())?;
+
+            write!(writer, "</td>").replace("Failed to render")?;
+            if tablerow.col_last {
+                write!(writer, "</tr>").replace("Failed to render")?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, ValueView, ObjectView)]
+struct TableRowObject {
+    length: i64,
+    index0: i64,
+    index: i64,
+    rindex0: i64,
+    rindex: i64,
+    first: bool,
+    last: bool,
+    col0: i64,
+    col: i64,
+    col_first: bool,
+    col_last: bool,
+}
+
+impl TableRowObject {
+    fn new(i: usize, len: usize, col: usize, cols: usize) -> Self {
+        let i = i as i64;
+        let len = len as i64;
+        let col = col as i64;
+        let cols = cols as i64;
+        let first = i == 0;
+        let last = i == (len - 1);
+        let col_first = col == 0;
+        let col_last = col == (cols - 1) || last;
+        Self {
+            length: len,
+            index0: i,
+            index: i + 1,
+            rindex0: len - i - 1,
+            rindex: len - i,
+            first,
+            last,
+            col0: col,
+            col: (col + 1),
+            col_first,
+            col_last,
+        }
+    }
+}
+
+/// Extracts an integer value or an identifier from the token stream
+fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
+    arguments
+        .expect_next("\":\" expected.")?
+        .expect_str(":")
+        .into_result_custom_msg("\":\" expected.")?;
+
+    arguments
+        .expect_next("Value expected.")?
+        .expect_value()
+        .into_result()
+}
+
+/// Evaluates an attribute, returning Ok(None) if input is also None.
+fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Option<usize>> {
+    match attr {
+        Some(attr) => {
+            let value = attr.evaluate(runtime)?;
+            let value = value
+                .as_scalar()
+                .and_then(|s| s.to_integer())
+                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
+                as usize;
+            Ok(Some(value))
+        }
+        None => Ok(None),
+    }
+}
+
+#[derive(Clone, Debug)]
+enum RangeExpression {
+    Array(Expression),
+    Counted(Expression, Expression),
+}
+
+impl RangeExpression {
+    pub fn evaluate<'r>(&'r self, runtime: &'r dyn Runtime) -> Result<Range<'r>> {
+        let range = match *self {
+            RangeExpression::Array(ref array_id) => {
+                let array = array_id.evaluate(runtime)?;
+                Range::Array(array)
+            }
+
+            RangeExpression::Counted(ref start_arg, ref stop_arg) => {
+                let start = int_argument(start_arg, runtime, "start")? as i64;
+                let stop = int_argument(stop_arg, runtime, "end")? as i64;
+                Range::Counted(start, stop)
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+impl fmt::Display for RangeExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RangeExpression::Array(ref arr) => write!(f, "{}", arr),
+            RangeExpression::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+enum Range<'r> {
+    Array(ValueCow<'r>),
+    Counted(i64, i64),
+}
+
+impl<'r> Range<'r> {
+    pub fn evaluate(&self) -> Result<Vec<Value>> {
+        let range = match self {
+            Range::Array(ref array) => get_array(array.clone())?,
+
+            Range::Counted(start, stop) => {
+                let range = (*start)..=(*stop);
+                range.map(|x| Value::scalar(x as i64)).collect()
+            }
+        };
+
+        Ok(range)
+    }
+}
+
+fn get_array(array: ValueCow<'_>) -> Result<Vec<Value>> {
+    if let Some(x) = array.as_array() {
+        Ok(x.values().map(|v| v.to_value()).collect())
+    } else if let Some(x) = array.as_object() {
+        let x = x
+            .iter()
+            .map(|(k, v)| {
+                let k = k.into_owned();
+                let arr = vec![Value::scalar(k), v.to_value()];
+                Value::Array(arr)
+            })
+            .collect();
+        Ok(x)
+    } else if array.is_state() || array.is_nil() {
+        Ok(vec![])
+    } else {
+        Err(unexpected_value_error("array", Some(array.type_name())))
+    }
+}
+
+fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Result<isize> {
+    let value = arg.evaluate(runtime)?;
+
+    let value = value
+        .as_scalar()
+        .and_then(|v| v.to_integer())
+        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
+        .context_key_with(|| arg_name.to_owned().into())
+        .value_with(|| value.to_kstr().into_owned())?;
+
+    Ok(value as isize)
+}
+
+fn iter_array(
+    mut range: Vec<Value>,
+    limit: Option<usize>,
+    offset: usize,
+    reversed: bool,
+) -> Vec<Value> {
+    let offset = ::std::cmp::min(offset, range.len());
+    let limit = limit
+        .map(|l| ::std::cmp::min(l, range.len()))
+        .unwrap_or_else(|| range.len() - offset);
+    range.drain(0..offset);
+    range.resize(limit, Value::Nil);
+
+    if reversed {
+        range.reverse();
+    };
+
+    range
+}
+
 /// Format an error for an unexpected value.
-pub fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
+fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Error {
     let actual = actual.map(|x| x.to_string());
     unexpected_value_error_string(expected, actual)
 }
@@ -598,9 +666,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        runtime.stack_mut().set_global(
-            "array",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "array".into(),
             Value::Array(vec![
                 Value::scalar(22f64),
                 Value::scalar(23f64),
@@ -608,7 +676,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "test 22 test 23 test 24 test wat ");
     }
 
@@ -624,8 +692,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Default::default();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
             output,
             "#1 test 42 | #2 test 43 | #3 test 44 | #4 test 45 | #5 test 46 | "
@@ -643,14 +711,10 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime
-            .stack_mut()
-            .set_global("alpha", Value::scalar(42i64));
-        runtime
-            .stack_mut()
-            .set_global("omega", Value::scalar(46i64));
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("alpha".into(), Value::scalar(42i64));
+        runtime.set_global("omega".into(), Value::scalar(46i64));
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
             output,
             "#1 test 42, #2 test 43, #3 test 44, #4 test 45, #5 test 46, "
@@ -675,8 +739,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
             output,
             concat!(
@@ -703,17 +767,15 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        runtime.stack_mut().set_global("i", Value::Array(vec![]));
-        runtime.stack_mut().set_global("j", Value::Array(vec![]));
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("i".into(), Value::Array(vec![]));
+        runtime.set_global("j".into(), Value::Array(vec![]));
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "empty outer");
 
-        runtime
-            .stack_mut()
-            .set_global("i", Value::Array(vec![Value::scalar(1i64)]));
-        runtime.stack_mut().set_global("j", Value::Array(vec![]));
-        let output = template.render(&mut runtime).unwrap();
+        runtime.set_global("i".into(), Value::Array(vec![Value::scalar(1i64)]));
+        runtime.set_global("j".into(), Value::Array(vec![]));
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "empty inner");
     }
 
@@ -726,8 +788,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "");
     }
 
@@ -742,8 +804,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "1 2 ");
     }
 
@@ -758,8 +820,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "5 6 7 8 9 10 ");
     }
 
@@ -774,8 +836,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "5 6 ");
     }
 
@@ -790,8 +852,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "10 9 8 7 6 5 4 3 2 1 ");
     }
 
@@ -806,8 +868,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "6 5 4 3 2 ");
     }
 
@@ -824,8 +886,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "There are no items!");
     }
 
@@ -842,8 +904,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "There are no items!");
     }
 
@@ -854,8 +916,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "1 2 3 4 5 ");
     }
 
@@ -878,8 +940,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
                 output,
                 concat!(
@@ -899,7 +961,7 @@ mod test {
     pub struct ShoutFilter;
 
     impl Filter for ShoutFilter {
-        fn evaluate(&self, input: &dyn ValueView, _runtime: &Runtime<'_>) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_uppercase()))
         }
     }
@@ -920,17 +982,17 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = RuntimeBuilder::new().build();
+        let runtime = RuntimeBuilder::new().build();
 
-        runtime.stack_mut().set_global(
-            "array",
+        runtime.set_global(
+            "array".into(),
             Value::Array(vec![
                 Value::scalar("alpha"),
                 Value::scalar("beta"),
                 Value::scalar("gamma"),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "test ALPHA test BETA test GAMMA ");
     }
 
@@ -947,8 +1009,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "6 7 8 9 ");
     }
 
@@ -964,9 +1026,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        runtime.stack_mut().set_global(
-            "array",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "array".into(),
             Value::Array(vec![
                 Value::scalar(22f64),
                 Value::scalar(23f64),
@@ -974,7 +1036,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">test 22 </td><td class=\"col2\">test 23 </td><td class=\"col3\">test 24 </td><td class=\"col4\">test wat </td></tr>");
     }
 
@@ -990,9 +1052,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        runtime.stack_mut().set_global(
-            "array",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "array".into(),
             Value::Array(vec![
                 Value::scalar(22f64),
                 Value::scalar(23f64),
@@ -1000,7 +1062,7 @@ mod test {
                 Value::scalar("wat".to_owned()),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
                 output,
                 "<tr class=\"row1\"><td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr><tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr><tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>"
@@ -1021,8 +1083,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr><tr class=\"row2\"><td class=\"col1\">9 </td></tr>");
     }
 
@@ -1049,8 +1111,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(
                 output,
                 concat!(
@@ -1076,9 +1138,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        runtime.stack_mut().set_global(
-            "outer",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "outer".into(),
             Value::Array(vec![
                 Value::Array(vec![
                     Value::scalar(1f64),
@@ -1092,7 +1154,7 @@ mod test {
                 ]),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, ".1 .2 ");
     }
 
@@ -1108,9 +1170,9 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime: Runtime<'_> = Default::default();
-        runtime.stack_mut().set_global(
-            "outer",
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global(
+            "outer".into(),
             Value::Array(vec![
                 Value::Array(vec![
                     Value::scalar(1f64),
@@ -1124,7 +1186,7 @@ mod test {
                 ]),
             ]),
         );
-        let output = template.render(&mut runtime).unwrap();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "1.1 1.2 1.3 2.1 2.2 2.3 ");
     }
 }

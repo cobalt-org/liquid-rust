@@ -8,29 +8,6 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::{ParseTag, TagReflection, TagTokenIter};
 
-#[derive(Clone, Debug)]
-struct Increment {
-    id: String,
-}
-
-impl Renderable for Increment {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let mut val = runtime
-            .stack()
-            .get_index(&self.id)
-            .and_then(|i| i.as_scalar())
-            .and_then(|i| i.to_integer())
-            .unwrap_or(0);
-
-        write!(writer, "{}", val).replace("Failed to render")?;
-        val += 1;
-        runtime
-            .stack_mut()
-            .set_index(self.id.to_owned(), Value::scalar(val));
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IncrementTag;
 
@@ -60,7 +37,8 @@ impl ParseTag for IncrementTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string();
+            .to_string()
+            .into();
 
         // no more arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
@@ -74,24 +52,20 @@ impl ParseTag for IncrementTag {
 }
 
 #[derive(Clone, Debug)]
-struct Decrement {
-    id: String,
+struct Increment {
+    id: kstring::KString,
 }
 
-impl Renderable for Decrement {
-    fn render_to(&self, writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
+impl Renderable for Increment {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let mut val = runtime
-            .stack()
             .get_index(&self.id)
-            .and_then(|i| i.as_scalar())
-            .and_then(|i| i.to_integer())
+            .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
             .unwrap_or(0);
 
-        val -= 1;
         write!(writer, "{}", val).replace("Failed to render")?;
-        runtime
-            .stack_mut()
-            .set_index(self.id.to_owned(), Value::scalar(val));
+        val += 1;
+        runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
     }
 }
@@ -125,7 +99,8 @@ impl ParseTag for DecrementTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string();
+            .to_string()
+            .into();
 
         // no more arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
@@ -138,12 +113,32 @@ impl ParseTag for DecrementTag {
     }
 }
 
+#[derive(Clone, Debug)]
+struct Decrement {
+    id: kstring::KString,
+}
+
+impl Renderable for Decrement {
+    fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let mut val = runtime
+            .get_index(&self.id)
+            .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
+            .unwrap_or(0);
+
+        val -= 1;
+        write!(writer, "{}", val).replace("Failed to render")?;
+        runtime.set_index(self.id.clone(), Value::scalar(val));
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     use crate::stdlib;
 
@@ -168,8 +163,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "01");
     }
 
@@ -180,8 +175,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "-1-1");
     }
 
@@ -192,8 +187,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "0110");
     }
 
@@ -204,8 +199,8 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut runtime = Runtime::new();
-        let output = template.render(&mut runtime).unwrap();
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
         assert_eq!(output, "019");
     }
 }

@@ -9,33 +9,6 @@ use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 
-#[derive(Debug)]
-struct Capture {
-    id: String,
-    template: Template,
-}
-
-impl Capture {
-    fn trace(&self) -> String {
-        format!("{{% capture {} %}}", self.id)
-    }
-}
-
-impl Renderable for Capture {
-    fn render_to(&self, _writer: &mut dyn Write, runtime: &mut Runtime<'_>) -> Result<()> {
-        let mut captured = Vec::new();
-        self.template
-            .render_to(&mut captured, runtime)
-            .trace_with(|| self.trace().into())?;
-
-        let output = String::from_utf8(captured).expect("render only writes UTF-8");
-        runtime
-            .stack_mut()
-            .set_global(self.id.to_owned(), Value::scalar(output));
-        Ok(())
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default)]
 pub struct CaptureBlock;
 
@@ -70,7 +43,8 @@ impl ParseBlock for CaptureBlock {
             .expect_next("Identifier expected")?
             .expect_identifier()
             .into_result()?
-            .to_string();
+            .to_string()
+            .into();
 
         // no more arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
@@ -90,6 +64,31 @@ impl ParseBlock for CaptureBlock {
     }
 }
 
+#[derive(Debug)]
+struct Capture {
+    id: kstring::KString,
+    template: Template,
+}
+
+impl Capture {
+    fn trace(&self) -> String {
+        format!("{{% capture {} %}}", self.id)
+    }
+}
+
+impl Renderable for Capture {
+    fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let mut captured = Vec::new();
+        self.template
+            .render_to(&mut captured, runtime)
+            .trace_with(|| self.trace().into())?;
+
+        let output = String::from_utf8(captured).expect("render only writes UTF-8");
+        runtime.set_global(self.id.clone(), Value::scalar(output));
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -97,6 +96,7 @@ mod test {
     use liquid_core::model::Scalar;
     use liquid_core::parser;
     use liquid_core::runtime;
+    use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -118,13 +118,13 @@ mod test {
             .map(runtime::Template::new)
             .unwrap();
 
-        let mut rt = Runtime::new();
-        rt.stack_mut().set_global("item", Value::scalar("potato"));
-        rt.stack_mut().set_global("i", Value::scalar(42f64));
+        let rt = RuntimeBuilder::new().build();
+        rt.set_global("item".into(), Value::scalar("potato"));
+        rt.set_global("i".into(), Value::scalar(42f64));
 
-        let output = template.render(&mut rt).unwrap();
+        let output = template.render(&rt).unwrap();
         assert_eq!(
-            rt.stack().get(&[Scalar::new("attribute_name")]).unwrap(),
+            rt.get(&[Scalar::new("attribute_name")]).unwrap(),
             "potato-42-color"
         );
         assert_eq!(output, "");
