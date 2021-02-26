@@ -3,7 +3,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 pub static FIXTURES: &[&str] = &["Hello World"];
 
 fn bench_fixtures(c: &mut Criterion) {
-    let mut group = c.benchmark_group("fixtures");
+    let mut group = c.benchmark_group("liquid_bench_fixtures");
     for fixture in FIXTURES {
         group.bench_function(BenchmarkId::new("parse", fixture), |b| {
             let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();

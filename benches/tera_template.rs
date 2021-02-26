@@ -7,7 +7,7 @@ use tera::{Context, Tera};
 // Benches from https://github.com/djc/template-benchmarks-rs
 
 pub fn bench_big_table(c: &mut Criterion) {
-    let mut group = c.benchmark_group("fixtures");
+    let mut group = c.benchmark_group("bench_big_table");
     group.bench_function(BenchmarkId::new("render", "tera"), |b| {
         // 100 instead of 50 in the original benchmark to make the time bigger
         let size = 100;
@@ -63,7 +63,7 @@ static BIG_TABLE_TEMPLATE_LIQUID: &str = "<table>
 </table>";
 
 pub fn bench_teams(c: &mut Criterion) {
-    let mut group = c.benchmark_group("fixtures");
+    let mut group = c.benchmark_group("bench_teams");
     group.bench_function(BenchmarkId::new("render", "tera"), |b| {
         let mut tera = Tera::default();
         tera.add_raw_templates(vec![("teams.html", TEAMS_TEMPLATE_TERA)])
