@@ -78,7 +78,7 @@ teams:
 ";
 
 fn bench_template(c: &mut Criterion) {
-    let mut group = c.benchmark_group("template");
+    let mut group = c.benchmark_group("handlebars_bench_template");
     group.bench_function(BenchmarkId::new("parse", "handlebars"), |b| {
         b.iter(|| Template::compile(SOURCE_HANDLEBARS).unwrap());
     });
@@ -122,37 +122,33 @@ struct RowWrapper {
 }
 
 fn bench_large_loop(c: &mut Criterion) {
-    let mut group = c.benchmark_group("large_loop");
+    let real: Vec<DataWrapper> = (1..1000)
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
+        })
+        .collect();
+    let dummy: Vec<DataWrapper> = (1..1000)
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
+        })
+        .collect();
+    let rows = RowWrapper { real, dummy };
+    let row_wrapper = liquid::to_object(&rows).unwrap();
+
+    let mut group = c.benchmark_group("handlebars_bench_large_loop");
     group.bench_function(BenchmarkId::new("render", "handlebars"), |b| {
         let mut handlebars = Handlebars::new();
         handlebars
             .register_template_string("test", "BEFORE\n{{#each real}}{{this.v}}{{/each}}AFTER")
             .expect("Invalid template format");
 
-        let real: Vec<DataWrapper> = (1..1000)
-            .map(|i| DataWrapper {
-                v: format!("n={}", i),
-            })
-            .collect();
-        let dummy: Vec<DataWrapper> = (1..1000)
-            .map(|i| DataWrapper {
-                v: format!("n={}", i),
-            })
-            .collect();
-        let rows = RowWrapper { real, dummy };
         b.iter(|| handlebars.render("test", &rows).unwrap());
     });
     group.bench_function(BenchmarkId::new("render", "liquid"), |b| {
         let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
         let template = parser
-            .parse("BEFORE\n{% for this in real%}{{this}}{%endfor%}AFTER")
+            .parse("BEFORE\n{% for this in real%}{{this.v}}{%endfor%}AFTER")
             .expect("Benchmark template parsing failed");
-
-        let data_wrapper: Vec<_> = (1..1000).map(|i| format!("n={}", i)).collect();
-        let row_wrapper = liquid::object!({
-            "real": data_wrapper,
-            "dummy": data_wrapper,
-        });
 
         template.render(&row_wrapper).unwrap();
         b.iter(|| template.render(&row_wrapper));

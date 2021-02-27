@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Breaking Changes
+
+For the most part, only plugin authors should be impacted by these changes.
+
+- `core::runtime` went through significant changes
+  - `Renderable::render_to` now takes `&dyn Runtime` instead of `&Runtime<'_>`
+  - Adding a new stack frame is now a `StackFrame::new` instead of `Runtime.run_in_scope`
+    - This opens up taking references to layers lower in the stack.
+    - `runtime.` to access stack functions instead of `runtime.stack_mut()`
+- `InterruptState` is now `InterruptRegister` and accessed via `runtime.registers()`
+  - Functions were renamed while at it.
+- `core::model` has been flattened
+- `derive(ValueView)` now requires being used with `impl ObjectView`
+- `liquid-core` users now need to opt-in to the `derive` feature for derive macros
+
 ### Features
 
 API
@@ -21,18 +36,130 @@ API
 - Reduce allocations for for-loop variables
 - Reduce overhead from `derive(ValueView)` generating `to_value`
 
-### Breaking Changes
+Benchmarks:
+- Baseline was Liquid 0.21.5
+- Variability tended to be high when in the low `us` range
+- For the most part, this release brings us in line with Tera's performance (when we weren't already faster).
+  - This is with correcting for [a bug in Tera's benchmarks](https://github.com/Keats/tera/issues/606)
+- Something is off about `bench_big_loop_big_object/render`, it was hardly
+  impacted by the changes and yet that should have been case that greatly
+  improved.  [Further investigation is needed](https://github.com/cobalt-org/liquid-rust/issues/434).
+```
+handlebars_bench_template/parse/handlebars
+                        time:   [24.068 us 24.265 us 24.561 us]
+                        change: [-19.750% -17.343% -14.831%] (p = 0.00 < 0.05)
+                        Performance has improved.
+handlebars_bench_template/parse/liquid
+                        time:   [19.382 us 19.438 us 19.503 us]
+                        change: [-1.7723% -0.6484% +0.3359%] (p = 0.25 > 0.05)
+                        No change in performance detected.
+handlebars_bench_template/render/handlebars
+                        time:   [17.542 us 17.644 us 17.768 us]
+                        change: [+0.2705% +0.9005% +1.5616%] (p = 0.01 < 0.05)
+                        Change within noise threshold.
+handlebars_bench_template/render/liquid
+                        time:   [9.0979 us 9.1362 us 9.1840 us]
+                        change: [-29.397% -28.804% -28.079%] (p = 0.00 < 0.05)
+                        Performance has improved.
 
-- `core::runtime` went through significant changes
-  - `Renderable::render_to` now takes `&dyn Runtime` instead of `&Runtime<'_>`
-  - Adding a new stack frame is now a `StackFrame::new` instead of `Runtime.run_in_scope`
-    - This opens up taking references to layers lower in the stack.
-    - `runtime.` to access stack functions instead of `runtime.stack_mut()`
-- `InterruptState` is now `InterruptRegister` and accessed via `runtime.registers()`
-  - Functions were renamed while at it.
-- `core::model` has been flattened
-- `derive(ValueView)` now requires being used with `impl ObjectView`
-- `liquid-core` users now need to opt-in to the `derive` feature for derive macros
+handlebars_bench_large_loop/render/handlebars
+                        time:   [2.1674 ms 2.1748 ms 2.1828 ms]
+                        change: [-1.6970% -0.9970% -0.3973%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+handlebars_bench_large_loop/render/liquid
+                        time:   [971.57 us 1.0048 ms 1.0330 ms]
+                        change: [-25.328% -22.623% -20.133%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+liquid_bench_fixtures/parse/Hello World
+                        time:   [1.5103 us 1.5228 us 1.5364 us]
+                        change: [+0.9648% +2.0790% +3.2025%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+liquid_bench_fixtures/render/Hello World
+                        time:   [325.45 ns 327.42 ns 329.17 ns]
+                        change: [+66.006% +66.928% +67.840%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_big_loop_big_object/render/tera
+                        time:   [9.7588 us 10.082 us 10.483 us]
+                        change: [+16.670% +19.302% +22.469%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+bench_big_loop_big_object/render/liquid
+                        time:   [243.01 us 244.43 us 245.82 us]
+                        change: [-3.1405% -2.6344% -2.1172%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bench_big_table/render/tera
+                        time:   [3.6955 ms 3.7093 ms 3.7226 ms]
+                        change: [-14.427% -12.151% -9.8055%] (p = 0.00 < 0.05)
+                        Performance has improved.
+bench_big_table/render/liquid
+                        time:   [5.4149 ms 5.4978 ms 5.5944 ms]
+                        change: [-56.570% -55.904% -55.143%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bench_teams/render/tera time:   [8.9949 us 9.0961 us 9.2245 us]
+                        change: [+11.039% +14.026% +16.983%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+bench_teams/render/liquid
+                        time:   [9.0989 us 9.1398 us 9.1854 us]
+                        change: [-30.075% -29.750% -29.403%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bench_parsing_basic_template/render/tera
+                        time:   [29.527 us 29.732 us 29.979 us]
+                        change: [-0.2179% +0.8213% +2.0881%] (p = 0.16 > 0.05)
+                        No change in performance detected.
+bench_parsing_basic_template/render/liquid
+                        time:   [16.676 us 16.724 us 16.772 us]
+                        change: [-1.2453% -0.7338% -0.3215%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+
+bench_rendering_only_variable/render/tera
+                        time:   [1.4250 us 1.4302 us 1.4351 us]
+                        change: [-14.768% -12.240% -9.6021%] (p = 0.00 < 0.05)
+                        Performance has improved.
+bench_rendering_only_variable/render/liquid
+                        time:   [851.04 ns 859.36 ns 867.64 ns]
+                        change: [+26.841% +28.148% +29.436%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_rendering_basic_templates/render/tera
+                        time:   [7.9776 us 8.2825 us 8.5379 us]
+                        change: [+8.1702% +11.263% +14.601%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+bench_rendering_basic_templates/render/liquid
+                        time:   [3.9680 us 3.9832 us 3.9992 us]
+                        change: [+15.551% +16.062% +16.660%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+
+bench_huge_loop/render/tera
+                        time:   [850.76 us 857.75 us 865.69 us]
+                        change: [+0.4801% +0.9708% +1.5712%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+bench_huge_loop/render/liquid
+                        time:   [803.23 us 808.50 us 814.27 us]
+                        change: [-32.892% -32.340% -31.777%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bench_access_deep_object/render/tera
+                        time:   [5.5409 us 5.5652 us 5.5925 us]
+                        change: [-3.5414% -2.1804% -1.0822%] (p = 0.00 < 0.05)
+                        Performance has improved.
+bench_access_deep_object/render/liquid
+                        time:   [4.2440 us 4.2770 us 4.3158 us]
+                        change: [-43.376% -42.898% -42.391%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bench_access_deep_object_with_literal/render/tera
+                        time:   [7.7474 us 7.7802 us 7.8141 us]
+                        change: [+0.9487% +1.4115% +1.9242%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+bench_access_deep_object_with_literal/render/liquid
+                        time:   [6.2592 us 6.2853 us 6.3135 us]
+                        change: [-48.596% -47.174% -45.635%] (p = 0.00 < 0.05)
+                        Performance has improved.
+```
 
 ## [0.21.5] - 2021-02-03
 
