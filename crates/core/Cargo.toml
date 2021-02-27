@@ -22,7 +22,7 @@ pest_derive = "2.0"
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 kstring = "1.0"
-liquid-derive = { version = "^0.21.0", path = "../derive", optional = true }
+liquid-derive = { version = "^0.22.0", path = "../derive", optional = true }
 
 [dev-dependencies]
 difference = "2.0"
