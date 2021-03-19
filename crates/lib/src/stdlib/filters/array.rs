@@ -647,6 +647,54 @@ mod tests {
     }
 
     #[test]
+    fn unit_sort_objects() {
+        let input = &liquid_core::value!([
+            {
+                "date": {
+                    "year": 2019,
+                    "month": 3,
+                },
+            },
+            {
+                "date": {
+                    "year": 2018,
+                    "month": 2,
+                },
+            },
+            {
+                "date": {
+                    "year": 2020,
+                    "month": 1,
+                },
+            }
+        ]);
+        let desired_result = liquid_core::value!([
+            {
+                "date": {
+                    "year": 2018,
+                    "month": 2,
+                },
+            },
+            {
+                "date": {
+                    "year": 2019,
+                    "month": 3,
+                },
+            },
+            {
+                "date": {
+                    "year": 2020,
+                    "month": 1,
+                },
+            }
+        ]);
+        assert_eq!(
+            liquid_core::call_filter!(Sort, input, "date.year").unwrap(),
+            desired_result
+        );
+    }
+
+    #[test]
     fn unit_sort_natural() {
         let input = &liquid_core::value!(["Z", "b", "c", "a"]);
         let desired_result = liquid_core::value!(["a", "b", "c", "Z"]);
