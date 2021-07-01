@@ -19,7 +19,7 @@ schedules:
     include:
     - master
 variables:
-  linux_vm: ubuntu-16.04
+  linux_vm: ubuntu-latest
 
 stages:
 - stage: style
