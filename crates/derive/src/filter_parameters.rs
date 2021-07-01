@@ -286,7 +286,7 @@ impl<'a> FilterParameter<'a> {
     /// Returns the name of this parameter in liquid.
     ///
     /// That is, by default, the name of the field as a string. However,
-    /// this name may be overriden by `rename` attribute.
+    /// this name may be overridden by `rename` attribute.
     fn liquid_name(&self) -> String {
         match &self.meta.rename {
             Some(name) => name.clone(),

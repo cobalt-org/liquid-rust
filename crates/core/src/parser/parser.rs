@@ -786,7 +786,7 @@ impl<'a> TagTokenIter<'a> {
 
 /// The result of calling `TagToken`'s `try`.
 ///
-/// If the token is successfuly matched, the match is returned;
+/// If the token is successfully matched, the match is returned;
 /// otherwise, the TagToken is returned back.
 pub enum TryMatchToken<'a, T> {
     Matches(T),

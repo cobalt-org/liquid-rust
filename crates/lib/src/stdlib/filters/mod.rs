@@ -33,7 +33,7 @@ pub use self::url::{UrlDecode, UrlEncode};
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "size",
-    description = "Returns the size of the input. For an array or object this is the number of elemets. For other values it's the lenght of its string representation.",
+    description = "Returns the size of the input. For an array or object this is the number of elemets. For other values it's the length of its string representation.",
     parsed(SizeFilter)
 )]
 pub struct Size;

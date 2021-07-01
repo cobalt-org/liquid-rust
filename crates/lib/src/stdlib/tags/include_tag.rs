@@ -57,7 +57,7 @@ impl ParseTag for IncludeTag {
             ));
 
             if let Ok(comma) = arguments.expect_next("") {
-                // stop looking for varaibles if there is no comma
+                // stop looking for variables if there is no comma
                 // currently allows for one trailing comma
                 if comma.expect_str(",").into_result().is_err() {
                     break;
@@ -92,7 +92,7 @@ impl Renderable for Include {
         let name = value.to_kstr().into_owned();
 
         {
-            // if there our additional variables creates a include object to access all the varaibles
+            // if there our additional variables creates a include object to access all the variables
             // from e.g. { include 'image.html' path="foo.png" }
             // then in image.html you could have <img src="{{include.path}}" />
             let mut pass_through = std::collections::HashMap::new();
@@ -221,7 +221,7 @@ mod test {
     }
 
     #[test]
-    fn include_varaible() {
+    fn include_variable() {
         let text = "{% include 'example_var.txt' example_var:\"hello\" %}";
         let options = options();
         let template = parser::parse(text, &options)
@@ -239,7 +239,7 @@ mod test {
     }
 
     #[test]
-    fn include_multiple_varaibles() {
+    fn include_multiple_variables() {
         let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"world\" %}";
         let options = options();
         let template = parser::parse(text, &options)
@@ -257,7 +257,7 @@ mod test {
     }
 
     #[test]
-    fn include_multiple_varaibles_trailing_commma() {
+    fn include_multiple_variables_trailing_commma() {
         let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"dogs\", %}";
         let options = options();
         let template = parser::parse(text, &options)

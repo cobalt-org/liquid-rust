@@ -218,7 +218,7 @@ mod test {
     }
 
     #[test]
-    fn include_varaible() {
+    fn include_variable() {
         let text = "{% include example_var.txt example_var=\"hello\" %}";
         let options = options();
         let template = parser::parse(text, &options)
@@ -236,7 +236,7 @@ mod test {
     }
 
     #[test]
-    fn include_mulitple_varaible() {
+    fn include_multiple_variable() {
         let text = "{% include example_multi_var.txt example_var=\"hello\" example=\"world\" %}";
         let options = options();
         let template = parser::parse(text, &options)

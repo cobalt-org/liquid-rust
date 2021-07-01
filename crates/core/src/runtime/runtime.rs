@@ -103,7 +103,7 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         }
     }
 
-    /// Initialize partial-templates availible for including.
+    /// Initialize partial-templates available for including.
     pub fn set_partials<'n>(self, values: &'n dyn PartialStore) -> RuntimeBuilder<'g, 'n> {
         RuntimeBuilder {
             globals: self.globals,

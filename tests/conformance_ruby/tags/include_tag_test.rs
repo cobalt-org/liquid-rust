@@ -81,7 +81,7 @@ fn test_include_tag_for() {
 }
 
 #[test]
-#[should_panic] // fails due to strict_varaibles
+#[should_panic] // fails due to strict_variables
 fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123 ",
@@ -183,7 +183,7 @@ fn test_recursively_included_template_does_not_produce_endless_loop() {
 
 #[test]
 #[should_panic] // liquid-rust#275
-fn test_dynamically_choosen_template() {
+fn test_dynamically_chosen_template() {
     assert_template_result!(
         "Test123",
         "{% include template %}",

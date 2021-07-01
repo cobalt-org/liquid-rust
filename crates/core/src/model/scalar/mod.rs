@@ -1130,7 +1130,7 @@ mod test {
             assert_eq!(is_borrowed(extract_cow_str(sc.as_view())), false);
         }
 
-        // borrows succesfully!
+        // borrows successfully!
         {
             fn extract_cow_str(value: &dyn ValueView) -> Cow<'_, str> {
                 value.as_scalar().unwrap().into_cow_str()

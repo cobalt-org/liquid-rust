@@ -12,13 +12,13 @@ use unicode_segmentation::UnicodeSegmentation;
 #[derive(Debug, FilterParameters)]
 struct TruncateArgs {
     #[parameter(
-        description = "The maximum lenght of the string, after which it will be truncated.",
+        description = "The maximum length of the string, after which it will be truncated.",
         arg_type = "integer"
     )]
-    lenght: Option<Expression>,
+    length: Option<Expression>,
 
     #[parameter(
-        description = "The text appended to the end of the string if it is truncated. This text counts to the maximum lenght of the string. Defaults to \"...\".",
+        description = "The text appended to the end of the string if it is truncated. This text counts to the maximum length of the string. Defaults to \"...\".",
         arg_type = "str"
     )]
     ellipsis: Option<Expression>,
@@ -70,7 +70,7 @@ impl Filter for TruncateFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let length = args.lenght.unwrap_or(50) as usize;
+        let length = args.length.unwrap_or(50) as usize;
         let truncate_string = args.ellipsis.unwrap_or_else(|| "...".into());
         let diff = if length >= truncate_string.len() {
             length - truncate_string.len()
@@ -100,7 +100,7 @@ struct TruncateWordsArgs {
         description = "The maximum number of words, after which the string will be truncated.",
         arg_type = "integer"
     )]
-    lenght: Option<Expression>,
+    length: Option<Expression>,
 
     #[parameter(
         description = "The text appended to the end of the string if it is truncated. This text counts to the maximum word-count of the string. Defaults to \"...\".",
@@ -129,7 +129,7 @@ impl Filter for TruncateWordsFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let words = args.lenght.unwrap_or(50) as usize;
+        let words = args.length.unwrap_or(50) as usize;
 
         let truncate_string = args.ellipsis.unwrap_or_else(|| "...".into());
 
