@@ -1,6 +1,6 @@
 //! The Liquid templating language for Rust
 //!
-//! __http://liquidmarkup.org/__
+//! __[liquidmarkup.org](http://liquidmarkup.org/)__
 //!
 //! ```toml
 //! [dependencies]

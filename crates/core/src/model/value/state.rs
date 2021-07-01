@@ -7,7 +7,7 @@ use super::{Value, ValueView};
 
 /// Queryable state for a `Value`.
 ///
-/// See tables in https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails
+/// See the [Stack overflow table](https://stackoverflow.com/questions/885414/a-concise-explanation-of-nil-v-empty-v-blank-in-ruby-on-rails)
 #[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum State {
     /// Is the value truthy?
