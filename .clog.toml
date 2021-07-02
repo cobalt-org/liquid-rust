@@ -1,4 +1,0 @@
-[clog]
-repository = "https://github.com/cobalt-org/liquid-rust"
-changelog = "CHANGELOG.md"
-from-latest-tag = true
