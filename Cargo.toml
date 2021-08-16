@@ -10,18 +10,24 @@ members = [
 [package]
 name = "liquid"
 version = "0.22.0"
-authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
+authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/cobalt-org/liquid-rust"
 documentation = "https://docs.rs/liquid"
 readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
-license = "MIT"
 edition = "2018"
 
-[badges]
-azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
+[package.metadata.release]
+pre-release-replacements = [
+  {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=1},
+  {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
+  {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
+  {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## [Unreleased] - ReleaseDate\n", exactly=1},
+  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/{{tag_name}}...HEAD", exactly=1},
+]
 
 [features]
 default = ["stdlib"]
