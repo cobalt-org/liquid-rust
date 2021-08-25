@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Breaking Changes
+
+- Upgraded from `anymap` to `anymap2` which is slightly better maintained (and removed it from the API)
+
 ## [0.22.0] - 2021-02-27
 
 ### Breaking Changes
