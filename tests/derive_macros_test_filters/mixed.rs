@@ -6,7 +6,7 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueView};
 
-// Colision with FilterParameters' evaluated struct.
+// Collision with FilterParameters' evaluated struct.
 #[allow(dead_code)]
 struct EvaluatedTestMixedFilterParameters;
 

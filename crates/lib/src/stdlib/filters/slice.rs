@@ -101,11 +101,11 @@ mod tests {
             liquid_core::call_filter!(
                 Slice,
                 "I often quote myself.  It adds spice to my conversation.",
-                10,
-                2
+                2,
+                3
             )
             .unwrap(),
-            liquid_core::value!("ot")
+            liquid_core::value!("oft")
         );
     }
 

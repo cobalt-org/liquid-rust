@@ -12,7 +12,7 @@ license = "MIT OR Apache-2.0"
 edition = "2018"
 
 [dependencies]
-anymap = "0.12"
+anymap2 = "0.13"
 itertools = "0.10.0"
 num-traits = "0.2"
 pest = "2.0"
