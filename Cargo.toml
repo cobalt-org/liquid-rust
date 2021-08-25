@@ -19,6 +19,13 @@ readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 edition = "2018"
+exclude = [
+    "CHANGELOG.md",
+    "release.toml",
+    "typos.toml",
+    ".github/**",
+]
+
 
 [package.metadata.release]
 pre-release-replacements = [
