@@ -23,6 +23,7 @@ exclude = [
     "CHANGELOG.md",
     "release.toml",
     "typos.toml",
+    "committed.toml",
     ".github/**",
 ]
 
