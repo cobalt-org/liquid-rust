@@ -281,7 +281,7 @@ impl<'g> Default for RuntimeCore<'g> {
 
 /// Unnamed state for plugins during rendering
 pub struct Registers {
-    registers: std::cell::RefCell<anymap::AnyMap>,
+    registers: std::cell::RefCell<anymap2::AnyMap>,
 }
 
 impl Registers {
@@ -289,9 +289,7 @@ impl Registers {
     ///
     /// If a plugin needs state, it creates a `struct Register : Default` and accesses it via
     /// `get_mut`.
-    pub fn get_mut<T: anymap::any::IntoBox<dyn anymap::any::Any> + Default>(
-        &self,
-    ) -> std::cell::RefMut<'_, T> {
+    pub fn get_mut<T: std::any::Any + Default>(&self) -> std::cell::RefMut<'_, T> {
         std::cell::RefMut::map(self.registers.borrow_mut(), |registers| {
             registers.entry::<T>().or_insert_with(Default::default)
         })
@@ -301,7 +299,7 @@ impl Registers {
 impl Default for Registers {
     fn default() -> Self {
         Self {
-            registers: std::cell::RefCell::new(anymap::AnyMap::new()),
+            registers: std::cell::RefCell::new(anymap2::AnyMap::new()),
         }
     }
 }
