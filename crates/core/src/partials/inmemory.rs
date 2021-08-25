@@ -15,7 +15,7 @@ impl InMemorySource {
         Default::default()
     }
 
-    /// Add a partial-template's souce.
+    /// Add a partial-template's source.
     pub fn add<N, S>(&mut self, name: N, source: S) -> bool
     where
         N: Into<String>,

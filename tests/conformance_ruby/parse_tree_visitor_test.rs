@@ -6,7 +6,7 @@ fn test_variable() {
 
 #[test]
 #[should_panic]
-fn test_varible_with_filter() {
+fn test_variable_with_filter() {
     panic!("Implementation specific: parsing API");
 }
 
