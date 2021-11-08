@@ -10,9 +10,13 @@ categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
-
-[badges]
-azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+  "examples/**/*"
+]
 
 [dependencies]
 liquid-core = { version = "^0.23.0", path = "../core" }

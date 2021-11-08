@@ -8,12 +8,16 @@ categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT OR Apache-2.0"
 edition = "2018"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "LICENSE*",
+  "README.md",
+  "examples/**/*"
+]
 
 [lib]
 proc-macro = true
-
-[badges]
-azure-devops = { project = "cobalt-org", pipeline = "liquid-rust" }
 
 [dependencies]
 syn = "1.0"
