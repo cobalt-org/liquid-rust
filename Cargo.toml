@@ -20,7 +20,8 @@ include = [
   "Cargo.toml",
   "LICENSE*",
   "README.md",
-  "examples/**/*"
+  "examples/**/*",
+  "benches/**/*",
 ]
 
 [package.metadata.release]
