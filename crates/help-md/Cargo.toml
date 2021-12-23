@@ -1,6 +1,6 @@
 [package]
 name = "liquid-help-md"
-version = "0.23.0"
+version = "0.23.1"
 authors = ["Ed Page <eopage@gmail.com>"]
 description = "Describe Liquid language via markdown"
 repository = "https://github.com/cobalt-org/liquid-rust"

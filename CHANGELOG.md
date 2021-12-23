@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.23.1] - 2021-12-23
+
 ### Fixes
 
 - Ensure `LazyStore` actually caches
@@ -835,7 +837,8 @@ Minor docs change.
   *  Moved `pluralize` to `extra-filters` ([17d57c09](https://github.com/cobalt-org/liquid-rust/commit/17d57c093fc8771531c13b6f587b44b2b25d2b03))
 
 <!-- next-url -->
-[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/assert-rs/predicates-rs/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/assert-rs/predicates-rs/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/assert-rs/predicates-rs/compare/v0.21.5...v0.22.0
 [0.21.5]: https://github.com/assert-rs/predicates-rs/compare/v0.21.4...v0.21.5
