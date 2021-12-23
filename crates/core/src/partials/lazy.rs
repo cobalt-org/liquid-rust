@@ -105,7 +105,7 @@ where
     S: PartialSource,
 {
     fn try_get_or_create(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
-        let cache = self.cache.lock().expect("not to be poisoned and reused");
+        let mut cache = self.cache.lock().expect("not to be poisoned and reused");
         if let Some(result) = cache.get(name) {
             result.as_ref().ok().cloned()
         } else {
@@ -114,13 +114,14 @@ where
             let template = parser::parse(s, &self.language)
                 .map(runtime::Template::new)
                 .map(sync::Arc::new)
-                .ok()?;
-            Some(template)
+                .map(|t| t as sync::Arc<dyn Renderable>);
+            cache.insert(name.to_string(), template.clone());
+            template.ok()
         }
     }
 
     fn get_or_create(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
-        let cache = self.cache.lock().expect("not to be poisoned and reused");
+        let mut cache = self.cache.lock().expect("not to be poisoned and reused");
         if let Some(result) = cache.get(name) {
             result.clone()
         } else {
@@ -128,8 +129,10 @@ where
             let s = s.as_ref();
             let template = parser::parse(s, &self.language)
                 .map(runtime::Template::new)
-                .map(sync::Arc::new)?;
-            Ok(template)
+                .map(sync::Arc::new)
+                .map(|t| t as sync::Arc<dyn Renderable>);
+            cache.insert(name.to_string(), template.clone());
+            template
         }
     }
 }
@@ -161,5 +164,79 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.source.fmt(f)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::partials::lazy;
+    use crate::runtime::PartialStore;
+    use crate::{partials, Language};
+    use std::{borrow, sync};
+
+    #[derive(Default, Debug, Clone, Copy)]
+    struct TestSource;
+
+    impl partials::PartialSource for TestSource {
+        fn contains(&self, _name: &str) -> bool {
+            true
+        }
+
+        fn names(&self) -> Vec<&str> {
+            vec![]
+        }
+
+        fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
+            match name {
+                "example.txt" => Some("Hello Liquid!".into()),
+                _ => None,
+            }
+        }
+    }
+
+    #[test]
+    fn test_store_caches_get() {
+        let options = Language::empty();
+        let store = lazy::LazyStore {
+            language: sync::Arc::new(options),
+            source: TestSource,
+            cache: sync::Mutex::new(Default::default()),
+        };
+
+        assert!(
+            !store.cache.lock().unwrap().contains_key("example.txt"),
+            "The store cache should not contain the key yet."
+        );
+
+        // Look up the partial, causing it to be cached
+        let _ = store.get("example.txt").unwrap();
+
+        assert!(
+            store.cache.lock().unwrap().contains_key("example.txt"),
+            "The store cache should now contain the key."
+        );
+    }
+
+    #[test]
+    fn test_store_caches_try_get() {
+        let options = Language::empty();
+        let store = lazy::LazyStore {
+            language: sync::Arc::new(options),
+            source: TestSource,
+            cache: sync::Mutex::new(Default::default()),
+        };
+
+        assert!(
+            !store.cache.lock().unwrap().contains_key("example.txt"),
+            "The store cache should not contain the key yet."
+        );
+
+        // Look up the partial, causing it to be cached.
+        let _ = store.try_get("example.txt").unwrap();
+
+        assert!(
+            store.cache.lock().unwrap().contains_key("example.txt"),
+            "The store cache should now contain the key."
+        );
     }
 }
