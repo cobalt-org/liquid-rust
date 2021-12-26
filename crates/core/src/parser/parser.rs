@@ -354,10 +354,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             if element.as_rule() == Rule::EOI {
                 return error_from_pair(
                     element,
-                    format!(
-                        "Unclosed block. {{% {} %}} tag expected.",
-                        self.end_tag
-                    ),
+                    format!("Unclosed block. {{% {} %}} tag expected.", self.end_tag),
                 )
                 .into_err();
             }
@@ -548,11 +545,8 @@ impl<'a> Tag<'a> {
         if let Some(plugin) = options.tags.get(name) {
             plugin.parse(tokens, options)
         } else if let Some(plugin) = options.blocks.get(name) {
-            let (start_tag, end_tag) = {
-                let reflection = plugin.reflection();
-                (reflection.start_tag(), reflection.end_tag())
-            };
-            let block = TagBlock::new(start_tag, end_tag, next_elements);
+            let reflection = plugin.reflection();
+            let block = TagBlock::new(reflection.start_tag(), reflection.end_tag(), next_elements);
             let renderables = plugin.parse(tokens, block, options)?;
             Ok(renderables)
         } else {
