@@ -372,11 +372,8 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                 let name = tag.next().expect("Tags start by their identifier.");
                 let name_str = name.as_str();
 
-                // The name of the closing tag is "end" followed by the tag's name.
-                if name_str.len() > 3
-                    && &name_str[0..3] == "end"
-                    && &name_str[3..] == self.start_tag
-                {
+                // Check if this tag is the same as the block's reflected end-tag.
+                if name_str == self.end_tag {
                     // No more arguments should be supplied. If they are, it is
                     // assumed not to be a tag closer.
                     if tag.next().is_none() {
