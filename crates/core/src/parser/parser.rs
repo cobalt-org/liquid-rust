@@ -245,15 +245,21 @@ fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
 
 /// An interface to access elements inside a block.
 pub struct TagBlock<'a: 'b, 'b> {
-    name: &'b str,
+    start_tag: &'b str,
+    end_tag: &'b str,
     iter: &'b mut dyn Iterator<Item = Pair<'a>>,
     closed: bool,
 }
 
 impl<'a, 'b> TagBlock<'a, 'b> {
-    fn new(name: &'b str, next_elements: &'b mut dyn Iterator<Item = Pair<'a>>) -> Self {
+    fn new(
+        start_tag: &'b str,
+        end_tag: &'b str,
+        next_elements: &'b mut dyn Iterator<Item = Pair<'a>>,
+    ) -> Self {
         TagBlock {
-            name,
+            start_tag,
+            end_tag,
             iter: next_elements,
             closed: false,
         }
@@ -274,7 +280,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         if element.as_rule() == Rule::EOI {
             return error_from_pair(
                 element,
-                format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
+                format!("Unclosed block. {{% {} %}} tag expected.", self.end_tag),
             )
             .into_err();
         }
@@ -290,8 +296,8 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             let name = tag.next().expect("Tags start by their identifier.");
             let name_str = name.as_str();
 
-            // The name of the closing tag is "end" followed by the tag's name.
-            if name_str.len() > 3 && &name_str[0..3] == "end" && &name_str[3..] == self.name {
+            // Check if this tag is the same as the block's reflected end-tag.
+            if name_str == self.end_tag {
                 // Then this is a block ending tag and will close the block.
 
                 // no more arguments should be supplied, trying to supply them is an error
@@ -348,7 +354,10 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             if element.as_rule() == Rule::EOI {
                 return error_from_pair(
                     element,
-                    format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
+                    format!(
+                        "Unclosed block. {{% end{} %}} tag expected.",
+                        self.start_tag
+                    ),
                 )
                 .into_err();
             }
@@ -364,7 +373,10 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                 let name_str = name.as_str();
 
                 // The name of the closing tag is "end" followed by the tag's name.
-                if name_str.len() > 3 && &name_str[0..3] == "end" && &name_str[3..] == self.name {
+                if name_str.len() > 3
+                    && &name_str[0..3] == "end"
+                    && &name_str[3..] == self.start_tag
+                {
                     // No more arguments should be supplied. If they are, it is
                     // assumed not to be a tag closer.
                     if tag.next().is_none() {
@@ -380,7 +392,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                             return Ok(output);
                         }
                     }
-                } else if name_str == self.name && allow_nesting {
+                } else if name_str == self.start_tag && allow_nesting {
                     // Going deeper in the nested blocks.
                     nesting_level += 1;
                 }
@@ -419,7 +431,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         assert!(
             self.closed,
             "Block {{% {} %}} doesn't exhaust its iterator of elements.",
-            self.name
+            self.start_tag
         )
     }
 }
@@ -539,7 +551,11 @@ impl<'a> Tag<'a> {
         if let Some(plugin) = options.tags.get(name) {
             plugin.parse(tokens, options)
         } else if let Some(plugin) = options.blocks.get(name) {
-            let block = TagBlock::new(name, next_elements);
+            let (start_tag, end_tag) = {
+                let reflection = plugin.reflection();
+                (reflection.start_tag(), reflection.end_tag())
+            };
+            let block = TagBlock::new(start_tag, end_tag, next_elements);
             let renderables = plugin.parse(tokens, block, options)?;
             Ok(renderables)
         } else {
