@@ -355,8 +355,8 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                 return error_from_pair(
                     element,
                     format!(
-                        "Unclosed block. {{% end{} %}} tag expected.",
-                        self.start_tag
+                        "Unclosed block. {{% {} %}} tag expected.",
+                        self.end_tag
                     ),
                 )
                 .into_err();
