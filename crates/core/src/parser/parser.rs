@@ -1178,4 +1178,86 @@ mod test {
 
         assert_eq!(output, "5");
     }
+
+    /// Macro implementation of custom block test.
+    macro_rules! test_custom_block_tags_impl {
+        ($start_tag:expr, $end_tag:expr) => {{
+            use crate::error::ResultLiquidReplaceExt;
+            use crate::{BlockReflection, ParseBlock};
+            use std::io::Write;
+
+            #[derive(Debug, Default, Copy, Clone)]
+            struct CustomBlock;
+            #[derive(Debug)]
+            struct Custom {
+                inside: Template,
+            }
+
+            impl BlockReflection for CustomBlock {
+                fn start_tag(&self) -> &str {
+                    $start_tag
+                }
+
+                fn end_tag(&self) -> &str {
+                    $end_tag
+                }
+
+                fn description(&self) -> &str {
+                    "I am a description"
+                }
+            }
+
+            impl ParseBlock for CustomBlock {
+                fn parse(
+                    &self,
+                    mut arguments: TagTokenIter,
+                    mut block: TagBlock,
+                    options: &Language,
+                ) -> Result<Box<dyn Renderable>> {
+                    arguments.expect_nothing()?;
+
+                    let inside = block.parse_all(options).map(Template::new)?;
+
+                    Ok(Box::new(Custom { inside }))
+                }
+
+                fn reflection(&self) -> &dyn BlockReflection {
+                    self
+                }
+            }
+
+            impl Renderable for Custom {
+                fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+                    write!(writer, "<pre>").replace("Failed to render")?;
+                    self.inside.render_to(writer, runtime)?;
+                    write!(writer, "</pre>").replace("Failed to render")?;
+
+                    Ok(())
+                }
+            }
+
+            let mut options = Language::default();
+            options
+                .blocks
+                .register(CustomBlock.start_tag().to_string(), Box::new(CustomBlock));
+
+            let runtime = RuntimeBuilder::new().build();
+
+            let text = concat!("{% ", $start_tag, " %}Hello Liquid!{% ", $end_tag, " %}");
+            let template = parse(text, &options).map(Template::new).unwrap();
+            let output = template.render(&runtime).unwrap();
+
+            assert_eq!(output, "<pre>Hello Liquid!</pre>");
+        }};
+    }
+
+    /// Test compatibility of block tags that do not end with `end<name>`.
+    #[test]
+    fn test_custom_block_tags() {
+        // Test that normal `<name>`-`end<name>` tags work.
+        test_custom_block_tags_impl!("custom", "endcustom");
+
+        // Test that tags not of the form `<name>`-`end<name>` also work.
+        test_custom_block_tags_impl!("startcustom", "stopcustom");
+    }
 }
