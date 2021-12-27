@@ -245,15 +245,21 @@ fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
 
 /// An interface to access elements inside a block.
 pub struct TagBlock<'a: 'b, 'b> {
-    name: &'b str,
+    start_tag: &'b str,
+    end_tag: &'b str,
     iter: &'b mut dyn Iterator<Item = Pair<'a>>,
     closed: bool,
 }
 
 impl<'a, 'b> TagBlock<'a, 'b> {
-    fn new(name: &'b str, next_elements: &'b mut dyn Iterator<Item = Pair<'a>>) -> Self {
+    fn new(
+        start_tag: &'b str,
+        end_tag: &'b str,
+        next_elements: &'b mut dyn Iterator<Item = Pair<'a>>,
+    ) -> Self {
         TagBlock {
-            name,
+            start_tag,
+            end_tag,
             iter: next_elements,
             closed: false,
         }
@@ -274,7 +280,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         if element.as_rule() == Rule::EOI {
             return error_from_pair(
                 element,
-                format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
+                format!("Unclosed block. {{% {} %}} tag expected.", self.end_tag),
             )
             .into_err();
         }
@@ -290,8 +296,8 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             let name = tag.next().expect("Tags start by their identifier.");
             let name_str = name.as_str();
 
-            // The name of the closing tag is "end" followed by the tag's name.
-            if name_str.len() > 3 && &name_str[0..3] == "end" && &name_str[3..] == self.name {
+            // Check if this tag is the same as the block's reflected end-tag.
+            if name_str == self.end_tag {
                 // Then this is a block ending tag and will close the block.
 
                 // no more arguments should be supplied, trying to supply them is an error
@@ -348,7 +354,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
             if element.as_rule() == Rule::EOI {
                 return error_from_pair(
                     element,
-                    format!("Unclosed block. {{% end{} %}} tag expected.", self.name),
+                    format!("Unclosed block. {{% {} %}} tag expected.", self.end_tag),
                 )
                 .into_err();
             }
@@ -363,8 +369,8 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                 let name = tag.next().expect("Tags start by their identifier.");
                 let name_str = name.as_str();
 
-                // The name of the closing tag is "end" followed by the tag's name.
-                if name_str.len() > 3 && &name_str[0..3] == "end" && &name_str[3..] == self.name {
+                // Check if this tag is the same as the block's reflected end-tag.
+                if name_str == self.end_tag {
                     // No more arguments should be supplied. If they are, it is
                     // assumed not to be a tag closer.
                     if tag.next().is_none() {
@@ -380,7 +386,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
                             return Ok(output);
                         }
                     }
-                } else if name_str == self.name && allow_nesting {
+                } else if name_str == self.start_tag && allow_nesting {
                     // Going deeper in the nested blocks.
                     nesting_level += 1;
                 }
@@ -419,7 +425,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         assert!(
             self.closed,
             "Block {{% {} %}} doesn't exhaust its iterator of elements.",
-            self.name
+            self.start_tag
         )
     }
 }
@@ -539,7 +545,8 @@ impl<'a> Tag<'a> {
         if let Some(plugin) = options.tags.get(name) {
             plugin.parse(tokens, options)
         } else if let Some(plugin) = options.blocks.get(name) {
-            let block = TagBlock::new(name, next_elements);
+            let reflection = plugin.reflection();
+            let block = TagBlock::new(reflection.start_tag(), reflection.end_tag(), next_elements);
             let renderables = plugin.parse(tokens, block, options)?;
             Ok(renderables)
         } else {
@@ -1161,5 +1168,87 @@ mod test {
         let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "5");
+    }
+
+    /// Macro implementation of custom block test.
+    macro_rules! test_custom_block_tags_impl {
+        ($start_tag:expr, $end_tag:expr) => {{
+            use crate::error::ResultLiquidReplaceExt;
+            use crate::{BlockReflection, ParseBlock};
+            use std::io::Write;
+
+            #[derive(Debug, Default, Copy, Clone)]
+            struct CustomBlock;
+            #[derive(Debug)]
+            struct Custom {
+                inside: Template,
+            }
+
+            impl BlockReflection for CustomBlock {
+                fn start_tag(&self) -> &str {
+                    $start_tag
+                }
+
+                fn end_tag(&self) -> &str {
+                    $end_tag
+                }
+
+                fn description(&self) -> &str {
+                    "I am a description"
+                }
+            }
+
+            impl ParseBlock for CustomBlock {
+                fn parse(
+                    &self,
+                    mut arguments: TagTokenIter,
+                    mut block: TagBlock,
+                    options: &Language,
+                ) -> Result<Box<dyn Renderable>> {
+                    arguments.expect_nothing()?;
+
+                    let inside = block.parse_all(options).map(Template::new)?;
+
+                    Ok(Box::new(Custom { inside }))
+                }
+
+                fn reflection(&self) -> &dyn BlockReflection {
+                    self
+                }
+            }
+
+            impl Renderable for Custom {
+                fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+                    write!(writer, "<pre>").replace("Failed to render")?;
+                    self.inside.render_to(writer, runtime)?;
+                    write!(writer, "</pre>").replace("Failed to render")?;
+
+                    Ok(())
+                }
+            }
+
+            let mut options = Language::default();
+            options
+                .blocks
+                .register(CustomBlock.start_tag().to_string(), Box::new(CustomBlock));
+
+            let runtime = RuntimeBuilder::new().build();
+
+            let text = concat!("{% ", $start_tag, " %}Hello Liquid!{% ", $end_tag, " %}");
+            let template = parse(text, &options).map(Template::new).unwrap();
+            let output = template.render(&runtime).unwrap();
+
+            assert_eq!(output, "<pre>Hello Liquid!</pre>");
+        }};
+    }
+
+    /// Test compatibility of block tags that do not end with `end<name>`.
+    #[test]
+    fn test_custom_block_tags() {
+        // Test that normal `<name>`-`end<name>` tags work.
+        test_custom_block_tags_impl!("custom", "endcustom");
+
+        // Test that tags not of the form `<name>`-`end<name>` also work.
+        test_custom_block_tags_impl!("startcustom", "stopcustom");
     }
 }
