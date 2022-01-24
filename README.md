@@ -66,7 +66,7 @@ closures that take an input `Value` and a `Vec<Value>` of optional arguments
 and return a `Value` to be rendered or consumed by chained filters.
 
 See
-[filters.rs](https://github.com/cobalt-org/liquid-rust/blob/master/src/filters.rs)
+[filters/](https://github.com/cobalt-org/liquid-rust/blob/master/crates/lib/src/stdlib/filters)
 for what a filter implementation looks like.  You can then register it by
 calling `liquid::ParserBuilder::filter`.
 
@@ -79,7 +79,7 @@ designated name. You will have to specify a function or closure that will
 then return a `Renderable` object to do the rendering.
 
 See
-[include_tag.rs](https://github.com/cobalt-org/liquid-rust/blob/master/src/tags/include_tag.rs)
+[include_tag.rs](https://github.com/cobalt-org/liquid-rust/blob/master/crates/lib/src/stdlib/tags/include_tag.rs)
 for what a tag implementation looks like.  You can then register it by calling `liquid::ParserBuilder::tag`.
 
 ### Create your own tag blocks
@@ -89,6 +89,6 @@ markup, which is why block initialization functions take another argument, a lis
 of `Element`s that are inside the specified block.
 
 See
-[comment_block.rs](https://github.com/cobalt-org/liquid-rust/blob/master/src/tags/comment_block.rs)
+[comment_block.rs](https://github.com/cobalt-org/liquid-rust/blob/master/crates/lib/src/stdlib/blocks/comment_block.rs)
 for what a block implementation looks like.  You can then register it by
 calling `liquid::ParserBuilder::block`.
