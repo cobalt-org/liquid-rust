@@ -1,3 +1,5 @@
+#![allow(clippy::bool_assert_comparison)]
+
 #[macro_use]
 extern crate liquid_core;
 

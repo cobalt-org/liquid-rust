@@ -345,6 +345,7 @@ impl<'a, 'b> TagBlock<'a, 'b> {
         let mut start_pos = None;
         let mut end_pos = None;
 
+        #[allow(clippy::while_let_on_iterator)]
         while let Some(element) = self.iter.next() {
             let element_as_span = element.as_span();
             if start_pos.is_none() {
@@ -444,6 +445,7 @@ impl<'a> From<Pair<'a>> for Raw<'a> {
         }
     }
 }
+#[allow(clippy::from_over_into)]
 impl<'a> Into<&'a str> for Raw<'a> {
     fn into(self) -> &'a str {
         self.as_str()

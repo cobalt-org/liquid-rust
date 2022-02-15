@@ -1,4 +1,4 @@
-#![allow(clippy::zero_width_space)]
+#![allow(clippy::invisible_characters)]
 
 use liquid_core::Result;
 use liquid_core::Runtime;

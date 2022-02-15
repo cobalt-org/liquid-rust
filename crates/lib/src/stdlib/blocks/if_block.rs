@@ -43,7 +43,7 @@ impl ParseBlock for IfBlock {
         mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
-        let conditional = parse_if(self.start_tag(), arguments, &mut tokens, options)?;
+        let conditional = parse_if(arguments, &mut tokens, options)?;
 
         tokens.assert_empty();
         Ok(conditional)
@@ -55,7 +55,6 @@ impl ParseBlock for IfBlock {
 }
 
 fn parse_if(
-    tag_name: &str,
     arguments: TagTokenIter<'_>,
     tokens: &mut TagBlock<'_, '_>,
     options: &Language,
@@ -73,7 +72,7 @@ fn parse_if(
                     break;
                 }
                 "elsif" => {
-                    if_false = Some(vec![parse_if("elsif", tag.into_tokens(), tokens, options)?]);
+                    if_false = Some(vec![parse_if(tag.into_tokens(), tokens, options)?]);
                     break;
                 }
                 _ => if_true.push(tag.parse(tokens, options)?),
@@ -86,7 +85,6 @@ fn parse_if(
     let if_false = if_false.map(Template::new);
 
     Ok(Box::new(Conditional {
-        tag_name: tag_name.to_string(),
         condition,
         mode: true,
         if_true,
@@ -147,7 +145,6 @@ impl ParseBlock for UnlessBlock {
 
         tokens.assert_empty();
         Ok(Box::new(Conditional {
-            tag_name: self.start_tag().to_string(),
             condition,
             mode: false,
             if_true,
@@ -162,7 +159,6 @@ impl ParseBlock for UnlessBlock {
 
 #[derive(Debug)]
 struct Conditional {
-    tag_name: String,
     condition: Condition,
     mode: bool,
     if_true: Template,

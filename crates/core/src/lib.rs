@@ -1,3 +1,4 @@
+#![allow(clippy::bool_assert_comparison)]
 #![allow(clippy::module_inception)]
 
 #[macro_use]

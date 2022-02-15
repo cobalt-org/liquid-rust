@@ -556,7 +556,7 @@ enum Range<'r> {
 }
 
 impl<'r> Range<'r> {
-    pub fn evaluate<'s>(&'s self) -> Result<Vec<ValueCow<'s>>> {
+    pub fn evaluate(&self) -> Result<Vec<ValueCow<'_>>> {
         let range = match self {
             Range::Array(array) => get_array(array.as_view())?,
 
