@@ -472,15 +472,15 @@ Combining these together gives us the new `kstring` crate.  Some quick benchmark
   * Runtime partials ([0ef46a17](https://github.com/cobalt-org/liquid-rust/commit/0ef46a170aa21c6113830fa62c26e8b708b97fff))
   *  Support runtime include for tags ([5a0854fa](https://github.com/cobalt-org/liquid-rust/commit/5a0854fa3706505fd1b32dc1bf6ecb7292e173a4)
   *  Allow named stack frames ([4c378178](https://github.com/cobalt-org/liquid-rust/commit/4c3781782176c3ea334963c50f52f9119b178017))
-  *  Create dedicated Path for indexing into a Value ([a936ba52](https://github.com/cobalt-org/liquid-rust/commit/a936ba5290130d1fe53ccb4b59c2d04744406674))
-  * New caching policies ([d2ba7a61](https://github.com/cobalt-org/liquid-rust/commit/d2ba7a61c0af0600bfd8841fc6f12951ae53557c))
+  *  Create dedicated Path for indexing into a Value ([a936ba5290130d1fe53ccb4b59c2d04744406674](https://github.com/cobalt-org/liquid-rust/commit/a936ba5290130d1fe53ccb4b59c2d04744406674))
+  * New caching policies ([d2ba7a61c0af0600bfd8841fc6f12951ae53557c](https://github.com/cobalt-org/liquid-rust/commit/d2ba7a61c0af0600bfd8841fc6f12951ae53557c))
   *  Support arbitrary state ([033c9b75](https://github.com/cobalt-org/liquid-rust/commit/033c9b75c7476057f0858e78ec5b93a0a7cb7895)
 * **error:**
   *  liquid re-export all error stuff ([808f708e](https://github.com/cobalt-org/liquid-rust/commit/808f708e5ac48853a977a3cdfc98ec968116766e))
   *  Cloneable errors ([e18c68e1](https://github.com/cobalt-org/liquid-rust/commit/e18c68e14cc3a894737ef23e0f07a9363eea5f79))
   *  Improve missing variable errors ([d6e1aea5](https://github.com/cobalt-org/liquid-rust/commit/d6e1aea5ff9f0340c87bc45b4c07fcd34991805c))
 * **value:**
-  *  Convinience eq/cmp impls ([78f7a952](https://github.com/cobalt-org/liquid-rust/commit/78f7a9522fc9693919777b04bc8400e708870701))
+  *  Convenience eq/cmp impls ([78f7a952](https://github.com/cobalt-org/liquid-rust/commit/78f7a9522fc9693919777b04bc8400e708870701))
   *  Value literal macro ([ea5ac0aa](https://github.com/cobalt-org/liquid-rust/commit/ea5ac0aaaa976da089fac6b025bfea450e4da852))
   *  Allow moving into constituent types ([bc07812c](https://github.com/cobalt-org/liquid-rust/commit/bc07812ccdb06e0383cc4701831d0fc20d5be654))
   *  Create to_value ([61ae6de6](https://github.com/cobalt-org/liquid-rust/commit/61ae6de625c53171327263bafec954f0ee2a4977))
