@@ -257,7 +257,7 @@ mod test {
     }
 
     #[test]
-    fn include_multiple_variables_trailing_commma() {
+    fn include_multiple_variables_trailing_comma() {
         let text = "{% include 'example_multi_var.txt' example_var:\"hello\", example:\"dogs\", %}";
         let options = options();
         let template = parser::parse(text, &options)

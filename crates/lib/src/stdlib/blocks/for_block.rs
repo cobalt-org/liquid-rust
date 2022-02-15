@@ -782,7 +782,7 @@ mod test {
     #[test]
     fn degenerate_range_is_safe() {
         // make sure that a degenerate range (i.e. where max < min)
-        // doesn't result in an infinte loop
+        // doesn't result in an infinite loop
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
         let template = parser::parse(text, &options())
             .map(runtime::Template::new)

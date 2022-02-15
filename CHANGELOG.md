@@ -217,7 +217,7 @@ bench_access_deep_object_with_literal/render/liquid
 API
 
 - Switched from `ScalarCow` using `i32` to `i64`.
-- Added `from_value(&dyn ValueView)` to complement `to_value(...) -> Vaue`
+- Added `from_value(&dyn ValueView)` to complement `to_value(...) -> Value`
 - `ValueView` support was added to all integer types
 
 ## 0.20.2 - 2020-06-12
