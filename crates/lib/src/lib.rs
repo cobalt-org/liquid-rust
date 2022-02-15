@@ -1,3 +1,5 @@
+#![allow(clippy::bool_assert_comparison)]
+
 #[cfg(feature = "extra")]
 pub mod extra;
 #[cfg(feature = "jekyll")]

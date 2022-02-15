@@ -288,10 +288,9 @@ impl Filter for UniqFilter {
             .ok_or_else(|| invalid_input("Array expected"))?;
         let mut deduped: Vec<Value> = Vec::with_capacity(array.size() as usize);
         for x in array.values() {
-            if deduped
+            if !deduped
                 .iter()
-                .find(|v| ValueViewCmp::new(v.as_view()) == ValueViewCmp::new(x))
-                .is_none()
+                .any(|v| ValueViewCmp::new(v.as_view()) == ValueViewCmp::new(x))
             {
                 deduped.push(x.to_value())
             }

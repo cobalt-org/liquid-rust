@@ -68,7 +68,7 @@ impl<'a> ParseFilter<'a> {
             ..
         } = input;
 
-        Self::validate_data(&data)?;
+        Self::validate_data(data)?;
         let meta = Self::parse_attrs(attrs)?;
 
         Ok(ParseFilter {

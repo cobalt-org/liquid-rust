@@ -819,7 +819,7 @@ impl<'s> ValueView for KStringRef<'s> {
     }
 
     fn to_kstr(&self) -> KStringCow<'_> {
-        self.clone().into()
+        self.into()
     }
     fn to_value(&self) -> Value {
         Value::scalar(Scalar::new(self.to_owned()))

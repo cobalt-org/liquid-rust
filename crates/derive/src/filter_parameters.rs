@@ -151,7 +151,7 @@ impl<'a> FilterParametersFields<'a> {
                     .iter()
                     .map(|field| {
                         let name = field.ident.as_ref().expect("Fields are named.");
-                        FilterParameter::new(name, &field)
+                        FilterParameter::new(name, field)
                     })
                     .collect::<Result<Punctuated<_, Token![,]>>>()?;
 
@@ -254,7 +254,7 @@ impl<'a> FilterParameter<'a> {
     /// Creates a new `FilterParameter` from the given `field`, with the given `name`.
     fn new(name: &'a Ident, field: &Field) -> Result<Self> {
         let is_optional = Self::parse_type_is_optional(&field.ty)?;
-        let meta = FilterParameterMeta::from_field(&field)?;
+        let meta = FilterParameterMeta::from_field(field)?;
 
         Ok(FilterParameter {
             name,
@@ -620,16 +620,13 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
     let field_names = fields.parameters.iter().map(|field| &field.name);
     let comma_separated_field_names = quote! { #(#field_names,)* };
 
-    let evaluate_fields = fields
-        .parameters
-        .iter()
-        .map(|field| generate_evaluate_field(&field));
+    let evaluate_fields = fields.parameters.iter().map(generate_evaluate_field);
 
     let construct_positional_fields = fields
         .parameters
         .iter()
         .filter(|parameter| parameter.is_positional())
-        .map(|field| generate_construct_positional_field(&field, num_min_positional));
+        .map(|field| generate_construct_positional_field(field, num_min_positional));
 
     let keyword_fields = fields
         .parameters
@@ -640,7 +637,7 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
         .parameters
         .iter()
         .filter(|parameter| parameter.is_keyword())
-        .map(|field| generate_keyword_match_arm(&field));
+        .map(generate_keyword_match_arm);
 
     let unwrap_required_keyword_fields = fields
         .parameters
@@ -804,13 +801,13 @@ fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStrea
         .parameters
         .iter()
         .filter(|parameter| parameter.is_positional())
-        .map(|field| generate_access_positional_field_for_display(&field));
+        .map(generate_access_positional_field_for_display);
 
     let keyword_fields = fields
         .parameters
         .iter()
         .filter(|parameter| parameter.is_keyword())
-        .map(|field| generate_access_keyword_field_for_display(&field));
+        .map(generate_access_keyword_field_for_display);
 
     quote! {
         impl ::std::fmt::Display for #name {

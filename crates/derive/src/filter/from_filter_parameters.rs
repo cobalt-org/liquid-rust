@@ -69,7 +69,7 @@ impl<'a> FilterStruct<'a> {
             }
         };
 
-        let ty = StructFieldsType::from_fields(&fields);
+        let ty = StructFieldsType::from_fields(fields);
 
         for field in fields.iter() {
             let filter_field = FilterStructField::from_field(field);

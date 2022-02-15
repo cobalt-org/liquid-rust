@@ -457,7 +457,7 @@ fn test_sort_when_property_is_sometimes_missing_puts_nils_last() {
     assert!(result.is_some());
     let result = result.unwrap();
     assert_eq!(expectation_start, &result[..3]);
-    assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
+    assert!(expectation_end.0 == result[3..] || expectation_end.1 == result[3..]);
 }
 
 #[test]
@@ -525,7 +525,7 @@ fn test_sort_natural_when_property_is_sometimes_missing_puts_nils_last() {
     assert!(result.is_some());
     let result = result.unwrap();
     assert_eq!(expectation_start, &result[..3]);
-    assert!(expectation_end.0 == &result[3..] || expectation_end.1 == &result[3..]);
+    assert!(expectation_end.0 == result[3..] || expectation_end.1 == result[3..]);
 }
 
 #[test]

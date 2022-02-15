@@ -12,6 +12,7 @@ use serde::{de, ser};
 use super::Value;
 
 /// Type representing a Liquid object, payload of the `Value::Object` variant
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct Object {
     map: MapImpl<Key, Value>,
 }
@@ -172,33 +173,6 @@ impl Object {
         }
     }
 }
-
-impl Default for Object {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            map: MapImpl::new(),
-        }
-    }
-}
-
-impl Clone for Object {
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            map: self.map.clone(),
-        }
-    }
-}
-
-impl PartialEq for Object {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.map.eq(&other.map)
-    }
-}
-
-impl Eq for Object {}
 
 /// Access an element of this map. Panics if the given key is not present in the
 /// map.
