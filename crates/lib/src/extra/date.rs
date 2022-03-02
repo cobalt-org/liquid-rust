@@ -1,6 +1,3 @@
-use std::convert::TryInto;
-
-use chrono::FixedOffset;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
@@ -49,15 +46,14 @@ impl Filter for DateInTzFilter {
             .and_then(|s| s.to_date_time())
             .ok_or_else(|| invalid_input("Invalid date format"))?;
 
-        let timezone = FixedOffset::east(
-            (args.timezone * 3600)
-                .try_into()
-                .map_err(|_| invalid_input("Timezone was too large"))?,
-        );
+        let offset = time::UtcOffset::from_whole_seconds(args.timezone as i32 * 3600)
+            .map_err(|_err| invalid_input("Timezone was too large"))?;
 
-        let formatter = date.with_timezone(&timezone).format(args.format.as_str());
-        let date = formatter.to_string();
-        Ok(Value::scalar(date))
+        let date_str = date
+            .with_offset(offset)
+            .format(args.format.as_str())
+            .map_err(|_err| invalid_input("Invalid format string"))?;
+        Ok(Value::scalar(date_str))
     }
 }
 
