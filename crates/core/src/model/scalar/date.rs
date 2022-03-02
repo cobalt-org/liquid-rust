@@ -1,7 +1,5 @@
 use std::{convert::TryInto, fmt, ops};
 
-type DateImpl = time::Date;
-
 /// Liquid's native date only type.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
@@ -12,13 +10,20 @@ pub struct Date {
     pub(crate) inner: DateImpl,
 }
 
+type DateImpl = time::Date;
+
 impl Date {
     /// Makes a new NaiveDate from the calendar date (year, month and day).
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
     pub fn from_ymd(year: i32, month: u8, day: u8) -> Self {
         Self {
-            inner: DateImpl::from_calendar_date(year, month.try_into().unwrap(), day).unwrap(),
+            inner: DateImpl::from_calendar_date(
+                year,
+                month.try_into().expect("the month is out of range"),
+                day,
+            )
+            .expect("one or more components were invalid"),
         }
     }
 

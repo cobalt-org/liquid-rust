@@ -1,8 +1,7 @@
-use std::{fmt, ops};
+use std::fmt;
+use std::ops;
 
 use super::Date;
-
-type DateTimeImpl = time::OffsetDateTime;
 
 /// Liquid's native date + time type.
 #[derive(
@@ -14,6 +13,8 @@ pub struct DateTime {
     #[serde(with = "friendly_date_time")]
     inner: DateTimeImpl,
 }
+
+type DateTimeImpl = time::OffsetDateTime;
 
 impl DateTime {
     /// Create a `DateTime` from the current moment.
