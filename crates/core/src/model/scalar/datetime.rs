@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::fmt;
 use std::ops;
 
@@ -23,6 +24,23 @@ impl DateTime {
     pub fn now() -> Self {
         Self {
             inner: DateTimeImpl::now_utc(),
+        }
+    }
+
+    /// Makes a new NaiveDate from the calendar date (year, month and day).
+    ///
+    /// Panics on the out-of-range date, invalid month and/or day.
+    pub fn from_ymd(year: i32, month: u8, day: u8) -> Self {
+        Self {
+            inner: time::Date::from_calendar_date(
+                year,
+                month.try_into().expect("the month is out of range"),
+                day,
+            )
+            .expect("one or more components were invalid")
+            .with_hms(0, 0, 0)
+            .expect("one or more components were invalid")
+            .assume_offset(time::macros::offset!(UTC)),
         }
     }
 
@@ -60,6 +78,47 @@ impl DateTime {
     #[inline]
     pub fn format(&self, fmt: &str) -> Result<String, strftime::DateFormatError> {
         strftime::strftime(self.inner, fmt)
+    }
+
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    pub fn to_rfc2822(&self) -> String {
+        self.inner
+            .format(&time::format_description::well_known::Rfc2822)
+            .expect("always valid")
+    }
+}
+
+impl DateTime {
+    /// Get the year of the date.
+    #[inline]
+    pub fn year(&self) -> i32 {
+        self.inner.year()
+    }
+    /// Get the month.
+    #[inline]
+    pub fn month(&self) -> u8 {
+        self.inner.month() as u8
+    }
+    /// Get the day of the month.
+    ///
+    //// The returned value will always be in the range 1..=31.
+    #[inline]
+    pub fn day(&self) -> u8 {
+        self.inner.day()
+    }
+    /// Get the day of the year.
+    ///
+    /// The returned value will always be in the range 1..=366 (1..=365 for common years).
+    #[inline]
+    pub fn ordinal(&self) -> u16 {
+        self.inner.ordinal()
+    }
+    /// Get the ISO week number.
+    ///
+    /// The returned value will always be in the range 1..=53.
+    #[inline]
+    pub fn iso_week(&self) -> u8 {
+        self.inner.iso_week()
     }
 }
 
