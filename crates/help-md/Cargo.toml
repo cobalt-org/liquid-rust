@@ -1,6 +1,6 @@
 [package]
 name = "liquid-help-md"
-version = "0.23.1"
+version = "0.24.0"
 authors = ["Ed Page <eopage@gmail.com>"]
 description = "Describe Liquid language via markdown"
 repository = "https://github.com/cobalt-org/liquid-rust"
@@ -19,4 +19,4 @@ include = [
 ]
 
 [dependencies]
-liquid-core = { version = "^0.23.0", path = "../core" }
+liquid-core = { version = "^0.24.0", path = "../core" }
