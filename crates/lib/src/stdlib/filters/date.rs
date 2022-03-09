@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use liquid_core::Expression;
 use liquid_core::Runtime;
 use liquid_core::{
@@ -37,22 +35,15 @@ impl Filter for DateFilter {
         let date = input.as_scalar().and_then(|s| s.to_date_time());
         match date {
             Some(date) if !args.format.is_empty() => {
-                let d = date.format(args.format.as_str());
-                let s = try_to_string(d).ok_or_else(|| {
+                let s = date.format(args.format.as_str()).map_err(|_err| {
                     Error::with_msg(format!("Invalid date-format string: {}", args.format))
                 })?;
+
                 Ok(Value::scalar(s))
             }
             _ => Ok(input.to_value()),
         }
     }
-}
-
-fn try_to_string(f: impl std::fmt::Display) -> Option<String> {
-    let mut buf = String::new();
-    buf.write_fmt(format_args!("{}", f)).ok()?;
-    buf.shrink_to_fit();
-    Some(buf)
 }
 
 #[cfg(test)]
