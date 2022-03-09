@@ -6,7 +6,7 @@ use std::fs;
 use std::io::Write;
 use std::path;
 
-use structopt::StructOpt;
+use clap::Parser;
 
 #[derive(Copy, Clone, Debug, derive_more::Display, derive_more::From, derive_more::Constructor)]
 #[display(fmt = "{}", msg)]
@@ -37,20 +37,20 @@ fn build_context(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error
     Ok(value)
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 struct Args {
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     input: std::path::PathBuf,
 
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     output: Option<std::path::PathBuf>,
 
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     context: Option<std::path::PathBuf>,
 }
 
 fn run() -> Result<i32, Box<dyn std::error::Error>> {
-    let args = Args::from_args();
+    let args = Args::parse();
 
     let parser = liquid::ParserBuilder::with_stdlib()
         .build()
