@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixes
+
+- Use `time` instead of `chrono`
+
 ## [0.23.1] - 2021-12-23
 
 ### Fixes
