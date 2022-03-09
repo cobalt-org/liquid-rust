@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::fmt;
 use std::ops;
 
@@ -23,6 +24,23 @@ impl DateTime {
     pub fn now() -> Self {
         Self {
             inner: DateTimeImpl::now_utc(),
+        }
+    }
+
+    /// Makes a new NaiveDate from the calendar date (year, month and day).
+    ///
+    /// Panics on the out-of-range date, invalid month and/or day.
+    pub fn from_ymd(year: i32, month: u8, day: u8) -> Self {
+        Self {
+            inner: time::Date::from_calendar_date(
+                year,
+                month.try_into().expect("the month is out of range"),
+                day,
+            )
+            .expect("one or more components were invalid")
+            .with_hms(0, 0, 0)
+            .expect("one or more components were invalid")
+            .assume_offset(time::macros::offset!(UTC)),
         }
     }
 
