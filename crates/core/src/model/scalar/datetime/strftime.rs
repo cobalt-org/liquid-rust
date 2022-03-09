@@ -161,7 +161,7 @@ pub fn strftime(ts: time::OffsetDateTime, fmt: &str) -> Result<String, DateForma
             Unknown,
         }
 
-        let ocur = output.len();
+        let out_cur = output.len();
 
         macro_rules! write_padding {
             (num $pad_width:expr) => {
@@ -386,7 +386,7 @@ pub fn strftime(ts: time::OffsetDateTime, fmt: &str) -> Result<String, DateForma
             'n' => Formats::Literal('\n'),
             't' => Formats::Literal('\t'),
             // L
-            // Millisecond of the second (000..999) this one was not suported by chrono
+            // Millisecond of the second (000..999) this one was not supported by chrono
             // N
             // Fractional seconds digits, default is 9 digits (nanosecond)
             // For some reason Ruby says it supports printing out pico to yocto
@@ -545,12 +545,12 @@ pub fn strftime(ts: time::OffsetDateTime, fmt: &str) -> Result<String, DateForma
                 }
                 output.push_str(s);
                 if casing != Casing::Default {
-                    output[ocur..].make_ascii_uppercase();
+                    output[out_cur..].make_ascii_uppercase();
                 }
             }
             Formats::Formatted => {
                 if casing != Casing::Default {
-                    output[ocur..].make_ascii_uppercase();
+                    output[out_cur..].make_ascii_uppercase();
                 }
             }
             Formats::Literal(lit) => {
