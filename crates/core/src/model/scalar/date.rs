@@ -34,6 +34,40 @@ impl Date {
     }
 }
 
+impl Date {
+    /// Get the year of the date.
+    #[inline]
+    pub fn year(&self) -> i32 {
+        self.inner.year()
+    }
+    /// Get the month.
+    #[inline]
+    pub fn month(&self) -> u8 {
+        self.inner.month() as u8
+    }
+    /// Get the day of the month.
+    ///
+    //// The returned value will always be in the range 1..=31.
+    #[inline]
+    pub fn day(&self) -> u8 {
+        self.inner.day()
+    }
+    /// Get the day of the year.
+    ///
+    /// The returned value will always be in the range 1..=366 (1..=365 for common years).
+    #[inline]
+    pub fn ordinal(&self) -> u16 {
+        self.inner.ordinal()
+    }
+    /// Get the ISO week number.
+    ///
+    /// The returned value will always be in the range 1..=53.
+    #[inline]
+    pub fn iso_week(&self) -> u8 {
+        self.inner.iso_week()
+    }
+}
+
 impl fmt::Display for Date {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
