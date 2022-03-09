@@ -79,6 +79,13 @@ impl DateTime {
     pub fn format(&self, fmt: &str) -> Result<String, strftime::DateFormatError> {
         strftime::strftime(self.inner, fmt)
     }
+
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    pub fn to_rfc2822(&self) -> String {
+        self.inner
+            .format(&time::format_description::well_known::Rfc2822)
+            .expect("always valid")
+    }
 }
 
 impl DateTime {
