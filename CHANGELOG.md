@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Breaking Changes
+
+- Upgraded kstring
+
 ## [0.24.0] - 2022-03-09
 
 ### Fixes
