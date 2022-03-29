@@ -235,9 +235,7 @@ impl ValueView for i64 {
 
 impl<'s> From<i64> for ScalarCow<'s> {
     fn from(s: i64) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Integer(s),
-        }
+        ScalarCow(ScalarCowEnum::Integer(s))
     }
 }
 
@@ -353,9 +351,7 @@ impl ValueView for f64 {
 
 impl<'s> From<f64> for ScalarCow<'s> {
     fn from(s: f64) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Float(s),
-        }
+        ScalarCow(ScalarCowEnum::Float(s))
     }
 }
 
@@ -412,9 +408,7 @@ impl ValueView for bool {
 
 impl<'s> From<bool> for ScalarCow<'s> {
     fn from(s: bool) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Bool(s),
-        }
+        ScalarCow(ScalarCowEnum::Bool(s))
     }
 }
 
@@ -469,9 +463,7 @@ impl ValueView for DateTime {
 
 impl<'s> From<DateTime> for ScalarCow<'s> {
     fn from(s: DateTime) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::DateTime(s),
-        }
+        ScalarCow(ScalarCowEnum::DateTime(s))
     }
 }
 
@@ -526,9 +518,7 @@ impl ValueView for Date {
 
 impl<'s> From<Date> for ScalarCow<'s> {
     fn from(s: Date) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Date(s),
-        }
+        ScalarCow(ScalarCowEnum::Date(s))
     }
 }
 
@@ -593,9 +583,7 @@ impl<'s> fmt::Display for StrSource<'s> {
 
 impl<'s> From<&'s str> for ScalarCow<'s> {
     fn from(s: &'s str) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.into()))
     }
 }
 
@@ -652,17 +640,13 @@ impl ValueView for String {
 
 impl<'s> From<String> for ScalarCow<'s> {
     fn from(s: String) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.into()))
     }
 }
 
 impl<'s> From<&'s String> for ScalarCow<'s> {
     fn from(s: &'s String) -> ScalarCow<'s> {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.as_str().into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.as_str().into()))
     }
 }
 
@@ -712,17 +696,13 @@ impl ValueView for KString {
 
 impl<'s> From<KString> for ScalarCow<'s> {
     fn from(s: KString) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.into()))
     }
 }
 
 impl<'s> From<&'s KString> for ScalarCow<'s> {
     fn from(s: &'s KString) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.as_ref().into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.as_ref().into()))
     }
 }
 
@@ -772,17 +752,13 @@ impl<'s> ValueView for KStringCow<'s> {
 
 impl<'s> From<KStringCow<'s>> for ScalarCow<'s> {
     fn from(s: KStringCow<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s),
-        }
+        ScalarCow(ScalarCowEnum::Str(s))
     }
 }
 
 impl<'s> From<&'s KStringCow<'s>> for ScalarCow<'s> {
     fn from(s: &'s KStringCow<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.clone()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.clone()))
     }
 }
 
@@ -832,17 +808,13 @@ impl<'s> ValueView for KStringRef<'s> {
 
 impl<'s> From<KStringRef<'s>> for ScalarCow<'s> {
     fn from(s: KStringRef<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.into()))
     }
 }
 
 impl<'s> From<&'s KStringRef<'s>> for ScalarCow<'s> {
     fn from(s: &'s KStringRef<'s>) -> Self {
-        ScalarCow {
-            0: ScalarCowEnum::Str(s.into()),
-        }
+        ScalarCow(ScalarCowEnum::Str(s.into()))
     }
 }
 
