@@ -1,4 +1,4 @@
-liquid-compiler
+liquid-bin
 ===========
 
 > [Liquid templating](http://liquidmarkup.org/) for Rust
@@ -14,7 +14,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid-compiler = "0.20"
+liquid-bin = "0.25.0"
 ```
 
 Now you can use the crate in your code:
@@ -26,4 +26,3 @@ Licensed under either of
  * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
   at your option.
-

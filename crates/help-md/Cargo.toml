@@ -18,5 +18,10 @@ include = [
   "examples/**/*"
 ]
 
+[package.metadata.release]
+pre-release-replacements = [
+  {file="README.md", search="liquid-help-md = \".*\"", replace="liquid-help-md = \"{{version}}\"", exactly=1},
+]
+
 [dependencies]
 liquid-core = { version = "^0.25.0", path = "../core" }

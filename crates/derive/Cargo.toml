@@ -20,6 +20,11 @@ include = [
 [lib]
 proc-macro = true
 
+[package.metadata.release]
+pre-release-replacements = [
+  {file="README.md", search="liquid-derive = \".*\"", replace="liquid-derive = \"{{version}}\"", exactly=1},
+]
+
 [dependencies]
 syn = "1.0"
 proc-quote = "0.4"

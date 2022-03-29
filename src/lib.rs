@@ -4,7 +4,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! liquid = "0.20"
+//! liquid = "0.25.0"
 //! ```
 //!
 //! ## Example

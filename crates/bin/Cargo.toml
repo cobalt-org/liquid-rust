@@ -18,6 +18,11 @@ include = [
   "examples/**/*"
 ]
 
+[package.metadata.release]
+pre-release-replacements = [
+  {file="README.md", search="liquid-bin = \".*\"", replace="liquid-bin = \"{{version}}\"", exactly=1},
+]
+
 [dependencies]
 liquid = { version = "^0.25.0", path = "../../" }
 serde = { version = "1.0", features = ["derive"] }
