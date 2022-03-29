@@ -53,7 +53,7 @@ impl ParseTag for IncrementTag {
 
 #[derive(Clone, Debug)]
 struct Increment {
-    id: kstring::KString,
+    id: liquid_core::model::KString,
 }
 
 impl Renderable for Increment {
@@ -115,7 +115,7 @@ impl ParseTag for DecrementTag {
 
 #[derive(Clone, Debug)]
 struct Decrement {
-    id: kstring::KString,
+    id: liquid_core::model::KString,
 }
 
 impl Renderable for Decrement {

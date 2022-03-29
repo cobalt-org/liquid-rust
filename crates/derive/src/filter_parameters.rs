@@ -698,7 +698,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
             FilterParameterType::Bool => quote! { bool },
             FilterParameterType::DateTime => quote! { ::liquid_core::model::DateTime },
             FilterParameterType::Date => quote! { ::liquid_core::model::Date },
-            FilterParameterType::Str => quote! { ::kstring::KStringCow<'a> },
+            FilterParameterType::Str => quote! { ::liquid_core::model::KStringCow<'a> },
         };
 
         if field.is_optional() {

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use super::DisplayCow;
 use super::{Value, ValueView};

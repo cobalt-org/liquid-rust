@@ -1,6 +1,6 @@
 use std::fmt;
 
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use super::DisplayCow;
 use super::State;
@@ -194,20 +194,20 @@ impl<'v> PartialEq<String> for ValueCow<'v> {
     }
 }
 
-impl<'v> PartialEq<kstring::KString> for ValueCow<'v> {
-    fn eq(&self, other: &kstring::KString) -> bool {
+impl<'v> PartialEq<crate::model::KString> for ValueCow<'v> {
+    fn eq(&self, other: &crate::model::KString) -> bool {
         super::value_eq(self.as_view(), &other.as_ref())
     }
 }
 
-impl<'v> PartialEq<kstring::KStringRef<'v>> for ValueCow<'v> {
-    fn eq(&self, other: &kstring::KStringRef<'v>) -> bool {
+impl<'v> PartialEq<crate::model::KStringRef<'v>> for ValueCow<'v> {
+    fn eq(&self, other: &crate::model::KStringRef<'v>) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<kstring::KStringCow<'v>> for ValueCow<'v> {
-    fn eq(&self, other: &kstring::KStringCow<'v>) -> bool {
+impl<'v> PartialEq<crate::model::KStringCow<'v>> for ValueCow<'v> {
+    fn eq(&self, other: &crate::model::KStringCow<'v>) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }

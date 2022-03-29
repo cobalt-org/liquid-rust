@@ -9,9 +9,9 @@ pub(crate) mod ser;
 use std::cmp::Ordering;
 use std::{borrow::Cow, fmt};
 
-use kstring::KString;
-use kstring::KStringCow;
-use kstring::KStringRef;
+use crate::model::KString;
+use crate::model::KStringCow;
+use crate::model::KStringRef;
 
 use crate::model::value::{DisplayCow, State};
 use crate::model::{Value, ValueView};

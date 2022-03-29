@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt;
 
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use crate::model::value::DisplayCow;
 use crate::model::State;
@@ -148,19 +148,19 @@ impl ObjectIndex for String {
     }
 }
 
-impl ObjectIndex for kstring::KString {
+impl ObjectIndex for crate::model::KString {
     fn as_index(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'s> ObjectIndex for kstring::KStringRef<'s> {
+impl<'s> ObjectIndex for crate::model::KStringRef<'s> {
     fn as_index(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'s> ObjectIndex for kstring::KStringCow<'s> {
+impl<'s> ObjectIndex for crate::model::KStringCow<'s> {
     fn as_index(&self) -> &str {
         self.as_str()
     }
@@ -194,7 +194,7 @@ impl<K: ObjectIndex, V: ValueView, S: ::std::hash::BuildHasher> ValueView for Ha
     fn to_value(&self) -> Value {
         Value::Object(
             self.iter()
-                .map(|(k, v)| (kstring::KString::from_ref(k.as_index()), v.to_value()))
+                .map(|(k, v)| (crate::model::KString::from_ref(k.as_index()), v.to_value()))
                 .collect(),
         )
     }
@@ -265,7 +265,7 @@ impl<K: ObjectIndex, V: ValueView> ValueView for BTreeMap<K, V> {
     fn to_value(&self) -> Value {
         Value::Object(
             self.iter()
-                .map(|(k, v)| (kstring::KString::from_ref(k.as_index()), v.to_value()))
+                .map(|(k, v)| (crate::model::KString::from_ref(k.as_index()), v.to_value()))
                 .collect(),
         )
     }

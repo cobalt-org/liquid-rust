@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use super::DisplayCow;
 use super::State;
@@ -292,20 +292,20 @@ impl<'s> PartialEq<String> for Value {
     }
 }
 
-impl PartialEq<kstring::KString> for Value {
-    fn eq(&self, other: &kstring::KString) -> bool {
+impl PartialEq<crate::model::KString> for Value {
+    fn eq(&self, other: &crate::model::KString) -> bool {
         super::value_eq(self.as_view(), &other.as_ref())
     }
 }
 
-impl<'s> PartialEq<kstring::KStringRef<'s>> for Value {
-    fn eq(&self, other: &kstring::KStringRef<'s>) -> bool {
+impl<'s> PartialEq<crate::model::KStringRef<'s>> for Value {
+    fn eq(&self, other: &crate::model::KStringRef<'s>) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'s> PartialEq<kstring::KStringCow<'s>> for Value {
-    fn eq(&self, other: &kstring::KStringCow<'s>) -> bool {
+impl<'s> PartialEq<crate::model::KStringCow<'s>> for Value {
+    fn eq(&self, other: &crate::model::KStringCow<'s>) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }

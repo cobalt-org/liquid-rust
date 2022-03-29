@@ -4,7 +4,7 @@ use std::fmt;
 use std::slice;
 
 use crate::error::{Error, Result};
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use super::ScalarCow;
 use super::Value;

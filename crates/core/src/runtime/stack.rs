@@ -5,7 +5,7 @@ use crate::model::{Object, ObjectView, ScalarCow, Value, ValueCow, ValueView};
 /// Layer variables on top of the existing runtime
 pub struct StackFrame<P, O> {
     parent: P,
-    name: Option<kstring::KString>,
+    name: Option<crate::model::KString>,
     data: O,
 }
 
@@ -20,7 +20,7 @@ impl<P: super::Runtime, O: ObjectView> StackFrame<P, O> {
     }
 
     /// Name the current context
-    pub fn with_name<S: Into<kstring::KString>>(mut self, name: S) -> Self {
+    pub fn with_name<S: Into<crate::model::KString>>(mut self, name: S) -> Self {
         self.name = Some(name.into());
         self
     }
@@ -31,14 +31,14 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
         self.parent.partials()
     }
 
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+    fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         self.name
             .as_ref()
             .map(|n| n.as_ref())
             .or_else(|| self.parent.name())
     }
 
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.keys());
         roots
@@ -70,13 +70,13 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
 
     fn set_global(
         &self,
-        name: kstring::KString,
+        name: crate::model::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value> {
         self.parent.set_global(name, val)
     }
 
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+    fn set_index(&self, name: crate::model::KString, val: Value) -> Option<Value> {
         self.parent.set_index(name, val)
     }
 
@@ -108,11 +108,11 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         self.parent.partials()
     }
 
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+    fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         self.parent.name()
     }
 
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
         roots
@@ -144,14 +144,14 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
 
     fn set_global(
         &self,
-        name: kstring::KString,
+        name: crate::model::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value> {
         let mut data = self.data.borrow_mut();
         data.insert(name, val)
     }
 
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+    fn set_index(&self, name: crate::model::KString, val: Value) -> Option<Value> {
         self.parent.set_index(name, val)
     }
 
@@ -183,11 +183,11 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
         self.parent.partials()
     }
 
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+    fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         self.parent.name()
     }
 
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>> {
         let mut roots = self.parent.roots();
         roots.extend(self.data.borrow().keys().map(|k| k.clone().into()));
         roots
@@ -219,13 +219,13 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
 
     fn set_global(
         &self,
-        name: kstring::KString,
+        name: crate::model::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value> {
         self.parent.set_global(name, val)
     }
 
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+    fn set_index(&self, name: crate::model::KString, val: Value) -> Option<Value> {
         let mut data = self.data.borrow_mut();
         data.insert(name, val)
     }

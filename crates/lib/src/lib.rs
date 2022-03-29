@@ -13,14 +13,14 @@ use liquid_core::Error;
 
 pub(crate) fn invalid_input<S>(cause: S) -> Error
 where
-    S: Into<kstring::KString>,
+    S: Into<liquid_core::model::KString>,
 {
     Error::with_msg("Invalid input").context("cause", cause)
 }
 
 pub(crate) fn invalid_argument<S>(argument: S, cause: S) -> Error
 where
-    S: Into<kstring::KString>,
+    S: Into<liquid_core::model::KString>,
 {
     Error::with_msg("Invalid argument")
         .context("argument", argument)

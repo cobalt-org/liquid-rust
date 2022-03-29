@@ -13,10 +13,10 @@ pub trait Runtime {
     fn partials(&self) -> &dyn PartialStore;
 
     /// The name of the currently active template.
-    fn name(&self) -> Option<kstring::KStringRef<'_>>;
+    fn name(&self) -> Option<crate::model::KStringRef<'_>>;
 
     /// All available values
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>>;
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>>;
     /// Recursively index into the stack.
     fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>>;
     /// Recursively index into the stack.
@@ -25,12 +25,12 @@ pub trait Runtime {
     /// Sets a value in the global runtime.
     fn set_global(
         &self,
-        name: kstring::KString,
+        name: crate::model::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value>;
 
     /// Used by increment and decrement tags
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value>;
+    fn set_index(&self, name: crate::model::KString, val: Value) -> Option<Value>;
     /// Used by increment and decrement tags
     fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>>;
 
@@ -43,11 +43,11 @@ impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
         <R as Runtime>::partials(self)
     }
 
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+    fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         <R as Runtime>::name(self)
     }
 
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>> {
         <R as Runtime>::roots(self)
     }
 
@@ -61,13 +61,13 @@ impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
 
     fn set_global(
         &self,
-        name: kstring::KString,
+        name: crate::model::KString,
         val: crate::model::Value,
     ) -> Option<crate::model::Value> {
         <R as Runtime>::set_global(self, name, val)
     }
 
-    fn set_index(&self, name: kstring::KString, val: Value) -> Option<Value> {
+    fn set_index(&self, name: crate::model::KString, val: Value) -> Option<Value> {
         <R as Runtime>::set_index(self, name, val)
     }
 
@@ -150,8 +150,8 @@ impl ValueView for NullObject {
         }
     }
 
-    fn to_kstr(&self) -> kstring::KStringCow<'_> {
-        kstring::KStringCow::from_static("")
+    fn to_kstr(&self) -> crate::model::KStringCow<'_> {
+        crate::model::KStringCow::from_static("")
     }
     fn to_value(&self) -> Value {
         Value::Object(Object::new())
@@ -171,7 +171,7 @@ impl ObjectView for NullObject {
         0
     }
 
-    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = kstring::KStringCow<'k>> + 'k> {
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = crate::model::KStringCow<'k>> + 'k> {
         let keys = Vec::new().into_iter();
         Box::new(keys)
     }
@@ -183,7 +183,7 @@ impl ObjectView for NullObject {
 
     fn iter<'k>(
         &'k self,
-    ) -> Box<dyn Iterator<Item = (kstring::KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+    ) -> Box<dyn Iterator<Item = (crate::model::KStringCow<'k>, &'k dyn ValueView)> + 'k> {
         let i = Vec::new().into_iter();
         Box::new(i)
     }
@@ -229,11 +229,11 @@ impl<'g> Runtime for RuntimeCore<'g> {
         self.partials
     }
 
-    fn name(&self) -> Option<kstring::KStringRef<'_>> {
+    fn name(&self) -> Option<crate::model::KStringRef<'_>> {
         None
     }
 
-    fn roots(&self) -> std::collections::BTreeSet<kstring::KStringCow<'_>> {
+    fn roots(&self) -> std::collections::BTreeSet<crate::model::KStringCow<'_>> {
         // Indexes don't count
         std::collections::BTreeSet::new()
     }
@@ -251,13 +251,13 @@ impl<'g> Runtime for RuntimeCore<'g> {
 
     fn set_global(
         &self,
-        _name: kstring::KString,
+        _name: crate::model::KString,
         _val: crate::model::Value,
     ) -> Option<crate::model::Value> {
         unreachable!("Must be masked by a global frame");
     }
 
-    fn set_index(&self, _name: kstring::KString, _val: Value) -> Option<Value> {
+    fn set_index(&self, _name: crate::model::KString, _val: Value) -> Option<Value> {
         unreachable!("Must be masked by a global frame");
     }
 

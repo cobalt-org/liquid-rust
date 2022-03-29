@@ -1,4 +1,3 @@
-use kstring::{KString, KStringCow};
 use serde::{self, de::IntoDeserializer, Deserialize, Serialize};
 
 use super::{Value, ValueView};
@@ -6,6 +5,7 @@ use crate::model::scalar::ser::ScalarSerializer;
 use crate::model::ser::{SerError, SerializeMap, SerializeStructVariant, SerializeTupleVariant};
 use crate::model::Object;
 use crate::model::{ArrayView, ObjectView};
+use crate::model::{KString, KStringCow};
 
 /// Convert a `T` into `liquid_core::model::Value`.
 ///

@@ -1,4 +1,4 @@
-use kstring::KString;
+use crate::model::KString;
 use serde::ser::Impossible;
 use serde::{self, Serialize};
 
