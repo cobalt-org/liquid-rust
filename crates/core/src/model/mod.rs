@@ -18,6 +18,10 @@ pub use object::*;
 pub use scalar::*;
 pub use value::*;
 
+pub use kstring::KString;
+pub use kstring::KStringCow;
+pub use kstring::KStringRef;
+
 #[cfg(feature = "derive")]
 #[doc(hidden)]
 pub use liquid_derive::CoreObjectView as ObjectView;

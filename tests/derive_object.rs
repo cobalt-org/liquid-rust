@@ -41,7 +41,7 @@ struct TestStatic {
     float: f64,
     static_str: &'static str,
     string: String,
-    kstring: kstring::KString,
+    kstring: liquid::model::KString,
     array: Vec<i64>,
 }
 
@@ -53,7 +53,7 @@ impl TestStatic {
             float: 4.2,
             static_str: "Hello world",
             string: String::from("Goodbye world"),
-            kstring: kstring::KString::from_static("foo"),
+            kstring: liquid::model::KString::from_static("foo"),
             array: vec![1, 2, 3],
         }
     }

@@ -17,7 +17,7 @@ pub struct Object {
     map: MapImpl<Key, Value>,
 }
 
-type Key = kstring::KString;
+type Key = crate::model::KString;
 
 type MapImpl<K, V> = hash_map::HashMap<K, V>;
 type VacantEntryImpl<'a> = hash_map::VacantEntry<'a, Key, Value>;

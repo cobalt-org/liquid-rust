@@ -53,7 +53,7 @@ impl Filter for UrlDecodeFilter {
             return Ok(Value::Nil);
         }
 
-        let s = input.to_kstr().replace("+", " ");
+        let s = input.to_kstr().replace('+', " ");
 
         let result = percent_encoding::percent_decode(s.as_bytes())
             .decode_utf8()

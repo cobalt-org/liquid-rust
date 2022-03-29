@@ -41,9 +41,9 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
                 }
             }
 
-            fn to_kstr(&self) -> ::kstring::KStringCow<'_> {
+            fn to_kstr(&self) -> ::liquid::model::KStringCow<'_> {
                 let s = ::liquid::model::ObjectRender::new(self).to_string();
-                ::kstring::KStringCow::from_string(s)
+                ::liquid::model::KStringCow::from_string(s)
             }
             fn to_value(&self) -> ::liquid::model::Value {
                 let mut object = ::liquid::model::Object::new();
@@ -99,9 +99,9 @@ pub fn core_derive(input: &DeriveInput) -> TokenStream {
                 }
             }
 
-            fn to_kstr(&self) -> ::kstring::KStringCow<'_> {
+            fn to_kstr(&self) -> ::liquid_core::model::KStringCow<'_> {
                 let s = ::liquid_core::model::ObjectRender::new(self).to_string();
-                ::kstring::KStringCow::from_string(s)
+                ::liquid_core::model::KStringCow::from_string(s)
             }
             fn to_value(&self) -> ::liquid_core::model::Value {
                 let mut object = ::liquid_core::model::Object::new();

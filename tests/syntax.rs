@@ -4,8 +4,8 @@ extern crate difference;
 use liquid::*;
 
 fn compare(input: &str, expected: &str) {
-    let input = input.replace("…", " ");
-    let expected = expected.replace("…", " ");
+    let input = input.replace('…', " ");
+    let expected = expected.replace('…', " ");
 
     let template = ParserBuilder::with_stdlib()
         .build()

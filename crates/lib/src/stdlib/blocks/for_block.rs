@@ -107,7 +107,7 @@ impl ParseBlock for ForBlock {
 
         tokens.assert_empty();
         Ok(Box::new(For {
-            var_name: kstring::KString::from_ref(var_name),
+            var_name: liquid_core::model::KString::from_ref(var_name),
             range,
             item_template,
             else_template,
@@ -124,7 +124,7 @@ impl ParseBlock for ForBlock {
 
 #[derive(Debug)]
 struct For {
-    var_name: kstring::KString,
+    var_name: liquid_core::model::KString,
     range: RangeExpression,
     item_template: Template,
     else_template: Option<Template>,
@@ -195,8 +195,10 @@ impl Renderable for For {
                 let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
                 for (i, v) in array.into_iter().enumerate() {
                     let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
-                    let mut root =
-                        std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+                    let mut root = std::collections::HashMap::<
+                        liquid_core::model::KStringRef<'_>,
+                        &dyn ValueView,
+                    >::new();
                     root.insert("forloop".into(), &forloop);
                     root.insert(self.var_name.as_ref(), &v);
 
@@ -333,7 +335,7 @@ impl ParseBlock for TableRowBlock {
 
         tokens.assert_empty();
         Ok(Box::new(TableRow {
-            var_name: kstring::KString::from_ref(var_name),
+            var_name: liquid_core::model::KString::from_ref(var_name),
             range,
             item_template,
             cols,
@@ -349,7 +351,7 @@ impl ParseBlock for TableRowBlock {
 
 #[derive(Debug)]
 struct TableRow {
-    var_name: kstring::KString,
+    var_name: liquid_core::model::KString,
     range: RangeExpression,
     item_template: Template,
     cols: Option<Expression>,
@@ -417,8 +419,10 @@ impl Renderable for TableRow {
             let row_index = i / cols;
 
             let tablerow = TableRowObject::new(i, range_len, col_index, cols);
-            let mut root =
-                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            let mut root = std::collections::HashMap::<
+                liquid_core::model::KStringRef<'_>,
+                &dyn ValueView,
+            >::new();
             root.insert("tablerow".into(), &tablerow);
             root.insert(self.var_name.as_ref(), &v);
 

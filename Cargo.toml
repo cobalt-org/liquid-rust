@@ -40,7 +40,6 @@ stdlib = ["liquid-lib/stdlib"]
 
 [dependencies]
 doc-comment = "0.3"
-kstring = "1.0"
 liquid-core = { version = "^0.24.0", path = "crates/core" }
 liquid-derive = { version = "^0.24.0", path = "crates/derive" }
 liquid-lib = { version = "^0.24.0", path = "crates/lib", optional = true }

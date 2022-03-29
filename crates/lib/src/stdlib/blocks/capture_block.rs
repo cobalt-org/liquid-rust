@@ -66,7 +66,7 @@ impl ParseBlock for CaptureBlock {
 
 #[derive(Debug)]
 struct Capture {
-    id: kstring::KString,
+    id: liquid_core::model::KString,
     template: Template,
 }
 

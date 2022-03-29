@@ -146,7 +146,7 @@ impl Filter for NewlineToBrFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
         // TODO handle windows line endings
         let input = input.to_kstr();
-        Ok(Value::scalar(input.replace("\n", "<br />\n")))
+        Ok(Value::scalar(input.replace('\n', "<br />\n")))
     }
 }
 

@@ -63,7 +63,7 @@ impl ParseTag for AssignTag {
 
 #[derive(Debug)]
 struct Assign {
-    dst: kstring::KString,
+    dst: liquid_core::model::KString,
     src: FilterChain,
 }
 

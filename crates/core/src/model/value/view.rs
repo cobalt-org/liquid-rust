@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use kstring::KStringCow;
+use crate::model::KStringCow;
 
 use super::DisplayCow;
 use super::State;
@@ -239,20 +239,20 @@ impl<'v> PartialEq<String> for ValueViewCmp<'v> {
     }
 }
 
-impl<'v> PartialEq<kstring::KString> for ValueViewCmp<'v> {
-    fn eq(&self, other: &kstring::KString) -> bool {
+impl<'v> PartialEq<crate::model::KString> for ValueViewCmp<'v> {
+    fn eq(&self, other: &crate::model::KString) -> bool {
         super::value_eq(self.0, &other.as_ref())
     }
 }
 
-impl<'v> PartialEq<kstring::KStringRef<'v>> for ValueViewCmp<'v> {
-    fn eq(&self, other: &kstring::KStringRef<'v>) -> bool {
+impl<'v> PartialEq<crate::model::KStringRef<'v>> for ValueViewCmp<'v> {
+    fn eq(&self, other: &crate::model::KStringRef<'v>) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<kstring::KStringCow<'v>> for ValueViewCmp<'v> {
-    fn eq(&self, other: &kstring::KStringCow<'v>) -> bool {
+impl<'v> PartialEq<crate::model::KStringCow<'v>> for ValueViewCmp<'v> {
+    fn eq(&self, other: &crate::model::KStringCow<'v>) -> bool {
         super::value_eq(self.0, other)
     }
 }

@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use kstring::KString;
 use liquid_core::error::ResultLiquidExt;
+use liquid_core::model::KString;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::Expression;
 use liquid_core::Language;
@@ -87,8 +87,10 @@ impl Renderable for Include {
         let name = self.partial.evaluate(runtime)?.render().to_string();
 
         {
-            let mut pass_through =
-                std::collections::HashMap::<kstring::KStringRef<'_>, &dyn ValueView>::new();
+            let mut pass_through = std::collections::HashMap::<
+                liquid_core::model::KStringRef<'_>,
+                &dyn ValueView,
+            >::new();
             let mut helper_vars = std::collections::HashMap::new();
             if !self.vars.is_empty() {
                 for (id, val) in &self.vars {

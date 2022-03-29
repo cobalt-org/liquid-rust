@@ -83,7 +83,7 @@ fn test_standard_tags() {
 ........</p>
 ......</div>
 ...."#
-        .replace(".", " ");
+        .replace('.', " ");
     assert_template_result!(expected, text);
 
     let text = r#"
@@ -102,7 +102,7 @@ fn test_standard_tags() {
 ........</p>
 ......</div>
 ...."#
-        .replace(".", " ");
+        .replace('.', " ");
     assert_template_result!(expected, text);
 }
 
@@ -355,7 +355,7 @@ fn test_post_and_pre_trim_tags() {
 ........</p>
 ......</div>
 ...."#
-        .replace(".", " ");
+        .replace('.', " ");
     assert_template_result!(expected, text);
 }
 
@@ -543,6 +543,6 @@ fn test_raw_output() {
 ........
 ......</div>
 ...."#
-        .replace(".", " ");
+        .replace('.', " ");
     assert_template_result!(expected, text);
 }

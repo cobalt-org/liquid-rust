@@ -23,7 +23,6 @@ features = [ "default", "jekyll", "all" ]
 
 [dependencies]
 liquid-core = { version = "^0.24.0", path = "../core", features = ["derive"] }
-kstring = "1.0"
 itertools = "0.10.0"
 regex = "1.0"
 unicode-segmentation = "1.2"
