@@ -18,6 +18,11 @@ include = [
   "examples/**/*"
 ]
 
+[package.metadata.release]
+pre-release-replacements = [
+  {file="README.md", search="liquid-core = \".*\"", replace="liquid-core = \"{{version}}\"", exactly=1},
+]
+
 [dependencies]
 anymap2 = "0.13"
 itertools = "0.10.0"

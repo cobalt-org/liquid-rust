@@ -21,6 +21,11 @@ include = [
 [package.metadata.docs.rs]
 features = [ "default", "jekyll", "all" ]
 
+[package.metadata.release]
+pre-release-replacements = [
+  {file="README.md", search="liquid-lib = \".*\"", replace="liquid-lib = \"{{version}}\"", exactly=1},
+]
+
 [dependencies]
 liquid-core = { version = "^0.25.0", path = "../core", features = ["derive"] }
 itertools = "0.10.0"
