@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.26.0] - 2022-04-01
+
 ### Breaking Changes
 
 - Upgraded kstring for real this time
@@ -859,7 +861,8 @@ Minor docs change.
   *  Moved `pluralize` to `extra-filters` ([17d57c09](https://github.com/cobalt-org/liquid-rust/commit/17d57c093fc8771531c13b6f587b44b2b25d2b03))
 
 <!-- next-url -->
-[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.25.1...HEAD
+[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/assert-rs/predicates-rs/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/assert-rs/predicates-rs/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/assert-rs/predicates-rs/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/assert-rs/predicates-rs/compare/v0.23.1...v0.24.0
