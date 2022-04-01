@@ -33,7 +33,7 @@ pest_derive = "2.0"
 # Exposed in API
 time = { version = "0.3", default-features = false, features = ["formatting", "macros", "parsing"] }
 serde = { version = "1.0", features = ["derive"] }
-kstring = "1.0"
+kstring = "2.0"
 liquid-derive = { version = "^0.25.0", path = "../derive", optional = true }
 
 [dev-dependencies]
