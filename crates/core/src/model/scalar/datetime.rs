@@ -223,7 +223,8 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     } else {
         let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
 
-        let s = s.to_owned() + if offset_re.is_match(s) { "" } else { " +0000" };
+        let offset = if offset_re.is_match(s) { "" } else { " +0000" };
+        let s = s.to_owned() + offset;
 
         USER_FORMATS
             .iter()
