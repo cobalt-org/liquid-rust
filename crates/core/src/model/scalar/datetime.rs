@@ -182,28 +182,28 @@ mod friendly_date_time {
     }
 }
 
-// Parse a string representing the date and time.
-//
-// Accepts any of the formats listed below and builds return an `Option`
-// containing a `DateTimeImpl`.
-//
-// Supported formats:
-//
-// * `default` - `YYYY-MM-DD HH:MM:SS`
-// * `day_month` - `DD Month YYYY HH:MM:SS`
-// * `day_mon` - `DD Mon YYYY HH:MM:SS`
-// * `mdy` -  `MM/DD/YYYY HH:MM:SS`
-// * `dow_mon` - `Dow Mon DD HH:MM:SS YYYY`
-//
-// Offsets in one of the following forms, and are catenated with any of
-// the above formats.
-//
-// * `+HHMM`
-// * `-HHMM`
-//
-// Example:
-//
-// * `dow_mon` format with an offset: "Tue Feb 16 10:00:00 2016 +0100"
+/// Parse a string representing the date and time.
+///
+/// Accepts any of the formats listed below and builds return an `Option`
+/// containing a `DateTimeImpl`.
+///
+/// Supported formats:
+///
+/// * `default` - `YYYY-MM-DD HH:MM:SS`
+/// * `day_month` - `DD Month YYYY HH:MM:SS`
+/// * `day_mon` - `DD Mon YYYY HH:MM:SS`
+/// * `mdy` -  `MM/DD/YYYY HH:MM:SS`
+/// * `dow_mon` - `Dow Mon DD HH:MM:SS YYYY`
+///
+/// Offsets in one of the following forms, and are catenated with any of
+/// the above formats.
+///
+/// * `+HHMM`
+/// * `-HHMM`
+///
+/// Example:
+///
+/// * `dow_mon` format with an offset: "Tue Feb 16 10:00:00 2016 +0100"
 fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     use regex::Regex;
     use time::macros::format_description;
