@@ -182,19 +182,53 @@ mod friendly_date_time {
     }
 }
 
+/// Parse a string representing the date and time.
+///
+/// Accepts any of the formats listed below and builds return an `Option`
+/// containing a `DateTimeImpl`.
+///
+/// Supported formats:
+///
+/// * `default` - `YYYY-MM-DD HH:MM:SS`
+/// * `day_month` - `DD Month YYYY HH:MM:SS`
+/// * `day_mon` - `DD Mon YYYY HH:MM:SS`
+/// * `mdy` -  `MM/DD/YYYY HH:MM:SS`
+/// * `dow_mon` - `Dow Mon DD HH:MM:SS YYYY`
+///
+/// Offsets in one of the following forms, and are catenated with any of
+/// the above formats.
+///
+/// * `+HHMM`
+/// * `-HHMM`
+///
+/// Example:
+///
+/// * `dow_mon` format with an offset: "Tue Feb 16 10:00:00 2016 +0100"
 fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
+    use regex::Regex;
+    use time::macros::format_description;
+
     const USER_FORMATS: &[&[time::format_description::FormatItem<'_>]] = &[
-        time::macros::format_description!("[day] [month repr:long] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
-        time::macros::format_description!("[day] [month repr:short] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
         DATE_TIME_FORMAT,
+        format_description!("[day] [month repr:long] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
+        format_description!("[day] [month repr:short] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
+        format_description!("[month]/[day]/[year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
+        format_description!("[weekday repr:short] [month repr:short] [day padding:none] [hour]:[minute]:[second] [year] [offset_hour sign:mandatory][offset_minute]"),
     ];
 
-    match s {
-        "now" => Some(DateTimeImpl::now_utc()),
-        _ => USER_FORMATS
+    if let "" = s {
+        None
+    } else if let "now" | "today" = s.to_lowercase().trim() {
+        Some(DateTimeImpl::now_utc())
+    } else {
+        let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
+
+        let offset = if offset_re.is_match(s) { "" } else { " +0000" };
+        let s = s.to_owned() + offset;
+
+        USER_FORMATS
             .iter()
-            .filter_map(|f| DateTimeImpl::parse(s, f).ok())
-            .next(),
+            .find_map(|f| DateTimeImpl::parse(s.as_str(), f).ok())
     }
 }
 
@@ -224,10 +258,89 @@ mod test {
     }
 
     #[test]
-    fn parse_date_time_serialized_format() {
-        let input = "2016-02-16 10:00:00 +0100";
+    fn parse_date_time_today() {
+        let input = "today";
         let actual = parse_date_time(input);
         assert!(actual.is_some());
+
+        let input = "Today";
+        let actual = parse_date_time(input);
+        assert!(actual.is_some());
+    }
+
+    #[test]
+    fn parse_date_time_serialized_format() {
+        let input = "2016-02-16 10:00:00 +0100"; // default format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455613200);
+
+        let input = "2016-02-16 10:00:00 +0000"; // default format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "2016-02-16 10:00:00"; // default format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_day_month_format() {
+        let input = "16 February 2016 10:00:00 +0100"; // day_month format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455613200);
+
+        let input = "16 February 2016 10:00:00 +0000"; // day_month format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "16 February 2016 10:00:00"; // day_month format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_day_mon_format() {
+        let input = "16 Feb 2016 10:00:00 +0100"; // day_mon format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455613200);
+
+        let input = "16 Feb 2016 10:00:00 +0000"; // day_mon format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "16 Feb 2016 10:00:00"; // day_mon format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_mdy_format() {
+        let input = "02/16/2016 10:00:00 +0100"; // mdy format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455613200);
+
+        let input = "02/16/2016 10:00:00 +0000"; // mdy format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "02/16/2016 10:00:00"; // mdy format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_dow_mon_format() {
+        let input = "Tue Feb 16 10:00:00 2016 +0100"; // dow_mon format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455613200);
+
+        let input = "Tue Feb 16 10:00:00 2016 +0000"; // dow_mon format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "Tue Feb 16 10:00:00 2016"; // dow_mon format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
 
     #[test]

@@ -9,7 +9,9 @@ pub fn date(y: i32, m: u8, d: u8) -> liquid_core::Value {
 
 #[allow(dead_code)]
 pub fn with_time(_time: &str) -> liquid_core::Value {
-    Nil
+    use liquid_core::model::DateTime;
+    use liquid_core::model::Value;
+    Value::scalar(DateTime::from_str(_time).unwrap())
 }
 
 #[allow(unused_macros)]
