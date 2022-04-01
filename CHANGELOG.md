@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixes
+
+- More datetime string formats are supported
+
 ## [0.25.0] - 2022-03-29
 
 ### Breaking Changes
