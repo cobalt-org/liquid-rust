@@ -205,6 +205,7 @@ mod friendly_date_time {
 //
 // * `dow_mon` format with an offset: "Tue Feb 16 10:00:00 2016 +0100"
 fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
+    use regex::Regex;
     use time::macros::format_description;
 
     const USER_FORMATS: &[&[time::format_description::FormatItem<'_>]] = &[
@@ -220,6 +221,10 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     } else if let "now" | "today" | "Today" = s {
         Some(DateTimeImpl::now_utc())
     } else {
+        let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
+
+        let s = s.to_owned() + if offset_re.is_match(s) { "" } else { " +0000" };
+
         USER_FORMATS
             .iter()
             .find_map(|f| DateTimeImpl::parse(s.as_str(), f).ok())
@@ -271,6 +276,10 @@ mod test {
         let input = "2016-02-16 10:00:00 +0000"; // default format UTC
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "2016-02-16 10:00:00"; // default format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
 
     #[test]
@@ -280,6 +289,10 @@ mod test {
         assert!(actual.unwrap().unix_timestamp() == 1455613200);
 
         let input = "16 February 2016 10:00:00 +0000"; // day_month format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "16 February 2016 10:00:00"; // day_month format no offset
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
@@ -293,6 +306,10 @@ mod test {
         let input = "16 Feb 2016 10:00:00 +0000"; // day_mon format UTC
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "16 Feb 2016 10:00:00"; // day_mon format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
 
     #[test]
@@ -304,6 +321,10 @@ mod test {
         let input = "02/16/2016 10:00:00 +0000"; // mdy format UTC
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "02/16/2016 10:00:00"; // mdy format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
 
     #[test]
@@ -313,6 +334,10 @@ mod test {
         assert!(actual.unwrap().unix_timestamp() == 1455613200);
 
         let input = "Tue Feb 16 10:00:00 2016 +0000"; // dow_mon format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "Tue Feb 16 10:00:00 2016"; // dow_mon format no offset
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
     }
