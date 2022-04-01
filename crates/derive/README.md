@@ -14,7 +14,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid-derive = "0.25.0"
+liquid-derive = "0.25.1"
 ```
 
 ## License

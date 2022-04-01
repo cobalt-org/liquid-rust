@@ -5,7 +5,7 @@ members = [
 
 [package]
 name = "liquid"
-version = "0.25.0"
+version = "0.25.1"
 description = "The liquid templating language for Rust"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 license = "MIT OR Apache-2.0"
