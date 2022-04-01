@@ -218,7 +218,7 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
 
     if let "" = s {
         None
-    } else if let "now" | "today" | "Today" = s {
+    } else if let "now" | "today" = s.to_lowercase().trim() {
         Some(DateTimeImpl::now_utc())
     } else {
         let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
