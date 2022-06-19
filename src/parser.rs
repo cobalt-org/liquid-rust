@@ -51,6 +51,7 @@ where
             .tag(stdlib::IncludeTag)
             .tag(stdlib::IncrementTag)
             .tag(stdlib::DecrementTag)
+            .tag(stdlib::RenderTag)
             .block(stdlib::RawBlock)
             .block(stdlib::IfBlock)
             .block(stdlib::UnlessBlock)

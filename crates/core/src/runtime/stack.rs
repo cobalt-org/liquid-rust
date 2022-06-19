@@ -91,12 +91,14 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     }
 }
 
-pub(crate) struct GlobalFrame<P> {
+/// A stack frame that only provides a sandboxed set of globals
+pub struct GlobalFrame<P> {
     parent: P,
     data: std::cell::RefCell<Object>,
 }
 
 impl<P: super::Runtime> GlobalFrame<P> {
+    /// Override globals for `parent`
     pub fn new(parent: P) -> Self {
         Self {
             parent,

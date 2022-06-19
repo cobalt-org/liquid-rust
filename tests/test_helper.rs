@@ -60,8 +60,12 @@ macro_rules! assert_template_result {
         assert_template_result!($expected, $template, $assigns, $liquid);
     };
     ($expected:expr, $template:expr, $assigns: expr, $liquid: expr) => {
-        let template = $liquid.parse($template.as_ref()).unwrap();
-        let rendered = template.render(&$assigns).unwrap();
+        let template = $liquid
+            .parse($template.as_ref())
+            .unwrap_or_else(|err| panic!("{err}"));
+        let rendered = template
+            .render(&$assigns)
+            .unwrap_or_else(|err| panic!("{err}"));
         assert_eq!($expected, rendered);
     };
 }
