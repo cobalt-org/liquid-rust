@@ -226,7 +226,7 @@ impl Renderable for For {
 }
 
 #[derive(Debug, Clone, ValueView, ObjectView)]
-struct ForloopObject<'p> {
+pub struct ForloopObject<'p> {
     length: i64,
     parentloop: Option<&'p dyn ValueView>,
     index0: i64,
@@ -238,7 +238,7 @@ struct ForloopObject<'p> {
 }
 
 impl<'p> ForloopObject<'p> {
-    fn new(i: usize, len: usize) -> Self {
+    pub fn new(i: usize, len: usize) -> Self {
         let i = i as i64;
         let len = len as i64;
         let first = i == 0;
@@ -520,7 +520,7 @@ fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Opt
 }
 
 #[derive(Clone, Debug)]
-enum RangeExpression {
+pub enum RangeExpression {
     Array(Expression),
     Counted(Expression, Expression),
 }
@@ -554,7 +554,7 @@ impl fmt::Display for RangeExpression {
 }
 
 #[derive(Clone, Debug)]
-enum Range<'r> {
+pub enum Range<'r> {
     Array(ValueCow<'r>),
     Counted(i64, i64),
 }

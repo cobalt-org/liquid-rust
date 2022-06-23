@@ -15,3 +15,7 @@ pub use self::if_block::IfBlock;
 pub use self::if_block::UnlessBlock;
 pub use self::ifchanged_block::IfChangedBlock;
 pub use self::raw_block::RawBlock;
+
+pub use self::for_block::ForloopObject;
+pub use self::for_block::Range;
+pub use self::for_block::RangeExpression;
