@@ -99,7 +99,12 @@ impl<'s> ScalarCow<'s> {
     pub fn to_integer(&self) -> Option<i64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
+            ScalarCowEnum::Float(ref x) => Some(x.trunc() as i64),
+            ScalarCowEnum::Str(ref x) => Some(
+                x.parse::<f64>()
+                    .map(|parsed| parsed.trunc() as i64)
+                    .unwrap_or(0),
+            ),
             _ => None,
         }
     }
@@ -109,7 +114,7 @@ impl<'s> ScalarCow<'s> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x as f64),
             ScalarCowEnum::Float(ref x) => Some(*x),
-            ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
+            ScalarCowEnum::Str(ref x) => Some(x.parse::<f64>().unwrap_or(0.0)),
             _ => None,
         }
     }
@@ -915,19 +920,19 @@ mod test {
     #[test]
     fn test_to_integer_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
 
         let val: ScalarCow<'_> = 42.34.into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
     }
 
     #[test]
     fn test_to_integer_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(0));
 
         let val: ScalarCow<'_> = "42.34".into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
 
         let val: ScalarCow<'_> = "42".into();
         assert_eq!(val.to_integer(), Some(42));
@@ -956,7 +961,7 @@ mod test {
     #[test]
     fn test_to_float_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_float(), None);
+        assert_eq!(val.to_float(), Some(0.0));
 
         let val: ScalarCow<'_> = "42.34".into();
         assert_eq!(val.to_float(), Some(42.34));
