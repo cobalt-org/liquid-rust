@@ -95,7 +95,7 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as an integer, if possible
+    /// Interpret as an integer, if possible.  Returns 0 if given a non-parseable string, and truncates floats.
     pub fn to_integer(&self) -> Option<i64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x),
@@ -109,12 +109,31 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as a float, if possible
+    /// Interpret as an integer, if possible.  Return None if given a float or non-parseable string.
+    pub fn to_integer_strict(&self) -> Option<i64> {
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
+            _ => None,
+        }
+    }
+
+    /// Interpret as a float, if possible.  Return 0.0 if given a non-parseable string.
     pub fn to_float(&self) -> Option<f64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x as f64),
             ScalarCowEnum::Float(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => Some(x.parse::<f64>().unwrap_or(0.0)),
+            _ => None,
+        }
+    }
+
+    /// Interpret as a float, if possible.  Return None if given a non-parseable string.
+    pub fn to_float_strict(&self) -> Option<f64> {
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => Some(*x as f64),
+            ScalarCowEnum::Float(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
             _ => None,
         }
     }
