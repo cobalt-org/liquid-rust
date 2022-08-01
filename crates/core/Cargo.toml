@@ -39,7 +39,7 @@ liquid-derive = { version = "^0.26.0", path = "../derive", optional = true }
 
 [dev-dependencies]
 difference = "2.0"
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 
 [features]
 default = []
