@@ -122,7 +122,7 @@ fn test_whitespace_is_blank() {
 #[test]
 fn test_whitespace_is_not_blank_if_other_stuff_is_present() {
     let body = "     x ";
-    assert_template_result!(repeat(body, N + 1), wrap(&body));
+    assert_template_result!(repeat(body, N + 1), wrap(body));
 }
 
 #[test]

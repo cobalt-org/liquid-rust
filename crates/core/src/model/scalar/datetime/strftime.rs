@@ -9,7 +9,7 @@ macro_rules! w {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DateFormatError {
     /// A % was not followed by any format specifier
     NoFormatSpecifier,
