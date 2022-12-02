@@ -14,7 +14,7 @@ use super::ValueView;
 /// Path to a value in an `Object`.
 ///
 /// There is guaranteed always at least one element.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Path<'s>(Vec<ScalarCow<'s>>);
 
 impl<'s> Path<'s> {

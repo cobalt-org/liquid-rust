@@ -286,7 +286,7 @@ impl<'s> PartialEq<&'s str> for Value {
     }
 }
 
-impl<'s> PartialEq<String> for Value {
+impl PartialEq<String> for Value {
     fn eq(&self, other: &String) -> bool {
         super::value_eq(self.as_view(), other)
     }

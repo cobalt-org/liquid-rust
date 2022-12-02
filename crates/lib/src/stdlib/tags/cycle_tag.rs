@@ -76,13 +76,9 @@ fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<C
         }
     }
 
-    loop {
-        match arguments.next() {
-            Some(a) => {
-                values.push(a.expect_value().into_result()?);
-            }
-            None => break,
-        }
+    while let Some(a) = arguments.next() {
+        values.push(a.expect_value().into_result()?);
+
         let next = arguments.next();
         match next.as_ref().map(TagToken::as_str) {
             Some(",") => {}
