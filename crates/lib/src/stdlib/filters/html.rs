@@ -30,11 +30,11 @@ fn escape(input: &dyn ValueView, once_p: bool) -> Result<Value> {
             skip -= 1;
             continue;
         }
-        match c as char {
+        match c {
             '<' | '>' | '\'' | '"' | '&' => {
                 result.push_str(&s[last..i]);
                 last = i + 1;
-                let escaped = match c as char {
+                let escaped = match c {
                     '<' => "&lt;",
                     '>' => "&gt;",
                     '\'' => "&#39;",

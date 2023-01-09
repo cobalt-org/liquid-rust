@@ -24,23 +24,24 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
 
         Ok(quote! {
             #impl_parse_filter {
-                fn parse(&self, args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::parser::Filter>> {
+                fn parse(&self, args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<dyn ::liquid_core::parser::Filter>> {
                     #build_filter_parameters
                     #return_expr
                 }
 
-                fn reflection(&self) -> &::liquid_core::parser::FilterReflection {
+                fn reflection(&self) -> &dyn ::liquid_core::parser::FilterReflection {
                     self
                 }
             }
         })
     } else {
         let return_expr = quote_spanned! {filter_struct_name.span()=>
+            #[allow(clippy::box_default)]
             ::std::result::Result::Ok(::std::boxed::Box::new(<#filter_struct_name as ::std::default::Default>::default()))
         };
         Ok(quote! {
             #impl_parse_filter {
-                fn parse(&self, mut args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<::liquid_core::parser::Filter>> {
+                fn parse(&self, mut args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<::std::boxed::Box<dyn ::liquid_core::parser::Filter>> {
                     if let ::std::option::Option::Some(arg) = args.positional.next() {
                         return ::std::result::Result::Err(::liquid_core::error::Error::with_msg("Invalid number of positional arguments")
                             .context("cause", concat!("expected at most 0 positional arguments"))
@@ -53,7 +54,7 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
                     #return_expr
                 }
 
-                fn reflection(&self) -> &::liquid_core::parser::FilterReflection {
+                fn reflection(&self) -> &dyn ::liquid_core::parser::FilterReflection {
                     self
                 }
             }

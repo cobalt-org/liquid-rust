@@ -9,7 +9,8 @@ readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT OR Apache-2.0"
-edition = "2018"
+edition = "2021"
+rust-version = "1.60.0"  # MSRV
 include = [
   "src/**/*",
   "Cargo.toml",
@@ -38,8 +39,8 @@ kstring = { version = "2.0", features = ["serde"] }
 liquid-derive = { version = "^0.26.0", path = "../derive", optional = true }
 
 [dev-dependencies]
-difference = "2.0"
 serde_yaml = "0.8"
+snapbox = "0.4.4"
 
 [features]
 default = []
