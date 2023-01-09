@@ -87,6 +87,10 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
     }
+
+    fn render_mode(&self) -> &super::RenderingMode {
+        self.parent.render_mode()
+    }
 }
 
 pub(crate) struct GlobalFrame<P> {
@@ -162,6 +166,10 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
     }
+
+    fn render_mode(&self) -> &super::RenderingMode {
+        self.parent.render_mode()
+    }
 }
 
 pub(crate) struct IndexFrame<P> {
@@ -236,5 +244,9 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
 
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
+    }
+
+    fn render_mode(&self) -> &super::RenderingMode {
+        self.parent.render_mode()
     }
 }
