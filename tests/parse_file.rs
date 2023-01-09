@@ -20,7 +20,7 @@ fn compare_by_file(name: &str, globals: &Object) {
         .read_to_string(&mut comp)
         .unwrap();
 
-    snapbox::assert_eq(&comp, &output);
+    snapbox::assert_eq(&comp, output);
 }
 
 #[test]

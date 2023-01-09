@@ -32,7 +32,7 @@ pub fn pass_between_threads() {
                 .read_to_string(&mut comp)
                 .unwrap_or_else(|_| panic!("Failed to read file: {}", output_file));
 
-            snapbox::assert_eq(&comp, &output);
+            snapbox::assert_eq(&comp, output);
         }));
     }
 

@@ -12,7 +12,7 @@ fn compare(input: &str, expected: &str) {
 
     let output = template.render(&Object::default()).unwrap();
 
-    snapbox::assert_eq(&expected, &output);
+    snapbox::assert_eq(expected, output);
 }
 
 #[test]
