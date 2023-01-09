@@ -9,7 +9,7 @@ readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT OR Apache-2.0"
-edition = "2018"
+edition = "2021"
 rust-version = "1.60.0"  # MSRV
 include = [
   "src/**/*",
