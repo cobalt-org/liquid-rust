@@ -9,6 +9,7 @@ keywords = ["liquid", "template", "templating", "language", "html"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/cobalt-org/liquid-rust"
 edition = "2018"
+rust-version = "1.60.0"  # MSRV
 include = [
   "src/**/*",
   "Cargo.toml",
