@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate difference;
-
 use liquid::*;
 use std::fs::File;
 use std::io::Read;
@@ -23,7 +20,7 @@ fn compare_by_file(name: &str, globals: &Object) {
         .read_to_string(&mut comp)
         .unwrap();
 
-    assert_diff!(&comp, &output, " ", 0);
+    snapbox::assert_eq(&comp, &output);
 }
 
 #[test]

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate difference;
-
 use liquid::*;
 
 fn compare(input: &str, expected: &str) {
@@ -15,7 +12,7 @@ fn compare(input: &str, expected: &str) {
 
     let output = template.render(&Object::default()).unwrap();
 
-    assert_diff!(&expected, &output, " ", 0);
+    snapbox::assert_eq(&expected, &output);
 }
 
 #[test]

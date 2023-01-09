@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate difference;
-
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
@@ -35,7 +32,7 @@ pub fn pass_between_threads() {
                 .read_to_string(&mut comp)
                 .unwrap_or_else(|_| panic!("Failed to read file: {}", output_file));
 
-            assert_diff!(&comp, &output, " ", 0);
+            snapbox::assert_eq(&comp, &output);
         }));
     }
 

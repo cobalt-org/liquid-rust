@@ -38,8 +38,8 @@ kstring = { version = "2.0", features = ["serde"] }
 liquid-derive = { version = "^0.26.0", path = "../derive", optional = true }
 
 [dev-dependencies]
-difference = "2.0"
 serde_yaml = "0.8"
+snapbox = "0.4.4"
 
 [features]
 default = []
