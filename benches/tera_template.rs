@@ -33,7 +33,7 @@ pub fn bench_big_table(c: &mut Criterion) {
         let size = 100;
         let table: Vec<_> = (0..size)
             .map(|_| {
-                let inner: Vec<_> = (0..size).map(|i| i as i32).collect();
+                let inner: Vec<_> = (0..size).collect();
                 inner
             })
             .collect();

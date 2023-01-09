@@ -1,5 +1,6 @@
 #![allow(clippy::bool_assert_comparison)]
 #![allow(clippy::module_inception)]
+#![allow(clippy::bool_to_int_with_if)]
 
 #[macro_use]
 extern crate pest_derive;
