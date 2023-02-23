@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Compatibility
+
+Bump MSRV to 1.60
+
+### Fixes
+
+- Don't lose millisecond precision on datetimes
+
 ## [0.26.0] - 2022-04-01
 
 ### Breaking Changes
