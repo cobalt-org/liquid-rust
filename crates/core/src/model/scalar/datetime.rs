@@ -140,12 +140,15 @@ const DATE_TIME_FORMAT_SUBSEC: &[time::format_description::FormatItem<'static>] 
 
 impl fmt::Display for DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let date_format = match self.inner.nanosecond() {
+            0 => DATE_TIME_FORMAT,
+            _ => DATE_TIME_FORMAT_SUBSEC,
+        };
+
         write!(
             f,
             "{}",
-            self.inner
-                .format(DATE_TIME_FORMAT)
-                .map_err(|_e| fmt::Error)?
+            self.inner.format(date_format).map_err(|_e| fmt::Error)?
         )
     }
 }
