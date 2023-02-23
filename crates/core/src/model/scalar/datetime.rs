@@ -134,6 +134,10 @@ const DATE_TIME_FORMAT: &[time::format_description::FormatItem<'static>] = time:
     "[year]-[month]-[day] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"
 );
 
+const DATE_TIME_FORMAT_SUBSEC: &[time::format_description::FormatItem<'static>] = time::macros::format_description!(
+    "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond] [offset_hour sign:mandatory][offset_minute]"
+);
+
 impl fmt::Display for DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -168,7 +172,7 @@ mod friendly_date_time {
         S: Serializer,
     {
         let s = date
-            .format(DATE_TIME_FORMAT)
+            .format(DATE_TIME_FORMAT_SUBSEC)
             .map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&s)
     }
@@ -178,7 +182,7 @@ mod friendly_date_time {
         D: Deserializer<'de>,
     {
         let s: std::borrow::Cow<'_, str> = Deserialize::deserialize(deserializer)?;
-        DateTimeImpl::parse(&s, DATE_TIME_FORMAT).map_err(serde::de::Error::custom)
+        DateTimeImpl::parse(&s, DATE_TIME_FORMAT_SUBSEC).map_err(serde::de::Error::custom)
     }
 }
 
@@ -210,6 +214,7 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
 
     const USER_FORMATS: &[&[time::format_description::FormatItem<'_>]] = &[
         DATE_TIME_FORMAT,
+        DATE_TIME_FORMAT_SUBSEC,
         format_description!("[day] [month repr:long] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
         format_description!("[day] [month repr:short] [year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
         format_description!("[month]/[day]/[year] [hour]:[minute]:[second] [offset_hour sign:mandatory][offset_minute]"),
@@ -281,6 +286,21 @@ mod test {
         let input = "2016-02-16 10:00:00"; // default format no offset
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_serialized_format_with_subseconds() {
+        let input = "2016-02-16 10:00:00.123456789 +0100"; // default format with offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp_nanos() == 1455613200123456789);
+
+        let input = "2016-02-16 10:00:00.123456789 +0000"; // default format UTC
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp_nanos() == 1455616800123456789);
+
+        let input = "2016-02-16 10:00:00.123456789"; // default format no offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp_nanos() == 1455616800123456789);
     }
 
     #[test]
