@@ -14,7 +14,7 @@ To include liquid in your project add the following to your Cargo.toml:
 
 ```toml
 [dependencies]
-liquid-bin = "0.26.0"
+liquid-bin = "0.26.1"
 ```
 
 Now you can use the crate in your code:
