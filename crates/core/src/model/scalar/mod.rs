@@ -98,7 +98,7 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as an integer, if possible
     pub fn to_integer(&self) -> Option<i64> {
         match self.0 {
-            ScalarCowEnum::Integer(ref x) => Some(*x),
+            ScalarCowEnum::Integer(x) => Some(x),
             ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
             _ => None,
         }
@@ -107,8 +107,8 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a float, if possible
     pub fn to_float(&self) -> Option<f64> {
         match self.0 {
-            ScalarCowEnum::Integer(ref x) => Some(*x as f64),
-            ScalarCowEnum::Float(ref x) => Some(*x),
+            ScalarCowEnum::Integer(x) => Some(x as f64),
+            ScalarCowEnum::Float(x) => Some(x),
             ScalarCowEnum::Str(ref x) => x.parse::<f64>().ok(),
             _ => None,
         }
@@ -117,7 +117,7 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a bool, if possible
     pub fn to_bool(&self) -> Option<bool> {
         match self.0 {
-            ScalarCowEnum::Bool(ref x) => Some(*x),
+            ScalarCowEnum::Bool(x) => Some(x),
             _ => None,
         }
     }
@@ -125,8 +125,8 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a date time, if possible
     pub fn to_date_time(&self) -> Option<DateTime> {
         match self.0 {
-            ScalarCowEnum::DateTime(ref x) => Some(*x),
-            ScalarCowEnum::Date(ref x) => Some(x.into_datetime()),
+            ScalarCowEnum::DateTime(x) => Some(x),
+            ScalarCowEnum::Date(x) => Some(x.into_datetime()),
             ScalarCowEnum::Str(ref x) => DateTime::from_str(x.as_str()),
             _ => None,
         }
@@ -135,8 +135,8 @@ impl<'s> ScalarCow<'s> {
     /// Interpret as a date time, if possible
     pub fn to_date(&self) -> Option<Date> {
         match self.0 {
-            ScalarCowEnum::DateTime(ref x) => Some(x.date()),
-            ScalarCowEnum::Date(ref x) => Some(*x),
+            ScalarCowEnum::DateTime(x) => Some(x.date()),
+            ScalarCowEnum::Date(x) => Some(x),
             ScalarCowEnum::Str(ref x) => Date::from_str(x.as_str()),
             _ => None,
         }
