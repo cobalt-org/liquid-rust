@@ -1,5 +1,7 @@
 use std::{convert::TryInto, fmt, ops};
 
+use super::DateTime;
+
 /// Liquid's native date only type.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
@@ -24,6 +26,13 @@ impl Date {
                 day,
             )
             .expect("one or more components were invalid"),
+        }
+    }
+
+    /// Convert a `Date` to `DateTime`
+    pub fn into_datetime(self) -> DateTime {
+        DateTime {
+            inner: self.inner.with_time(time::Time::MIDNIGHT).assume_utc(),
         }
     }
 

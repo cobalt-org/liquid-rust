@@ -14,7 +14,7 @@ use super::Date;
 #[repr(transparent)]
 pub struct DateTime {
     #[serde(with = "friendly_date_time")]
-    inner: DateTimeImpl,
+    pub(crate) inner: DateTimeImpl,
 }
 
 type DateTimeImpl = time::OffsetDateTime;

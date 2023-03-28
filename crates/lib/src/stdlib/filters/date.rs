@@ -32,12 +32,15 @@ impl Filter for DateFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let date = input.as_scalar().and_then(|s| s.to_date_time());
+        let date = input.as_scalar().and_then(|s| s.to_date());
         match date {
             Some(date) if !args.format.is_empty() => {
-                let s = date.format(args.format.as_str()).map_err(|_err| {
-                    Error::with_msg(format!("Invalid date-format string: {}", args.format))
-                })?;
+                let s = date
+                    .into_datetime()
+                    .format(args.format.as_str())
+                    .map_err(|_err| {
+                        Error::with_msg(format!("Invalid date-format string: {}", args.format))
+                    })?;
 
                 Ok(Value::scalar(s))
             }
@@ -53,21 +56,21 @@ mod tests {
     #[test]
     fn unit_date() {
         assert_eq!(
-            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "%Y-%m-%d").unwrap(),
+            liquid_core::call_filter!(Date, "13 Jun 2016", "%Y-%m-%d").unwrap(),
             liquid_core::value!("2016-06-13")
         );
     }
 
     #[test]
     fn unit_date_invalid_format() {
-        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "%Y %h %8").unwrap_err();
+        liquid_core::call_filter!(Date, "13 Jun 2016", "%Y %h %8").unwrap_err();
     }
 
     #[test]
     fn unit_date_cobalt_format() {
         assert_eq!(
-            liquid_core::call_filter!(Date, "2016-06-13 02:30:00 +0300", "%Y-%m-%d").unwrap(),
-            liquid_core::value!("2016-06-13")
+            liquid_core::call_filter!(Date, "2016-06-13", "%Y%m%d").unwrap(),
+            liquid_core::value!("20160613")
         );
     }
 
@@ -90,26 +93,26 @@ mod tests {
     #[test]
     fn unit_date_format_empty() {
         assert_eq!(
-            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", "").unwrap(),
-            liquid_core::value!("13 Jun 2016 02:30:00 +0300")
+            liquid_core::call_filter!(Date, "13 Jun 2016", "").unwrap(),
+            liquid_core::value!("13 Jun 2016")
         );
     }
 
     #[test]
     fn unit_date_bad_format_type() {
         assert_eq!(
-            liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", 0f64).unwrap(),
+            liquid_core::call_filter!(Date, "13 Jun 2016", 0f64).unwrap(),
             liquid_core::value!("0")
         );
     }
 
     #[test]
     fn unit_date_missing_format() {
-        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300").unwrap_err();
+        liquid_core::call_filter!(Date, "13 Jun 2016").unwrap_err();
     }
 
     #[test]
     fn unit_date_extra_param() {
-        liquid_core::call_filter!(Date, "13 Jun 2016 02:30:00 +0300", 0f64, 1f64).unwrap_err();
+        liquid_core::call_filter!(Date, "13 Jun 2016", 0f64, 1f64).unwrap_err();
     }
 }
