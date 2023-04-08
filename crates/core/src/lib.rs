@@ -13,7 +13,7 @@ pub mod parser;
 pub mod partials;
 pub mod runtime;
 
-pub use error::{Error, Result};
+pub use error::{Error, ErrorKind, Result};
 #[cfg(feature = "derive")]
 #[doc(hidden)]
 pub use liquid_derive::{

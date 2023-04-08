@@ -7,7 +7,7 @@ use crate::model::{ValueCow, ValueView};
 use crate::runtime::Expression;
 use crate::runtime::Renderable;
 use crate::runtime::Runtime;
-use crate::Value;
+use crate::{ErrorKind, Value};
 
 /// A `Value` expression.
 #[derive(Debug)]
@@ -25,22 +25,31 @@ impl FilterChain {
     /// Process `Value` expression within `runtime`'s stack.
     pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(runtime);
+        let mut entry = match self.entry.evaluate(runtime) {
+            Ok(v) => v,
+            Err(err) if self.filters.is_empty() => return Err(err),
+            Err(err) => match err.kind() {
+                // a missing value is not an error if there are filters
+                // that come next to process it. They will decide if this
+                // is appropriate or not (eg: the default filter)
+                ErrorKind::UnknownIndex | ErrorKind::UnknownVariable => ValueCow::Owned(Value::Nil),
+                _ => return Err(err),
+            },
+        };
 
         // apply all specified filters
         for filter in &self.filters {
-            let value = entry.unwrap_or_else(|_| ValueCow::Owned(Value::Nil));
             entry = filter
-                .evaluate(value.as_view(), runtime)
+                .evaluate(entry.as_view(), runtime)
                 .trace("Filter error")
                 .context_key("filter")
                 .value_with(|| format!("{}", filter).into())
                 .context_key("input")
-                .value_with(|| format!("{}", value.source()).into())
-                .map(ValueCow::Owned);
+                .value_with(|| format!("{}", entry.source()).into())
+                .map(ValueCow::Owned)?;
         }
 
-        entry
+        Ok(entry)
     }
 }
 
