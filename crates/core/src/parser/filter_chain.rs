@@ -7,6 +7,7 @@ use crate::model::{ValueCow, ValueView};
 use crate::runtime::Expression;
 use crate::runtime::Renderable;
 use crate::runtime::Runtime;
+use crate::Value;
 
 /// A `Value` expression.
 #[derive(Debug)]
@@ -24,22 +25,22 @@ impl FilterChain {
     /// Process `Value` expression within `runtime`'s stack.
     pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(runtime)?;
+        let mut entry = self.entry.evaluate(runtime);
 
         // apply all specified filters
         for filter in &self.filters {
-            entry = ValueCow::Owned(
-                filter
-                    .evaluate(entry.as_view(), runtime)
-                    .trace("Filter error")
-                    .context_key("filter")
-                    .value_with(|| format!("{}", filter).into())
-                    .context_key("input")
-                    .value_with(|| format!("{}", entry.source()).into())?,
-            );
+            let value = entry.unwrap_or_else(|_| ValueCow::Owned(Value::Nil));
+            entry = filter
+                .evaluate(value.as_view(), runtime)
+                .trace("Filter error")
+                .context_key("filter")
+                .value_with(|| format!("{}", filter).into())
+                .context_key("input")
+                .value_with(|| format!("{}", value.source()).into())
+                .map(ValueCow::Owned);
         }
 
-        Ok(entry)
+        entry
     }
 }
 
