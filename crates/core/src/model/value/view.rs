@@ -275,9 +275,11 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
         if x.size() != y.size() {
             return false;
         }
-        return x
-            .iter()
-            .all(|(key, value)| y.get(key.as_str()).map_or(false, |v| value_eq(v, value)));
+        return x.iter().all(|(key, value)| {
+            y.get(key.as_str())
+                .map(|v| value_eq(v, value))
+                .unwrap_or(false)
+        });
     }
 
     if lhs.is_nil() && rhs.is_nil() {

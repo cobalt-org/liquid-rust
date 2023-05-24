@@ -36,6 +36,7 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
         })
     } else {
         let return_expr = quote_spanned! {filter_struct_name.span()=>
+            #[allow(unknown_lints)]
             #[allow(clippy::box_default)]
             ::std::result::Result::Ok(::std::boxed::Box::new(<#filter_struct_name as ::std::default::Default>::default()))
         };

@@ -116,7 +116,7 @@ impl fmt::Display for Error {
             if !trace.get_context().is_empty() {
                 writeln!(f, "  with:")?;
             }
-            for &(ref key, ref value) in trace.get_context() {
+            for (key, value) in trace.get_context() {
                 writeln!(f, "    {}={}", key, value)?;
             }
         }

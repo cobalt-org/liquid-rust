@@ -5,16 +5,11 @@ use std::str::FromStr;
 use syn::*;
 
 /// A wrapper around a type that only allows its value to be assigned once.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum AssignOnce<T> {
     Set(T),
+    #[default]
     Unset,
-}
-
-impl<T> Default for AssignOnce<T> {
-    fn default() -> Self {
-        AssignOnce::Unset
-    }
 }
 
 impl<T> AssignOnce<T> {

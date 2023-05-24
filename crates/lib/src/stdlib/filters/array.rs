@@ -245,17 +245,21 @@ impl Filter for WhereFilter {
                 .filter(|object| {
                     object
                         .get(property)
-                        .map_or(false, |v| v.query_state(liquid_core::model::State::Truthy))
+                        .map(|v| v.query_state(liquid_core::model::State::Truthy))
+                        .unwrap_or(false)
                 })
                 .map(|object| object.to_value())
                 .collect(),
             Some(target_value) => input
                 .filter_map(|v| v.as_object())
                 .filter(|object| {
-                    object.get(property).map_or(false, |value| {
-                        let value = ValueViewCmp::new(value);
-                        target_value == value
-                    })
+                    object
+                        .get(property)
+                        .map(|value| {
+                            let value = ValueViewCmp::new(value);
+                            target_value == value
+                        })
+                        .unwrap_or(false)
                 })
                 .map(|object| object.to_value())
                 .collect(),
@@ -403,7 +407,8 @@ impl Filter for CompactFilter {
                 .filter(|v| {
                     !v.as_object()
                         .and_then(|obj| obj.get(property.as_str()))
-                        .map_or(true, |v| v.is_nil())
+                        .map(|v| v.is_nil())
+                        .unwrap_or(true)
                 })
                 .map(|v| v.to_value())
                 .collect()

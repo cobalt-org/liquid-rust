@@ -845,7 +845,7 @@ fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x == y,
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::Date(y)) => x == x.with_date(y),
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => y.with_date(x) == y,
-        (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x == y,
+        (ScalarCowEnum::Str(x), ScalarCowEnum::Str(y)) => x == y,
         // encode Ruby truthiness: all values except false and nil are true
         (_, &ScalarCowEnum::Bool(b)) | (&ScalarCowEnum::Bool(b), _) => b,
         _ => false,
@@ -863,7 +863,7 @@ fn scalar_cmp<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> Option<Ordering> 
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&y),
         (&ScalarCowEnum::DateTime(x), &ScalarCowEnum::Date(y)) => x.partial_cmp(&x.with_date(y)),
         (&ScalarCowEnum::Date(x), &ScalarCowEnum::DateTime(y)) => y.with_date(x).partial_cmp(&y),
-        (&ScalarCowEnum::Str(ref x), &ScalarCowEnum::Str(ref y)) => x.partial_cmp(y),
+        (ScalarCowEnum::Str(x), ScalarCowEnum::Str(y)) => x.partial_cmp(y),
         _ => None,
     }
 }
