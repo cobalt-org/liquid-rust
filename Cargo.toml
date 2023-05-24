@@ -1,39 +1,49 @@
 [workspace]
+resolver = "2"
 members = [
   "crates/*",
+]
+
+[workspace.package]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+rust-version = "1.65.0"  # MSRV
+include = [
+  "build.rs",
+  "src/**/*",
+  "Cargo.toml",
+  "Cargo.lock",
+  "LICENSE*",
+  "README.md",
+  "benches/**/*",
+  "examples/**/*"
 ]
 
 [package]
 name = "liquid"
 version = "0.26.1"
 description = "The liquid templating language for Rust"
-authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
-license = "MIT OR Apache-2.0"
 repository = "https://github.com/cobalt-org/liquid-rust"
 documentation = "https://docs.rs/liquid"
 readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
-edition = "2021"
-rust-version = "1.60.0"  # MSRV
-include = [
-  "src/**/*",
-  "Cargo.toml",
-  "LICENSE*",
-  "README.md",
-  "examples/**/*",
-  "benches/**/*",
-]
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+include.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.release]
 pre-release-replacements = [
-  {file="README.md", search="liquid = \".*\"", replace="liquid = \"{{version}}\"", exactly=1},
   {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=1},
   {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
   {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## [Unreleased] - ReleaseDate\n", exactly=1},
   {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/{{tag_name}}...HEAD", exactly=1},
-  {file="src/lib.rs", search="//! liquid = \".*\"", replace="//! liquid = \"{{version}}\"", exactly=1},
 ]
 
 [features]

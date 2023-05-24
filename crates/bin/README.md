@@ -12,9 +12,8 @@ Usage
 
 To include liquid in your project add the following to your Cargo.toml:
 
-```toml
-[dependencies]
-liquid-bin = "0.26.1"
+```console
+$ cargo install liquid-bin
 ```
 
 Now you can use the crate in your code:

@@ -8,21 +8,14 @@ documentation = "https://docs.rs/liquid-core"
 readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
-license = "MIT OR Apache-2.0"
-edition = "2021"
-rust-version = "1.60.0"  # MSRV
-include = [
-  "src/**/*",
-  "Cargo.toml",
-  "LICENSE*",
-  "README.md",
-  "examples/**/*"
-]
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+include.workspace = true
 
-[package.metadata.release]
-pre-release-replacements = [
-  {file="README.md", search="liquid-core = \".*\"", replace="liquid-core = \"{{version}}\"", exactly=1},
-]
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 anymap2 = "0.13"

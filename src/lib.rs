@@ -2,9 +2,8 @@
 //!
 //! __[liquidmarkup.org](http://liquidmarkup.org/)__
 //!
-//! ```toml
-//! [dependencies]
-//! liquid = "0.26.1"
+//! ```console
+//! $ cargo add liquid
 //! ```
 //!
 //! ## Example
@@ -20,6 +19,8 @@
 //! let output = template.render(&globals).unwrap();
 //! assert_eq!(output, "Liquid! 2".to_string());
 //! ```
+
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod parser;
 mod template;

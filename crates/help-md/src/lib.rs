@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 pub trait Renderable {
     fn render_summary(
         &self,

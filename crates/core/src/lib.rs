@@ -1,5 +1,6 @@
 #![allow(clippy::bool_assert_comparison)]
 #![allow(clippy::module_inception)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[macro_use]
 extern crate pest_derive;
