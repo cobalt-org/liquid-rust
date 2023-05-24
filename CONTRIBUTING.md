@@ -56,12 +56,17 @@ Hopefully we get this integrated into your CI process.
 
 # Releasing
 
+Pre-requisites
+- Running `cargo login`
+- A member of `ORG:Maintainers`
+- Push permission to the repo
+- [`cargo-release`](https://github.com/crate-ci/cargo-release/)
+
 When we're ready to release, a project owner should do the following
-- Determine what the next version is, according to semver
-- Bump version in a commit
-  - Run `clog --setversion <X>.<Y>.<Z>`, touch up the log
-  - Update the version in `Cargo.toml`
-- Tag the commit via `git tag -a v<X>.<Y>.<Z>`
-- `git push upstream master --tag v<X>.<Y>.<Z>`
-- Run `cargo publish` (run `cargo login` first if needed)
-- Update README.md to list the new version for Cargo.toml
+1. Update the changelog (see `cargo release changes` for ideas)
+2. Determine what the next version is, according to semver
+3. Run [`cargo release -x <level>`](https://github.com/crate-ci/cargo-release)
+
+[issues]: https://github.com/ORG/PROJECT/issues
+[new issue]: https://github.com/ORG/PROJECT/issues/new
+[all issues]: https://github.com/ORG/PROJECT/issues?utf8=%E2%9C%93&q=is%3Aissue

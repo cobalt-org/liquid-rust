@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![allow(clippy::bool_assert_comparison)]
 
 #[cfg(feature = "extra")]

@@ -12,9 +12,8 @@ Usage
 
 To include liquid in your project add the following to your Cargo.toml:
 
-```toml
-[dependencies]
-liquid-core = "0.26.1"
+```console
+$ cargo add liquid-core
 ```
 
 ## License
