@@ -174,8 +174,13 @@ mod friendly_date_time {
     where
         S: Serializer,
     {
+        let date_format = match date.nanosecond() {
+            0 => DATE_TIME_FORMAT,
+            _ => DATE_TIME_FORMAT_SUBSEC,
+        };
+
         let s = date
-            .format(DATE_TIME_FORMAT_SUBSEC)
+            .format(date_format)
             .map_err(serde::ser::Error::custom)?;
         serializer.serialize_str(&s)
     }
@@ -185,7 +190,11 @@ mod friendly_date_time {
         D: Deserializer<'de>,
     {
         let s: std::borrow::Cow<'_, str> = Deserialize::deserialize(deserializer)?;
-        DateTimeImpl::parse(&s, DATE_TIME_FORMAT_SUBSEC).map_err(serde::de::Error::custom)
+        if let Ok(date) = DateTimeImpl::parse(&s, DATE_TIME_FORMAT_SUBSEC) {
+            Ok(date)
+        } else {
+            DateTimeImpl::parse(&s, DATE_TIME_FORMAT).map_err(serde::de::Error::custom)
+        }
     }
 }
 
@@ -372,5 +381,26 @@ mod test {
         let input = date.to_string();
         let actual = parse_date_time(&input);
         assert!(actual.is_some());
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct TestSerde {
+        date: DateTime,
+    }
+
+    #[test]
+    fn serialize_deserialize_date_time() {
+        let yml = "---\ndate: \"2021-05-02 21:00:00 +0100\"\n";
+        let data: TestSerde = serde_yaml::from_str(yml).expect("could deserialize date");
+        let ser = serde_yaml::to_string(&data).expect("could serialize date");
+        assert_eq!(yml, ser);
+    }
+
+    #[test]
+    fn serialize_deserialize_date_time_ms() {
+        let yml = "---\ndate: \"2021-05-02 21:00:00.12 +0100\"\n";
+        let data: TestSerde = serde_yaml::from_str(yml).expect("could deserialize date");
+        let ser = serde_yaml::to_string(&data).expect("could serialize date");
+        assert_eq!(yml, ser);
     }
 }
