@@ -21,7 +21,7 @@ include = [
 
 [package]
 name = "liquid"
-version = "0.26.1"
+version = "0.26.2"
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust"
 documentation = "https://docs.rs/liquid"
@@ -52,9 +52,9 @@ stdlib = ["liquid-lib/stdlib"]
 
 [dependencies]
 doc-comment = "0.3"
-liquid-core = { version = "^0.26.1", path = "crates/core" }
-liquid-derive = { version = "^0.26.1", path = "crates/derive" }
-liquid-lib = { version = "^0.26.1", path = "crates/lib", optional = true }
+liquid-core = { version = "^0.26.2", path = "crates/core" }
+liquid-derive = { version = "^0.26.2", path = "crates/derive" }
+liquid-lib = { version = "^0.26.2", path = "crates/lib", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 [package]
 name = "liquid-help-md"
-version = "0.26.1"
+version = "0.26.2"
 authors = ["Ed Page <eopage@gmail.com>"]
 description = "Describe Liquid language via markdown"
 repository = "https://github.com/cobalt-org/liquid-rust"
@@ -18,4 +18,4 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-liquid-core = { version = "^0.26.1", path = "../core" }
+liquid-core = { version = "^0.26.2", path = "../core" }
