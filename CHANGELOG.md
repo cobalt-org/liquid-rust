@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Compatibility
+
+Bump MSRV to 1.65
+
+### Fix
+
+- Serialization leaves off subseconds when not needed
+- Deserialiation supports with and without subseconds
+
 ## [0.26.1] - 2023-02-23
 
 ### Compatibility
