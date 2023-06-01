@@ -1,6 +1,6 @@
 use crate::helpers::*;
 use proc_macro2::*;
-use proc_quote::*;
+use quote::*;
 use syn::*;
 
 /// Struct that contains information about the `Filter` struct to generate the

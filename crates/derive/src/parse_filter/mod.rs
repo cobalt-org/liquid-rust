@@ -1,6 +1,6 @@
 use crate::helpers::*;
 use proc_macro2::*;
-use proc_quote::*;
+use quote::*;
 use syn::*;
 
 pub mod filter_reflection;
