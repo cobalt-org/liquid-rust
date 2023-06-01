@@ -39,13 +39,13 @@ fn build_context(path: &path::Path) -> Result<liquid::Object, Box<dyn std::error
 
 #[derive(Parser)]
 struct Args {
-    #[clap(long, parse(from_os_str))]
+    #[arg(long)]
     input: std::path::PathBuf,
 
-    #[clap(long, parse(from_os_str))]
+    #[arg(long)]
     output: Option<std::path::PathBuf>,
 
-    #[clap(long, parse(from_os_str))]
+    #[arg(long)]
     context: Option<std::path::PathBuf>,
 }
 
