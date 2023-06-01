@@ -58,7 +58,7 @@ liquid-lib = { version = "^0.26.2", path = "crates/lib", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 tera = { version = "1.19", default-features = false }
 handlebars = "4.3"
 serde_derive = "1.0"
