@@ -1,5 +1,5 @@
 use proc_macro2::*;
-use proc_quote::*;
+use quote::*;
 use syn::*;
 
 pub fn derive(input: &DeriveInput) -> TokenStream {

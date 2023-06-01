@@ -1,7 +1,9 @@
-use crate::helpers::*;
 use proc_macro2::*;
-use proc_quote::*;
+use quote::*;
+use syn::spanned::Spanned as _;
 use syn::*;
+
+use crate::helpers::*;
 
 pub mod filter_reflection;
 pub mod parse;
@@ -41,7 +43,7 @@ impl<'a> ParseFilter<'a> {
 
     /// Searches for `#[filter(...)]` in order to parse `ParseFilterMeta`.
     fn parse_attrs(attrs: &[Attribute]) -> Result<ParseFilterMeta> {
-        let mut filter_attrs = attrs.iter().filter(|attr| attr.path.is_ident("filter"));
+        let mut filter_attrs = attrs.iter().filter(|attr| attr.path().is_ident("filter"));
 
         match (filter_attrs.next(), filter_attrs.next()) {
             (Some(attr), None) => ParseFilterMeta::from_attr(attr),
@@ -83,116 +85,38 @@ impl<'a> ParseFilter<'a> {
 struct ParseFilterMeta {
     filter_name: Result<String>,
     filter_description: Result<String>,
-    parameters_struct_name: Option<Ident>,
-    filter_struct_name: Result<Ident>,
+    parameters_struct_name: Option<Path>,
+    filter_struct_name: Result<Path>,
 }
 
 impl ParseFilterMeta {
     /// Tries to create a new `ParseFilterMeta` from the given `Attribute`
     fn from_attr(attr: &Attribute) -> Result<Self> {
-        let meta = attr.parse_meta().map_err(|err| {
-            Error::new(
-                err.span(),
-                format!("Could not parse `filter` attribute: {}", err),
-            )
-        })?;
-
-        let meta = match meta {
-            Meta::Path(meta) => return Err(Error::new_spanned(
-                meta,
-                "Found filter without name or description. Meta information is necessary in order to properly generate ParameterReflection.",
-            )),
-            Meta::NameValue(meta) => return Err(Error::new_spanned(
-                meta,
-                "Couldn't parse this parameter attribute. Have you tried `#[parser(name=\"...\", description=\"...\", parameters(...), parsed(...))]`?",
-            )),
-            Meta::List(meta) => meta,
-        };
-
         let mut name = AssignOnce::Unset;
         let mut description = AssignOnce::Unset;
         let mut parameters = AssignOnce::Unset;
         let mut parsed = AssignOnce::Unset;
 
-        for meta in meta.nested.into_iter() {
-            match meta {
-                NestedMeta::Meta(Meta::NameValue(meta)) => {
-                    let key = &meta.path.get_ident().expect("Single element path");
-                    let value = &meta.lit;
-
-                    match key.to_string().as_str() {
-                        "name" => assign_str_value(&mut name, key, value)?,
-                        "description" => assign_str_value(&mut description, key, value)?,
-                        "parameters" => {
-                            return Err(Error::new_spanned(key, "Did you mean `parameters(...)`."));
-                        }
-                        "parsed" => {
-                            return Err(Error::new_spanned(key, "Did you mean `parsed(...)`."));
-                        }
-                        _ => {
-                            return Err(Error::new_spanned(
-                                key,
-                                "Unknown element in filter attribute.",
-                            ));
-                        }
-                    }
-                }
-
-                NestedMeta::Meta(Meta::List(meta)) => {
-                    let attr = &meta.path.get_ident().expect("Single element path");
-
-                    let mut meta = meta.nested.into_iter();
-                    match (meta.next(), meta.next()) {
-                        (Some(meta), None) => {
-                            if let NestedMeta::Meta(Meta::Path(meta)) = meta {
-                                match attr.to_string().as_str() {
-                                    "parameters" => assign_ident(
-                                        &mut parameters,
-                                        attr,
-                                        meta.get_ident().expect("Single element path").clone(),
-                                    )?,
-                                    "parsed" => assign_ident(
-                                        &mut parsed,
-                                        attr,
-                                        meta.get_ident().expect("Single element path").clone(),
-                                    )?,
-                                    _ => {
-                                        return Err(Error::new_spanned(
-                                            attr,
-                                            "Unknown element in filter attribute.",
-                                        ));
-                                    }
-                                }
-                            } else {
-                                return Err(Error::new_spanned(
-                                    meta,
-                                    "Unexpected element in filter attribute.",
-                                ));
-                            }
-                        }
-                        (_, Some(meta)) => {
-                            return Err(Error::new_spanned(
-                                meta,
-                                "Unexpected element in filter attribute.",
-                            ));
-                        }
-                        _ => {
-                            return Err(Error::new_spanned(
-                                attr,
-                                "Element expected in filter attribute.",
-                            ));
-                        }
-                    }
-                }
-
-                _ => {
-                    return Err(Error::new_spanned(
-                        meta,
-                        "Unknown element in filter attribute.",
-                    ));
-                }
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("name") {
+                assign_str_value(&mut name, attr, "name", &meta)?;
+            } else if meta.path.is_ident("description") {
+                assign_str_value(&mut description, attr, "description", &meta)?;
+            } else if meta.path.is_ident("parameters") {
+                assign_path(&mut parameters, attr, "parameters", &meta)?;
+            } else if meta.path.is_ident("parsed") {
+                assign_path(&mut parsed, attr, "parsed", &meta)?;
+            } else {
+                return Err(Error::new(
+                    attr.span(),
+                    format!(
+                        "unknown `{}` parameter attribute",
+                        meta.path.to_token_stream()
+                    ),
+                ));
             }
-        }
+            Ok(())
+        })?;
 
         let filter_name = name.unwrap_or_err(|| Error::new_spanned(
             attr,

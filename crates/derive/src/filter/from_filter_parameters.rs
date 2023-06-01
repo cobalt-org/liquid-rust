@@ -1,6 +1,6 @@
 use crate::helpers::*;
 use proc_macro2::*;
-use proc_quote::*;
+use quote::*;
 use syn::*;
 
 /// Struct that contains information about the `Filter` struct to generate the
@@ -115,7 +115,7 @@ impl<'a> FilterStructField<'a> {
 
         let ident = ident.as_ref();
 
-        if attrs.iter().any(|attr| attr.path.is_ident("parameters")) {
+        if attrs.iter().any(|attr| attr.path().is_ident("parameters")) {
             FilterStructField::FilterParameters(FilterField { ident, ty })
         } else {
             FilterStructField::RegularField(FilterField { ident, ty })
