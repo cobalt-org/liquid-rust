@@ -1,7 +1,7 @@
 //! Utility items for this crate.
 
-use proc_macro2::*;
 use std::str::FromStr;
+use syn::spanned::Spanned as _;
 use syn::*;
 
 /// A wrapper around a type that only allows its value to be assigned once.
@@ -56,37 +56,60 @@ impl<T> AssignOnce<T> {
 }
 
 /// Utility function to parse `Meta::NameValue` elements that assigns a String.
-pub fn assign_str_value(to: &mut AssignOnce<String>, key: &Ident, value: &Lit) -> Result<()> {
-    if let Lit::Str(value) = value {
-        to.set(value.value(), || {
-            Error::new_spanned(key, format!("Element `{}` was already defined.", key))
-        })
-    } else {
-        Err(Error::new_spanned(value, "Expected string literal."))
-    }
+pub fn assign_str_value(
+    to: &mut AssignOnce<String>,
+    attr: &syn::Attribute,
+    key: &str,
+    meta: &syn::meta::ParseNestedMeta,
+) -> Result<()> {
+    let value = meta.value()?;
+    let value: LitStr = value.parse()?;
+    to.set(value.value(), || {
+        Error::new(
+            attr.span(),
+            format!("parameter `{}` was already specified.", key),
+        )
+    })
 }
 
 /// Utility function to parse `Meta::NameValue` elements that assigns a value parsed from a String.
-pub fn parse_str_value<T>(to: &mut AssignOnce<T>, key: &Ident, value: &Lit) -> Result<()>
+pub fn parse_str_value<T>(
+    to: &mut AssignOnce<T>,
+    attr: &syn::Attribute,
+    key: &str,
+    meta: &syn::meta::ParseNestedMeta,
+) -> Result<()>
 where
     T: FromStr<Err = String>,
 {
-    if let Lit::Str(value) = value {
-        let value = value
-            .value()
-            .parse()
-            .map_err(|err| Error::new_spanned(value, err))?;
-        to.set(value, || {
-            Error::new_spanned(key, format!("Element `{}` was already defined.", key))
-        })
-    } else {
-        Err(Error::new_spanned(value, "Expected string literal."))
-    }
+    let value = meta.value()?;
+    let value: LitStr = value.parse::<LitStr>()?;
+    let value = value
+        .value()
+        .parse()
+        .map_err(|err| Error::new(attr.span(), err))?;
+    to.set(value, || {
+        Error::new(
+            attr.span(),
+            format!("parameter `{}` was already specified.", key),
+        )
+    })
 }
 
 /// Utility function to parse `Meta::Word` elements.
-pub fn assign_ident(to: &mut AssignOnce<Ident>, key: &Ident, value: Ident) -> Result<()> {
-    to.set(value, || {
-        Error::new_spanned(key, format!("Element `{}` was already defined.", key))
+pub fn assign_path(
+    to: &mut AssignOnce<Path>,
+    attr: &syn::Attribute,
+    key: &str,
+    meta: &syn::meta::ParseNestedMeta,
+) -> Result<()> {
+    meta.parse_nested_meta(|meta| {
+        to.set(meta.path, || {
+            Error::new(
+                attr.span(),
+                format!("attribute `{}` was already specified.", key),
+            )
+        })?;
+        Ok(())
     })
 }

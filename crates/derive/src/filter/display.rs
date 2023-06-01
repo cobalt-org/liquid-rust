@@ -1,7 +1,9 @@
-use crate::helpers::*;
 use proc_macro2::*;
 use quote::*;
+use syn::spanned::Spanned as _;
 use syn::*;
+
+use crate::helpers::*;
 
 /// Struct that contains information about the `Filter` struct to generate the
 /// necessary code for `Display`.
@@ -52,7 +54,7 @@ impl<'a> FilterStruct<'a> {
 
     /// Searches for `#[name(...)]` in order to parse `filter_name`.
     fn parse_attrs(attrs: &[Attribute]) -> Result<String> {
-        let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path.is_ident("name"));
+        let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path().is_ident("name"));
 
         match (evaluated_attrs.next(), evaluated_attrs.next()) {
             (Some(attr), None) => Self::parse_name_attr(attr),
@@ -69,20 +71,18 @@ impl<'a> FilterStruct<'a> {
         }
     }
 
-    /// Parses `#[name(...)]` attribute.
+    /// Parses `#[name = "..."]` attribute.
     fn parse_name_attr(attr: &Attribute) -> Result<String> {
-        let meta = attr.parse_meta().map_err(|err| {
-            Error::new(
-                err.span(),
-                format!("Could not parse `evaluated` attribute: {}", err),
-            )
-        })?;
-
+        let meta = &attr.meta;
         if let Meta::NameValue(meta) = meta {
-            if let Lit::Str(name) = &meta.lit {
+            if let Expr::Lit(ExprLit {
+                lit: Lit::Str(name),
+                ..
+            }) = &meta.value
+            {
                 Ok(name.value())
             } else {
-                Err(Error::new_spanned(&meta.lit, "Expected string literal."))
+                Err(Error::new(attr.span(), "Expected string literal."))
             }
         } else {
             Err(Error::new_spanned(
@@ -123,7 +123,7 @@ impl<'a> FilterStruct<'a> {
             field
                 .attrs
                 .iter()
-                .any(|attr| attr.path.is_ident("parameters"))
+                .any(|attr| attr.path().is_ident("parameters"))
         });
 
         for (i, field) in marked {

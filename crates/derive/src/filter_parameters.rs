@@ -17,7 +17,9 @@ struct FilterParameters<'a> {
 impl<'a> FilterParameters<'a> {
     /// Searches for `#[evaluated(...)]` in order to parse `evaluated_name`.
     fn parse_attrs(attrs: &[Attribute]) -> Result<Option<Ident>> {
-        let mut evaluated_attrs = attrs.iter().filter(|attr| attr.path.is_ident("evaluated"));
+        let mut evaluated_attrs = attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("evaluated"));
 
         match (evaluated_attrs.next(), evaluated_attrs.next()) {
             (Some(attr), None) => Ok(Self::parse_evaluated_attr(attr)?.get_ident().cloned()),
@@ -33,41 +35,12 @@ impl<'a> FilterParameters<'a> {
 
     /// Parses `#[evaluated(...)]` attribute.
     fn parse_evaluated_attr(attr: &Attribute) -> Result<Path> {
-        let meta = attr.parse_meta().map_err(|err| {
-            Error::new(
-                err.span(),
-                format!("Could not parse `evaluated` attribute: {}", err),
-            )
+        let mut ident = None;
+        attr.parse_nested_meta(|meta| {
+            ident = Some(meta.path);
+            Ok(())
         })?;
-
-        match meta {
-            Meta::Path(meta) => Err(Error::new_spanned(
-                meta,
-                "Couldn't parse evaluated attribute. Have you tried `#[evaluated(\"...\")]`?",
-            )),
-            Meta::NameValue(meta) => Err(Error::new_spanned(
-                meta,
-                "Couldn't parse evaluated attribute. Have you tried `#[evaluated(\"...\")]`?",
-            )),
-            Meta::List(meta) => {
-                let meta_span = meta.span();
-                let mut inner = meta.nested.into_iter();
-
-                match (inner.next(), inner.next()) {
-                    (Some(inner), None) => {
-                        if let NestedMeta::Meta(Meta::Path(ident)) = inner {
-                            Ok(ident)
-                        } else {
-                            Err(Error::new_spanned(inner, "Expected ident."))
-                        }
-                    }
-
-                    (_, Some(inner)) => Err(Error::new_spanned(inner, "Unexpected element.")),
-
-                    _ => Err(Error::new(meta_span, "Expected ident.")),
-                }
-            }
-        }
+        ident.ok_or_else(|| Error::new(attr.span(), "expected ident"))
     }
 
     /// Tries to create a new `FilterParameters` from the given `DeriveInput`
@@ -365,54 +338,30 @@ struct FilterParameterMeta {
 impl FilterParameterMeta {
     /// Tries to create a new `FilterParameterMeta` from the given `Attribute`
     fn parse_parameter_attribute(attr: &Attribute) -> Result<Self> {
-        let meta = attr.parse_meta().map_err(|err| {
-            Error::new(
-                err.span(),
-                format!("Could not parse `parameter` attribute: {}", err),
-            )
-        })?;
-
-        let meta = match meta {
-            Meta::Path(meta) => return Err(Error::new_spanned(
-                meta,
-                "Found parameter without description. Description is necessary in order to properly generate ParameterReflection.",
-            )),
-            Meta::NameValue(meta) => return Err(Error::new_spanned(
-                meta,
-                "Couldn't parse this parameter attribute. Have you tried `#[parameter(description=\"...\")]`?",
-            )),
-            Meta::List(meta) => meta
-        };
-
         let mut rename = AssignOnce::Unset;
         let mut description = AssignOnce::Unset;
         let mut mode = AssignOnce::Unset;
-        let mut ty = AssignOnce::Unset;
-
-        for meta in meta.nested.into_iter() {
-            if let NestedMeta::Meta(Meta::NameValue(meta)) = meta {
-                let key = &meta.path.get_ident().expect("Single element path");
-                let value = &meta.lit;
-
-                match key.to_string().as_str() {
-                    "rename" => assign_str_value(&mut rename, key, value)?,
-                    "description" => assign_str_value(&mut description, key, value)?,
-                    "mode" => parse_str_value(&mut mode, key, value)?,
-                    "arg_type" => parse_str_value(&mut ty, key, value)?,
-                    _ => {
-                        return Err(Error::new_spanned(
-                            key,
-                            "Unknown element in parameter attribute.",
-                        ));
-                    }
-                }
+        let mut arg_type = AssignOnce::Unset;
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("rename") {
+                assign_str_value(&mut rename, attr, "rename", &meta)?;
+            } else if meta.path.is_ident("description") {
+                assign_str_value(&mut description, attr, "description", &meta)?;
+            } else if meta.path.is_ident("mode") {
+                parse_str_value(&mut mode, attr, "mode", &meta)?;
+            } else if meta.path.is_ident("arg_type") {
+                parse_str_value(&mut arg_type, attr, "arg_type", &meta)?;
             } else {
-                return Err(Error::new_spanned(
-                    meta,
-                    "Unknown element in parameter attribute. All elements should be key=value pairs.",
+                return Err(Error::new(
+                    attr.span(),
+                    format!(
+                        "unknown `{}` parameter attribute",
+                        meta.path.to_token_stream()
+                    ),
                 ));
             }
-        }
+            Ok(())
+        })?;
 
         let rename = rename.into_option();
         let description = description.unwrap_or_err(|| Error::new_spanned(
@@ -420,7 +369,7 @@ impl FilterParameterMeta {
             "Found parameter without description. Description is necessary in order to properly generate ParameterReflection.",
         ))?;
         let mode = mode.default_to(FilterParameterMode::Positional);
-        let ty = ty.default_to(FilterParameterType::Value);
+        let ty = arg_type.default_to(FilterParameterType::Value);
 
         Ok(FilterParameterMeta {
             rename,
@@ -435,7 +384,7 @@ impl FilterParameterMeta {
         let mut parameter_attrs = field
             .attrs
             .iter()
-            .filter(|attr| attr.path.is_ident("parameter"));
+            .filter(|attr| attr.path().is_ident("parameter"));
 
         match (parameter_attrs.next(), parameter_attrs.next()) {
             (Some(attr), None) => Self::parse_parameter_attribute(attr),
