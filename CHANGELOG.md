@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+- Initial support for `render` tag
+
 ## [0.26.3] - 2023-06-02
 
 ### Internal
