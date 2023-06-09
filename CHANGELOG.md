@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.26.4] - 2023-06-09
+
 ### Features
 
 - Initial support for `render` tag
@@ -892,7 +894,8 @@ Minor docs change.
   *  Moved `pluralize` to `extra-filters` ([17d57c09](https://github.com/cobalt-org/liquid-rust/commit/17d57c093fc8771531c13b6f587b44b2b25d2b03))
 
 <!-- next-url -->
-[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.26.3...HEAD
+[Unreleased]: https://github.com/assert-rs/predicates-rs/compare/v0.26.4...HEAD
+[0.26.4]: https://github.com/assert-rs/predicates-rs/compare/v0.26.3...v0.26.4
 [0.26.3]: https://github.com/assert-rs/predicates-rs/compare/v0.26.2...v0.26.3
 [0.26.2]: https://github.com/assert-rs/predicates-rs/compare/v0.26.1...v0.26.2
 [0.26.1]: https://github.com/assert-rs/predicates-rs/compare/v0.26.0...v0.26.1

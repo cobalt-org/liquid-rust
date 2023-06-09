@@ -574,7 +574,7 @@ checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
 name = "liquid"
-version = "0.26.3"
+version = "0.26.4"
 dependencies = [
  "criterion",
  "doc-comment",
@@ -605,7 +605,7 @@ dependencies = [
 
 [[package]]
 name = "liquid-core"
-version = "0.26.3"
+version = "0.26.4"
 dependencies = [
  "anymap2",
  "itertools",
@@ -623,7 +623,7 @@ dependencies = [
 
 [[package]]
 name = "liquid-derive"
-version = "0.26.3"
+version = "0.26.4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -639,7 +639,7 @@ dependencies = [
 
 [[package]]
 name = "liquid-lib"
-version = "0.26.3"
+version = "0.26.4"
 dependencies = [
  "deunicode",
  "itertools",
