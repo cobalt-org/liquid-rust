@@ -110,7 +110,7 @@ pub struct FilterArguments<'a> {
 /// }
 ///
 /// impl Filter for AtLeastFilter {
-///     fn evaluate(&self, input: &ValueViwe, runtime: &dyn Runtime) -> Result<Value> {
+///     fn evaluate(&self, input: &ValueView, runtime: &dyn Runtime) -> Result<Value> {
 ///         // Evaluate the `FilterParameters`
 ///         let args = self.args.evaluate(runtime)?;
 ///

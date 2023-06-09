@@ -124,7 +124,7 @@ fn test_sub_contexts_count_towards_the_same_recursion_limit() {
 }
 
 #[test]
-fn test_dynamically_choosen_templates_are_not_allowed() {
+fn test_dynamically_chosen_templates_are_not_allowed() {
   assert_syntax_error("{% assign name = 'snippet' %}{% render name %}")
 }
 
