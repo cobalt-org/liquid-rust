@@ -45,7 +45,7 @@ use proc_macro::TokenStream;
 ///
 /// If you want to only accept a certain type of `Value` for a given argument,
 /// you may mark its type with `arg_type = "..."`. This will take away the burden
-/// and boilerplate of handling errors and unwraping the liquid `Value` into a rust
+/// and boilerplate of handling errors and unwrapping the liquid `Value` into a rust
 /// type.
 ///
 /// Right now, there is a default `arg_type`, "any", that accepts any value, as well
