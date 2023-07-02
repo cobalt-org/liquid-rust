@@ -14,11 +14,13 @@ Goals:
 [shopify-liquid]: https://github.com/Shopify/liquid
 [shopify-compat]: https://github.com/cobalt-org/liquid-rust/labels/shopify-compatibility
 [liquid-variants]: https://shopify.github.io/liquid/basics/variations/
+[Mandy]: https://angeldollface.art/mandys-house/
 
 Example applications using liquid-rust:
 - [cobalt]: static site generator.
 - [cargo-tarball]: crate bin packaging tool.
 - [cargo-generate]: crate generator from templates.
+- [Mandy]: A hypersonic, easy-to-use, performant static-site generator.
 
 [cobalt]: https://cobalt-org.github.io/
 [cargo-tarball]: https://github.com/crate-ci/cargo-tarball
