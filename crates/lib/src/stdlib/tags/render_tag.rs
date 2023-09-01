@@ -107,7 +107,9 @@ impl ParseTag for RenderTag {
             t.expect_str(",")
                 .into_result_custom_msg("`,` is needed to separate variables")?;
             token = arguments.next();
-            let Some(t) = token else {break;};
+            let Some(t) = token else {
+                break;
+            };
 
             let id = t.expect_identifier().into_result()?.to_string();
 
