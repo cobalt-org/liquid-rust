@@ -15,15 +15,18 @@ fn generate_reflection(filter_parser: &ParseFilter<'_>) -> Result<TokenStream> {
     let impl_filter_reflection =
         filter_parser.generate_impl(quote! { ::liquid_core::parser::FilterReflection });
 
-    let (positional_parameters, keyword_parameters) = if let Some(parameters_struct_name) =
+    let (positional_parameters, keyword_parameters, keyword_group_parameters) = if let Some(
+        parameters_struct_name,
+    ) =
         parameters_struct_name
     {
         (
             quote_spanned! {parameters_struct_name.span()=> <#parameters_struct_name as ::liquid_core::parser::FilterParametersReflection>::positional_parameters() },
             quote_spanned! {parameters_struct_name.span()=> <#parameters_struct_name as ::liquid_core::parser::FilterParametersReflection>::keyword_parameters() },
+            quote_spanned! {parameters_struct_name.span()=> <#parameters_struct_name as ::liquid_core::parser::FilterParametersReflection>::keyword_group_parameters() },
         )
     } else {
-        (quote! { &[] }, quote! { &[] })
+        (quote! { &[] }, quote! { &[] }, quote! { &[] })
     };
 
     Ok(quote! {
@@ -41,6 +44,10 @@ fn generate_reflection(filter_parser: &ParseFilter<'_>) -> Result<TokenStream> {
 
             fn keyword_parameters(&self) -> &'static [::liquid_core::parser::ParameterReflection] {
                 #keyword_parameters
+            }
+
+            fn keyword_group_parameters(&self) -> &'static [::liquid_core::parser::ParameterReflection] {
+                #keyword_group_parameters
             }
         }
     })

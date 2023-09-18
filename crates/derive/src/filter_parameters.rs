@@ -83,6 +83,19 @@ impl<'a> FilterParameters<'a> {
             ));
         }
 
+        if fields.more_than_one_keyword_group_parameter() {
+            let grouped_keyword_fields = fields
+                .parameters
+                .iter()
+                .filter(|parameter| parameter.is_keyword_group())
+                .collect::<Vec<_>>();
+
+            return Err(Error::new_spanned(
+                grouped_keyword_fields.first(),
+                "Found more than one keyword_group parameter, this is not allowed.",
+            ));
+        }
+
         let name = ident;
         let evaluated_name = Self::parse_attrs(attrs)?
             .unwrap_or_else(|| Ident::new(&format!("Evaluated{}", name), Span::call_site()));
@@ -113,6 +126,16 @@ impl<'a> FilterParametersFields<'a> {
             .filter(|parameter| parameter.is_positional())
             .skip_while(|parameter| parameter.is_required())
             .find(|parameter| !parameter.is_optional())
+    }
+
+    /// Predicate that indicates the presence of more than one keyword group
+    /// argument
+    fn more_than_one_keyword_group_parameter(&self) -> bool {
+        self.parameters
+            .iter()
+            .filter(|parameter| parameter.is_keyword_group())
+            .count()
+            > 1
     }
 
     /// Tries to create a new `FilterParametersFields` from the given `Fields`
@@ -256,6 +279,11 @@ impl<'a> FilterParameter<'a> {
         self.meta.mode == FilterParameterMode::Keyword
     }
 
+    /// Returns whether this is a keyword list field.
+    fn is_keyword_group(&self) -> bool {
+        self.meta.mode == FilterParameterMode::KeywordGroup
+    }
+
     /// Returns the name of this parameter in liquid.
     ///
     /// That is, by default, the name of the field as a string. However,
@@ -279,6 +307,7 @@ impl<'a> ToTokens for FilterParameter<'a> {
 enum FilterParameterMode {
     Keyword,
     Positional,
+    KeywordGroup,
 }
 
 impl FromStr for FilterParameterMode {
@@ -286,6 +315,7 @@ impl FromStr for FilterParameterMode {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
             "keyword" => Ok(FilterParameterMode::Keyword),
+            "keyword_group" => Ok(FilterParameterMode::KeywordGroup),
             "positional" => Ok(FilterParameterMode::Positional),
             s => Err(format!(
                 "Expected either \"keyword\" or \"positional\". Found \"{}\".",
@@ -421,6 +451,15 @@ fn generate_construct_positional_field(
                     .context("cause", concat!("expected at least ", #required, " positional argument", #plural))
             )?;
         }
+    }
+}
+
+/// Generates the statement that assigns the keyword list argument.
+fn generate_construct_keyword_group_field(field: &FilterParameter<'_>) -> TokenStream {
+    let name = &field.name;
+
+    quote! {
+        let #name = Expression::with_object_literal(keyword_as_map);
     }
 }
 
@@ -582,6 +621,13 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
         .iter()
         .filter(|parameter| parameter.is_keyword());
 
+    let keyword_group_fields = fields
+        .parameters
+        .iter()
+        .filter(|parameter| parameter.is_keyword_group());
+
+    let group_keyword_param_exists = keyword_group_fields.peekable().peek().is_some();
+
     let match_keyword_parameters_arms = fields
         .parameters
         .iter()
@@ -597,6 +643,55 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
             quote!{ let #field = #field.ok_or_else(|| ::liquid_core::error::Error::with_msg(concat!("Expected named argument `", #liquid_name, "`")))?; }
         });
 
+    let keyword_group_fields_handling_blocks = fields
+        .parameters
+        .iter()
+        .filter(|parameter| parameter.is_keyword_group())
+        .map(generate_construct_keyword_group_field)
+        .collect::<Vec<_>>();
+
+    let keyword_not_found_in_params_block = if group_keyword_param_exists {
+        // If there is a parameter that indicates all keywords should be grouped
+        // in an object, we generate an empty matching arm to prevent an error from
+        // being returned when a parsed keyword argument is not defines as a param.
+        quote! {
+            {}
+        }
+    } else {
+        // If there is no parameter that indicates all keywords should be grouped,
+        // an error is returned when a keyword argument is found but has not being
+        // declared.
+        quote! {
+            {
+                return ::std::result::Result::Err(::liquid_core::error::Error::with_msg(format!("Unexpected named argument `{}`", keyword)))
+            }
+        }
+    };
+
+    let assign_grouped_keyword_block = if group_keyword_param_exists {
+        keyword_group_fields_handling_blocks
+            .first()
+            .unwrap()
+            .clone()
+    } else {
+        quote! {}
+    };
+
+    let keywords_handling_block = quote! {
+        let mut keyword_as_map: std::collections::HashMap<String, liquid_core::runtime::Expression> = std::collections::HashMap::new();
+        #(let mut #keyword_fields = ::std::option::Option::None;)*
+        #[allow(clippy::never_loop)] // This is not obfuscating the code because it's generated by a macro
+        while let ::std::option::Option::Some(arg) = args.keyword.next() {
+            keyword_as_map.insert(arg.0.into(), arg.1.clone());
+            match arg.0 {
+                #(#match_keyword_parameters_arms)*
+                keyword => #keyword_not_found_in_params_block
+            }
+        }
+        #assign_grouped_keyword_block
+        #(#unwrap_required_keyword_fields)*
+    };
+
     quote! {
         impl<'a> ::liquid_core::parser::FilterParameters<'a> for #name {
             type EvaluatedFilterParameters = #evaluated_name<'a>;
@@ -606,18 +701,10 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
                 if let ::std::option::Option::Some(arg) = args.positional.next() {
                     return ::std::result::Result::Err(#too_many_args);
                 }
-
-                #(let mut #keyword_fields = ::std::option::Option::None;)*
-                #[allow(clippy::never_loop)] // This is not obfuscating the code because it's generated by a macro
-                while let ::std::option::Option::Some(arg) = args.keyword.next() {
-                    match arg.0 {
-                        #(#match_keyword_parameters_arms)*
-                        keyword => return ::std::result::Result::Err(::liquid_core::error::Error::with_msg(format!("Unexpected named argument `{}`", keyword))),
-                    }
-                }
-                #(#unwrap_required_keyword_fields)*
+                #keywords_handling_block
 
                 Ok( #name { #comma_separated_field_names } )
+
             }
 
             fn evaluate(&'a self, runtime: &'a dyn ::liquid_core::runtime::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
@@ -692,6 +779,12 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenSt
         .filter(|parameter| parameter.is_keyword())
         .map(generate_parameter_reflection);
 
+    let kwg_params_reflection = fields
+        .parameters
+        .iter()
+        .filter(|parameter| parameter.is_keyword_group())
+        .map(generate_parameter_reflection);
+
     let pos_params_reflection = fields
         .parameters
         .iter()
@@ -706,6 +799,10 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenSt
 
             fn keyword_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
                 &[ #(#kw_params_reflection)* ]
+            }
+
+            fn keyword_group_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
+                &[ #(#kwg_params_reflection)* ]
             }
         }
     }
