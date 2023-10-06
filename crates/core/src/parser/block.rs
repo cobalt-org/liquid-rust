@@ -27,7 +27,7 @@ pub trait BlockReflection {
 /// This function will be called whenever the parser encounters a block and returns
 /// a new `Renderable` based on its parameters. The received parameters specify the name
 /// of the block, the argument [Tokens](crate::TagTokenIter) passed to
-/// the block, a [TagBlock](crate::TagBlock) inside the block and
+/// the block, a [`TagBlock`] inside the block and
 /// the global [`Language`].
 pub trait ParseBlock: Send + Sync + ParseBlockClone {
     fn parse(
