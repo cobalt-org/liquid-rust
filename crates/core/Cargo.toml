@@ -33,7 +33,7 @@ liquid-derive = { version = "^0.26.4", path = "../derive", optional = true }
 
 [dev-dependencies]
 serde_yaml = "0.8"
-snapbox = "0.4.13"
+snapbox = "0.4.14"
 
 [features]
 default = []
