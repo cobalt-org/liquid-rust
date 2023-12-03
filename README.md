@@ -1,7 +1,7 @@
 liquid-rust
 ===========
 
-> [Liquid templating](http://liquidmarkup.org/) for Rust
+> [Liquid templating](https://shopify.github.io/liquid/) for Rust
 
 [![Crates Status](https://img.shields.io/crates/v/liquid.svg)](https://crates.io/crates/liquid)
 [![Dependency Status](https://dependencyci.com/github/cobalt-org/liquid-rust/badge)](https://dependencyci.com/github/cobalt-org/liquid-rust)
