@@ -24,6 +24,7 @@ num-traits = "0.2"
 pest = "2.0"
 pest_derive = "2.0"
 regex = "1.5"
+indexmap = { version = "2.1.0", optional = true }
 
 # Exposed in API
 time = { version = "0.3", default-features = false, features = ["formatting", "macros", "parsing"] }
@@ -38,3 +39,4 @@ snapbox = "0.4.14"
 [features]
 default = []
 derive = ["liquid-derive"]
+indexmap = ["dep:indexmap"]
