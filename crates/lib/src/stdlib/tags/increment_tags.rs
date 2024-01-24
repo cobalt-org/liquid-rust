@@ -13,7 +13,7 @@ pub struct IncrementTag;
 
 impl IncrementTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -75,7 +75,7 @@ pub struct DecrementTag;
 
 impl DecrementTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

@@ -30,7 +30,7 @@ fn make_data_handlebars() -> BTreeMap<String, Json> {
 
     let mut teams = Vec::new();
 
-    for v in vec![
+    for v in [
         ("Jiangsu", 43u16),
         ("Beijing", 27u16),
         ("Guangzhou", 22u16),

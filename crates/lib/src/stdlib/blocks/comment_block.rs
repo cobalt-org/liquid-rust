@@ -12,7 +12,7 @@ pub struct CommentBlock;
 
 impl CommentBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

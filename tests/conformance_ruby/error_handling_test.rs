@@ -89,7 +89,7 @@ fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
     );
     let err = err.to_string();
 
-    let expected = regex::Regex::new(r#"\bline 5\b"#).unwrap();
+    let expected = regex::Regex::new(r"\bline 5\b").unwrap();
     println!("err={}", err);
     assert!(expected.is_match(&err));
 }

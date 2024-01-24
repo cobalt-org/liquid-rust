@@ -233,7 +233,7 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
         format_description!("[weekday repr:short] [month repr:short] [day padding:none] [hour]:[minute]:[second] [year] [offset_hour sign:mandatory][offset_minute]"),
     ];
 
-    if let "" = s {
+    if s.is_empty() {
         None
     } else if let "now" | "today" = s.to_lowercase().trim() {
         Some(DateTimeImpl::now_utc())

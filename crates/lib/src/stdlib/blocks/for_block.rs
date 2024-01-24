@@ -19,7 +19,7 @@ pub struct ForBlock;
 
 impl ForBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -266,7 +266,7 @@ pub struct TableRowBlock;
 
 impl TableRowBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -576,7 +576,7 @@ impl<'r> Range<'r> {
 
 fn get_array(array: &dyn ValueView) -> Result<Vec<ValueCow<'_>>> {
     if let Some(x) = array.as_array() {
-        Ok(x.values().map(|v| ValueCow::Borrowed(v)).collect())
+        Ok(x.values().map(ValueCow::Borrowed).collect())
     } else if let Some(x) = array.as_object() {
         let x = x
             .iter()

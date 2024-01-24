@@ -323,8 +323,8 @@ pub(crate) fn value_cmp(lhs: &dyn ValueView, rhs: &dyn ValueView) -> Option<Orde
     if let (Some(x), Some(y)) = (lhs.as_array(), rhs.as_array()) {
         return x
             .values()
-            .map(|v| ValueViewCmp(v))
-            .partial_cmp(y.values().map(|v| ValueViewCmp(v)));
+            .map(ValueViewCmp)
+            .partial_cmp(y.values().map(ValueViewCmp));
     }
 
     if let (Some(x), Some(y)) = (lhs.as_object(), rhs.as_object()) {

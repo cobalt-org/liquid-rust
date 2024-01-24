@@ -15,7 +15,7 @@ pub struct IncludeTag;
 
 impl IncludeTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
