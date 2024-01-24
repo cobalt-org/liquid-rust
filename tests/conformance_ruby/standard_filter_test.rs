@@ -370,7 +370,7 @@ fn test_strip_html() {
         v!("test"),
         call_filter!(
             liquid_lib::stdlib::StripHtml,
-            v!(r#"<!-- foo bar \n test -->test"#)
+            v!(r"<!-- foo bar \n test -->test")
         )
         .unwrap()
     );

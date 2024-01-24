@@ -13,7 +13,7 @@ pub struct IfChangedBlock;
 
 impl IfChangedBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

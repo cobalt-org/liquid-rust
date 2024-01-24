@@ -291,7 +291,7 @@ impl Registers {
     /// `get_mut`.
     pub fn get_mut<T: std::any::Any + Default>(&self) -> std::cell::RefMut<'_, T> {
         std::cell::RefMut::map(self.registers.borrow_mut(), |registers| {
-            registers.entry::<T>().or_insert_with(Default::default)
+            registers.entry::<T>().or_default()
         })
     }
 }

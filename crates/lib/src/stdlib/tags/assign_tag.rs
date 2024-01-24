@@ -13,7 +13,7 @@ pub struct AssignTag;
 
 impl AssignTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

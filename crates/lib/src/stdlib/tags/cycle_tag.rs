@@ -17,7 +17,7 @@ pub struct CycleTag;
 
 impl CycleTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

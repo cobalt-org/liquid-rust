@@ -12,7 +12,7 @@ pub struct BreakTag;
 
 impl BreakTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -60,7 +60,7 @@ pub struct ContinueTag;
 
 impl ContinueTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

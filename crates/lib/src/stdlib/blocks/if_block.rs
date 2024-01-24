@@ -18,7 +18,7 @@ pub struct IfBlock;
 
 impl IfBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
@@ -97,7 +97,7 @@ pub struct UnlessBlock;
 
 impl UnlessBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

@@ -17,7 +17,7 @@ pub struct CaseBlock;
 
 impl CaseBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

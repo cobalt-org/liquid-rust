@@ -23,7 +23,7 @@ pub struct RenderTag;
 
 impl RenderTag {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

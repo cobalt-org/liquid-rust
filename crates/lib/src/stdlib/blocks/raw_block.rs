@@ -12,7 +12,7 @@ pub struct RawBlock;
 
 impl RawBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 

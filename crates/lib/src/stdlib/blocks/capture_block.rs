@@ -14,7 +14,7 @@ pub struct CaptureBlock;
 
 impl CaptureBlock {
     pub fn new() -> Self {
-        Self::default()
+        Self
     }
 }
 
