@@ -7,6 +7,14 @@ use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, Value
 use super::PartialStore;
 use super::Renderable;
 
+/// What mode to use when rendering.
+pub enum RenderingMode {
+    /// Returns an error when a variable is not defined.
+    Strict,
+    /// Replaces missing variables with an empty string.
+    Lax,
+}
+
 /// State for rendering a template
 pub trait Runtime {
     /// Partial templates for inclusion.
@@ -36,6 +44,9 @@ pub trait Runtime {
 
     /// Unnamed state for plugins during rendering
     fn registers(&self) -> &Registers;
+
+    /// Used to set the mode when rendering
+    fn render_mode(&self) -> &RenderingMode;
 }
 
 impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
@@ -78,12 +89,17 @@ impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
     fn registers(&self) -> &super::Registers {
         <R as Runtime>::registers(self)
     }
+
+    fn render_mode(&self) -> &RenderingMode {
+        <R as Runtime>::render_mode(self)
+    }
 }
 
 /// Create processing runtime for a template.
 pub struct RuntimeBuilder<'g, 'p> {
     globals: Option<&'g dyn ObjectView>,
     partials: Option<&'p dyn PartialStore>,
+    render_mode: RenderingMode,
 }
 
 impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
@@ -92,6 +108,7 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         Self {
             globals: None,
             partials: None,
+            render_mode: RenderingMode::Strict,
         }
     }
 
@@ -100,6 +117,7 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         RuntimeBuilder {
             globals: Some(values),
             partials: self.partials,
+            render_mode: self.render_mode,
         }
     }
 
@@ -108,6 +126,16 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         RuntimeBuilder {
             globals: self.globals,
             partials: Some(values),
+            render_mode: self.render_mode,
+        }
+    }
+
+    /// Initialize with the provided rendering mode.
+    pub fn set_render_mode(self, mode: RenderingMode) -> RuntimeBuilder<'g, 'p> {
+        RuntimeBuilder {
+            globals: self.globals,
+            partials: self.partials,
+            render_mode: mode,
         }
     }
 
@@ -116,6 +144,7 @@ impl<'c, 'g: 'c, 'p: 'c> RuntimeBuilder<'g, 'p> {
         let partials = self.partials.unwrap_or(&NullPartials);
         let runtime = RuntimeCore {
             partials,
+            render_mode: self.render_mode,
             ..Default::default()
         };
         let runtime = super::IndexFrame::new(runtime);
@@ -208,6 +237,8 @@ pub struct RuntimeCore<'g> {
     partials: &'g dyn PartialStore,
 
     registers: Registers,
+
+    render_mode: RenderingMode,
 }
 
 impl<'g> RuntimeCore<'g> {
@@ -268,6 +299,10 @@ impl<'g> Runtime for RuntimeCore<'g> {
     fn registers(&self) -> &Registers {
         &self.registers
     }
+
+    fn render_mode(&self) -> &RenderingMode {
+        &self.render_mode
+    }
 }
 
 impl<'g> Default for RuntimeCore<'g> {
@@ -275,6 +310,7 @@ impl<'g> Default for RuntimeCore<'g> {
         Self {
             partials: &NullPartials,
             registers: Default::default(),
+            render_mode: RenderingMode::Strict,
         }
     }
 }
