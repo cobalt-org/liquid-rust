@@ -49,6 +49,7 @@ pre-release-replacements = [
 [features]
 default = ["stdlib"]
 stdlib = ["liquid-lib/stdlib"]
+indexmap = ["liquid-core/indexmap"]
 
 [dependencies]
 doc-comment = "0.3"

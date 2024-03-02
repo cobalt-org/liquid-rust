@@ -3,6 +3,9 @@
 pub mod map;
 mod ser;
 
+#[cfg(feature = "indexmap")]
+use indexmap::IndexMap;
+
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fmt;
@@ -355,6 +358,79 @@ impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
             write!(f, "{}{}", k, v.render())?;
         }
         Ok(())
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: ObjectIndex, V: ValueView> ValueView for IndexMap<K, V> {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(ObjectRender { s: self }))
+    }
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(ObjectSource { s: self }))
+    }
+    fn type_name(&self) -> &'static str {
+        "object"
+    }
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue | State::Empty | State::Blank => self.is_empty(),
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        let s = ObjectRender { s: self }.to_string();
+        KStringCow::from_string(s)
+    }
+    fn to_value(&self) -> Value {
+        Value::Object(
+            self.iter()
+                .map(|(k, v)| (crate::model::KString::from_ref(k.as_index()), v.to_value()))
+                .collect(),
+        )
+    }
+
+    fn as_object(&self) -> Option<&dyn ObjectView> {
+        Some(self)
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<K: ObjectIndex, V: ValueView> ObjectView for IndexMap<K, V> {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
+    fn size(&self) -> i64 {
+        self.len() as i64
+    }
+
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
+        let keys = IndexMap::keys(self).map(|s| s.as_index().into());
+        Box::new(keys)
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        let i = IndexMap::values(self).map(as_view);
+        Box::new(i)
+    }
+
+    fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+        let i = IndexMap::iter(self).map(|(k, v)| (k.as_index().into(), as_view(v)));
+        Box::new(i)
+    }
+
+    fn contains_key(&self, index: &str) -> bool {
+        IndexMap::contains_key(self, index)
+    }
+
+    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+        IndexMap::get(self, index).map(as_view)
     }
 }
 
