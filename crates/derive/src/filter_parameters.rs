@@ -79,7 +79,7 @@ impl<'a> FilterParameters<'a> {
         if let Some(parameter) = fields.required_after_optional() {
             return Err(Error::new_spanned(
                 parameter,
-                "Found required positional parameter after an optional positional parameter. The user can't input this parameters without inputing the optional ones first.",
+                "Found required positional parameter after an optional positional parameter. The user can't input this parameters without inputting the optional ones first.",
             ));
         }
 
