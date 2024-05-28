@@ -673,8 +673,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            1.0"#]]
+---
+1.0
+"#]]
             .raw()
         );
 
@@ -683,8 +684,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            -100.0"#]]
+---
+-100.0
+"#]]
             .raw()
         );
 
@@ -693,8 +695,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            31400000000.0"#]]
+---
+31400000000.0
+"#]]
             .raw()
         );
 
@@ -703,8 +706,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            .nan"#]]
+---
+.nan
+"#]]
             .raw()
         );
 
@@ -713,8 +717,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            .inf"#]]
+---
+.inf
+"#]]
             .raw()
         );
     }
@@ -740,8 +745,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            true"#]]
+---
+true
+"#]]
             .raw()
         );
 
@@ -750,8 +756,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            false"#]]
+---
+false
+"#]]
             .raw()
         );
     }
@@ -772,8 +779,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            ~"#]]
+---
+~
+"#]]
             .raw()
         );
     }
@@ -797,8 +805,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            Hello"#]]
+---
+Hello
+"#]]
             .raw()
         );
 
@@ -807,8 +816,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            "10""#]]
+---
+"10"
+"#]]
             .raw()
         );
 
@@ -817,8 +827,9 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            "false""#]]
+---
+"false"
+"#]]
             .raw()
         );
     }
@@ -847,10 +858,11 @@ mod test {
         assert_data_eq!(
             actual.trim(),
             str![[r#"
-            ---
-            - 1.0
-            - true
-            - "true""#]]
+---
+- 1.0
+- true
+- "true"
+"#]]
             .raw()
         );
     }
