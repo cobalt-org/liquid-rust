@@ -1,7 +1,7 @@
-use std::fs::File;
-use std::io::Read;
 use std::sync::Arc;
 use std::thread;
+
+use snapbox::assert_data_eq;
 
 #[test]
 pub fn pass_between_threads() {
@@ -18,7 +18,10 @@ pub fn pass_between_threads() {
     let v = vec![(5f64, 6f64), (20f64, 10f64)];
     for (counter, (num1, num2)) in v.into_iter().enumerate() {
         let template = Arc::clone(&template);
-        let output_file = format!("tests/fixtures/output/example_mt{}.txt", counter + 1);
+        let output_file = std::path::PathBuf::from(format!(
+            "tests/fixtures/output/example_mt{}.txt",
+            counter + 1
+        ));
         handles.push(thread::spawn(move || {
             let globals = liquid::object!({
                 "num": num1,
@@ -26,13 +29,7 @@ pub fn pass_between_threads() {
             });
             let output = template.render(&globals).unwrap();
 
-            let mut comp = String::new();
-            File::open(&output_file)
-                .unwrap_or_else(|_| panic!("Expected output file does not exist: {}", output_file))
-                .read_to_string(&mut comp)
-                .unwrap_or_else(|_| panic!("Failed to read file: {}", output_file));
-
-            snapbox::assert_eq(&comp, output);
+            assert_data_eq!(output, snapbox::Data::read_from(&output_file, None).raw());
         }));
     }
 
