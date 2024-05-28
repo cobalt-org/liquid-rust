@@ -662,27 +662,61 @@ impl<'de> serde::de::SeqAccess<'de> for ArrayDeserializer<'de> {
 mod test {
     use std::f64;
 
+    use snapbox::assert_data_eq;
+    use snapbox::prelude::*;
+    use snapbox::str;
+
     #[test]
     pub fn serialize_num() {
         let actual = crate::model::Value::scalar(1f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n1.0");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            1.0"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar(-100f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n-100.0");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            -100.0"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar(3.14e_10f64);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n31400000000.0");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            31400000000.0"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar(f64::NAN);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n.nan");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            .nan"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar(f64::INFINITY);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n.inf");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            .inf"#]]
+            .raw()
+        );
     }
 
     #[test]
@@ -703,11 +737,23 @@ mod test {
     pub fn serialize_bool() {
         let actual = crate::model::Value::scalar(true);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\ntrue");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            true"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar(false);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\nfalse");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            false"#]]
+            .raw()
+        );
     }
 
     #[test]
@@ -723,7 +769,13 @@ mod test {
     pub fn serialize_nil() {
         let actual = crate::model::Value::Nil;
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n~");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            ~"#]]
+            .raw()
+        );
     }
 
     #[test]
@@ -742,15 +794,33 @@ mod test {
     pub fn serialize_str() {
         let actual = crate::model::Value::scalar("Hello");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\nHello");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            Hello"#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar("10");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n\"10\"");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            "10""#]]
+            .raw()
+        );
 
         let actual = crate::model::Value::scalar("false");
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n\"false\"");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            "false""#]]
+            .raw()
+        );
     }
 
     #[test]
@@ -774,7 +844,15 @@ mod test {
         ];
         let actual = crate::model::Value::Array(actual);
         let actual = serde_yaml::to_string(&actual).unwrap();
-        snapbox::assert_eq(actual.trim(), "---\n- 1.0\n- true\n- \"true\"");
+        assert_data_eq!(
+            actual.trim(),
+            str![[r#"
+            ---
+            - 1.0
+            - true
+            - "true""#]]
+            .raw()
+        );
     }
 
     #[test]

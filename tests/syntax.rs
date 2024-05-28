@@ -1,4 +1,6 @@
 use liquid::*;
+use snapbox::assert_data_eq;
+use snapbox::data::IntoData;
 
 fn compare(input: &str, expected: &str) {
     let input = input.replace('…', " ");
@@ -12,7 +14,7 @@ fn compare(input: &str, expected: &str) {
 
     let output = template.render(&Object::default()).unwrap();
 
-    snapbox::assert_eq(expected, output);
+    assert_data_eq!(output, expected.raw());
 }
 
 #[test]
