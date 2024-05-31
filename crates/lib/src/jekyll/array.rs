@@ -1,6 +1,7 @@
 use std::cmp;
 use std::fmt::Write;
 
+use liquid_core::model::try_find;
 use liquid_core::model::ValueViewCmp;
 use liquid_core::Expression;
 use liquid_core::Result;
@@ -34,11 +35,22 @@ struct SortFilter {
     args: PropertyArgs,
 }
 
-fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
-    value
+fn safe_property_getter<'a>(value: &'a Value, property: String) -> Value {
+    let properties = property.split('.').collect::<Vec<&str>>();
+    let mut result = value.to_owned();
+    for property in properties {
+        result = result
         .as_object()
-        .and_then(|obj| obj.get(property))
-        .unwrap_or(&Value::Nil)
+        .and_then(move |obj| {
+            if let Some(scalar) = obj.as_scalar() {
+                try_find(&property, &vec![scalar]).map(|v| v.clone().to_value())
+            } else {
+                obj.get(&property).map(|v| v.to_value())
+            }
+        })
+        .unwrap_or(Value::Nil);
+    }
+    result
 }
 
 fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Ordering> {
@@ -77,8 +89,8 @@ impl Filter for SortFilter {
             // Using unwrap is ok since all of the elements are objects
             sorted.sort_by(|a, b| {
                 nil_safe_compare(
-                    safe_property_getter(a, property),
-                    safe_property_getter(b, property),
+                    &safe_property_getter(a, property.to_string()),
+                    &safe_property_getter(b, property.to_string()),
                 )
                 .unwrap_or(cmp::Ordering::Equal)
             });
@@ -275,11 +287,49 @@ mod tests {
     use super::*;
 
     #[test]
-    fn unit_sort() {
-        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
-        let desired_result = liquid_core::value!(["Z", "a", "b", "c"]);
+    fn unit_sort_objects() {
+        let input = &liquid_core::value!([
+            {
+                "date": {
+                    "year": 2019,
+                    "month": 3,
+                },
+            },
+            {
+                "date": {
+                    "year": 2018,
+                    "month": 2,
+                },
+            },
+            {
+                "date": {
+                    "year": 2020,
+                    "month": 1,
+                },
+            }
+        ]);
+        let desired_result = liquid_core::value!([
+            {
+                "date": {
+                    "year": 2018,
+                    "month": 2,
+                },
+            },
+            {
+                "date": {
+                    "year": 2019,
+                    "month": 3,
+                },
+            },
+            {
+                "date": {
+                    "year": 2020,
+                    "month": 1,
+                },
+            }
+        ]);
         assert_eq!(
-            liquid_core::call_filter!(Sort, input).unwrap(),
+            liquid_core::call_filter!(Sort, input, "date.year").unwrap(),
             desired_result
         );
     }
