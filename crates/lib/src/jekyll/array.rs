@@ -68,6 +68,9 @@ impl Filter for SortFilter {
         let args = self.args.evaluate(runtime)?;
 
         let input: Vec<_> = as_sequence(input).collect();
+        if input.is_empty() {
+            return Err(invalid_input("Non-empty array expected"));
+        }
         if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
             return Err(invalid_input("Array of objects expected"));
         }

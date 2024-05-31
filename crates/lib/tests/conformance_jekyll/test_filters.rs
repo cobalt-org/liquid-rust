@@ -6,7 +6,7 @@ mod sort_filter {
     #[test]
     fn raise_exception_when_input_is_nil() {
         let input = liquid_core::Value::Nil;
-        assert!(liquid_core::call_filter!(jekyll::Sort, input).is_ok());
+        assert!(liquid_core::call_filter!(jekyll::Sort, input).is_err());
     }
     #[test]
     fn return_sorted_numbers() {
