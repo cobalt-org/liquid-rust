@@ -1,10 +1,14 @@
 use std::cmp;
 use std::fmt::Write;
 
+use liquid_core::model::try_find;
+use liquid_core::model::KStringCow;
 use liquid_core::model::ValueViewCmp;
+use liquid_core::parser::parse_variable;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
+use liquid_core::ValueCow;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
@@ -45,11 +49,17 @@ enum NilsOrder {
     Last,
 }
 
-fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
-    value
-        .as_object()
-        .and_then(|obj| obj.get(property))
-        .unwrap_or(&Value::Nil)
+fn safe_property_getter<'v>(
+    value: &'v Value,
+    property: &KStringCow,
+    runtime: &dyn Runtime,
+) -> ValueCow<'v> {
+    let variable = parse_variable(property).expect("Failed to parse variable");
+    if let Some(path) = variable.try_evaluate(runtime) {
+        try_find(value, path.as_slice()).unwrap_or(ValueCow::Borrowed(&Value::Nil))
+    } else {
+        ValueCow::Borrowed(&Value::Nil)
+    }
 }
 
 fn nil_safe_compare(
@@ -114,8 +124,8 @@ impl Filter for SortFilter {
             // Using unwrap is ok since all of the elements are objects
             sorted.sort_by(|a, b| {
                 nil_safe_compare(
-                    safe_property_getter(a, property),
-                    safe_property_getter(b, property),
+                    safe_property_getter(a, property, runtime).as_view(),
+                    safe_property_getter(b, property, runtime).as_view(),
                     nils,
                 )
                 .unwrap_or(cmp::Ordering::Equal)

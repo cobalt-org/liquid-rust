@@ -128,7 +128,7 @@ mod sort_filter {
     #[test]
     fn return_sorted_by_subproperty_array() {
         assert_eq!(
-            liquid_core::value!([{ "a": { "b": 2 } }, { "a": { "b": 1 } },
+            liquid_core::value!([{ "a": { "b": 1 } }, { "a": { "b": 2 } },
                     { "a": { "b": 3 } },]),
             liquid_core::call_filter!(
                 jekyll::Sort,
