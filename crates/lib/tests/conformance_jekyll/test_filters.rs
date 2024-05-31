@@ -65,10 +65,10 @@ mod sort_filter {
             liquid_core::value!([{ "a": ".5" }, { "a": "0.65" }, { "a": "10" }]),
             liquid_core::call_filter!(
                 jekyll::Sort,
-                liquid_core::value!([{ "a": "10" }, { "a": ".5" }, { "a": "0.65" }])
+                liquid_core::value!([{ "a": "10" }, { "a": ".5" }, { "a": "0.65" }]),
+                "a"
             )
             .unwrap(),
-            "a"
         );
     }
 
@@ -78,10 +78,10 @@ mod sort_filter {
             liquid_core::value!([{ "a": ".5" }, { "a": "0.6" }, { "a": "twelve" }]),
             liquid_core::call_filter!(
                 jekyll::Sort,
-                liquid_core::value!([{ "a": "twelve" }, { "a": ".5" }, { "a": "0.6" }])
+                liquid_core::value!([{ "a": "twelve" }, { "a": ".5" }, { "a": "0.6" }]),
+                "a"
             )
-            .unwrap(),
-            "a"
+            .unwrap()
         );
     }
 
@@ -91,10 +91,10 @@ mod sort_filter {
             liquid_core::value!([{ "a": "1" }, { "a": "1abc" }, { "a": "20" }]),
             liquid_core::call_filter!(
                 jekyll::Sort,
-                liquid_core::value!([{ "a": "20" }, { "a": "1" }, { "a": "1abc" }])
+                liquid_core::value!([{ "a": "20" }, { "a": "1" }, { "a": "1abc" }]),
+                "a"
             )
-            .unwrap(),
-            "a"
+            .unwrap()
         );
     }
 
@@ -106,7 +106,7 @@ mod sort_filter {
             liquid_core::call_filter!(jekyll::Sort, ary, "a").unwrap()
         );
         assert_eq!(
-            liquid_core::call_filter!(jekyll::Sort, ary, "a").unwrap(),
+            liquid_core::value!([{ "b": 1 }, { "a": 1 }, { "a": 2 }]),
             liquid_core::call_filter!(jekyll::Sort, ary, "a", "first").unwrap()
         );
     }
@@ -128,7 +128,7 @@ mod sort_filter {
     #[test]
     fn return_sorted_by_subproperty_array() {
         assert_eq!(
-            liquid_core::value!([{ "a": { "b": 1 } }, { "a": { "b": 2 } },
+            liquid_core::value!([{ "a": { "b": 2 } }, { "a": { "b": 1 } },
                     { "a": { "b": 3 } },]),
             liquid_core::call_filter!(
                 jekyll::Sort,

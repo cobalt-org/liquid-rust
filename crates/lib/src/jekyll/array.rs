@@ -1,7 +1,6 @@
 use std::cmp;
 use std::fmt::Write;
 
-use liquid_core::model::try_find;
 use liquid_core::model::ValueViewCmp;
 use liquid_core::Expression;
 use liquid_core::Result;
@@ -14,16 +13,21 @@ use liquid_core::{Value, ValueView};
 use crate::invalid_input;
 
 #[derive(Debug, Default, FilterParameters)]
-struct PropertyArgs {
+struct SortArgs {
     #[parameter(description = "The property accessed by the filter.", arg_type = "str")]
     property: Option<Expression>,
+    #[parameter(
+        description = "nils appear before or after non-nil values, either ('first' | 'last')",
+        arg_type = "str"
+    )]
+    nils: Option<Expression>,
 }
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "sort",
     description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
-    parameters(PropertyArgs),
+    parameters(SortArgs),
     parsed(SortFilter)
 )]
 pub struct Sort;
@@ -32,34 +36,39 @@ pub struct Sort;
 #[name = "sort"]
 struct SortFilter {
     #[parameters]
-    args: PropertyArgs,
+    args: SortArgs,
 }
 
-fn safe_property_getter<'a>(value: &'a Value, property: String) -> Value {
-    let properties = property.split('.').collect::<Vec<&str>>();
-    let mut result = value.to_owned();
-    for property in properties {
-        result = result
+#[derive(Copy, Clone)]
+enum NilsOrder {
+    First,
+    Last,
+}
+
+fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
+    value
         .as_object()
-        .and_then(move |obj| {
-            if let Some(scalar) = obj.as_scalar() {
-                try_find(&property, &vec![scalar]).map(|v| v.clone().to_value())
-            } else {
-                obj.get(&property).map(|v| v.to_value())
-            }
-        })
-        .unwrap_or(Value::Nil);
-    }
-    result
+        .and_then(|obj| obj.get(property))
+        .unwrap_or(&Value::Nil)
 }
 
-fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Ordering> {
+fn nil_safe_compare(
+    a: &dyn ValueView,
+    b: &dyn ValueView,
+    nils: NilsOrder,
+) -> Option<cmp::Ordering> {
     if a.is_nil() && b.is_nil() {
         Some(cmp::Ordering::Equal)
     } else if a.is_nil() {
-        Some(cmp::Ordering::Greater)
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Less),
+            NilsOrder::Last => Some(cmp::Ordering::Greater),
+        }
     } else if b.is_nil() {
-        Some(cmp::Ordering::Less)
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Greater),
+            NilsOrder::Last => Some(cmp::Ordering::Less),
+        }
     } else {
         ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
     }
@@ -80,22 +89,39 @@ impl Filter for SortFilter {
         let args = self.args.evaluate(runtime)?;
 
         let input: Vec<_> = as_sequence(input).collect();
+        if input.is_empty() {
+            return Err(invalid_input("Non-empty array expected"));
+        }
         if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
             return Err(invalid_input("Array of objects expected"));
         }
+        let nils = if let Some(nils) = &args.nils {
+            match nils.to_kstr().as_str() {
+                "first" => NilsOrder::First,
+                "last" => NilsOrder::Last,
+                _ => {
+                    return Err(invalid_input(
+                        "Invalid nils order. Must be \"first\" or \"last\".",
+                    ))
+                }
+            }
+        } else {
+            NilsOrder::First
+        };
 
         let mut sorted: Vec<Value> = input.iter().map(|v| v.to_value()).collect();
         if let Some(property) = &args.property {
             // Using unwrap is ok since all of the elements are objects
             sorted.sort_by(|a, b| {
                 nil_safe_compare(
-                    &safe_property_getter(a, property.to_string()),
-                    &safe_property_getter(b, property.to_string()),
+                    safe_property_getter(a, property),
+                    safe_property_getter(b, property),
+                    nils,
                 )
                 .unwrap_or(cmp::Ordering::Equal)
             });
         } else {
-            sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+            sorted.sort_by(|a, b| nil_safe_compare(a, b, nils).unwrap_or(cmp::Ordering::Equal));
         }
         Ok(Value::array(sorted))
     }
@@ -287,49 +313,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn unit_sort_objects() {
-        let input = &liquid_core::value!([
-            {
-                "date": {
-                    "year": 2019,
-                    "month": 3,
-                },
-            },
-            {
-                "date": {
-                    "year": 2018,
-                    "month": 2,
-                },
-            },
-            {
-                "date": {
-                    "year": 2020,
-                    "month": 1,
-                },
-            }
-        ]);
-        let desired_result = liquid_core::value!([
-            {
-                "date": {
-                    "year": 2018,
-                    "month": 2,
-                },
-            },
-            {
-                "date": {
-                    "year": 2019,
-                    "month": 3,
-                },
-            },
-            {
-                "date": {
-                    "year": 2020,
-                    "month": 1,
-                },
-            }
-        ]);
+    fn unit_sort() {
+        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
+        let desired_result = liquid_core::value!(["Z", "a", "b", "c"]);
         assert_eq!(
-            liquid_core::call_filter!(Sort, input, "date.year").unwrap(),
+            liquid_core::call_filter!(Sort, input).unwrap(),
             desired_result
         );
     }
