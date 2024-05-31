@@ -105,18 +105,24 @@ mod sort_filter {
             liquid_core::value!([{ "b": 1 }, { "a": 1 }, { "a": 2 }]),
             liquid_core::call_filter!(jekyll::Sort, ary, "a").unwrap()
         );
-        assert!(liquid_core::call_filter!(jekyll::Sort, ary, "a", "first").is_err());
+        assert_eq!(
+            liquid_core::value!([{ "b": 1 }, { "a": 1 }, { "a": 2 }]),
+            liquid_core::call_filter!(jekyll::Sort, ary, "a", "first").unwrap()
+        );
     }
 
     #[test]
     fn return_sorted_by_property_array_with_nils_last() {
-        assert!(liquid_core::call_filter!(
-            jekyll::Sort,
-            liquid_core::value!([{ "a": 2 }, { "b": 1 }, { "a": 1 }]),
-            "a",
-            "last"
-        )
-        .is_err());
+        assert_eq!(
+            liquid_core::value!([{ "a": 1 }, { "a": 2 }, { "b": 1 }]),
+            liquid_core::call_filter!(
+                jekyll::Sort,
+                liquid_core::value!([{ "a": 2 }, { "b": 1 }, { "a": 1 }]),
+                "a",
+                "last"
+            )
+            .unwrap()
+        );
     }
 
     #[test]

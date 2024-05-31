@@ -13,16 +13,21 @@ use liquid_core::{Value, ValueView};
 use crate::invalid_input;
 
 #[derive(Debug, Default, FilterParameters)]
-struct PropertyArgs {
+struct SortArgs {
     #[parameter(description = "The property accessed by the filter.", arg_type = "str")]
     property: Option<Expression>,
+    #[parameter(
+        description = "nils appear before or after non-nil values, either ('first' | 'last')",
+        arg_type = "str"
+    )]
+    nils: Option<Expression>,
 }
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(
     name = "sort",
     description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
-    parameters(PropertyArgs),
+    parameters(SortArgs),
     parsed(SortFilter)
 )]
 pub struct Sort;
@@ -31,7 +36,13 @@ pub struct Sort;
 #[name = "sort"]
 struct SortFilter {
     #[parameters]
-    args: PropertyArgs,
+    args: SortArgs,
+}
+
+#[derive(Copy, Clone)]
+enum NilsOrder {
+    First,
+    Last,
 }
 
 fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
@@ -41,13 +52,23 @@ fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueVi
         .unwrap_or(&Value::Nil)
 }
 
-fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Ordering> {
+fn nil_safe_compare(
+    a: &dyn ValueView,
+    b: &dyn ValueView,
+    nils: NilsOrder,
+) -> Option<cmp::Ordering> {
     if a.is_nil() && b.is_nil() {
         Some(cmp::Ordering::Equal)
     } else if a.is_nil() {
-        Some(cmp::Ordering::Less)
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Less),
+            NilsOrder::Last => Some(cmp::Ordering::Greater),
+        }
     } else if b.is_nil() {
-        Some(cmp::Ordering::Greater)
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Greater),
+            NilsOrder::Last => Some(cmp::Ordering::Less),
+        }
     } else {
         ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
     }
@@ -74,6 +95,19 @@ impl Filter for SortFilter {
         if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
             return Err(invalid_input("Array of objects expected"));
         }
+        let nils = if let Some(nils) = &args.nils {
+            match nils.to_kstr().as_str() {
+                "first" => NilsOrder::First,
+                "last" => NilsOrder::Last,
+                _ => {
+                    return Err(invalid_input(
+                        "Invalid nils order. Must be \"first\" or \"last\".",
+                    ))
+                }
+            }
+        } else {
+            NilsOrder::First
+        };
 
         let mut sorted: Vec<Value> = input.iter().map(|v| v.to_value()).collect();
         if let Some(property) = &args.property {
@@ -82,11 +116,12 @@ impl Filter for SortFilter {
                 nil_safe_compare(
                     safe_property_getter(a, property),
                     safe_property_getter(b, property),
+                    nils,
                 )
                 .unwrap_or(cmp::Ordering::Equal)
             });
         } else {
-            sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+            sorted.sort_by(|a, b| nil_safe_compare(a, b, nils).unwrap_or(cmp::Ordering::Equal));
         }
         Ok(Value::array(sorted))
     }
