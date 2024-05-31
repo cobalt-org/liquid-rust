@@ -1,5 +1,7 @@
+use std::cmp;
 use std::fmt::Write;
 
+use liquid_core::model::ValueViewCmp;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
@@ -9,6 +11,83 @@ use liquid_core::{
 use liquid_core::{Value, ValueView};
 
 use crate::invalid_input;
+
+#[derive(Debug, Default, FilterParameters)]
+struct PropertyArgs {
+    #[parameter(description = "The property accessed by the filter.", arg_type = "str")]
+    property: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "sort",
+    description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
+    parameters(PropertyArgs),
+    parsed(SortFilter)
+)]
+pub struct Sort;
+
+#[derive(Debug, Default, FromFilterParameters, Display_filter)]
+#[name = "sort"]
+struct SortFilter {
+    #[parameters]
+    args: PropertyArgs,
+}
+
+fn safe_property_getter<'a>(value: &'a Value, property: &str) -> &'a dyn ValueView {
+    value
+        .as_object()
+        .and_then(|obj| obj.get(property))
+        .unwrap_or(&Value::Nil)
+}
+
+fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Ordering> {
+    if a.is_nil() && b.is_nil() {
+        Some(cmp::Ordering::Equal)
+    } else if a.is_nil() {
+        Some(cmp::Ordering::Greater)
+    } else if b.is_nil() {
+        Some(cmp::Ordering::Less)
+    } else {
+        ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
+    }
+}
+
+fn as_sequence<'k>(input: &'k dyn ValueView) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+    if let Some(array) = input.as_array() {
+        array.values()
+    } else if input.is_nil() {
+        Box::new(vec![].into_iter())
+    } else {
+        Box::new(std::iter::once(input))
+    }
+}
+
+impl Filter for SortFilter {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
+
+        let input: Vec<_> = as_sequence(input).collect();
+        if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
+            return Err(invalid_input("Array of objects expected"));
+        }
+
+        let mut sorted: Vec<Value> = input.iter().map(|v| v.to_value()).collect();
+        if let Some(property) = &args.property {
+            // Using unwrap is ok since all of the elements are objects
+            sorted.sort_by(|a, b| {
+                nil_safe_compare(
+                    safe_property_getter(a, property),
+                    safe_property_getter(b, property),
+                )
+                .unwrap_or(cmp::Ordering::Equal)
+            });
+        } else {
+            sorted.sort_by(|a, b| nil_safe_compare(a, b).unwrap_or(cmp::Ordering::Equal));
+        }
+        Ok(Value::array(sorted))
+    }
+}
 
 #[derive(Debug, FilterParameters)]
 struct PushArgs {
@@ -194,6 +273,16 @@ impl Filter for ArrayToSentenceStringFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unit_sort() {
+        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
+        let desired_result = liquid_core::value!(["Z", "a", "b", "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Sort, input).unwrap(),
+            desired_result
+        );
+    }
 
     #[test]
     fn unit_push() {
