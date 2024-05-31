@@ -45,9 +45,9 @@ fn nil_safe_compare(a: &dyn ValueView, b: &dyn ValueView) -> Option<cmp::Orderin
     if a.is_nil() && b.is_nil() {
         Some(cmp::Ordering::Equal)
     } else if a.is_nil() {
-        Some(cmp::Ordering::Greater)
-    } else if b.is_nil() {
         Some(cmp::Ordering::Less)
+    } else if b.is_nil() {
+        Some(cmp::Ordering::Greater)
     } else {
         ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
     }

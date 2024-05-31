@@ -102,7 +102,7 @@ mod sort_filter {
     fn return_sorted_by_property_array_with_nils_first() {
         let ary = liquid_core::value!([{ "a": 2 }, { "b": 1 }, { "a": 1 }]);
         assert_eq!(
-            liquid_core::value!([{ "a": 1 }, { "a": 2 }, { "b": 1 }]),
+            liquid_core::value!([{ "b": 1 }, { "a": 1 }, { "a": 2 }]),
             liquid_core::call_filter!(jekyll::Sort, ary, "a").unwrap()
         );
         assert!(liquid_core::call_filter!(jekyll::Sort, ary, "a", "first").is_err());
