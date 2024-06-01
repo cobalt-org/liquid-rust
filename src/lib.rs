@@ -25,9 +25,9 @@
 mod parser;
 mod template;
 
+pub mod partials;
 pub mod reflection;
 
-pub use liquid_core::partials;
 /// Liquid data model.
 pub mod model {
     pub use liquid_core::array;
