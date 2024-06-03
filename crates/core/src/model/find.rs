@@ -117,7 +117,7 @@ impl<'i, 's: 'i> ExactSizeIterator for PathIter<'i, 's> {
 }
 
 /// Find a `ValueView` nested in an `ObjectView`
-pub fn try_find<'o>(value: &'o dyn ValueView, path: &[ScalarCow<'_>]) -> Option<ValueCow<'o>> {
+pub fn try_find<'o, 'p>(value: &'o dyn ValueView, path: &[ScalarCow<'p>]) -> Option<ValueCow<'o>> {
     let indexes = path.iter();
     try_find_borrowed(value, indexes)
 }

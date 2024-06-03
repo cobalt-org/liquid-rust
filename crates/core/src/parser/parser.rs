@@ -78,6 +78,16 @@ pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<dyn Renderable>>>
     Ok(renderables)
 }
 
+/// Given a `Variable` as a string, parses it into a `Variable`.
+pub fn parse_variable_from_text(text: &str) -> Result<Variable> {
+    let variable = LiquidParser::parse(Rule::Variable, text)
+        .map_err(convert_pest_error)?
+        .next()
+        .expect("Parsing a variable failed.");
+
+    Ok(parse_variable(variable))
+}
+
 /// Parses a `Scalar` from a `Pair` with a literal value.
 /// This `Pair` must be `Rule::Literal`.
 fn parse_literal(literal: Pair) -> Value {
