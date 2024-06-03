@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Compatibility
+
+Bump MSRV to 1.70
+
+### Documentation
+
+- Provided an example of `liquid::partials`
+
 ## [0.26.4] - 2023-06-09
 
 ### Features
