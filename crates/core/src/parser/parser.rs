@@ -79,13 +79,13 @@ pub fn parse(text: &str, options: &Language) -> Result<Vec<Box<dyn Renderable>>>
 }
 
 /// Given a `Variable` as a string, parses it into a `Variable`.
-pub fn parse_variable_from_text(text: &str) -> Result<Variable> {
+pub fn parse_variable(text: &str) -> Result<Variable> {
     let variable = LiquidParser::parse(Rule::Variable, text)
         .map_err(convert_pest_error)?
         .next()
         .expect("Parsing a variable failed.");
 
-    Ok(parse_variable(variable))
+    Ok(parse_variable_pair(variable))
 }
 
 /// Parses a `Scalar` from a `Pair` with a literal value.
@@ -134,7 +134,7 @@ fn parse_literal(literal: Pair) -> Value {
 
 /// Parses a `Variable` from a `Pair` with a variable.
 /// This `Pair` must be `Rule::Variable`.
-fn parse_variable(variable: Pair) -> Variable {
+fn parse_variable_pair(variable: Pair) -> Variable {
     if variable.as_rule() != Rule::Variable {
         panic!("Expected variable.");
     }
@@ -173,7 +173,7 @@ fn parse_value(value: Pair) -> Expression {
 
     match value.as_rule() {
         Rule::Literal => Expression::Literal(parse_literal(value)),
-        Rule::Variable => Expression::Variable(parse_variable(value)),
+        Rule::Variable => Expression::Variable(parse_variable_pair(value)),
         _ => unreachable!(),
     }
 }
@@ -981,7 +981,7 @@ impl<'a> TagToken<'a> {
     /// Tries to obtain a `Variable` from this token.
     pub fn expect_variable(mut self) -> TryMatchToken<'a, Variable> {
         match self.unwrap_variable() {
-            Ok(t) => TryMatchToken::Matches(parse_variable(t)),
+            Ok(t) => TryMatchToken::Matches(parse_variable_pair(t)),
             Err(_) => {
                 self.expected.push(Rule::Variable);
                 TryMatchToken::Fails(self)
@@ -1147,7 +1147,7 @@ mod test {
         let mut expected = Variable::with_literal("foo");
         expected.extend(indexes);
 
-        assert_eq!(parse_variable(variable), expected);
+        assert_eq!(parse_variable_pair(variable), expected);
     }
 
     #[test]

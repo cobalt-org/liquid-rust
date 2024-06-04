@@ -1,5 +1,5 @@
 use liquid_core::model::KStringCow;
-use liquid_core::parser::parse_variable_from_text;
+use liquid_core::parser::parse_variable;
 use liquid_core::ValueCow;
 use std::cmp;
 use std::fmt::Write;
@@ -54,7 +54,7 @@ fn safe_property_getter<'v, 'p>(
     property: &'p KStringCow,
     runtime: &dyn Runtime,
 ) -> ValueCow<'v> {
-    let variable = parse_variable_from_text(property).expect("Failed to parse variable");
+    let variable = parse_variable(property).expect("Failed to parse variable");
     if let Some(path) = variable.try_evaluate(runtime) {
         try_find(value, &path.as_slice()).unwrap_or(ValueCow::Borrowed(&Value::Nil))
     } else {
