@@ -518,7 +518,7 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "liquid"
-version = "0.26.5"
+version = "0.26.6"
 dependencies = [
  "criterion",
  "doc-comment",
@@ -549,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "liquid-core"
-version = "0.26.5"
+version = "0.26.6"
 dependencies = [
  "anymap2",
  "itertools 0.12.1",
@@ -583,7 +583,7 @@ dependencies = [
 
 [[package]]
 name = "liquid-lib"
-version = "0.26.5"
+version = "0.26.6"
 dependencies = [
  "deunicode",
  "itertools 0.12.1",
