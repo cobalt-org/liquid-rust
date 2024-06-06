@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+- Support for jekyll's `sort`
+
 ## [0.26.5] - 2024-06-03
 
 ### Compatibility
