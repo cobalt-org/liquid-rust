@@ -1,14 +1,141 @@
+use std::cmp;
 use std::fmt::Write;
 
+use liquid_core::model::try_find;
+use liquid_core::model::KStringCow;
+use liquid_core::model::ValueViewCmp;
+use liquid_core::parser::parse_variable;
 use liquid_core::Expression;
 use liquid_core::Result;
 use liquid_core::Runtime;
+use liquid_core::ValueCow;
 use liquid_core::{
     Display_filter, Filter, FilterParameters, FilterReflection, FromFilterParameters, ParseFilter,
 };
 use liquid_core::{Value, ValueView};
 
 use crate::invalid_input;
+
+#[derive(Debug, Default, FilterParameters)]
+struct SortArgs {
+    #[parameter(description = "The property accessed by the filter.", arg_type = "str")]
+    property: Option<Expression>,
+    #[parameter(
+        description = "nils appear before or after non-nil values, either ('first' | 'last')",
+        arg_type = "str"
+    )]
+    nils: Option<Expression>,
+}
+
+#[derive(Clone, ParseFilter, FilterReflection)]
+#[filter(
+    name = "sort",
+    description = "Sorts items in an array. The order of the sorted array is case-sensitive.",
+    parameters(SortArgs),
+    parsed(SortFilter)
+)]
+pub struct Sort;
+
+#[derive(Debug, Default, FromFilterParameters, Display_filter)]
+#[name = "sort"]
+struct SortFilter {
+    #[parameters]
+    args: SortArgs,
+}
+
+#[derive(Copy, Clone)]
+enum NilsOrder {
+    First,
+    Last,
+}
+
+fn safe_property_getter<'v>(
+    value: &'v Value,
+    property: &KStringCow,
+    runtime: &dyn Runtime,
+) -> ValueCow<'v> {
+    let variable = parse_variable(property).expect("Failed to parse variable");
+    if let Some(path) = variable.try_evaluate(runtime) {
+        try_find(value, path.as_slice()).unwrap_or(ValueCow::Borrowed(&Value::Nil))
+    } else {
+        ValueCow::Borrowed(&Value::Nil)
+    }
+}
+
+fn nil_safe_compare(
+    a: &dyn ValueView,
+    b: &dyn ValueView,
+    nils: NilsOrder,
+) -> Option<cmp::Ordering> {
+    if a.is_nil() && b.is_nil() {
+        Some(cmp::Ordering::Equal)
+    } else if a.is_nil() {
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Less),
+            NilsOrder::Last => Some(cmp::Ordering::Greater),
+        }
+    } else if b.is_nil() {
+        match nils {
+            NilsOrder::First => Some(cmp::Ordering::Greater),
+            NilsOrder::Last => Some(cmp::Ordering::Less),
+        }
+    } else {
+        ValueViewCmp::new(a).partial_cmp(&ValueViewCmp::new(b))
+    }
+}
+
+fn as_sequence<'k>(input: &'k dyn ValueView) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+    if let Some(array) = input.as_array() {
+        array.values()
+    } else if input.is_nil() {
+        Box::new(vec![].into_iter())
+    } else {
+        Box::new(std::iter::once(input))
+    }
+}
+
+impl Filter for SortFilter {
+    fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
+        let args = self.args.evaluate(runtime)?;
+
+        let input: Vec<_> = as_sequence(input).collect();
+        if input.is_empty() {
+            return Err(invalid_input("Non-empty array expected"));
+        }
+        if args.property.is_some() && !input.iter().all(|v| v.is_object()) {
+            return Err(invalid_input("Array of objects expected"));
+        }
+        let nils = if let Some(nils) = &args.nils {
+            match nils.to_kstr().as_str() {
+                "first" => NilsOrder::First,
+                "last" => NilsOrder::Last,
+                _ => {
+                    return Err(invalid_input(
+                        "Invalid nils order. Must be \"first\" or \"last\".",
+                    ))
+                }
+            }
+        } else {
+            NilsOrder::First
+        };
+
+        let mut sorted: Vec<Value> = input.iter().map(|v| v.to_value()).collect();
+        if let Some(property) = &args.property {
+            // Using unwrap is ok since all of the elements are objects
+            sorted.sort_by(|a, b| {
+                nil_safe_compare(
+                    safe_property_getter(a, property, runtime).as_view(),
+                    safe_property_getter(b, property, runtime).as_view(),
+                    nils,
+                )
+                .unwrap_or(cmp::Ordering::Equal)
+            });
+        } else {
+            sorted.sort_by(|a, b| nil_safe_compare(a, b, nils).unwrap_or(cmp::Ordering::Equal));
+        }
+        Ok(Value::array(sorted))
+    }
+}
 
 #[derive(Debug, FilterParameters)]
 struct PushArgs {
@@ -194,6 +321,16 @@ impl Filter for ArrayToSentenceStringFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unit_sort() {
+        let input = &liquid_core::value!(["Z", "b", "c", "a"]);
+        let desired_result = liquid_core::value!(["Z", "a", "b", "c"]);
+        assert_eq!(
+            liquid_core::call_filter!(Sort, input).unwrap(),
+            desired_result
+        );
+    }
 
     #[test]
     fn unit_push() {
