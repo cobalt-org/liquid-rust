@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Features
 
-- Support for jekyll's `sort`
+- Support for jekyll's `sort` thanks to emmyoh
 
 ## [0.26.5] - 2024-06-03
 
