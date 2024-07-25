@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+## [0.26.8] - 2024-07-25
+
 ## [0.26.7] - 2024-07-25
 
 ## [0.26.6] - 2024-06-06
@@ -912,7 +914,8 @@ Minor docs change.
   *  Moved `pluralize` to `extra-filters` ([17d57c09](https://github.com/cobalt-org/liquid-rust/commit/17d57c093fc8771531c13b6f587b44b2b25d2b03))
 
 <!-- next-url -->
-[Unreleased]: https://github.com/cobalt-org/liquid-rust/compare/v0.26.7...HEAD
+[Unreleased]: https://github.com/cobalt-org/liquid-rust/compare/v0.26.8...HEAD
+[0.26.8]: https://github.com/cobalt-org/liquid-rust/compare/v0.26.7...v0.26.8
 [0.26.7]: https://github.com/cobalt-org/liquid-rust/compare/v0.26.6...v0.26.7
 [0.26.6]: https://github.com/assert-rs/predicates-rs/compare/v0.26.5...v0.26.6
 [0.26.5]: https://github.com/assert-rs/predicates-rs/compare/v0.26.4...v0.26.5
