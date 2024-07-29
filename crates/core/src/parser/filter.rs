@@ -24,6 +24,7 @@ pub struct ParameterReflection {
 pub trait FilterParametersReflection {
     fn positional_parameters() -> &'static [ParameterReflection];
     fn keyword_parameters() -> &'static [ParameterReflection];
+    fn keyword_group_parameters() -> &'static [ParameterReflection];
 }
 
 /// A trait that holds the information of a filter about itself, such as
@@ -42,6 +43,7 @@ pub trait FilterReflection {
 
     fn positional_parameters(&self) -> &'static [ParameterReflection];
     fn keyword_parameters(&self) -> &'static [ParameterReflection];
+    fn keyword_group_parameters(&self) -> &'static [ParameterReflection];
 }
 
 /// A trait that declares and holds the parameters of a filter.
