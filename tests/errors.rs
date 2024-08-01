@@ -1,8 +1,25 @@
+use snapbox::assert_data_eq;
+use snapbox::str;
+
 #[test]
-#[should_panic]
 fn test_fuzz() {
-    let _ = liquid::ParserBuilder::with_stdlib()
+    match liquid::ParserBuilder::with_stdlib()
         .build()
         .unwrap()
-        .parse("˄{%");
+        .parse("˄{%")
+    {
+        Ok(_) => panic!("should fail"),
+        Err(err) => assert_data_eq!(
+            err.to_string(),
+            str![[r#"
+liquid:  --> 1:3
+  |
+1 | {%
+  |   ^---
+  |
+  = expected Identifier
+
+"#]]
+        ),
+    }
 }
