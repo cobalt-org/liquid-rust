@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Fixes
+
+- Don't panic when generating parser error message
+
 ## [0.26.8] - 2024-07-25
 
 ## [0.26.7] - 2024-07-25
