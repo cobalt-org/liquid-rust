@@ -126,18 +126,14 @@ impl serde::Serializer for ScalarSerializer {
         self.serialize_str(variant)
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
-        self,
-        _name: &'static str,
-        value: &T,
-    ) -> Result<Scalar, SerError>
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> Result<Scalar, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(ScalarSerializer)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -145,7 +141,7 @@ impl serde::Serializer for ScalarSerializer {
         _value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         Err(scalar_must_be_a_string())
     }
@@ -154,9 +150,9 @@ impl serde::Serializer for ScalarSerializer {
         Err(scalar_must_be_a_string())
     }
 
-    fn serialize_some<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(self, _value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         Err(scalar_must_be_a_string())
     }

@@ -81,9 +81,9 @@ impl<O: From<Object>> serde::ser::SerializeStructVariant for SerializeStructVari
     type Ok = O;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         self.map
             .insert(KString::from_static(key), value.serialize(ValueSerializer)?);
@@ -109,9 +109,9 @@ impl<O: From<Object>> serde::ser::SerializeTupleVariant for SerializeTupleVarian
     type Ok = O;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         self.vec.push(value.serialize(ValueSerializer)?);
         Ok(())
@@ -138,9 +138,9 @@ impl<O: From<Object>> serde::ser::SerializeStruct for SerializeMap<O> {
     type Ok = O;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         match *self {
             SerializeMap::Map {
@@ -163,9 +163,9 @@ impl<O: From<Object>> serde::ser::SerializeMap for SerializeMap<O> {
     type Ok = O;
     type Error = SerError;
 
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), SerError>
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         match *self {
             SerializeMap::Map {
@@ -177,9 +177,9 @@ impl<O: From<Object>> serde::ser::SerializeMap for SerializeMap<O> {
         }
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         match *self {
             SerializeMap::Map {
@@ -233,13 +233,13 @@ impl serde::Serializer for MapKeySerializer {
     }
 
     #[inline]
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(self)
     }
@@ -314,7 +314,7 @@ impl serde::Serializer for MapKeySerializer {
         Err(key_must_be_a_string())
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -322,7 +322,7 @@ impl serde::Serializer for MapKeySerializer {
         _value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         Err(key_must_be_a_string())
     }
@@ -331,9 +331,9 @@ impl serde::Serializer for MapKeySerializer {
         Err(key_must_be_a_string())
     }
 
-    fn serialize_some<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(self, _value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         Err(key_must_be_a_string())
     }

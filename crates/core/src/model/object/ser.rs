@@ -125,18 +125,14 @@ impl serde::Serializer for ObjectSerializer {
     }
 
     #[inline]
-    fn serialize_newtype_struct<T: ?Sized>(
-        self,
-        _name: &'static str,
-        value: &T,
-    ) -> Result<Object, SerError>
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> Result<Object, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(ObjectSerializer)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -144,7 +140,7 @@ impl serde::Serializer for ObjectSerializer {
         value: &T,
     ) -> Result<Object, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         let mut values = Object::new();
         values.insert(
@@ -160,9 +156,9 @@ impl serde::Serializer for ObjectSerializer {
     }
 
     #[inline]
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Object, SerError>
+    fn serialize_some<T>(self, value: &T) -> Result<Object, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(ObjectSerializer)
     }
