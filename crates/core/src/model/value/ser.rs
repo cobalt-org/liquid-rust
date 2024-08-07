@@ -138,18 +138,14 @@ impl serde::Serializer for ValueSerializer {
     }
 
     #[inline]
-    fn serialize_newtype_struct<T: ?Sized>(
-        self,
-        _name: &'static str,
-        value: &T,
-    ) -> Result<Value, SerError>
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> Result<Value, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(ValueSerializer)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -157,7 +153,7 @@ impl serde::Serializer for ValueSerializer {
         value: &T,
     ) -> Result<Value, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         let mut values = Object::new();
         values.insert(
@@ -173,9 +169,9 @@ impl serde::Serializer for ValueSerializer {
     }
 
     #[inline]
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Value, SerError>
+    fn serialize_some<T>(self, value: &T) -> Result<Value, SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(ValueSerializer)
     }
@@ -253,9 +249,9 @@ impl serde::ser::SerializeSeq for SerializeVec {
     type Ok = Value;
     type Error = SerError;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         self.vec.push(value.serialize(ValueSerializer)?);
         Ok(())
@@ -270,9 +266,9 @@ impl serde::ser::SerializeTuple for SerializeVec {
     type Ok = Value;
     type Error = SerError;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         serde::ser::SerializeSeq::serialize_element(self, value)
     }
@@ -286,9 +282,9 @@ impl serde::ser::SerializeTupleStruct for SerializeVec {
     type Ok = Value;
     type Error = SerError;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), SerError>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), SerError>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         serde::ser::SerializeSeq::serialize_element(self, value)
     }

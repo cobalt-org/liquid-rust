@@ -52,10 +52,10 @@ impl fmt::Display for DateFormatError {
 /// Know exceptions are listed below:
 ///
 /// - `%Z` is used to print the (possibly) abbreviated time zone name. `chrono`
-/// did not actually implement this and instead just put the UTC offset with a
-/// colon, ie +/-HH:MM, and Ruby itself recommends _not_ using `%Z` as it is
-/// OS-dependent on what the string will be, in addition to the abbreviated time
-/// zone names being ambiguous. `Z` is also not supported at all by liquidjs.
+///   did not actually implement this and instead just put the UTC offset with a
+///   colon, ie +/-HH:MM, and Ruby itself recommends _not_ using `%Z` as it is
+///   OS-dependent on what the string will be, in addition to the abbreviated time
+///   zone names being ambiguous. `Z` is also not supported at all by liquidjs.
 pub fn strftime(ts: time::OffsetDateTime, fmt: &str) -> Result<String, DateFormatError> {
     let mut output = String::new();
     let mut fmt_iter = fmt.char_indices().peekable();

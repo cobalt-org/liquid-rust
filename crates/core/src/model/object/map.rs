@@ -49,10 +49,10 @@ impl Object {
     /// The key may be any borrowed form of the map's key type, but the ordering
     /// on the borrowed form *must* match the ordering on the key type.
     #[inline]
-    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
+    pub fn get<Q>(&self, key: &Q) -> Option<&Value>
     where
         Key: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        Q: Ord + Eq + Hash + ?Sized,
     {
         self.map.get(key)
     }
@@ -62,10 +62,10 @@ impl Object {
     /// The key may be any borrowed form of the map's key type, but the ordering
     /// on the borrowed form *must* match the ordering on the key type.
     #[inline]
-    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         Key: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        Q: Ord + Eq + Hash + ?Sized,
     {
         self.map.contains_key(key)
     }
@@ -75,10 +75,10 @@ impl Object {
     /// The key may be any borrowed form of the map's key type, but the ordering
     /// on the borrowed form *must* match the ordering on the key type.
     #[inline]
-    pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut Value>
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
     where
         Key: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        Q: Ord + Eq + Hash + ?Sized,
     {
         self.map.get_mut(key)
     }
@@ -100,10 +100,10 @@ impl Object {
     /// The key may be any borrowed form of the map's key type, but the ordering
     /// on the borrowed form *must* match the ordering on the key type.
     #[inline]
-    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<Value>
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<Value>
     where
         Key: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        Q: Ord + Eq + Hash + ?Sized,
     {
         self.map.remove(key)
     }
