@@ -9,9 +9,9 @@ use crate::runtime::Expression;
 use crate::runtime::Renderable;
 use crate::runtime::Variable;
 
-use super::Language;
 use super::Text;
 use super::{Filter, FilterArguments, FilterChain};
+use super::{Language, ParseMode};
 
 use pest::Parser;
 
@@ -215,22 +215,38 @@ fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
         keyword: Box::new(keyword_args.into_iter()),
     };
 
-    let f = options.filters.get(name).ok_or_else(|| {
-        let mut available: Vec<_> = options.filters.plugin_names().collect();
-        available.sort_unstable();
-        let available = itertools::join(available, ", ");
-        Error::with_msg("Unknown filter")
-            .context("requested filter", name.to_owned())
-            .context("available filters", available)
-    })?;
+    match options.mode {
+        ParseMode::Strict => {
+            let f = options.filters.get(name).ok_or_else(|| {
+                let mut available: Vec<_> = options.filters.plugin_names().collect();
+                available.sort_unstable();
+                let available = itertools::join(available, ", ");
+                Error::with_msg("Unknown filter")
+                    .context("requested filter", name.to_owned())
+                    .context("available filters", available)
+            })?;
 
-    let f = f
-        .parse(args)
-        .trace("Filter parsing error")
-        .context_key("filter")
-        .value_with(|| filter_str.to_string().into())?;
+            let f = f
+                .parse(args)
+                .trace("Filter parsing error")
+                .context_key("filter")
+                .value_with(|| filter_str.to_string().into())?;
 
-    Ok(f)
+            Ok(f)
+        }
+        ParseMode::Lax => match options.filters.get(name) {
+            Some(f) => {
+                let f = f
+                    .parse(args)
+                    .trace("Filter parsing error")
+                    .context_key("filter")
+                    .value_with(|| filter_str.to_string().into())?;
+
+                Ok(f)
+            }
+            None => Ok(Box::new(super::NoopFilter {})),
+        },
+    }
 }
 
 /// Parses a `FilterChain` from a `Pair` with a filter chain.
@@ -1183,6 +1199,20 @@ mod test {
         let output = template.render(&runtime).unwrap();
 
         assert_eq!(output, "5");
+    }
+
+    #[test]
+    fn test_parse_mode_filters() {
+        let mut options = Language::default();
+        let text = "{{ exp | undefined }}";
+
+        options.mode = ParseMode::Strict;
+        let result = parse(text, &options);
+        assert_eq!(result.is_err(), true);
+
+        options.mode = ParseMode::Lax;
+        let result = parse(text, &options);
+        assert_eq!(result.is_err(), false);
     }
 
     /// Macro implementation of custom block test.
