@@ -9,7 +9,7 @@ use std::path;
 use clap::Parser;
 
 #[derive(Copy, Clone, Debug, derive_more::Display, derive_more::From, derive_more::Constructor)]
-#[display(fmt = "{}", msg)]
+#[display("{}", msg)]
 struct Error {
     msg: &'static str,
 }
