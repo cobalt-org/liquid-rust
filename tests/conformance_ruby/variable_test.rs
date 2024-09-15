@@ -3,6 +3,7 @@ use liquid::ValueView;
 #[test]
 fn test_simple_variable() {
     assert_template_result!(r#"worked"#, r#"{{test}}"#, o!({"test": "worked"}));
+
     assert_template_result!(
         r#"worked wonderfully"#,
         r#"{{test}}"#,
