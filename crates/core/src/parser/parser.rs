@@ -148,16 +148,11 @@ fn parse_variable_pair(variable: Pair) -> Variable {
     let mut variable = match first_identifier.as_rule() {
         Rule::Identifier => {
             indexes.next();
-            Variable::with_literal((first_identifier.as_str().to_owned()))
+            Variable::with_literal(first_identifier.as_str().to_owned())
         }
         Rule::Value => Variable::empty(),
         _ => unreachable!(),
     };
-    // let a = first_identifier
-    //     .expect("A variable starts with an identifier.")
-    //     .as_str()
-    //     .to_owned();
-    // let mut variable = Variable::with_literal(first_identifier.unwrap());
 
     let indexes = indexes.map(|index| match index.as_rule() {
         Rule::Identifier => Expression::with_literal(index.as_str().to_owned()),
