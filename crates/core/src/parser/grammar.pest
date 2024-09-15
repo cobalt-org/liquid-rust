@@ -30,11 +30,6 @@ Raw = @{ (!(TagStart | ExpressionStart) ~ ANY)+ }
 Identifier = @{ (ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN) ~ (ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN)* }
 
 // For root level hash access we'd need to accept that there might not be an Identifier preceding a hash access (the brackets with a value inside)
-// Variable = ${ Identifier
-//             ~ ( ("." ~ Identifier)
-//               | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
-//               )*
-//             }
 Variable = ${ ( Identifier | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]") )
             ~ ( ("." ~ Identifier)
               | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
