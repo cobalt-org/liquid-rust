@@ -142,11 +142,22 @@ fn parse_variable_pair(variable: Pair) -> Variable {
     let mut indexes = variable.into_inner();
 
     let first_identifier = indexes
-        .next()
-        .expect("A variable starts with an identifier.")
-        .as_str()
-        .to_owned();
-    let mut variable = Variable::with_literal(first_identifier);
+        .peek()
+        .expect("A variable starts with an identifier or an index");
+
+    let mut variable = match first_identifier.as_rule() {
+        Rule::Identifier => {
+            indexes.next();
+            Variable::with_literal((first_identifier.as_str().to_owned()))
+        }
+        Rule::Value => Variable::empty(),
+        _ => unreachable!(),
+    };
+    // let a = first_identifier
+    //     .expect("A variable starts with an identifier.")
+    //     .as_str()
+    //     .to_owned();
+    // let mut variable = Variable::with_literal(first_identifier.unwrap());
 
     let indexes = indexes.map(|index| match index.as_rule() {
         Rule::Identifier => Expression::with_literal(index.as_str().to_owned()),
@@ -1148,6 +1159,38 @@ mod test {
         ];
 
         let mut expected = Variable::with_literal("foo");
+        expected.extend(indexes);
+
+        assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn test_parse_variable_pair_with_root_index_literals() {
+        let variable = LiquidParser::parse(Rule::Variable, "['bar']")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let indexes: Vec<Expression> = vec![Expression::Literal(Value::scalar("bar"))];
+
+        let mut expected = Variable::empty();
+        expected.extend(indexes);
+
+        assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn test_parse_variable_pair_with_root_index_variable() {
+        let variable = LiquidParser::parse(Rule::Variable, "[foo.bar]")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let indexes = vec![Expression::Variable(
+            Variable::with_literal("foo").push_literal("bar"),
+        )];
+
+        let mut expected = Variable::empty();
         expected.extend(indexes);
 
         assert_eq!(parse_variable_pair(variable), expected);

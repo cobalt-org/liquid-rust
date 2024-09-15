@@ -11,15 +11,22 @@ use super::Runtime;
 /// A `Value` reference.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Variable {
-    variable: Scalar,
+    variable: Option<Scalar>,
     indexes: Vec<Expression>,
 }
 
 impl Variable {
+    pub fn empty() -> Self {
+        Self {
+            variable: None,
+            indexes: Default::default(),
+        }
+    }
+
     /// Create a `Value` reference.
     pub fn with_literal<S: Into<Scalar>>(value: S) -> Self {
         Self {
-            variable: value.into(),
+            variable: Some(value.into()),
             indexes: Default::default(),
         }
     }
@@ -32,7 +39,17 @@ impl Variable {
 
     /// Convert to a `Path`.
     pub fn try_evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Option<Path<'c>> {
-        let mut path = Path::with_index(self.variable.as_ref());
+        let mut path = if self.variable.is_some() {
+            let v = self.variable.as_ref().unwrap();
+            Path::with_index(v.clone())
+        } else {
+            Path::empty()
+        };
+
+        // let mut path = match self.variable {
+        //     Some(v) => Path::with_index(v.as_ref()),
+        //     None => Path::empty(),
+        // };
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.try_evaluate(runtime)?;
@@ -47,7 +64,12 @@ impl Variable {
 
     /// Convert to a `Path`.
     pub fn evaluate<'c>(&'c self, runtime: &'c dyn Runtime) -> Result<Path<'c>> {
-        let mut path = Path::with_index(self.variable.as_ref());
+        let mut path = if self.variable.is_some() {
+            let v = self.variable.as_ref().unwrap();
+            Path::with_index(v.clone())
+        } else {
+            Path::empty()
+        };
         path.reserve(self.indexes.len());
         for expr in &self.indexes {
             let v = expr.evaluate(runtime)?;

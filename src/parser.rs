@@ -242,6 +242,7 @@ impl Parser {
     ///
     pub fn parse(&self, text: &str) -> Result<Template> {
         let template = parser::parse(text, &self.options).map(runtime::Template::new)?;
+        println!("got tpl {:?}", template);
         Ok(Template {
             template,
             partials: self.partials.clone(),
