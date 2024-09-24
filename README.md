@@ -23,7 +23,7 @@ Example applications using liquid-rust:
 [cobalt]: https://cobalt-org.github.io/
 [cargo-tarball]: https://github.com/crate-ci/cargo-tarball
 [cargo-generate]: https://github.com/ashleygwilliams/cargo-generate
-[Mandy]: https://angeldollface.boo/mandys-house
+[Mandy]: https://github.com/alyxshang/mandy
 
 Usage
 ----------
