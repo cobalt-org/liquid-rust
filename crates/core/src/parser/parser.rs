@@ -765,9 +765,8 @@ pub struct TagTokenIter<'a> {
 impl<'a> Iterator for TagTokenIter<'a> {
     type Item = TagToken<'a>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|next| {
+        self.iter.next().inspect(|next| {
             self.position = next.token.as_span().end_pos();
-            next
         })
     }
 }
