@@ -22,7 +22,7 @@ impl Clone for Box<dyn ErrorClone> {
     }
 }
 
-/// A lossy way to have any error be clonable.
+/// A lossy way to have any error be cloneable.
 #[derive(Debug, Clone)]
 pub struct CloneableError {
     error: String,
