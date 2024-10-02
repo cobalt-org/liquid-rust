@@ -152,6 +152,7 @@ fn test_nested_include_with_variable() {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
+#[expect(dead_code)]
 struct InfiniteFileSystem;
 
 impl liquid::partials::PartialSource for InfiniteFileSystem {
