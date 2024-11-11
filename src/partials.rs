@@ -32,7 +32,7 @@
 //! // Compile and render the main template, which uses the "common" partial.
 //! let parser = ParserBuilder::with_stdlib().partials(partials).build().unwrap();
 //! let rendered = {
-//!     let mut globals = liquid::object!({ "num": 42 });
+//!     let globals = liquid::object!({ "num": 42 });
 //!     parser
 //!         .parse("Liquid! {% render \"common\", i: num %}").unwrap()
 //!         .render(&globals).unwrap()
