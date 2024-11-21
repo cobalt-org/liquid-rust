@@ -9,6 +9,7 @@ fn build_parser() -> Parser {
     ParserBuilder::new()
         .filter(derive_macros_test_filters::TestPositionalFilterParser)
         .filter(derive_macros_test_filters::TestKeywordFilterParser)
+        .filter(derive_macros_test_filters::TestKeywordGroupFilterParser)
         .filter(derive_macros_test_filters::TestMixedFilterParser)
         .filter(derive_macros_test_filters::TestParameterlessFilterParser)
         .build()
@@ -102,6 +103,27 @@ pub fn test_derive_keyword_filter_ok() {
 }
 
 #[test]
+pub fn test_derive_keyword_group_filter_ok() {
+    let parser = build_parser();
+
+    let template = parser
+        .parse(concat!(
+            "{{ 0 | kwg: optional:\"str\", required: true }}\n",
+            "{{ 0 | kwg: required: false }}"
+        ))
+        .unwrap();
+    let expected = concat!(
+        "<optional: str; required: true; all_keywords.required: true; all_keywords.optional: str>\n",
+        "<required: false; all_keywords.required: false>"
+    );
+
+    let globals = liquid::Object::new();
+    let rendered = template.render(&globals).unwrap();
+
+    assert_eq!(rendered, expected);
+}
+
+#[test]
 pub fn test_derive_keyword_filter_err() {
     let parser = build_parser();
 
@@ -139,6 +161,37 @@ pub fn test_derive_keyword_filter_reflection() {
         "Required keyword argument. Must be a boolean."
     );
     assert_eq!(kw_args[1].is_optional, false);
+}
+
+#[test]
+pub fn test_derive_keyword_group_filter_reflection() {
+    let filter = derive_macros_test_filters::TestKeywordGroupFilterParser;
+
+    assert_eq!(filter.name(), "kwg");
+    assert_eq!(
+        filter.description(),
+        "Filter to test keyword group arguments."
+    );
+    assert!(filter.positional_parameters().is_empty());
+    let kw_args = filter.keyword_parameters();
+    let kwg_args = filter.keyword_group_parameters();
+
+    assert_eq!(kw_args[0].name, "optional");
+    assert_eq!(kw_args[0].description, "Optional keyword argument.");
+    assert_eq!(kw_args[0].is_optional, true);
+
+    assert_eq!(kw_args[1].name, "required");
+    assert_eq!(
+        kw_args[1].description,
+        "Required keyword argument. Must be a boolean."
+    );
+    assert_eq!(kw_args[1].is_optional, false);
+
+    assert_eq!(kwg_args[0].name, "all_keywords");
+    assert_eq!(
+        kwg_args[0].description,
+        "Keyword group that contains all keyword parameters."
+    );
 }
 
 #[test]
