@@ -268,7 +268,7 @@ impl<'a> FilterParameter<'a> {
     }
 }
 
-impl<'a> ToTokens for FilterParameter<'a> {
+impl ToTokens for FilterParameter<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.name.to_tokens(tokens);
     }

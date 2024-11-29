@@ -192,19 +192,19 @@ impl<P> reflection::ParserReflection for ParserBuilder<P>
 where
     P: partials::PartialCompiler,
 {
-    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + 'r> {
+    fn blocks(&self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + '_> {
         Box::new(self.blocks.plugins().map(|p| p.reflection()))
     }
 
-    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + 'r> {
+    fn tags(&self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + '_> {
         Box::new(self.tags.plugins().map(|p| p.reflection()))
     }
 
-    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + 'r> {
+    fn filters(&self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + '_> {
         Box::new(self.filters.plugins().map(|p| p.reflection()))
     }
 
-    fn partials<'r>(&'r self) -> Box<dyn Iterator<Item = &str> + 'r> {
+    fn partials(&self) -> Box<dyn Iterator<Item = &str> + '_> {
         Box::new(
             self.partials
                 .as_ref()
@@ -293,19 +293,19 @@ impl Parser {
 }
 
 impl reflection::ParserReflection for Parser {
-    fn blocks<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + 'r> {
+    fn blocks(&self) -> Box<dyn Iterator<Item = &dyn parser::BlockReflection> + '_> {
         Box::new(self.options.blocks.plugins().map(|p| p.reflection()))
     }
 
-    fn tags<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + 'r> {
+    fn tags(&self) -> Box<dyn Iterator<Item = &dyn parser::TagReflection> + '_> {
         Box::new(self.options.tags.plugins().map(|p| p.reflection()))
     }
 
-    fn filters<'r>(&'r self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + 'r> {
+    fn filters(&self) -> Box<dyn Iterator<Item = &dyn parser::FilterReflection> + '_> {
         Box::new(self.options.filters.plugins().map(|p| p.reflection()))
     }
 
-    fn partials<'r>(&'r self) -> Box<dyn Iterator<Item = &str> + 'r> {
+    fn partials(&self) -> Box<dyn Iterator<Item = &str> + '_> {
         Box::new(self.partials.as_ref().into_iter().flat_map(|s| s.names()))
     }
 }

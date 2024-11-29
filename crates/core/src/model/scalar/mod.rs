@@ -150,13 +150,13 @@ impl<'s> ScalarCow<'s> {
     }
 }
 
-impl<'s> fmt::Debug for ScalarCow<'s> {
+impl fmt::Debug for ScalarCow<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.0, f)
     }
 }
 
-impl<'s> ValueView for ScalarCow<'s> {
+impl ValueView for ScalarCow<'_> {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -233,20 +233,20 @@ impl ValueView for i64 {
     }
 }
 
-impl<'s> From<i64> for ScalarCow<'s> {
+impl From<i64> for ScalarCow<'_> {
     fn from(s: i64) -> Self {
         ScalarCow(ScalarCowEnum::Integer(s))
     }
 }
 
-impl<'s> PartialEq<i64> for ScalarCow<'s> {
+impl PartialEq<i64> for ScalarCow<'_> {
     fn eq(&self, other: &i64) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<i64> for ScalarCow<'s> {
+impl PartialOrd<i64> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &i64) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
@@ -349,20 +349,20 @@ impl ValueView for f64 {
     }
 }
 
-impl<'s> From<f64> for ScalarCow<'s> {
+impl From<f64> for ScalarCow<'_> {
     fn from(s: f64) -> Self {
         ScalarCow(ScalarCowEnum::Float(s))
     }
 }
 
-impl<'s> PartialEq<f64> for ScalarCow<'s> {
+impl PartialEq<f64> for ScalarCow<'_> {
     fn eq(&self, other: &f64) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<f64> for ScalarCow<'s> {
+impl PartialOrd<f64> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &f64) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
@@ -406,20 +406,20 @@ impl ValueView for bool {
     }
 }
 
-impl<'s> From<bool> for ScalarCow<'s> {
+impl From<bool> for ScalarCow<'_> {
     fn from(s: bool) -> Self {
         ScalarCow(ScalarCowEnum::Bool(s))
     }
 }
 
-impl<'s> PartialEq<bool> for ScalarCow<'s> {
+impl PartialEq<bool> for ScalarCow<'_> {
     fn eq(&self, other: &bool) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<bool> for ScalarCow<'s> {
+impl PartialOrd<bool> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &bool) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
@@ -461,20 +461,20 @@ impl ValueView for DateTime {
     }
 }
 
-impl<'s> From<DateTime> for ScalarCow<'s> {
+impl From<DateTime> for ScalarCow<'_> {
     fn from(s: DateTime) -> Self {
         ScalarCow(ScalarCowEnum::DateTime(s))
     }
 }
 
-impl<'s> PartialEq<DateTime> for ScalarCow<'s> {
+impl PartialEq<DateTime> for ScalarCow<'_> {
     fn eq(&self, other: &DateTime) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<DateTime> for ScalarCow<'s> {
+impl PartialOrd<DateTime> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &DateTime) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
@@ -516,27 +516,27 @@ impl ValueView for Date {
     }
 }
 
-impl<'s> From<Date> for ScalarCow<'s> {
+impl From<Date> for ScalarCow<'_> {
     fn from(s: Date) -> Self {
         ScalarCow(ScalarCowEnum::Date(s))
     }
 }
 
-impl<'s> PartialEq<Date> for ScalarCow<'s> {
+impl PartialEq<Date> for ScalarCow<'_> {
     fn eq(&self, other: &Date) -> bool {
         let other = (*other).into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<Date> for ScalarCow<'s> {
+impl PartialOrd<Date> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &Date) -> Option<Ordering> {
         let other = (*other).into();
         scalar_cmp(self, &other)
     }
 }
 
-impl<'s> ValueView for &'s str {
+impl ValueView for &str {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -575,7 +575,7 @@ struct StrSource<'s> {
     s: &'s str,
 }
 
-impl<'s> fmt::Display for StrSource<'s> {
+impl fmt::Display for StrSource<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, r#""{}""#, self.s)
     }
@@ -587,7 +587,7 @@ impl<'s> From<&'s str> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialEq<str> for ScalarCow<'s> {
+impl PartialEq<str> for ScalarCow<'_> {
     fn eq(&self, other: &str) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
@@ -601,7 +601,7 @@ impl<'s> PartialEq<&'s str> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialOrd<str> for ScalarCow<'s> {
+impl PartialOrd<str> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &str) -> Option<Ordering> {
         let other = other.into();
         scalar_cmp(self, &other)
@@ -638,7 +638,7 @@ impl ValueView for String {
     }
 }
 
-impl<'s> From<String> for ScalarCow<'s> {
+impl From<String> for ScalarCow<'_> {
     fn from(s: String) -> Self {
         ScalarCow(ScalarCowEnum::Str(s.into()))
     }
@@ -650,14 +650,14 @@ impl<'s> From<&'s String> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialEq<String> for ScalarCow<'s> {
+impl PartialEq<String> for ScalarCow<'_> {
     fn eq(&self, other: &String) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<String> for ScalarCow<'s> {
+impl PartialOrd<String> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &String) -> Option<Ordering> {
         let other = other.into();
         scalar_cmp(self, &other)
@@ -694,7 +694,7 @@ impl ValueView for KString {
     }
 }
 
-impl<'s> From<KString> for ScalarCow<'s> {
+impl From<KString> for ScalarCow<'_> {
     fn from(s: KString) -> Self {
         ScalarCow(ScalarCowEnum::Str(s.into()))
     }
@@ -706,21 +706,21 @@ impl<'s> From<&'s KString> for ScalarCow<'s> {
     }
 }
 
-impl<'s> PartialEq<KString> for ScalarCow<'s> {
+impl PartialEq<KString> for ScalarCow<'_> {
     fn eq(&self, other: &KString) -> bool {
         let other = other.into();
         scalar_eq(self, &other)
     }
 }
 
-impl<'s> PartialOrd<KString> for ScalarCow<'s> {
+impl PartialOrd<KString> for ScalarCow<'_> {
     fn partial_cmp(&self, other: &KString) -> Option<Ordering> {
         let other = other.into();
         scalar_cmp(self, &other)
     }
 }
 
-impl<'s> ValueView for KStringCow<'s> {
+impl ValueView for KStringCow<'_> {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -776,7 +776,7 @@ impl<'s> PartialOrd<KStringCow<'s>> for ScalarCow<'s> {
     }
 }
 
-impl<'s> ValueView for KStringRef<'s> {
+impl ValueView for KStringRef<'_> {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -832,7 +832,7 @@ impl<'s> PartialOrd<KStringRef<'s>> for ScalarCow<'s> {
     }
 }
 
-impl<'s> Eq for ScalarCow<'s> {}
+impl Eq for ScalarCow<'_> {}
 
 fn scalar_eq<'s>(lhs: &ScalarCow<'s>, rhs: &ScalarCow<'s>) -> bool {
     match (&lhs.0, &rhs.0) {

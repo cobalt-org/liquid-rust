@@ -559,7 +559,7 @@ pub enum Range<'r> {
     Counted(i64, i64),
 }
 
-impl<'r> Range<'r> {
+impl Range<'_> {
     pub fn evaluate(&self) -> Result<Vec<ValueCow<'_>>> {
         let range = match self {
             Range::Array(array) => get_array(array.as_view())?,

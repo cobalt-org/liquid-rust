@@ -19,7 +19,7 @@ pub enum ValueCow<'s> {
     Borrowed(&'s dyn ValueView),
 }
 
-impl<'s> ValueCow<'s> {
+impl ValueCow<'_> {
     /// Extracts the owned data.
     ///
     /// Clones the data if it is not already owned.
@@ -39,7 +39,7 @@ impl<'s> ValueCow<'s> {
     }
 }
 
-impl<'s> ValueView for ValueCow<'s> {
+impl ValueView for ValueCow<'_> {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
@@ -121,7 +121,7 @@ impl From<State> for ValueCow<'static> {
     }
 }
 
-impl<'v> Default for ValueCow<'v> {
+impl Default for ValueCow<'_> {
     fn default() -> Self {
         ValueCow::Owned(Value::default())
     }
@@ -139,43 +139,43 @@ impl<'v> PartialEq<ValueViewCmp<'v>> for ValueCow<'v> {
     }
 }
 
-impl<'v> PartialEq<Value> for ValueCow<'v> {
+impl PartialEq<Value> for ValueCow<'_> {
     fn eq(&self, other: &Value) -> bool {
         super::value_eq(self.as_view(), other.as_view())
     }
 }
 
-impl<'v> PartialEq<i64> for ValueCow<'v> {
+impl PartialEq<i64> for ValueCow<'_> {
     fn eq(&self, other: &i64) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<f64> for ValueCow<'v> {
+impl PartialEq<f64> for ValueCow<'_> {
     fn eq(&self, other: &f64) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<bool> for ValueCow<'v> {
+impl PartialEq<bool> for ValueCow<'_> {
     fn eq(&self, other: &bool) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<crate::model::scalar::DateTime> for ValueCow<'v> {
+impl PartialEq<crate::model::scalar::DateTime> for ValueCow<'_> {
     fn eq(&self, other: &crate::model::scalar::DateTime) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<crate::model::scalar::Date> for ValueCow<'v> {
+impl PartialEq<crate::model::scalar::Date> for ValueCow<'_> {
     fn eq(&self, other: &crate::model::scalar::Date) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<str> for ValueCow<'v> {
+impl PartialEq<str> for ValueCow<'_> {
     fn eq(&self, other: &str) -> bool {
         let other = KStringCow::from_ref(other);
         super::value_eq(self.as_view(), &other)
@@ -188,13 +188,13 @@ impl<'v> PartialEq<&'v str> for ValueCow<'v> {
     }
 }
 
-impl<'v> PartialEq<String> for ValueCow<'v> {
+impl PartialEq<String> for ValueCow<'_> {
     fn eq(&self, other: &String) -> bool {
         super::value_eq(self.as_view(), other)
     }
 }
 
-impl<'v> PartialEq<crate::model::KString> for ValueCow<'v> {
+impl PartialEq<crate::model::KString> for ValueCow<'_> {
     fn eq(&self, other: &crate::model::KString) -> bool {
         super::value_eq(self.as_view(), &other.as_ref())
     }

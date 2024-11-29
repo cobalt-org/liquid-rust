@@ -79,7 +79,7 @@ impl<'s> AsRef<[ScalarCow<'s>]> for Path<'s> {
     }
 }
 
-impl<'s> fmt::Display for Path<'s> {
+impl fmt::Display for Path<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let data = itertools::join(self.iter().map(ValueView::render), ".");
         write!(f, "{}", data)

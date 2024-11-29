@@ -104,7 +104,7 @@ impl ObjectView for Object {
     }
 }
 
-impl<'o, O: ObjectView + ?Sized> ObjectView for &'o O {
+impl<O: ObjectView + ?Sized> ObjectView for &O {
     fn as_value(&self) -> &dyn ValueView {
         <O as ObjectView>::as_value(self)
     }
@@ -154,13 +154,13 @@ impl ObjectIndex for crate::model::KString {
     }
 }
 
-impl<'s> ObjectIndex for crate::model::KStringRef<'s> {
+impl ObjectIndex for crate::model::KStringRef<'_> {
     fn as_index(&self) -> &str {
         self.as_str()
     }
 }
 
-impl<'s> ObjectIndex for crate::model::KStringCow<'s> {
+impl ObjectIndex for crate::model::KStringCow<'_> {
     fn as_index(&self) -> &str {
         self.as_str()
     }
@@ -325,7 +325,7 @@ impl<'s, O: ObjectView> ObjectSource<'s, O> {
     }
 }
 
-impl<'s, O: ObjectView> fmt::Display for ObjectSource<'s, O> {
+impl<O: ObjectView> fmt::Display for ObjectSource<'_, O> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{")?;
         for (k, v) in self.s.iter() {
@@ -349,7 +349,7 @@ impl<'s, O: ObjectView> ObjectRender<'s, O> {
     }
 }
 
-impl<'s, O: ObjectView> fmt::Display for ObjectRender<'s, O> {
+impl<O: ObjectView> fmt::Display for ObjectRender<'_, O> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (k, v) in self.s.iter() {
             write!(f, "{}{}", k, v.render())?;

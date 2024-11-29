@@ -73,7 +73,7 @@ pub trait ValueView: fmt::Debug {
     }
 }
 
-impl<'v, V: ValueView + ?Sized> ValueView for &'v V {
+impl<V: ValueView + ?Sized> ValueView for &V {
     fn as_debug(&self) -> &dyn fmt::Debug {
         <V as ValueView>::as_debug(self)
     }
@@ -177,7 +177,7 @@ fn forward(o: &Option<impl ValueView>) -> &dyn ValueView {
 #[derive(Copy, Clone, Debug)]
 pub struct ValueViewCmp<'v>(&'v dyn ValueView);
 
-impl<'v> ValueViewCmp<'v> {
+impl ValueViewCmp<'_> {
     /// `Value` comparison semantics for types implementing `ValueView`.
     pub fn new(v: &dyn ValueView) -> ValueViewCmp<'_> {
         ValueViewCmp(v)
@@ -190,37 +190,37 @@ impl<'v> PartialEq<ValueViewCmp<'v>> for ValueViewCmp<'v> {
     }
 }
 
-impl<'v> PartialEq<i64> for ValueViewCmp<'v> {
+impl PartialEq<i64> for ValueViewCmp<'_> {
     fn eq(&self, other: &i64) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<f64> for ValueViewCmp<'v> {
+impl PartialEq<f64> for ValueViewCmp<'_> {
     fn eq(&self, other: &f64) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<bool> for ValueViewCmp<'v> {
+impl PartialEq<bool> for ValueViewCmp<'_> {
     fn eq(&self, other: &bool) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<crate::model::scalar::DateTime> for ValueViewCmp<'v> {
+impl PartialEq<crate::model::scalar::DateTime> for ValueViewCmp<'_> {
     fn eq(&self, other: &crate::model::scalar::DateTime) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<crate::model::scalar::Date> for ValueViewCmp<'v> {
+impl PartialEq<crate::model::scalar::Date> for ValueViewCmp<'_> {
     fn eq(&self, other: &crate::model::scalar::Date) -> bool {
         super::value_eq(self.0, other)
     }
 }
 
-impl<'v> PartialEq<str> for ValueViewCmp<'v> {
+impl PartialEq<str> for ValueViewCmp<'_> {
     fn eq(&self, other: &str) -> bool {
         let other = KStringCow::from_ref(other);
         super::value_eq(self.0, &other)
@@ -233,13 +233,13 @@ impl<'v> PartialEq<&'v str> for ValueViewCmp<'v> {
     }
 }
 
-impl<'v> PartialEq<String> for ValueViewCmp<'v> {
+impl PartialEq<String> for ValueViewCmp<'_> {
     fn eq(&self, other: &String) -> bool {
         self == other.as_str()
     }
 }
 
-impl<'v> PartialEq<crate::model::KString> for ValueViewCmp<'v> {
+impl PartialEq<crate::model::KString> for ValueViewCmp<'_> {
     fn eq(&self, other: &crate::model::KString) -> bool {
         super::value_eq(self.0, &other.as_ref())
     }

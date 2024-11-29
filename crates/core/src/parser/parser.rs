@@ -597,7 +597,7 @@ impl<'a> From<Pair<'a>> for Exp<'a> {
     }
 }
 
-impl<'a> Exp<'a> {
+impl Exp<'_> {
     /// Parses the expression just as if it weren't inside any block.
     pub fn parse(self, options: &Language) -> Result<Box<dyn Renderable>> {
         let filter_chain = self
@@ -624,7 +624,7 @@ impl<'a> Exp<'a> {
 pub struct InvalidLiquidToken<'a> {
     element: Pair<'a>,
 }
-impl<'a> InvalidLiquidToken<'a> {
+impl InvalidLiquidToken<'_> {
     /// Returns the expression as a str.
     // TODO consider removing this
     pub fn as_str(&self) -> &str {
@@ -814,7 +814,7 @@ pub enum TryMatchToken<'a, T> {
     Fails(TagToken<'a>),
 }
 
-impl<'a, T> TryMatchToken<'a, T> {
+impl<T> TryMatchToken<'_, T> {
     pub fn into_result(self) -> Result<T> {
         match self {
             TryMatchToken::Matches(t) => Ok(t),

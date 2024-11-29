@@ -38,7 +38,7 @@ pub trait Runtime {
     fn registers(&self) -> &Registers;
 }
 
-impl<'r, R: Runtime + ?Sized> Runtime for &'r R {
+impl<R: Runtime + ?Sized> Runtime for &R {
     fn partials(&self) -> &dyn super::PartialStore {
         <R as Runtime>::partials(self)
     }
@@ -210,7 +210,7 @@ pub struct RuntimeCore<'g> {
     registers: Registers,
 }
 
-impl<'g> RuntimeCore<'g> {
+impl RuntimeCore<'_> {
     /// Create a default `RuntimeCore`.
     ///
     /// See `RuntimeBuilder` for more control.
@@ -224,7 +224,7 @@ impl<'g> RuntimeCore<'g> {
     }
 }
 
-impl<'g> Runtime for RuntimeCore<'g> {
+impl Runtime for RuntimeCore<'_> {
     fn partials(&self) -> &dyn PartialStore {
         self.partials
     }
@@ -270,7 +270,7 @@ impl<'g> Runtime for RuntimeCore<'g> {
     }
 }
 
-impl<'g> Default for RuntimeCore<'g> {
+impl Default for RuntimeCore<'_> {
     fn default() -> Self {
         Self {
             partials: &NullPartials,

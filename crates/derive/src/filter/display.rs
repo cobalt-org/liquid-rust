@@ -32,7 +32,7 @@ impl<'a> Parameters<'a> {
     }
 }
 
-impl<'a> ToTokens for Parameters<'a> {
+impl ToTokens for Parameters<'_> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Parameters::Ident(ident) => ident.to_tokens(tokens),

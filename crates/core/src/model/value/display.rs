@@ -9,7 +9,7 @@ pub enum DisplayCow<'a> {
     Borrowed(&'a dyn fmt::Display),
 }
 
-impl<'a> DisplayCow<'a> {
+impl DisplayCow<'_> {
     fn as_ref(&self) -> &dyn fmt::Display {
         match self {
             DisplayCow::Owned(o) => o.as_ref(),
@@ -18,7 +18,7 @@ impl<'a> DisplayCow<'a> {
     }
 }
 
-impl<'a> fmt::Display for DisplayCow<'a> {
+impl fmt::Display for DisplayCow<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.as_ref().fmt(f)
     }

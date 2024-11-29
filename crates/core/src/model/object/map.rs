@@ -191,7 +191,7 @@ impl Object {
 /// }
 /// # ;
 /// ```
-impl<'a, Q: ?Sized> ops::Index<&'a Q> for Object
+impl<Q: ?Sized> ops::Index<&Q> for Object
 where
     Key: Borrow<Q>,
     Q: Ord + Eq + Hash,
@@ -212,7 +212,7 @@ where
 /// #
 /// map["key"] = liquid_core::value!("value");
 /// ```
-impl<'a, Q: ?Sized> ops::IndexMut<&'a Q> for Object
+impl<Q: ?Sized> ops::IndexMut<&Q> for Object
 where
     Key: Borrow<Q>,
     Q: Ord + Eq + Hash,

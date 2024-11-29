@@ -98,7 +98,7 @@ impl<T: ValueView> ArrayView for Vec<T> {
     }
 }
 
-impl<'a, A: ArrayView + ?Sized> ArrayView for &'a A {
+impl<A: ArrayView + ?Sized> ArrayView for &A {
     fn as_value(&self) -> &dyn ValueView {
         <A as ArrayView>::as_value(self)
     }
@@ -136,7 +136,7 @@ struct ArraySource<'s, T: ValueView> {
     s: &'s Vec<T>,
 }
 
-impl<'s, T: ValueView> fmt::Display for ArraySource<'s, T> {
+impl<T: ValueView> fmt::Display for ArraySource<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for item in self.s {
@@ -151,7 +151,7 @@ struct ArrayRender<'s, T: ValueView> {
     s: &'s Vec<T>,
 }
 
-impl<'s, T: ValueView> fmt::Display for ArrayRender<'s, T> {
+impl<T: ValueView> fmt::Display for ArrayRender<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for item in self.s {
             write!(f, "{}", item.render())?;

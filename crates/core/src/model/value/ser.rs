@@ -305,7 +305,7 @@ impl<'de> ValueDeserializer<'de> {
     }
 }
 
-impl<'de, 'a> serde::Deserializer<'de> for &'a mut ValueDeserializer<'de> {
+impl<'de> serde::Deserializer<'de> for &mut ValueDeserializer<'de> {
     type Error = SerError;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
