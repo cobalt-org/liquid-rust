@@ -10,12 +10,12 @@ fn test_raise_on_single_close_bracet() {
 }
 
 #[test]
-fn test_raise_on_label_and_no_close_bracets() {
+fn test_raise_on_label_and_no_close_brackets() {
     assert_parse_error!("TEST {{ ");
 }
 
 #[test]
-fn test_raise_on_label_and_no_close_bracets_percent() {
+fn test_raise_on_label_and_no_close_brackets_percent() {
     assert_parse_error!("TEST {% ");
 }
 
