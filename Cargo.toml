@@ -51,7 +51,6 @@ default = ["stdlib"]
 stdlib = ["liquid-lib/stdlib"]
 
 [dependencies]
-doc-comment = "0.3"
 liquid-core = { version = "^0.26.9", path = "crates/core" }
 liquid-derive = { version = "^0.26.8", path = "crates/derive" }
 liquid-lib = { version = "^0.26.9", path = "crates/lib", optional = true }
