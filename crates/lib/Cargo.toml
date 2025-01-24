@@ -1,6 +1,6 @@
 [package]
 name = "liquid-lib"
-version = "0.26.9"
+version = "0.26.10"
 authors = ["Johann Hofmann <mail@johann-hofmann.com>"]
 description = "The liquid templating language for Rust"
 repository = "https://github.com/cobalt-org/liquid-rust/tree/master/liquid-lib"
@@ -18,7 +18,7 @@ features = [ "default", "jekyll", "all" ]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-liquid-core = { version = "^0.26.9", path = "../core", features = ["derive"] }
+liquid-core = { version = "^0.26.10", path = "../core", features = ["derive"] }
 itertools = "0.14.0"
 regex = "1.0"
 unicode-segmentation = "1.2"
