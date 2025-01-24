@@ -110,7 +110,7 @@ pub struct StripHtml;
 #[name = "strip_html"]
 struct StripHtmlFilter;
 
-static MATCHERS: once_cell::sync::Lazy<[Regex; 4]> = once_cell::sync::Lazy::new(|| {
+static MATCHERS: std::sync::LazyLock<[Regex; 4]> = std::sync::LazyLock::new(|| {
     [
         Regex::new(r"(?is)<script.*?</script>").unwrap(),
         Regex::new(r"(?is)<style.*?</style>").unwrap(),

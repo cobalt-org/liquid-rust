@@ -30,15 +30,15 @@ impl SlugifyMode {
     }
 }
 
-static SLUG_INVALID_CHARS_DEFAULT: once_cell::sync::Lazy<Regex> =
-    once_cell::sync::Lazy::new(|| Regex::new(r"([^0-9\p{Alphabetic}]+)").unwrap());
-static SLUG_INVALID_CHARS_RAW: once_cell::sync::Lazy<Regex> =
-    once_cell::sync::Lazy::new(|| Regex::new(r"([\s]+)").unwrap());
-static SLUG_INVALID_CHARS_PRETTY: once_cell::sync::Lazy<Regex> = once_cell::sync::Lazy::new(|| {
+static SLUG_INVALID_CHARS_DEFAULT: std::sync::LazyLock<Regex> =
+    std::sync::LazyLock::new(|| Regex::new(r"([^0-9\p{Alphabetic}]+)").unwrap());
+static SLUG_INVALID_CHARS_RAW: std::sync::LazyLock<Regex> =
+    std::sync::LazyLock::new(|| Regex::new(r"([\s]+)").unwrap());
+static SLUG_INVALID_CHARS_PRETTY: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
     Regex::new(r"([^\p{Alphabetic}0-9\._\~!\$&'\(\)\+,;=@]+)").unwrap()
 });
-static SLUG_INVALID_CHARS_ASCII: once_cell::sync::Lazy<Regex> =
-    once_cell::sync::Lazy::new(|| Regex::new(r"([^a-zA-Z0-9]+)").unwrap());
+static SLUG_INVALID_CHARS_ASCII: std::sync::LazyLock<Regex> =
+    std::sync::LazyLock::new(|| Regex::new(r"([^a-zA-Z0-9]+)").unwrap());
 
 #[derive(Debug, FilterParameters)]
 struct SlugifyArgs {

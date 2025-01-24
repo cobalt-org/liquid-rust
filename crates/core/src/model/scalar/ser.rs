@@ -207,8 +207,9 @@ impl serde::Serializer for ScalarSerializer {
 }
 
 #[inline]
-fn serialize_as_i64<T: num_traits::cast::NumCast>(value: T) -> Result<Scalar, SerError> {
-    let value = num_traits::cast::cast::<T, i64>(value)
-        .ok_or_else(|| SerError::new(crate::error::Error::with_msg("Cannot fit number")))?;
+fn serialize_as_i64(value: impl TryInto<i64>) -> Result<Scalar, SerError> {
+    let value = value
+        .try_into()
+        .map_err(|_err| SerError::new(crate::error::Error::with_msg("Cannot fit number")))?;
     Ok(Scalar::new(value))
 }

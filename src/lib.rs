@@ -47,8 +47,6 @@ pub use liquid_core::Object;
 #[doc(hidden)]
 pub use liquid_derive::{ObjectView, ValueView};
 
-#[macro_use]
-extern crate doc_comment;
-doc_comment! {
-    include_str!("../README.md")
-}
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
