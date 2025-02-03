@@ -14,16 +14,22 @@ env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   ci:
     permissions:
       contents: none
     name: CI
-    needs: [test, msrv, docs, rustfmt, clippy]
+    needs: [test, msrv, lockfile, docs, rustfmt, clippy, minimal-versions]
     runs-on: ubuntu-latest
+    if: "always()"
     steps:
-      - name: Done
-        run: exit 0
+      - name: Failed
+        run: exit 1
+        if: "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')"
   test:
     name: Test
     strategy:
@@ -49,7 +55,7 @@ jobs:
     - name: No-default features
       run: cargo test --workspace --no-default-features
   msrv:
-    name: "Check MSRV: 1.83.0"
+    name: "Check MSRV"
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -57,7 +63,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: "1.83.0"  # MSRV
+        toolchain: stable
     - uses: Swatinem/rust-cache@v2
     - name: Default features
       run: cargo check --workspace --all-targets
@@ -65,6 +71,24 @@ jobs:
       run: cargo check --workspace --all-targets --all-features
     - name: No-default features
       run: cargo check --workspace --all-targets --no-default-features
+  minimal-versions:
+    name: Minimal versions
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install stable Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+    - name: Install nightly Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: nightly
+    - name: Downgrade dependencies to minimal versions
+      run: cargo +nightly generate-lockfile -Z minimal-versions
+    - name: Compile with minimal versions
+      run: cargo +stable check --workspace --all-features --locked
   lockfile:
     runs-on: ubuntu-latest
     steps:
@@ -76,7 +100,7 @@ jobs:
         toolchain: stable
     - uses: Swatinem/rust-cache@v2
     - name: "Is lockfile updated?"
-      run: cargo fetch --locked
+      run: cargo update --workspace --locked
   docs:
     name: Docs
     runs-on: ubuntu-latest
@@ -86,7 +110,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
+        toolchain: "1.84"  # STABLE
     - uses: Swatinem/rust-cache@v2
     - name: Check documentation
       env:
@@ -101,9 +125,7 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        # Not MSRV because its harder to jump between versions and people are
-        # more likely to have stable
-        toolchain: stable
+        toolchain: "1.84"  # STABLE
         components: rustfmt
     - uses: Swatinem/rust-cache@v2
     - name: Check formatting
@@ -119,16 +141,16 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: "1.83.0"  # MSRV
+        toolchain: "1.84"  # STABLE
         components: clippy
     - uses: Swatinem/rust-cache@v2
     - name: Install SARIF tools
-      run: cargo install clippy-sarif --version 0.3.4 --locked  # Held back due to msrv
+      run: cargo install clippy-sarif --locked
     - name: Install SARIF tools
-      run: cargo install sarif-fmt --version 0.3.4 --locked # Held back due to msrv
+      run: cargo install sarif-fmt --locked
     - name: Check
       run: >
-        cargo clippy --workspace --all-features --all-targets --message-format=json -- -D warnings --allow deprecated
+        cargo clippy --workspace --all-features --all-targets --message-format=json
         | clippy-sarif
         | tee clippy-results.sarif
         | sarif-fmt
@@ -140,3 +162,22 @@ jobs:
         wait-for-processing: true
     - name: Report status
       run: cargo clippy --workspace --all-features --all-targets -- -D warnings --allow deprecated
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+    - uses: Swatinem/rust-cache@v2
+    - name: Install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin
+    - name: Gather coverage
+      run: cargo tarpaulin --output-dir coverage --out lcov
+    - name: Publish to Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}

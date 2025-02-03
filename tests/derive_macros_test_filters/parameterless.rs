@@ -9,11 +9,11 @@ use liquid_core::{Value, ValueView};
     description = "Filter with no arguments.",
     parsed(TestParameterlessFilter)
 )]
-pub struct TestParameterlessFilterParser;
+pub(crate) struct TestParameterlessFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "no_args"]
-pub struct TestParameterlessFilter;
+pub(super) struct TestParameterlessFilter;
 
 impl Filter for TestParameterlessFilter {
     fn evaluate(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {

@@ -55,7 +55,7 @@ fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<C
     match second.as_ref().map(TagToken::as_str) {
         Some(":") => {
             name = match first.expect_identifier() {
-                TryMatchToken::Matches(name) => name.to_string(),
+                TryMatchToken::Matches(name) => name.to_owned(),
                 TryMatchToken::Fails(name) => match name.expect_literal() {
                     // This will allow non string literals such as 0 to be parsed as such.
                     // Is this ok or should more specific functions be created?
@@ -143,7 +143,7 @@ impl CycleRegister {
             return Error::with_msg(
                 "cycle index out of bounds, most likely from mismatched cycles",
             )
-            .context("index", format!("{}", index))
+            .context("index", format!("{index}"))
             .context("count", format!("{}", values.len()))
             .into_err();
         }
@@ -170,7 +170,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("cycle".to_string(), CycleTag.into());
+        options.tags.register("cycle".to_owned(), CycleTag.into());
         options
     }
 

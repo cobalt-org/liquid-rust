@@ -76,7 +76,7 @@ impl Renderable for IfChanged {
             .get_mut::<ChangedRegister>()
             .has_changed(&rendered)
         {
-            write!(writer, "{}", rendered).replace("Failed to render")?;
+            write!(writer, "{rendered}").replace("Failed to render")?;
         }
 
         Ok(())
@@ -109,7 +109,6 @@ mod test {
     use super::*;
 
     use liquid_core::parser;
-    use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
 
     use crate::stdlib;
@@ -118,13 +117,13 @@ mod test {
         let mut options = Language::default();
         options
             .blocks
-            .register("ifchanged".to_string(), IfChangedBlock.into());
+            .register("ifchanged".to_owned(), IfChangedBlock.into());
         options
             .blocks
-            .register("for".to_string(), stdlib::ForBlock.into());
+            .register("for".to_owned(), stdlib::ForBlock.into());
         options
             .blocks
-            .register("if".to_string(), stdlib::IfBlock.into());
+            .register("if".to_owned(), stdlib::IfBlock.into());
         options
     }
 
@@ -140,9 +139,7 @@ mod test {
             "{% endifchanged %}",
             "{% endfor %}",
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();

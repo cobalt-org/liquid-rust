@@ -2,11 +2,11 @@
 
 use std::str::FromStr;
 use syn::spanned::Spanned as _;
-use syn::*;
+use syn::{meta, Attribute, Error, LitStr, Path, Result};
 
 /// A wrapper around a type that only allows its value to be assigned once.
 #[derive(Debug, Default)]
-pub enum AssignOnce<T> {
+pub(crate) enum AssignOnce<T> {
     Set(T),
     #[default]
     Unset,
@@ -14,7 +14,7 @@ pub enum AssignOnce<T> {
 
 impl<T> AssignOnce<T> {
     /// Assigns `value` to `self`, however calls `err` instead if `self` is already assigned.
-    pub fn set<E, F>(&mut self, value: T, err: F) -> std::result::Result<(), E>
+    pub(crate) fn set<E, F>(&mut self, value: T, err: F) -> std::result::Result<(), E>
     where
         F: FnOnce() -> E,
     {
@@ -28,7 +28,7 @@ impl<T> AssignOnce<T> {
     }
 
     /// Unwraps `self`, returning `default` if `self` is not set.
-    pub fn default_to(self, default: T) -> T {
+    pub(crate) fn default_to(self, default: T) -> T {
         match self {
             AssignOnce::Set(value) => value,
             AssignOnce::Unset => default,
@@ -36,7 +36,7 @@ impl<T> AssignOnce<T> {
     }
 
     /// Converts this type to `Option`.
-    pub fn into_option(self) -> Option<T> {
+    pub(crate) fn into_option(self) -> Option<T> {
         match self {
             AssignOnce::Set(value) => Some(value),
             AssignOnce::Unset => None,
@@ -44,7 +44,7 @@ impl<T> AssignOnce<T> {
     }
 
     /// Unwraps `self` or calls `err` if `self` is not set.
-    pub fn unwrap_or_err<E, F>(self, err: F) -> std::result::Result<T, E>
+    pub(crate) fn unwrap_or_err<E, F>(self, err: F) -> std::result::Result<T, E>
     where
         F: FnOnce() -> E,
     {
@@ -56,28 +56,28 @@ impl<T> AssignOnce<T> {
 }
 
 /// Utility function to parse `Meta::NameValue` elements that assigns a String.
-pub fn assign_str_value(
+pub(crate) fn assign_str_value(
     to: &mut AssignOnce<String>,
-    attr: &syn::Attribute,
+    attr: &Attribute,
     key: &str,
-    meta: &syn::meta::ParseNestedMeta,
+    meta: &meta::ParseNestedMeta<'_>,
 ) -> Result<()> {
     let value = meta.value()?;
     let value: LitStr = value.parse()?;
     to.set(value.value(), || {
         Error::new(
             attr.span(),
-            format!("parameter `{}` was already specified.", key),
+            format!("parameter `{key}` was already specified."),
         )
     })
 }
 
 /// Utility function to parse `Meta::NameValue` elements that assigns a value parsed from a String.
-pub fn parse_str_value<T>(
+pub(crate) fn parse_str_value<T>(
     to: &mut AssignOnce<T>,
-    attr: &syn::Attribute,
+    attr: &Attribute,
     key: &str,
-    meta: &syn::meta::ParseNestedMeta,
+    meta: &meta::ParseNestedMeta<'_>,
 ) -> Result<()>
 where
     T: FromStr<Err = String>,
@@ -91,23 +91,23 @@ where
     to.set(value, || {
         Error::new(
             attr.span(),
-            format!("parameter `{}` was already specified.", key),
+            format!("parameter `{key}` was already specified."),
         )
     })
 }
 
 /// Utility function to parse `Meta::Word` elements.
-pub fn assign_path(
+pub(crate) fn assign_path(
     to: &mut AssignOnce<Path>,
-    attr: &syn::Attribute,
+    attr: &Attribute,
     key: &str,
-    meta: &syn::meta::ParseNestedMeta,
+    meta: &meta::ParseNestedMeta<'_>,
 ) -> Result<()> {
     meta.parse_nested_meta(|meta| {
         to.set(meta.path, || {
             Error::new(
                 attr.span(),
-                format!("attribute `{}` was already specified.", key),
+                format!("attribute `{key}` was already specified."),
             )
         })?;
         Ok(())

@@ -25,11 +25,11 @@ struct TestPositionalFilterParameters {
     parameters(TestPositionalFilterParameters),
     parsed(TestPositionalFilter)
 )]
-pub struct TestPositionalFilterParser;
+pub(crate) struct TestPositionalFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "pos"]
-pub struct TestPositionalFilter {
+pub(super) struct TestPositionalFilter {
     #[parameters]
     args: TestPositionalFilterParameters,
 }
@@ -40,9 +40,9 @@ impl Filter for TestPositionalFilter {
 
         let pos1 = args.pos1.to_kstr();
         let result = if let Some(pos2) = args.pos2 {
-            format!("<pos1: {}; pos2: {}>", pos1, pos2)
+            format!("<pos1: {pos1}; pos2: {pos2}>")
         } else {
-            format!("<pos1: {}>", pos1)
+            format!("<pos1: {pos1}>")
         };
 
         Ok(Value::scalar(result))

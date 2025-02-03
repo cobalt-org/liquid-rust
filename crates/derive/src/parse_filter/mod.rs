@@ -1,12 +1,12 @@
-use proc_macro2::*;
-use quote::*;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned as _;
-use syn::*;
+use syn::{Attribute, Data, DeriveInput, Error, Generics, Path, Result};
 
-use crate::helpers::*;
+use crate::helpers::{assign_path, assign_str_value, AssignOnce};
 
-pub mod filter_reflection;
-pub mod parse;
+pub(crate) mod filter_reflection;
+pub(crate) mod parse;
 
 /// Struct that contains information to generate the necessary code for `ParseFilter`.
 struct ParseFilter<'a> {

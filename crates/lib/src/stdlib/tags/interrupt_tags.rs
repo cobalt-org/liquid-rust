@@ -115,16 +115,16 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.tags.register("break".to_string(), BreakTag.into());
+        options.tags.register("break".to_owned(), BreakTag.into());
         options
             .tags
-            .register("continue".to_string(), ContinueTag.into());
+            .register("continue".to_owned(), ContinueTag.into());
         options
             .blocks
-            .register("for".to_string(), stdlib::ForBlock.into());
+            .register("for".to_owned(), stdlib::ForBlock.into());
         options
             .blocks
-            .register("if".to_string(), stdlib::IfBlock.into());
+            .register("if".to_owned(), stdlib::IfBlock.into());
         options
     }
 

@@ -1,11 +1,11 @@
 use liquid::*;
 use snapbox::assert_data_eq;
 
-pub type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
+pub type Partials = partials::EagerCompiler<partials::InMemorySource>;
 
 fn compare_by_file(name: &str, globals: &Object) {
-    let input_file = format!("tests/fixtures/input/{}.txt", name);
-    let output_file = std::path::PathBuf::from(format!("tests/fixtures/output/{}.txt", name));
+    let input_file = format!("tests/fixtures/input/{name}.txt");
+    let output_file = std::path::PathBuf::from(format!("tests/fixtures/output/{name}.txt"));
 
     let mut partials = Partials::empty();
     partials.add("tests/fixtures/input/example.txt", r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}

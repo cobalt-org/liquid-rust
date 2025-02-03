@@ -26,7 +26,7 @@ static SOURCE_HANDLEBARS: &str = "<html>
 fn make_data_handlebars() -> BTreeMap<String, Json> {
     let mut data = BTreeMap::new();
 
-    data.insert("year".to_string(), to_json("2015"));
+    data.insert("year".to_owned(), to_json("2015"));
 
     let mut teams = Vec::new();
 
@@ -40,12 +40,12 @@ fn make_data_handlebars() -> BTreeMap<String, Json> {
     {
         let (name, score) = *v;
         let mut t = BTreeMap::new();
-        t.insert("name".to_string(), to_json(name));
-        t.insert("score".to_string(), to_json(score));
-        teams.push(t)
+        t.insert("name".to_owned(), to_json(name));
+        t.insert("score".to_owned(), to_json(score));
+        teams.push(t);
     }
 
-    data.insert("teams".to_string(), to_json(&teams));
+    data.insert("teams".to_owned(), to_json(&teams));
     data
 }
 
@@ -89,7 +89,7 @@ fn bench_template(c: &mut Criterion) {
             .expect("Invalid template format");
 
         let data = make_data_handlebars();
-        b.iter(|| handlebars.render("table", &data).unwrap())
+        b.iter(|| handlebars.render("table", &data).unwrap());
     });
     group.bench_function(BenchmarkId::new("parse", "liquid"), |b| {
         let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
@@ -124,12 +124,12 @@ struct RowWrapper {
 fn bench_large_loop(c: &mut Criterion) {
     let real: Vec<DataWrapper> = (1..1000)
         .map(|i| DataWrapper {
-            v: format!("n={}", i),
+            v: format!("n={i}"),
         })
         .collect();
     let dummy: Vec<DataWrapper> = (1..1000)
         .map(|i| DataWrapper {
-            v: format!("n={}", i),
+            v: format!("n={i}"),
         })
         .collect();
     let rows = RowWrapper { real, dummy };

@@ -51,7 +51,7 @@ enum NilsOrder {
 
 fn safe_property_getter<'v>(
     value: &'v Value,
-    property: &KStringCow,
+    property: &KStringCow<'_>,
     runtime: &dyn Runtime,
 ) -> ValueCow<'v> {
     let variable = parse_variable(property).expect("Failed to parse variable");
@@ -301,7 +301,7 @@ impl Filter for ArrayToSentenceStringFilter {
         let mut sentence = array
             .next()
             .map(|v| v.to_kstr().into_string())
-            .unwrap_or_else(|| "".to_string());
+            .unwrap_or_else(|| "".to_owned());
 
         let mut iter = array.peekable();
         while let Some(value) = iter.next() {

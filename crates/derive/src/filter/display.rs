@@ -1,9 +1,9 @@
-use proc_macro2::*;
-use quote::*;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, ToTokens};
 use syn::spanned::Spanned as _;
-use syn::*;
+use syn::{Attribute, Data, DeriveInput, Error, Expr, ExprLit, Generics, Lit, Meta, Result};
 
-use crate::helpers::*;
+use crate::helpers::AssignOnce;
 
 /// Struct that contains information about the `Filter` struct to generate the
 /// necessary code for `Display`.
@@ -176,7 +176,7 @@ fn generate_impl_display(filter: &FilterStruct<'_>) -> TokenStream {
     }
 }
 
-pub fn derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn derive(input: &DeriveInput) -> TokenStream {
     let filter = match FilterStruct::from_input(input) {
         Ok(filter) => filter,
         Err(err) => return err.to_compile_error(),

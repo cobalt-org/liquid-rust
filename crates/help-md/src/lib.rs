@@ -70,13 +70,13 @@ impl Renderable for dyn liquid_core::TagReflection {
         writeln!(stream, "**{}**: {}", self.tag(), self.description())?;
         writeln!(stream)?;
         if let Some(spec) = self.spec() {
-            writeln!(stream, "Grammar: `{}`", spec)?;
+            writeln!(stream, "Grammar: `{spec}`")?;
             writeln!(stream)?;
         }
         if let Some(example) = self.example() {
             writeln!(stream, "Example:")?;
             writeln!(stream, "```liquid")?;
-            writeln!(stream, "{}", example)?;
+            writeln!(stream, "{example}")?;
             writeln!(stream, "```")?;
         }
         Ok(())
@@ -96,13 +96,13 @@ impl Renderable for dyn liquid_core::BlockReflection {
         writeln!(stream, "**{}**: {}", self.start_tag(), self.description())?;
         writeln!(stream)?;
         if let Some(spec) = self.spec() {
-            writeln!(stream, "Grammar: `{}`", spec)?;
+            writeln!(stream, "Grammar: `{spec}`")?;
             writeln!(stream)?;
         }
         if let Some(example) = self.example() {
             writeln!(stream, "Example:")?;
             writeln!(stream, "```liquid")?;
-            writeln!(stream, "{}", example)?;
+            writeln!(stream, "{example}")?;
             writeln!(stream, "```")?;
         }
         Ok(())

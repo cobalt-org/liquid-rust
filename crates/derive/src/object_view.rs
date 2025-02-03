@@ -1,8 +1,8 @@
-use proc_macro2::*;
-use quote::*;
-use syn::*;
+use proc_macro2::{Ident, TokenStream};
+use quote::quote;
+use syn::{Data, DeriveInput, Error, Fields, Result};
 
-pub fn derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn derive(input: &DeriveInput) -> TokenStream {
     let DeriveInput {
         ident,
         data,
@@ -76,7 +76,7 @@ pub fn derive(input: &DeriveInput) -> TokenStream {
     }
 }
 
-pub fn core_derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn core_derive(input: &DeriveInput) -> TokenStream {
     let DeriveInput {
         ident,
         data,

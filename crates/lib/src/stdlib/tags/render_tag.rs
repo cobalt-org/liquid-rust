@@ -40,7 +40,7 @@ impl TagReflection for RenderTag {
 impl ParseTag for RenderTag {
     fn parse(
         &self,
-        mut arguments: TagTokenIter,
+        mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
         let partial = arguments.expect_next("Identifier or literal expected.")?;
@@ -67,7 +67,7 @@ impl ParseTag for RenderTag {
                         .expect_next("expected identifier")?
                         .expect_identifier()
                         .into_result()?
-                        .to_string()
+                        .to_owned()
                         .into(),
                     val,
                 ));
@@ -94,7 +94,7 @@ impl ParseTag for RenderTag {
                     .expect_next("Identifier expected.")?
                     .expect_identifier()
                     .into_result()?
-                    .to_string()
+                    .to_owned()
                     .into();
 
                 token = arguments.next();
@@ -111,7 +111,7 @@ impl ParseTag for RenderTag {
                 break;
             };
 
-            let id = t.expect_identifier().into_result()?.to_string();
+            let id = t.expect_identifier().into_result()?.to_owned();
 
             arguments
                 .expect_next("\":\" expected.")?
@@ -274,28 +274,24 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("render".to_string(), RenderTag.into());
-        options
-            .tags
-            .register("assign".to_string(), AssignTag.into());
+        options.tags.register("render".to_owned(), RenderTag.into());
+        options.tags.register("assign".to_owned(), AssignTag.into());
         options
             .blocks
-            .register("comment".to_string(), stdlib::CommentBlock.into());
+            .register("comment".to_owned(), stdlib::CommentBlock.into());
         options
             .blocks
-            .register("if".to_string(), stdlib::IfBlock.into());
+            .register("if".to_owned(), stdlib::IfBlock.into());
         options
     }
 
     #[derive(Clone, ParseFilter, FilterReflection)]
     #[filter(name = "size", description = "tests helper", parsed(SizeFilter))]
-    pub struct SizeFilterParser;
+    pub(super) struct SizeFilterParser;
 
     #[derive(Debug, Default, Display_filter)]
     #[name = "size"]
-    pub struct SizeFilter;
+    pub(super) struct SizeFilter;
 
     impl Filter for SizeFilter {
         fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -353,7 +349,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
+            .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
             .unwrap();
@@ -374,7 +370,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
+            .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
             .unwrap();
@@ -449,7 +445,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
+            .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
             .unwrap();

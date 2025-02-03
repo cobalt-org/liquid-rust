@@ -37,7 +37,7 @@ impl ParseTag for AssignTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string()
+            .to_owned()
             .into();
 
         arguments
@@ -99,15 +99,13 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .tags
-            .register("assign".to_string(), AssignTag.into());
+        options.tags.register("assign".to_owned(), AssignTag.into());
         options
             .blocks
-            .register("if".to_string(), stdlib::IfBlock.into());
+            .register("if".to_owned(), stdlib::IfBlock.into());
         options
             .blocks
-            .register("for".to_string(), stdlib::ForBlock.into());
+            .register("for".to_owned(), stdlib::ForBlock.into());
         options
     }
 

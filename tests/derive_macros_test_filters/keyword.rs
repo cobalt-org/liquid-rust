@@ -30,11 +30,11 @@ struct TestKeywordFilterParameters {
     parameters(TestKeywordFilterParameters),
     parsed(TestKeywordFilter)
 )]
-pub struct TestKeywordFilterParser;
+pub(crate) struct TestKeywordFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "kw"]
-pub struct TestKeywordFilter {
+pub(super) struct TestKeywordFilter {
     #[parameters]
     args: TestKeywordFilterParameters,
 }
@@ -46,9 +46,9 @@ impl Filter for TestKeywordFilter {
         let required = args.required;
 
         let result = if let Some(optional) = args.optional {
-            format!("<optional: {}; required: {}>", optional, required)
+            format!("<optional: {optional}; required: {required}>")
         } else {
-            format!("<required: {}>", required)
+            format!("<required: {required}>")
         };
 
         Ok(Value::scalar(result))

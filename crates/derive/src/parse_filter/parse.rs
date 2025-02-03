@@ -63,7 +63,7 @@ fn generate_parse_filter(filter_parser: &ParseFilter<'_>) -> Result<TokenStream>
     }
 }
 
-pub fn derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn derive(input: &DeriveInput) -> TokenStream {
     let filter_parser = match ParseFilter::from_input(input) {
         Ok(filter_parser) => filter_parser,
         Err(err) => return err.to_compile_error(),

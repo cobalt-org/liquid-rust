@@ -1,13 +1,10 @@
 [package]
 name = "liquid-bin"
 version = "0.26.8"
-authors = ["Ed Page <eopage@gmail.com>"]
 description = "The liquid templating language for Rust"
-repository = "https://github.com/cobalt-org/liquid-rust"
-documentation = "https://docs.rs/liquid"
-readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
+repository.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -21,6 +18,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 liquid = { version = "^0.26.10", path = "../../" }
 serde = { version = "1.0.157", features = ["derive"] }
 clap = { version = "4.3", features = ["derive"] }
-serde_yaml = "0.8"
+serde_yaml = "0.8.26"
 serde_json = "1.0"
 derive_more = { version = "1.0.0", features = ["display", "from", "constructor"] }

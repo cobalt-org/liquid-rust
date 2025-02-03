@@ -10,7 +10,7 @@ pub fn upcase() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "HELLO".to_string());
+    assert_eq!(output, "HELLO".to_owned());
 }
 
 #[test]
@@ -25,7 +25,7 @@ pub fn downcase() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "hello there".to_string());
+    assert_eq!(output, "hello there".to_owned());
 }
 
 #[test]
@@ -40,7 +40,7 @@ pub fn capitalize() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "Hello world".to_string());
+    assert_eq!(output, "Hello world".to_owned());
 }
 
 #[test]
@@ -55,7 +55,7 @@ pub fn minus() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "2".to_string());
+    assert_eq!(output, "2".to_owned());
 }
 
 #[test]
@@ -70,7 +70,7 @@ pub fn plus() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "6".to_string());
+    assert_eq!(output, "6".to_owned());
 }
 
 #[test]
@@ -100,7 +100,7 @@ pub fn first_numeric_array() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "12".to_string());
+    assert_eq!(output, "12".to_owned());
 }
 
 #[test]
@@ -115,7 +115,7 @@ pub fn first_string_array() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "first".to_string());
+    assert_eq!(output, "first".to_owned());
 }
 
 #[test]
@@ -130,7 +130,7 @@ pub fn first_char() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "f".to_string());
+    assert_eq!(output, "f".to_owned());
 }
 
 #[test]
@@ -145,7 +145,7 @@ pub fn last_numeric_array() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "1".to_string());
+    assert_eq!(output, "1".to_owned());
 }
 
 #[test]
@@ -160,7 +160,7 @@ pub fn last_string_array() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "second".to_string());
+    assert_eq!(output, "second".to_owned());
 }
 
 #[test]
@@ -175,7 +175,7 @@ pub fn last_char() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "d".to_string());
+    assert_eq!(output, "d".to_owned());
 }
 
 #[test]
@@ -190,7 +190,7 @@ pub fn replace_first() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "foo2bar".to_string());
+    assert_eq!(output, "foo2bar".to_owned());
 }
 
 #[test]
@@ -205,7 +205,7 @@ pub fn replace() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "foo2foo".to_string());
+    assert_eq!(output, "foo2foo".to_owned());
 }
 
 #[test]
@@ -220,7 +220,7 @@ pub fn prepend_constant() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "fifobar2bar".to_string());
+    assert_eq!(output, "fifobar2bar".to_owned());
 }
 
 #[test]
@@ -236,7 +236,7 @@ pub fn prepend_variable() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "fifobar2bar".to_string());
+    assert_eq!(output, "fifobar2bar".to_owned());
 }
 
 #[test]
@@ -251,7 +251,7 @@ pub fn append() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "roobarblifo".to_string());
+    assert_eq!(output, "roobarblifo".to_owned());
 }
 
 // Got this test from example at https://shopify.github.io/liquid/filters/split/
@@ -268,7 +268,7 @@ pub fn split_with_comma() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "John\nPaul\nGeorge\nRingo\n".to_string());
+    assert_eq!(output, "John\nPaul\nGeorge\nRingo\n".to_owned());
 }
 
 // This test verifies that issue #40 is fixed (that split works)
@@ -283,7 +283,7 @@ pub fn split_no_comma() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "LETTER: a\nLETTER: b\nLETTER: c\n".to_string());
+    assert_eq!(output, "LETTER: a\nLETTER: b\nLETTER: c\n".to_owned());
 }
 
 // Split on 1 string and re-join on another
@@ -297,7 +297,7 @@ pub fn split_then_join() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "a, b, c".to_string());
+    assert_eq!(output, "a, b, c".to_owned());
 }
 
 // Slice single character
@@ -311,7 +311,7 @@ pub fn slice_one() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "2".to_string());
+    assert_eq!(output, "2".to_owned());
 }
 
 // Slicing with negative start should start from end of string
@@ -325,7 +325,7 @@ pub fn slice_negative() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "321".to_string());
+    assert_eq!(output, "321".to_owned());
 }
 
 #[test]
@@ -339,7 +339,7 @@ pub fn slice_overflow() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "0123456".to_string());
+    assert_eq!(output, "0123456".to_owned());
 }
 
 #[test]
@@ -353,7 +353,7 @@ pub fn slice_empty() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "".to_string());
+    assert_eq!(output, "".to_owned());
 }
 
 #[test]
@@ -367,7 +367,7 @@ pub fn split_sort_join() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "Sally Snake, giraffe, octopus, zebra".to_string());
+    assert_eq!(output, "Sally Snake, giraffe, octopus, zebra".to_owned());
 }
 
 #[test]
@@ -382,7 +382,7 @@ pub fn modulo() {
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
-        assert_eq!(output, t.1.to_string());
+        assert_eq!(output, t.1.to_owned());
     }
 }
 
@@ -405,7 +405,7 @@ pub fn escape() {
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
-        assert_eq!(output, t.1.to_string());
+        assert_eq!(output, t.1.to_owned());
     }
 }
 
@@ -428,7 +428,7 @@ pub fn escape_once() {
             .parse(text)
             .unwrap();
         let output = template.render(&globals).unwrap();
-        assert_eq!(output, t.1.to_string());
+        assert_eq!(output, t.1.to_owned());
     }
 }
 
@@ -442,7 +442,7 @@ pub fn remove_first_constant() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "2bar".to_string());
+    assert_eq!(output, "2bar".to_owned());
 }
 
 #[test]
@@ -455,7 +455,7 @@ pub fn remove_first_variable() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "2bar".to_string());
+    assert_eq!(output, "2bar".to_owned());
 }
 
 #[test]
@@ -468,7 +468,7 @@ pub fn remove() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "2".to_string());
+    assert_eq!(output, "2".to_owned());
 }
 
 #[test]
@@ -481,7 +481,7 @@ pub fn strip_html() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "Lorem ipsum dolor".to_string());
+    assert_eq!(output, "Lorem ipsum dolor".to_owned());
 }
 
 #[test]
@@ -494,7 +494,7 @@ pub fn truncatewords() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "first...".to_string());
+    assert_eq!(output, "first...".to_owned());
 }
 
 #[test]
@@ -507,7 +507,7 @@ pub fn default_use() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "bar".to_string());
+    assert_eq!(output, "bar".to_owned());
 }
 
 #[test]
@@ -520,7 +520,7 @@ pub fn default_pass() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "foo".to_string());
+    assert_eq!(output, "foo".to_owned());
 }
 
 #[test]
@@ -537,5 +537,5 @@ fn test_compact() {
         .parse(text)
         .unwrap();
     let output = template.render(&globals).unwrap();
-    assert_eq!(output, "A C".to_string());
+    assert_eq!(output, "A C".to_owned());
 }

@@ -24,22 +24,22 @@ struct TestStatefulFilterParameters {
     description = "Test stateful filters.",
     parameters(TestStatefulFilterParameters)
 )]
-pub struct TestStatefulFilterParser {
+pub(crate) struct TestStatefulFilterParser {
     state: Mood,
 }
 
 impl TestStatefulFilterParser {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             state: Mood::Neutral,
         }
     }
 
-    pub fn make_sad(&mut self) {
+    pub(crate) fn make_sad(&mut self) {
         self.state = Mood::Sad;
     }
 
-    pub fn make_happy(&mut self) {
+    pub(crate) fn make_happy(&mut self) {
         self.state = Mood::Happy;
     }
 }
@@ -52,14 +52,14 @@ impl ParseFilter for TestStatefulFilterParser {
         Ok(Box::new(TestStatefulFilter { args, state }))
     }
 
-    fn reflection(&self) -> &dyn liquid_core::FilterReflection {
+    fn reflection(&self) -> &dyn FilterReflection {
         self
     }
 }
 
 #[derive(Debug, Display_filter)]
 #[name = "state"]
-pub struct TestStatefulFilter {
+pub(super) struct TestStatefulFilter {
     #[parameters]
     args: TestStatefulFilterParameters,
     state: Mood,

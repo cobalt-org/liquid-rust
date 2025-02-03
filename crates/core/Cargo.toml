@@ -1,13 +1,10 @@
 [package]
 name = "liquid-core"
 version = "0.26.10"
-authors = ["Ed Page <eopage@gmail.com>"]
 description = "Core liquid functionality"
-repository = "https://github.com/cobalt-org/liquid-rust/tree/master/crate/core"
-documentation = "https://docs.rs/liquid-core"
-readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
+repository.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -25,13 +22,13 @@ pest_derive = "2.0"
 regex = "1.5"
 
 # Exposed in API
-time = { version = "0.3", default-features = false, features = ["formatting", "macros", "parsing"] }
+time = { version = "0.3.37", default-features = false, features = ["formatting", "macros", "parsing"] }
 serde = { version = "1.0.157", features = ["derive"] }
 kstring = { version = "2.0", features = ["serde"] }
 liquid-derive = { version = "^0.26.9", path = "../derive", optional = true }
 
 [dev-dependencies]
-serde_yaml = "0.8"
+serde_yaml = "0.8.26"
 snapbox = "0.6.5"
 
 [features]

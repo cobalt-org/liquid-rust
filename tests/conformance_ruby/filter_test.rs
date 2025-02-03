@@ -5,11 +5,11 @@ use liquid_core::{Value, ValueView};
 
 #[derive(Clone, ParseFilter, FilterReflection)]
 #[filter(name = "money", description = "tests helper", parsed(MoneyFilter))]
-pub struct MoneyFilterParser;
+pub(super) struct MoneyFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "money"]
-pub struct MoneyFilter;
+pub(super) struct MoneyFilter;
 
 impl Filter for MoneyFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -23,11 +23,11 @@ impl Filter for MoneyFilter {
     description = "tests helper",
     parsed(MoneyWithUnderscoreFilter)
 )]
-pub struct MoneyWithUnderscoreFilterParser;
+pub(super) struct MoneyWithUnderscoreFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "money_with_underscore"]
-pub struct MoneyWithUnderscoreFilter;
+pub(super) struct MoneyWithUnderscoreFilter;
 
 impl Filter for MoneyWithUnderscoreFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -49,11 +49,11 @@ fn liquid_money() -> liquid::Parser {
     description = "tests helper",
     parsed(SubstituteFilter)
 )]
-pub struct SubstituteFilterParser;
+pub(super) struct SubstituteFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "substitute"]
-pub struct SubstituteFilter;
+pub(super) struct SubstituteFilter;
 
 impl Filter for SubstituteFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {

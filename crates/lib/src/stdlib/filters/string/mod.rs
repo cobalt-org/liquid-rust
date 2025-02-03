@@ -6,10 +6,10 @@ use liquid_core::{
 };
 use liquid_core::{Value, ValueView};
 
-pub mod case;
-pub mod operate;
-pub mod strip;
-pub mod truncate;
+pub(super) mod case;
+pub(super) mod operate;
+pub(super) mod strip;
+pub(super) mod truncate;
 
 #[derive(Debug, FilterParameters)]
 struct SplitArgs {

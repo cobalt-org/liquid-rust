@@ -43,7 +43,7 @@ impl ParseBlock for CaptureBlock {
             .expect_next("Identifier expected")?
             .expect_identifier()
             .into_result()?
-            .to_string()
+            .to_owned()
             .into();
 
         // no more arguments should be supplied, trying to supply them is an error
@@ -95,14 +95,13 @@ mod test {
 
     use liquid_core::model::Scalar;
     use liquid_core::parser;
-    use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
         options
             .blocks
-            .register("capture".to_string(), CaptureBlock.into());
+            .register("capture".to_owned(), CaptureBlock.into());
         options
     }
 
@@ -114,9 +113,7 @@ mod test {
             "{% endcapture %}"
         );
         let options = options();
-        let template = parser::parse(text, &options)
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let rt = RuntimeBuilder::new().build();
         rt.set_global("item".into(), Value::scalar("potato"));
@@ -138,7 +135,7 @@ mod test {
             "{% endcapture %}"
         );
         let options = options();
-        let template = parser::parse(text, &options).map(runtime::Template::new);
+        let template = parser::parse(text, &options).map(Template::new);
         assert!(template.is_err());
     }
 }
