@@ -40,7 +40,7 @@ impl ParseBlock for RawBlock {
         // no arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
 
-        let content = tokens.escape_liquid(false)?.to_string();
+        let content = tokens.escape_liquid(false)?.to_owned();
 
         tokens.assert_empty();
         Ok(Box::new(RawT { content }))
@@ -73,7 +73,7 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("raw".to_string(), RawBlock.into());
+        options.blocks.register("raw".to_owned(), RawBlock.into());
         options
     }
 

@@ -1,3 +1,5 @@
+#![allow(clippy::string_add)]
+
 use std::cmp;
 
 use liquid_core::Expression;

@@ -197,14 +197,11 @@ mod test {
 
     use liquid_core::model::Value;
     use liquid_core::parser;
-    use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
-        options
-            .blocks
-            .register("case".to_string(), CaseBlock.into());
+        options.blocks.register("case".to_owned(), CaseBlock.into());
         options
     }
 
@@ -221,9 +218,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = parser::parse(text, &options)
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("x".into(), Value::scalar(2f64));
@@ -250,9 +245,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = parser::parse(text, &options)
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("x".into(), Value::scalar("nope"));
@@ -272,7 +265,7 @@ mod test {
             "{% endcase %}"
         );
         let options = options();
-        let template = parser::parse(text, &options).map(runtime::Template::new);
+        let template = parser::parse(text, &options).map(Template::new);
         assert!(template.is_err());
     }
 }

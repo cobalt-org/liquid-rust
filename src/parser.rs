@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::prelude::Read;
 use std::path;
 use std::sync;
 
@@ -278,13 +276,8 @@ impl Parser {
     }
 
     fn parse_file_path(&self, file: &path::Path) -> Result<Template> {
-        let mut f = File::open(file)
+        let buf = std::fs::read_to_string(file)
             .replace("Cannot open file")
-            .context_key("path")
-            .value_with(|| file.to_string_lossy().into_owned().into())?;
-        let mut buf = String::new();
-        f.read_to_string(&mut buf)
-            .replace("Cannot read file")
             .context_key("path")
             .value_with(|| file.to_string_lossy().into_owned().into())?;
 

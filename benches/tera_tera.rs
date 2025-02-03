@@ -44,7 +44,7 @@ struct Product {
     summary: String,
 }
 impl Product {
-    pub fn new() -> Product {
+    pub(crate) fn new() -> Product {
         Product {
             name: "Moto G".to_owned(),
             manufacturer: "Motorala".to_owned(),
@@ -144,12 +144,12 @@ fn bench_huge_loop(c: &mut Criterion) {
     }
     let real: Vec<DataWrapper> = (1..1000)
         .map(|i| DataWrapper {
-            v: format!("n={}", i),
+            v: format!("n={i}"),
         })
         .collect();
     let dummy: Vec<DataWrapper> = (1..1000)
         .map(|i| DataWrapper {
-            v: format!("n={}", i),
+            v: format!("n={i}"),
         })
         .collect();
     let rows = RowWrapper { real, dummy };

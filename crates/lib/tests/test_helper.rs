@@ -1,14 +1,14 @@
-pub use liquid_core::Value::Nil;
+pub(crate) use liquid_core::Value::Nil;
 
 #[allow(dead_code)]
-pub fn date(y: i32, m: u8, d: u8) -> liquid_core::Value {
+pub(crate) fn date(y: i32, m: u8, d: u8) -> liquid_core::Value {
     use liquid_core::model::Date;
     use liquid_core::model::Value;
     Value::scalar(Date::from_ymd(y, m, d))
 }
 
 #[allow(dead_code)]
-pub fn with_time(_time: &str) -> liquid_core::Value {
+pub(crate) fn with_time(_time: &str) -> liquid_core::Value {
     Nil
 }
 

@@ -1,5 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![allow(clippy::bool_assert_comparison)]
+#![allow(clippy::self_named_module_files)] // HACK: false-positive
 
 #[cfg(feature = "extra")]
 pub mod extra;

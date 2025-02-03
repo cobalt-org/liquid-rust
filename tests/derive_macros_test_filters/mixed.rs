@@ -42,11 +42,11 @@ struct TestMixedFilterParameters {
     parameters(TestMixedFilterParameters),
     parsed(TestMixedFilter)
 )]
-pub struct TestMixedFilterParser;
+pub(crate) struct TestMixedFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "mix"]
-pub struct TestMixedFilter {
+pub(super) struct TestMixedFilter {
     #[parameters]
     args: TestMixedFilterParameters,
 }
@@ -59,24 +59,21 @@ impl Filter for TestMixedFilter {
         let a = args
             .a
             .map(|i| i.to_string())
-            .unwrap_or_else(|| "None".to_string());
+            .unwrap_or_else(|| "None".to_owned());
         let b = args.b.to_string();
         let c = args
             .c
             .map(|i| i.to_string())
-            .unwrap_or_else(|| "None".to_string());
+            .unwrap_or_else(|| "None".to_owned());
         let d = args.d.to_string();
         let e = args.e.to_string();
         let f = args
             .f
             .map(|i| i.to_string())
-            .unwrap_or_else(|| "None".to_string());
+            .unwrap_or_else(|| "None".to_owned());
         let g = args.g.to_kstr();
 
-        let result = format!(
-            "<a: {}; b: {}; c: {}, d: {}, e: {}, f: {}, type: {}>",
-            a, b, c, d, e, f, g
-        );
+        let result = format!("<a: {a}; b: {b}; c: {c}, d: {d}, e: {e}, f: {f}, type: {g}>");
 
         Ok(Value::scalar(result))
     }

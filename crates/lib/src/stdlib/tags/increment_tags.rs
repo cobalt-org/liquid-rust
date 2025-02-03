@@ -37,7 +37,7 @@ impl ParseTag for IncrementTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string()
+            .to_owned()
             .into();
 
         // no more arguments should be supplied, trying to supply them is an error
@@ -63,7 +63,7 @@ impl Renderable for Increment {
             .and_then(|i| i.as_scalar().and_then(|i| i.to_integer()))
             .unwrap_or(0);
 
-        write!(writer, "{}", val).replace("Failed to render")?;
+        write!(writer, "{val}").replace("Failed to render")?;
         val += 1;
         runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
@@ -99,7 +99,7 @@ impl ParseTag for DecrementTag {
             .expect_next("Identifier expected.")?
             .expect_identifier()
             .into_result()?
-            .to_string()
+            .to_owned()
             .into();
 
         // no more arguments should be supplied, trying to supply them is an error
@@ -126,7 +126,7 @@ impl Renderable for Decrement {
             .unwrap_or(0);
 
         val -= 1;
-        write!(writer, "{}", val).replace("Failed to render")?;
+        write!(writer, "{val}").replace("Failed to render")?;
         runtime.set_index(self.id.clone(), Value::scalar(val));
         Ok(())
     }
@@ -146,13 +146,13 @@ mod test {
         let mut options = Language::default();
         options
             .tags
-            .register("assign".to_string(), stdlib::AssignTag.into());
+            .register("assign".to_owned(), stdlib::AssignTag.into());
         options
             .tags
-            .register("increment".to_string(), IncrementTag.into());
+            .register("increment".to_owned(), IncrementTag.into());
         options
             .tags
-            .register("decrement".to_string(), DecrementTag.into());
+            .register("decrement".to_owned(), DecrementTag.into());
         options
     }
 

@@ -78,7 +78,7 @@ impl Filter for SlugifyFilter {
         let s = if mode == SlugifyMode::Latin {
             deunicode::deunicode_with_tofu(s.trim(), "-")
         } else {
-            s.trim().to_string()
+            s.trim().to_owned()
         };
 
         let result = match mode {

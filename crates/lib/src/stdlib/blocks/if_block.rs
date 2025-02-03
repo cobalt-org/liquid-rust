@@ -204,7 +204,7 @@ enum Condition {
 }
 
 impl Condition {
-    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
+    pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
         match *self {
             Condition::Binary(ref c) => c.evaluate(runtime),
             Condition::Existence(ref c) => c.evaluate(runtime),
@@ -221,10 +221,10 @@ impl Condition {
 impl fmt::Display for Condition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            Condition::Binary(ref c) => write!(f, "{}", c),
-            Condition::Existence(ref c) => write!(f, "{}", c),
-            Condition::Conjunction(ref left, ref right) => write!(f, "{} and {}", left, right),
-            Condition::Disjunction(ref left, ref right) => write!(f, "{} or {}", left, right),
+            Condition::Binary(ref c) => write!(f, "{c}"),
+            Condition::Existence(ref c) => write!(f, "{c}"),
+            Condition::Conjunction(ref left, ref right) => write!(f, "{left} and {right}"),
+            Condition::Disjunction(ref left, ref right) => write!(f, "{left} or {right}"),
         }
     }
 }
@@ -237,7 +237,7 @@ struct BinaryCondition {
 }
 
 impl BinaryCondition {
-    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
+    pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
         let a = self.lh.evaluate(runtime)?;
         let ca = ValueViewCmp::new(a.as_view());
         let b = self.rh.evaluate(runtime)?;
@@ -310,7 +310,7 @@ impl fmt::Display for ComparisonOperator {
             ComparisonOperator::GreaterThan => ">",
             ComparisonOperator::Contains => "contains",
         };
-        write!(f, "{}", out)
+        write!(f, "{out}")
     }
 }
 
@@ -335,7 +335,7 @@ struct ExistenceCondition {
 }
 
 impl ExistenceCondition {
-    pub fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
+    pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
         let a = self.lh.try_evaluate(runtime);
         let a = a.unwrap_or_default();
         let is_truthy = a.query_state(liquid_core::model::State::Truthy);
@@ -366,7 +366,7 @@ impl<'a> Iterator for PeekableTagTokenIter<'a> {
 }
 
 impl<'a> PeekableTagTokenIter<'a> {
-    pub fn expect_next(&mut self, error_msg: &str) -> Result<TagToken<'a>> {
+    pub(crate) fn expect_next(&mut self, error_msg: &str) -> Result<TagToken<'a>> {
         self.next().ok_or_else(|| self.iter.raise_error(error_msg))
     }
 
@@ -450,7 +450,7 @@ fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Err
 
 fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
+    Error::with_msg(format!("Expected {expected}, found `{actual}`"))
 }
 
 #[cfg(test)]
@@ -460,33 +460,28 @@ mod test {
     use liquid_core::model::Object;
     use liquid_core::model::Value;
     use liquid_core::parser;
-    use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("if".to_string(), IfBlock.into());
+        options.blocks.register("if".to_owned(), IfBlock.into());
         options
             .blocks
-            .register("unless".to_string(), UnlessBlock.into());
+            .register("unless".to_owned(), UnlessBlock.into());
         options
     }
 
     #[test]
     fn number_comparison() {
         let text = "{% if 6 < 7  %}if true{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 7 < 6  %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -496,18 +491,14 @@ mod test {
     #[test]
     fn string_comparison() {
         let text = r#"{% if "one" == "one"  %}if true{% endif %}"#;
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = r#"{% if "one" == "two"  %}if true{% else %}if false{% endif %}"#;
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -524,9 +515,7 @@ mod test {
             "{% endif %}"
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         // Non-existence
         let runtime = RuntimeBuilder::new().build();
@@ -560,9 +549,7 @@ mod test {
             "{% endunless %}"
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("some_value".into(), Value::scalar(1f64));
@@ -589,9 +576,7 @@ mod test {
             "nope",
             "{% endif %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("truthy".into(), Value::scalar(true));
@@ -614,9 +599,7 @@ mod test {
             "{% endif %}"
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("a".into(), Value::scalar(1f64));
@@ -642,18 +625,14 @@ mod test {
     #[test]
     fn string_contains_with_literals() {
         let text = "{% if \"Star Wars\" contains \"Star\" %}if true{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if \"Star Wars\" contains \"Alf\"  %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -663,9 +642,7 @@ mod test {
     #[test]
     fn string_contains_with_variables() {
         let text = "{% if movie contains \"Star\"  %}if true{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("movie".into(), Value::scalar("Star Wars"));
@@ -673,9 +650,7 @@ mod test {
         assert_eq!(output, "if true");
 
         let text = "{% if movie contains \"Star\"  %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("movie".into(), Value::scalar("Batman"));
@@ -686,9 +661,7 @@ mod test {
     #[test]
     fn contains_with_object_and_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let mut obj = Object::new();
@@ -701,9 +674,7 @@ mod test {
     #[test]
     fn contains_with_object_and_missing_key() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let obj = Object::new();
@@ -715,9 +686,7 @@ mod test {
     #[test]
     fn contains_with_array_and_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let arr = vec![
@@ -733,9 +702,7 @@ mod test {
     #[test]
     fn contains_with_array_and_no_match() {
         let text = "{% if movies contains \"Star Wars\" %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let arr = vec![Value::scalar("Alien")];
@@ -747,18 +714,14 @@ mod test {
     #[test]
     fn multiple_conditions_and() {
         let text = "{% if 1 == 1 and 2 == 2 %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 1 == 1 and 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -768,18 +731,14 @@ mod test {
     #[test]
     fn multiple_conditions_or() {
         let text = "{% if 1 == 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
 
         let text = "{% if 1 != 1 or 2 != 2 %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -789,9 +748,7 @@ mod test {
     #[test]
     fn multiple_conditions_and_or() {
         let text = "{% if 1 == 1 or 2 == 2 and 3 != 3 %}if true{% else %}if false{% endif %}";
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();

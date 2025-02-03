@@ -154,10 +154,10 @@ fn trace_for_tag(
 ) -> String {
     let mut parameters = vec![];
     if let Some(limit) = limit {
-        parameters.push(format!("limit:{}", limit));
+        parameters.push(format!("limit:{limit}"));
     }
     if let Some(offset) = offset {
-        parameters.push(format!("offset:{}", offset));
+        parameters.push(format!("offset:{offset}"));
     }
     if reversed {
         parameters.push("reversed".to_owned());
@@ -380,13 +380,13 @@ fn trace_tablerow_tag(
 ) -> String {
     let mut parameters = vec![];
     if let Some(cols) = cols {
-        parameters.push(format!("cols:{}", cols));
+        parameters.push(format!("cols:{cols}"));
     }
     if let Some(limit) = limit {
-        parameters.push(format!("limit:{}", limit));
+        parameters.push(format!("limit:{limit}"));
     }
     if let Some(offset) = offset {
-        parameters.push(format!("offset:{}", offset));
+        parameters.push(format!("offset:{offset}"));
     }
     format!(
         "{{% for {} in {} {} %}}",
@@ -547,8 +547,8 @@ impl RangeExpression {
 impl fmt::Display for RangeExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RangeExpression::Array(ref arr) => write!(f, "{}", arr),
-            RangeExpression::Counted(ref start, ref end) => write!(f, "({}..{})", start, end),
+            RangeExpression::Array(ref arr) => write!(f, "{arr}"),
+            RangeExpression::Counted(ref start, ref end) => write!(f, "({start}..{end})"),
         }
     }
 }
@@ -635,14 +635,13 @@ fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Err
 
 fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
-    Error::with_msg(format!("Expected {}, found `{}`", expected, actual))
+    Error::with_msg(format!("Expected {expected}, found `{actual}`"))
 }
 
 #[cfg(test)]
 mod test {
     use liquid_core::model::ValueView;
     use liquid_core::parser;
-    use liquid_core::runtime;
     use liquid_core::runtime::RuntimeBuilder;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
@@ -652,13 +651,13 @@ mod test {
 
     fn options() -> Language {
         let mut options = Language::default();
-        options.blocks.register("for".to_string(), ForBlock.into());
+        options.blocks.register("for".to_owned(), ForBlock.into());
         options
             .blocks
-            .register("tablerow".to_string(), TableRowBlock.into());
+            .register("tablerow".to_owned(), TableRowBlock.into());
         options
             .tags
-            .register("assign".to_string(), stdlib::AssignTag.into());
+            .register("assign".to_owned(), stdlib::AssignTag.into());
         options
     }
 
@@ -666,9 +665,7 @@ mod test {
     fn loop_over_array() {
         let text = concat!("{% for name in array %}", "test {{name}} ", "{% endfor %}",);
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global(
@@ -692,9 +689,7 @@ mod test {
             "{% endfor %}",
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -711,9 +706,7 @@ mod test {
             "#{{forloop.index}} test {{x}}, ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("alpha".into(), Value::scalar(42i64));
@@ -739,9 +732,7 @@ mod test {
             ">>{{outer}}>>\n",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -767,9 +758,7 @@ mod test {
             "empty outer",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global("i".into(), Value::Array(vec![]));
@@ -788,9 +777,7 @@ mod test {
         // make sure that a degenerate range (i.e. where max < min)
         // doesn't result in an infinite loop
         let text = concat!("{% for x in (10 .. 0) %}", "{{x}}", "{% endfor %}");
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -804,9 +791,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -820,9 +805,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -836,9 +819,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -852,9 +833,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -868,9 +847,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -886,9 +863,7 @@ mod test {
             "There are no items!",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -904,9 +879,7 @@ mod test {
             "There are no items!",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -916,9 +889,7 @@ mod test {
     #[test]
     fn limit_greater_than_iterator_length() {
         let text = concat!("{% for i in (1..5) limit:10 %}", "{{ i }} ", "{% endfor %}");
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -940,9 +911,7 @@ mod test {
             "{% endfor %}",
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -958,11 +927,11 @@ mod test {
 
     #[derive(Clone, ParseFilter, FilterReflection)]
     #[filter(name = "shout", description = "tests helper", parsed(ShoutFilter))]
-    pub struct ShoutFilterParser;
+    pub(super) struct ShoutFilterParser;
 
     #[derive(Debug, Default, Display_filter)]
     #[name = "shout"]
-    pub struct ShoutFilter;
+    pub(super) struct ShoutFilter;
 
     impl Filter for ShoutFilter {
         fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -981,10 +950,8 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("shout".to_string(), Box::new(ShoutFilterParser));
-        let template = parser::parse(text, &options)
-            .map(runtime::Template::new)
-            .unwrap();
+            .register("shout".to_owned(), Box::new(ShoutFilterParser));
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
 
@@ -1009,9 +976,7 @@ mod test {
             "{{ i }} ",
             "{% endfor %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -1026,9 +991,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global(
@@ -1052,9 +1015,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global(
@@ -1083,9 +1044,7 @@ mod test {
             "{{ i }} ",
             "{% endtablerow %}"
         );
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -1111,9 +1070,7 @@ mod test {
             "{% endtablerow %}",
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
@@ -1138,9 +1095,7 @@ mod test {
             "{% endfor %}"
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global(
@@ -1170,9 +1125,7 @@ mod test {
             "{% endfor %}{% endfor %}"
         );
 
-        let template = parser::parse(text, &options())
-            .map(runtime::Template::new)
-            .unwrap();
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         runtime.set_global(

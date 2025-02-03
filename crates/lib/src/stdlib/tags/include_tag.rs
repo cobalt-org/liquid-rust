@@ -41,7 +41,7 @@ impl ParseTag for IncludeTag {
 
         let mut vars: Vec<(KString, Expression)> = Vec::new();
         while let Ok(next) = arguments.expect_next("") {
-            let id = next.expect_identifier().into_result()?.to_string();
+            let id = next.expect_identifier().into_result()?.to_owned();
 
             arguments
                 .expect_next("\":\" expected.")?
@@ -165,23 +165,23 @@ mod test {
         let mut options = Language::default();
         options
             .tags
-            .register("include".to_string(), IncludeTag.into());
+            .register("include".to_owned(), IncludeTag.into());
         options
             .blocks
-            .register("comment".to_string(), stdlib::CommentBlock.into());
+            .register("comment".to_owned(), stdlib::CommentBlock.into());
         options
             .blocks
-            .register("if".to_string(), stdlib::IfBlock.into());
+            .register("if".to_owned(), stdlib::IfBlock.into());
         options
     }
 
     #[derive(Clone, ParseFilter, FilterReflection)]
     #[filter(name = "size", description = "tests helper", parsed(SizeFilter))]
-    pub struct SizeFilterParser;
+    pub(super) struct SizeFilterParser;
 
     #[derive(Debug, Default, Display_filter)]
     #[name = "size"]
-    pub struct SizeFilter;
+    pub(super) struct SizeFilter;
 
     impl Filter for SizeFilter {
         fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -203,7 +203,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
+            .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
             .unwrap();
@@ -280,7 +280,7 @@ mod test {
         let mut options = options();
         options
             .filters
-            .register("size".to_string(), Box::new(SizeFilterParser));
+            .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
             .unwrap();

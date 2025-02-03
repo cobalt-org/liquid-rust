@@ -1,10 +1,13 @@
-use crate::helpers::*;
-use proc_macro2::*;
-use quote::*;
+use crate::helpers::{assign_str_value, parse_str_value, AssignOnce};
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::{quote, ToTokens};
 use std::str::FromStr;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::*;
+use syn::{
+    Attribute, Data, DeriveInput, Error, Field, Fields, GenericArgument, Path, PathArguments,
+    PathSegment, Result, Token, Type, Visibility,
+};
 
 /// Struct that contains information to generate the necessary code for `FilterParameters`.
 struct FilterParameters<'a> {
@@ -85,7 +88,7 @@ impl<'a> FilterParameters<'a> {
 
         let name = ident;
         let evaluated_name = Self::parse_attrs(attrs)?
-            .unwrap_or_else(|| Ident::new(&format!("Evaluated{}", name), Span::call_site()));
+            .unwrap_or_else(|| Ident::new(&format!("Evaluated{name}"), Span::call_site()));
 
         Ok(FilterParameters {
             name,
@@ -288,8 +291,7 @@ impl FromStr for FilterParameterMode {
             "keyword" => Ok(FilterParameterMode::Keyword),
             "positional" => Ok(FilterParameterMode::Positional),
             s => Err(format!(
-                "Expected either \"keyword\" or \"positional\". Found \"{}\".",
-                s
+                "Expected either \"keyword\" or \"positional\". Found \"{s}\"."
             )),
         }
     }
@@ -322,7 +324,7 @@ impl FromStr for FilterParameterType {
             "date_time" => Ok(FilterParameterType::DateTime),
             "date" => Ok(FilterParameterType::Date),
             "str" => Ok(FilterParameterType::Str),
-            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date_time\", \"date\", \"scalar\", or \"str\". Found \"{}\".", s)),
+            _ => Err(format!("Expected one of the following: \"any\", \"integer\", \"float\", \"bool\", \"date_time\", \"date\", \"scalar\", or \"str\". Found \"{s}\".")),
         }
     }
 }
@@ -602,6 +604,8 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
             type EvaluatedFilterParameters = #evaluated_name<'a>;
 
             fn from_args(mut args: ::liquid_core::parser::FilterArguments) -> ::liquid_core::error::Result<Self> {
+                #![allow(clippy::ref_option_ref)]
+
                 #(#construct_positional_fields)*
                 if let ::std::option::Option::Some(arg) = args.positional.next() {
                     return ::std::result::Result::Err(#too_many_args);
@@ -621,7 +625,9 @@ fn generate_impl_filter_parameters(filter_parameters: &FilterParameters<'_>) -> 
             }
 
             fn evaluate(&'a self, runtime: &'a dyn ::liquid_core::runtime::Runtime) -> ::liquid_core::error::Result<Self::EvaluatedFilterParameters> {
-               #(#evaluate_fields)*
+                #![allow(clippy::ref_option_ref)]
+
+                #(#evaluate_fields)*
 
                 Ok( #evaluated_name { #comma_separated_field_names __phantom_data: ::std::marker::PhantomData } )
             }
@@ -660,6 +666,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
     let field_names = fields.parameters.iter().map(|field| &field.name);
 
     quote! {
+        #[allow(clippy::ref_option_ref)]
         #vis struct #evaluated_name <'a>{
             #(#field_names : #field_types,)*
             __phantom_data: ::std::marker::PhantomData<&'a ()>
@@ -670,7 +677,7 @@ fn generate_evaluated_struct(filter_parameters: &FilterParameters<'_>) -> TokenS
 /// Constructs `ParameterReflection` for the given parameter.
 fn generate_parameter_reflection(field: &FilterParameter<'_>) -> TokenStream {
     let name = field.liquid_name();
-    let description = &field.meta.description.to_string();
+    let description = &field.meta.description;
     let is_optional = field.is_optional();
 
     quote! {
@@ -701,10 +708,12 @@ fn generate_impl_reflection(filter_parameters: &FilterParameters<'_>) -> TokenSt
     quote! {
         impl ::liquid_core::parser::FilterParametersReflection for #name {
             fn positional_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
+                #![allow(clippy::ref_option_ref)]
                 &[ #(#pos_params_reflection)* ]
             }
 
             fn keyword_parameters() -> &'static [::liquid_core::parser::ParameterReflection] {
+                #![allow(clippy::ref_option_ref)]
                 &[ #(#kw_params_reflection)* ]
             }
         }
@@ -761,6 +770,7 @@ fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStrea
     quote! {
         impl ::std::fmt::Display for #name {
             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                #![allow(clippy::ref_option_ref)]
                 let positional = [#(#positional_fields ,)*];
                 let keyword = [#(#keyword_fields ,)*];
 
@@ -788,7 +798,7 @@ fn generate_impl_display(filter_parameters: &FilterParameters<'_>) -> TokenStrea
     }
 }
 
-pub fn derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn derive(input: &DeriveInput) -> TokenStream {
     let filter_parameters = match FilterParameters::from_input(input) {
         Ok(filter_parameters) => filter_parameters,
         Err(err) => return err.to_compile_error(),

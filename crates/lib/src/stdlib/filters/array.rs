@@ -296,7 +296,7 @@ impl Filter for UniqFilter {
                 .iter()
                 .any(|v| ValueViewCmp::new(v.as_view()) == ValueViewCmp::new(x))
             {
-                deduped.push(x.to_value())
+                deduped.push(x.to_value());
             }
         }
         Ok(Value::array(deduped))

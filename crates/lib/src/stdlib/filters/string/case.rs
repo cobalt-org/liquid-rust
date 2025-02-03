@@ -57,7 +57,7 @@ struct CapitalizeFilter;
 
 impl Filter for CapitalizeFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
-        let s = input.to_kstr().to_owned();
+        let s = input.to_kstr().clone();
         let mut chars = s.chars();
         let capitalized = match chars.next() {
             Some(first_char) => first_char.to_uppercase().chain(chars).collect(),

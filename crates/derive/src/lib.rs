@@ -1,7 +1,5 @@
 //! Derive macros to aid in filter creation.
 
-extern crate proc_macro;
-
 mod filter;
 mod filter_parameters;
 pub(crate) mod helpers;
@@ -196,7 +194,7 @@ pub fn derive_filter_reflection(item: TokenStream) -> TokenStream {
     parse_filter::filter_reflection::derive(&input).into()
 }
 
-/// Implements `From<T>` (T implements FilterParameters) for a structure that
+/// Implements `From<T>` (T implements `FilterParameters`) for a structure that
 /// intends to implement the `Filter` trait.
 ///
 /// The field that holds the parameters must be marked with `#[parameters]`.

@@ -84,7 +84,7 @@ mod test {
         let mut options = Language::default();
         options
             .blocks
-            .register("comment".to_string(), CommentBlock.into());
+            .register("comment".to_owned(), CommentBlock.into());
         options
     }
 

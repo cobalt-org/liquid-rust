@@ -69,7 +69,7 @@ fn test_parsing_strict_with_line_numbers_adds_numbers_to_lexer_errors() {
     );
     let err = err.to_string();
 
-    println!("err={}", err);
+    println!("err={err}");
     assert!(err.contains("4 |"));
 }
 
@@ -90,7 +90,7 @@ fn test_syntax_errors_in_nested_blocks_have_correct_line_number() {
     let err = err.to_string();
 
     let expected = regex::Regex::new(r"\bline 5\b").unwrap();
-    println!("err={}", err);
+    println!("err={err}");
     assert!(expected.is_match(&err));
 }
 

@@ -10,11 +10,11 @@ use liquid_core::{Value, ValueView};
     description = "tests helper",
     parsed(MakeFunnyFilter)
 )]
-pub struct MakeFunnyFilterParser;
+pub(super) struct MakeFunnyFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "make_funny"]
-pub struct MakeFunnyFilter;
+pub(super) struct MakeFunnyFilter;
 
 impl Filter for MakeFunnyFilter {
     fn evaluate(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -28,11 +28,11 @@ impl Filter for MakeFunnyFilter {
     description = "tests helper",
     parsed(CiteFunnyFilter)
 )]
-pub struct CiteFunnyFilterParser;
+pub(super) struct CiteFunnyFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "cite_funny"]
-pub struct CiteFunnyFilter;
+pub(super) struct CiteFunnyFilter;
 
 impl Filter for CiteFunnyFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -53,11 +53,11 @@ struct AddSmileyFilterParameters {
     parameters(AddSmileyFilterParameters),
     parsed(AddSmileyFilter)
 )]
-pub struct AddSmileyFilterParser;
+pub(super) struct AddSmileyFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "add_smiley"]
-pub struct AddSmileyFilter {
+pub(super) struct AddSmileyFilter {
     #[parameters]
     args: AddSmileyFilterParameters,
 }
@@ -86,11 +86,11 @@ struct AddTagFilterParameters {
     parameters(AddTagFilterParameters),
     parsed(AddTagFilter)
 )]
-pub struct AddTagFilterParser;
+pub(super) struct AddTagFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "add_tag"]
-pub struct AddTagFilter {
+pub(super) struct AddTagFilter {
     #[parameters]
     args: AddTagFilterParameters,
 }
@@ -117,11 +117,11 @@ impl Filter for AddTagFilter {
     description = "tests helper",
     parsed(ParagraphFilter)
 )]
-pub struct ParagraphFilterParser;
+pub(super) struct ParagraphFilterParser;
 
 #[derive(Debug, Default, Display_filter)]
 #[name = "paragraph"]
-pub struct ParagraphFilter;
+pub(super) struct ParagraphFilter;
 
 impl Filter for ParagraphFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
@@ -142,11 +142,11 @@ struct LinkToFilterParameters {
     parameters(LinkToFilterParameters),
     parsed(LinkToFilter)
 )]
-pub struct LinkToFilterParser;
+pub(super) struct LinkToFilterParser;
 
 #[derive(Debug, FromFilterParameters, Display_filter)]
 #[name = "link_to"]
-pub struct LinkToFilter {
+pub(super) struct LinkToFilter {
     #[parameters]
     args: LinkToFilterParameters,
 }

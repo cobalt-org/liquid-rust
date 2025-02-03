@@ -1,7 +1,7 @@
-use crate::helpers::*;
-use proc_macro2::*;
-use quote::*;
-use syn::*;
+use crate::helpers::AssignOnce;
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::quote;
+use syn::{Data, DeriveInput, Error, Field, Fields, Generics, Result, Type};
 
 /// Struct that contains information about the `Filter` struct to generate the
 /// necessary code for `From`.
@@ -91,8 +91,8 @@ impl<'a> FilterStruct<'a> {
 
         Ok(Self {
             name,
-            fields,
             parameters_struct_name,
+            fields,
             ty,
             generics,
         })
@@ -206,7 +206,7 @@ fn generate_from_filter_parameters(filter: &FilterStruct<'_>) -> TokenStream {
     }
 }
 
-pub fn derive(input: &DeriveInput) -> TokenStream {
+pub(crate) fn derive(input: &DeriveInput) -> TokenStream {
     let filter = match FilterStruct::from_input(input) {
         Ok(filter) => filter,
         Err(err) => return err.to_compile_error(),
