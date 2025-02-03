@@ -1,13 +1,10 @@
 [package]
 name = "liquid-help-md"
 version = "0.26.7"
-authors = ["Ed Page <eopage@gmail.com>"]
 description = "Describe Liquid language via markdown"
-repository = "https://github.com/cobalt-org/liquid-rust"
-documentation = "https://docs.rs/liquid"
-readme = "README.md"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
+repository.workspace = true
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -15,7 +12,10 @@ include.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [dependencies]
 liquid-core = { version = "^0.26.10", path = "../core" }
+
+[lints]
+workspace = true

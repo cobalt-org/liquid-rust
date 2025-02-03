@@ -1,64 +1,83 @@
-Thanks for wanting to contribute! :snowman:
+# Contributing to liquid-rust
 
-Feel free to create issues or make pull requests, we'll try to quickly review them.
-
-If you need assistance, you can join the `#cobalt` channel on `irc.mozilla.org` or the Gitter chat [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/cobalt-org/cobalt.rs)
-
-We want you to feel safe and welcome and will enforce the **[The Rust Code of Conduct](https://www.rust-lang.org/conduct.html)** on all communication platforms of this project.
-Please contact [@johannhof](https://github.com/johannhof) for questions or in cases of violation.
-
-# Issues
+Thanks for wanting to contribute! There are many ways to contribute and we
+appreciate any level you're willing to do.
 
 This project aims to be a Rust implementation of [Liquid](https://shopify.github.io/liquid/).
 - Notice that we deviate from shopify/liquid? Please, open an issue if there isn't an [existing one](https://github.com/cobalt-org/liquid-rust/labels/shopify-compatibility)
 - Want a new tag or filter? Check for an [existing issue](https://github.com/cobalt-org/liquid-rust/labels/enhancement) and open one if needed.
 
-Some helpful pieces of information when reporting issues
-* liquid-rust version
-* rust version
-* OS and version
+## Feature Requests
 
-# Pull Requests
+Need some new functionality to help?  You can let us know by opening an
+[issue][new issue]. It's helpful to look through [all issues][all issues] in
+case it's already being talked about.
 
-## Project Ideas
+## Bug Reports
 
-If you're looking for things to do check out the [open issues](https://github.com/cobalt-org/cobalt.rs/issues), especially those with the
-[easy](https://github.com/cobalt-org/liquid-rust/issues?q=is%3Aissue+is%3Aopen+label%3Aeasy) and [help wanted](https://github.com/cobalt-org/liquid-rust/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) flags.
-Or take a grep through [all TODO comments](https://github.com/cobalt-org/liquid-rust/search?q=TODO) in the code and feel free to help us out there!
+Please let us know about what problems you run into, whether in behavior or
+ergonomics of API.  You can do this by opening an [issue][new issue]. It's
+helpful to look through [all issues][all issues] in case it's already being
+talked about.
 
-## Best Practices
+## Pull Requests
 
-We appreciate your help as-is.  We'd love to help you through the process for contributing.  We have some suggestions to help make things go more smoothly.
+Looking for an idea? Check our [issues][issues]. If the issue looks open ended,
+it is probably best to post on the issue how you are thinking of resolving the
+issue so you can get feedback early in the process. We want you to be
+successful and it can be discouraging to find out a lot of re-work is needed.
 
-🌈 **Here's a checklist for the perfect pull request:**
-- [ ] Make sure existing tests still work by running `cargo test` locally.
-- [ ] Add new tests for any new feature or regression tests for bugfixes.
-- [ ] Install [Clippy](https://github.com/Manishearth/rust-clippy) and run `rustup run nightly cargo clippy` to catch common mistakes (will be checked by Travis)
-- [ ] Install [Rustfmt](https://github.com/rust-lang-nursery/rustfmt) and run `cargo fmt` to format your code (will also be checked by Travis)
+Already have an idea?  It might be good to first [create an issue][new issue]
+to propose it so we can make sure we are aligned and lower the risk of having
+to re-work some of it and the discouragement that goes along with that.
 
-For commit messages, we use [Conventional](https://www.conventionalcommits.org)
-style.  If you already wrote your commits and don't feel comfortable changing
-them, don't worry and go ahead and create your PR.  We'll work with you on the
-best route forward. You can check your branch locally with
-[`committed`](https://github.com/crate-ci/committed).
+### Process
 
-For new tags or filters, we recommend
-- Open an RFC Issue for discussing what the API should be.  We'd like to avoid disrupting people once they start using a feature.
-- Consider incubating it in your code first to so it can be iterated on to find what works well.
-- Checkout prior art with [Shopify's proprietary extensions](https://help.shopify.com/themes/liquid) or [Jekyll's extensions](https://jekyllrb.com/docs/templates/).
-- Putting all non-standard features behind feature flags.
+As a heads up, we'll be running your PR through the following gauntlet:
+- warnings turned to compile errors
+- `cargo test`
+- `rustfmt`
+- `clippy`
+- `rustdoc`
+- [`committed`](https://github.com/crate-ci/committed) as we use [Conventional](https://www.conventionalcommits.org) commit style
+- [`typos`](https://github.com/crate-ci/typos) to check spelling
 
-If you're interested in benchmarking your changes
-- Be sure to get some before and afters on the same machine
-- Rust nightly is required.  You'll need to run `rustup run nightly -- cargo bench`
+Not everything can be checked automatically though.
 
-Hopefully we get this integrated into your CI process.
+We request that the commit history gets cleaned up.
 
-# Releasing
+We ask that commits are atomic, meaning they are complete and have a single responsibility.
+A complete commit should build, pass tests, update documentation and tests, and not have dead code.
+
+PRs should tell a cohesive story, with refactor and test commits that keep the
+fix or feature commits simple and clear.
+
+Specifically, we would encourage
+- File renames be isolated into their own commit
+- Add tests in a commit before their feature or fix, showing the current behavior (i.e. they should pass).
+  The diff for the feature/fix commit will then show how the behavior changed,
+  making the commit's intent clearer to reviewers and the community, and showing people that the
+  test is verifying the expected state.
+  - e.g. [clap#5520](https://github.com/clap-rs/clap/pull/5520)
+
+Note that we are talking about ideals.
+We understand having a clean history requires more advanced git skills;
+feel free to ask us for help!
+We might even suggest where it would work to be lax.
+We also understand that editing some early commits may cause a lot of churn
+with merge conflicts which can make it not worth editing all of the history.
+
+For code organization, we recommend
+- Grouping `impl` blocks next to their type (or trait)
+- Grouping private items after the `pub` item that uses them.
+  - The intent is to help people quickly find the "relevant" details, allowing them to "dig deeper" as needed.  Or put another way, the `pub` items serve as a table-of-contents.
+  - The exact order is fuzzy; do what makes sense
+
+## Releasing
 
 Pre-requisites
 - Running `cargo login`
-- A member of `ORG:Maintainers`
+- A member of `cobalt-org:Maintainers`
 - Push permission to the repo
 - [`cargo-release`](https://github.com/crate-ci/cargo-release/)
 
@@ -67,6 +86,6 @@ When we're ready to release, a project owner should do the following
 2. Determine what the next version is, according to semver
 3. Run [`cargo release -x <level>`](https://github.com/crate-ci/cargo-release)
 
-[issues]: https://github.com/ORG/PROJECT/issues
-[new issue]: https://github.com/ORG/PROJECT/issues/new
-[all issues]: https://github.com/ORG/PROJECT/issues?utf8=%E2%9C%93&q=is%3Aissue
+[issues]: https://github.com/cobalt-org/liquid-rust/issues
+[new issue]: https://github.com/cobalt-org/liquid-rust/issues/new
+[all issues]: https://github.com/cobalt-org/liquid-rust/issues?utf8=%E2%9C%93&q=is%3Aissue
