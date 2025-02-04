@@ -1,6 +1,6 @@
 [package]
 name = "liquid-derive"
-version = "0.26.9"
+version = "0.26.10"
 description = "The liquid templating language for Rust"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]

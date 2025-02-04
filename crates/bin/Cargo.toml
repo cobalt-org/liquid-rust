@@ -1,6 +1,6 @@
 [package]
 name = "liquid-bin"
-version = "0.26.8"
+version = "0.26.9"
 description = "The liquid templating language for Rust"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
@@ -15,7 +15,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-liquid = { version = "^0.26.10", path = "../../" }
+liquid = { version = "^0.26.11", path = "../../" }
 serde = { version = "1.0.157", features = ["derive"] }
 clap = { version = "4.3", features = ["derive"] }
 serde_yaml = "0.8.26"

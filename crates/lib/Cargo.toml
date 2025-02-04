@@ -1,6 +1,6 @@
 [package]
 name = "liquid-lib"
-version = "0.26.10"
+version = "0.26.11"
 description = "The liquid templating language for Rust"
 categories = ["template-engine"]
 keywords = ["liquid", "template", "templating", "language", "html"]
@@ -15,7 +15,7 @@ features = [ "default", "jekyll", "all" ]
 rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 
 [dependencies]
-liquid-core = { version = "^0.26.10", path = "../core", features = ["derive"] }
+liquid-core = { version = "^0.26.11", path = "../core", features = ["derive"] }
 itertools = "0.14.0"
 regex = "1.0"
 unicode-segmentation = "1.2"
