@@ -237,6 +237,8 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
         None
     } else if let "now" | "today" = s.to_lowercase().trim() {
         Some(DateTimeImpl::now_utc())
+    } else if s.parse::<i64>().is_ok() {
+        DateTimeImpl::parse(s, format_description!("[unix_timestamp]")).ok()
     } else {
         let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
 
@@ -373,6 +375,21 @@ mod test {
         let input = "Tue Feb 16 10:00:00 2016"; // dow_mon format no offset
         let actual = parse_date_time(input);
         assert!(actual.unwrap().unix_timestamp() == 1455616800);
+    }
+
+    #[test]
+    fn parse_date_time_unix_timestamp_format() {
+        let input = "0"; // epoch
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 0);
+
+        let input = "1455616800"; // positive
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455616800);
+
+        let input = "-1455616800"; // negative
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == -1455616800);
     }
 
     #[test]
