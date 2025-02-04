@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Features
+
+- Implicitly convert timestamps to date-times
+
 ## [0.26.10] - 2025-01-24
 
 ### Internal
