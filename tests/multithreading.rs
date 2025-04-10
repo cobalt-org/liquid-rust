@@ -34,5 +34,5 @@ pub fn pass_between_threads() {
     }
 
     // Wait for threads to finish
-    handles.into_iter().map(|h| h.join()).last();
+    handles.into_iter().map(|h| h.join()).next_back();
 }
