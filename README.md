@@ -57,7 +57,7 @@ Customizing Liquid
 ### Language Variants
 
 By default, `liquid-rust` has no filters, tags, or blocks.  You can enable the
-default set or pick and choose which to add to suite your application.
+default set or pick and choose which to add to suit your application.
 
 ### Create your own filters
 
