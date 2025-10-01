@@ -743,13 +743,13 @@ fn test_map_over_drops_returning_procs() {
 
 #[test]
 #[should_panic]
-fn test_map_works_on_enumerables() {
+fn test_map_works_on_enumerable() {
     panic!("Implementation specific: drops");
 }
 
 #[test]
 #[should_panic]
-fn test_sort_works_on_enumerables() {
+fn test_sort_works_on_enumerable() {
     panic!("Implementation specific: drops");
 }
 
