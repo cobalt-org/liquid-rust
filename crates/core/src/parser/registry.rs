@@ -34,7 +34,7 @@ impl<P> PluginRegistry<P> {
     }
 
     /// All available plugins
-    pub fn plugin_names(&self) -> PluginNames<P> {
+    pub fn plugin_names(&self) -> PluginNames<'_, P> {
         PluginNames {
             iter: self.plugins.keys(),
         }

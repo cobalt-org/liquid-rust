@@ -15,6 +15,7 @@ use crate::model::scalar::{Scalar, ScalarCow};
 /// An enum to represent different value types
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
+#[derive(Default)]
 pub enum Value {
     /// A scalar value.
     Scalar(Scalar),
@@ -25,6 +26,7 @@ pub enum Value {
     /// Query symbol.
     State(State),
     /// Nothing.
+    #[default]
     Nil,
 }
 
@@ -222,12 +224,6 @@ impl From<Object> for Value {
 impl From<State> for Value {
     fn from(other: State) -> Self {
         Value::State(other)
-    }
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Self::Nil
     }
 }
 

@@ -42,7 +42,7 @@ impl fmt::Display for SerError {
 }
 
 impl ::std::error::Error for SerError {
-    fn source(&self) -> Option<&(dyn (::std::error::Error) + 'static)> {
+    fn source(&self) -> Option<&(dyn ::std::error::Error + 'static)> {
         ::std::error::Error::source(&self.0)
     }
 }
