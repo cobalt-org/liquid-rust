@@ -6,16 +6,19 @@
   commitMessageLowerCase: 'never',
   configMigration: true,
   dependencyDashboard: true,
+  "pre-commit": {
+    enabled: true
+  },
   customManagers: [
     {
       customType: 'regex',
-      fileMatch: [
-        '^rust-toolchain\\.toml$',
-        'Cargo.toml$',
-        'clippy.toml$',
-        '\\.clippy.toml$',
-        '^\\.github/workflows/ci.yml$',
-        '^\\.github/workflows/rust-next.yml$',
+      managerFilePatterns: [
+        '/^rust-toolchain\\.toml$/',
+        '/Cargo.toml$/',
+        '/clippy.toml$/',
+        '/\\.clippy.toml$/',
+        '/^\\.github/workflows/ci.yml$/',
+        '/^\\.github/workflows/rust-next.yml$/',
       ],
       matchStrings: [
         'STABLE.*?(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)',
@@ -23,6 +26,18 @@
       ],
       depNameTemplate: 'STABLE',
       packageNameTemplate: 'rust-lang/rust',
+      datasourceTemplate: 'github-releases',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github/workflows/pre-commit.yml$/',
+      ],
+      matchStrings: [
+        'prek-version.*?(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)',
+      ],
+      depNameTemplate: 'prek',
+      packageNameTemplate: 'j178/prek',
       datasourceTemplate: 'github-releases',
     },
   ],
@@ -36,6 +51,20 @@
         'STABLE',
       ],
       extractVersion: '^(?<version>\\d+\\.\\d+)',  // Drop the patch version
+      schedule: [
+        '* * * * *',
+      ],
+      automerge: true,
+    },
+    {
+      commitMessageTopic: 'Prek',
+      matchManagers: [
+        'custom.regex',
+      ],
+      matchDepNames: [
+        'prek',
+      ],
+      extractVersion: '^(?<version>\\d+\\.\\d+\\.\\d+)',
       schedule: [
         '* * * * *',
       ],

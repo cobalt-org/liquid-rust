@@ -38,6 +38,9 @@ jobs:
         rust: ["stable"]
     continue-on-error: ${{ matrix.rust != 'stable' }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Reduce amount of data cached
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -56,7 +59,10 @@ jobs:
       run: cargo test --workspace --no-default-features
   msrv:
     name: "Check MSRV"
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -73,7 +79,10 @@ jobs:
       run: cargo check --workspace --all-targets --no-default-features
   minimal-versions:
     name: Minimal versions
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -88,7 +97,7 @@ jobs:
     - name: Downgrade dependencies to minimal versions
       run: cargo +nightly generate-lockfile -Z minimal-versions
     - name: Compile with minimal versions
-      run: cargo +stable check --workspace --all-features --locked
+      run: cargo +stable check --workspace --all-features --locked --keep-going
   lockfile:
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +124,7 @@ jobs:
     - name: Check documentation
       env:
         RUSTDOCFLAGS: -D warnings
-      run: cargo doc --workspace --all-features --no-deps --document-private-items
+      run: cargo doc --workspace --all-features --no-deps --document-private-items --keep-going
   rustfmt:
     name: rustfmt
     runs-on: ubuntu-latest
@@ -129,7 +138,7 @@ jobs:
         components: rustfmt
     - uses: Swatinem/rust-cache@v2
     - name: Check formatting
-      run: cargo fmt --all -- --check
+      run: cargo fmt --check
   clippy:
     name: clippy
     runs-on: ubuntu-latest
@@ -161,7 +170,7 @@ jobs:
         sarif_file: clippy-results.sarif
         wait-for-processing: true
     - name: Report status
-      run: cargo clippy --workspace --all-features --all-targets -- -D warnings --allow deprecated
+      run: cargo clippy --workspace --all-features --all-targets --keep-going -- -D warnings --allow deprecated
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
