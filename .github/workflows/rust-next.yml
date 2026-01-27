@@ -28,6 +28,9 @@ jobs:
           rust: "nightly"
     continue-on-error: ${{ matrix.rust != 'stable' }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Reduce amount of data cached
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -47,7 +50,12 @@ jobs:
       run: cargo test --workspace --no-default-features
   latest:
     name: "Check latest dependencies"
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: allow
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
