@@ -785,7 +785,7 @@ impl<'a> TagTokenIter<'a> {
             ::pest::error::ErrorVariant::CustomError {
                 message: error_msg.to_string(),
             },
-            self.position,
+            self.position.to_owned(),
         );
         convert_pest_error(pest_error)
     }
