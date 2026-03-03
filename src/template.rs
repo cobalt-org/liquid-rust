@@ -5,6 +5,7 @@ use liquid_core::error::Result;
 use liquid_core::runtime;
 use liquid_core::runtime::PartialStore;
 use liquid_core::runtime::Renderable;
+use liquid_core::runtime::RenderingMode;
 
 pub struct Template {
     pub(crate) template: runtime::Template,
@@ -14,16 +15,51 @@ pub struct Template {
 impl Template {
     /// Renders an instance of the Template, using the given globals.
     pub fn render(&self, globals: &dyn crate::ObjectView) -> Result<String> {
-        const BEST_GUESS: usize = 10_000;
-        let mut data = Vec::with_capacity(BEST_GUESS);
-        self.render_to(&mut data, globals)?;
-
-        Ok(convert_buffer(data))
+        self.render_with_mode(globals, RenderingMode::Strict)
     }
 
     /// Renders an instance of the Template, using the given globals.
     pub fn render_to(&self, writer: &mut dyn Write, globals: &dyn crate::ObjectView) -> Result<()> {
-        let runtime = runtime::RuntimeBuilder::new().set_globals(globals);
+        self.render_to_with_mode(writer, globals, RenderingMode::Strict)
+    }
+
+    /// Renders an instance of the Template, using the given globals in lax mode.
+    pub fn render_lax(&self, globals: &dyn crate::ObjectView) -> Result<String> {
+        self.render_with_mode(globals, RenderingMode::Lax)
+    }
+
+    /// Renders an instance of the Template, using the given globals in lax mode.
+    pub fn render_to_lax(
+        &self,
+        writer: &mut dyn Write,
+        globals: &dyn crate::ObjectView,
+    ) -> Result<()> {
+        self.render_to_with_mode(writer, globals, RenderingMode::Lax)
+    }
+
+    /// Renders an instance of the Template, using the given globals with the provided rendering mode.
+    fn render_with_mode(
+        &self,
+        globals: &dyn crate::ObjectView,
+        mode: RenderingMode,
+    ) -> Result<String> {
+        const BEST_GUESS: usize = 10_000;
+        let mut data = Vec::with_capacity(BEST_GUESS);
+        self.render_to_with_mode(&mut data, globals, mode)?;
+
+        Ok(convert_buffer(data))
+    }
+
+    /// Renders an instance of the Template, using the given globals with the provided rendering mode.
+    fn render_to_with_mode(
+        &self,
+        writer: &mut dyn Write,
+        globals: &dyn crate::ObjectView,
+        mode: RenderingMode,
+    ) -> Result<()> {
+        let runtime = runtime::RuntimeBuilder::new()
+            .set_globals(globals)
+            .set_render_mode(mode);
         let runtime = match self.partials {
             Some(ref partials) => runtime.set_partials(partials.as_ref()),
             None => runtime,
