@@ -450,7 +450,7 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
         },
         FilterParameterType::Integer => quote! {
             #name.as_scalar()
-            .and_then(|s| s.to_integer())
+            .and_then(|s| s.to_integer_strict())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -459,7 +459,7 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
         },
         FilterParameterType::Float => quote! {
             #name.as_scalar()
-            .and_then(|s| s.to_float())
+            .and_then(|s| s.to_float_strict())
             .ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
