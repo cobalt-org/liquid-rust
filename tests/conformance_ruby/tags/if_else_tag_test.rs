@@ -283,7 +283,9 @@ fn test_else_if() {
 }
 
 #[test]
-fn test_syntax_error_no_variable() {
+fn test_missing_variable_comparison_renders_false() {
+    // Shopify Liquid treats missing variables in comparisons as `nil` by
+    // default, so this evaluates false rather than raising a render error.
     assert_template_result!("", "{% if jerry == 1 %}{% endif %}");
 }
 
