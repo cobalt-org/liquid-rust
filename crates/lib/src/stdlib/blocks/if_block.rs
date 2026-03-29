@@ -6,8 +6,6 @@ use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::FilterChain;
 use liquid_core::parser::TagToken;
-use liquid_core::parser::TryMatchToken;
-use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
@@ -232,47 +230,10 @@ impl fmt::Display for Condition {
 }
 
 #[derive(Debug)]
-enum ConditionValue {
-    Simple(Expression),
-    Filtered(FilterChain),
-}
-
-impl ConditionValue {
-    fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<liquid_core::ValueCow<'s>> {
-        match self {
-            ConditionValue::Simple(expr) => expr.evaluate(runtime),
-            ConditionValue::Filtered(chain) => chain.evaluate(runtime),
-        }
-    }
-
-    /// Evaluate for existence checks like `{% if x | upcase %}`.
-    ///
-    /// Missing variables remain falsy, but filter execution failures still propagate.
-    fn try_evaluate<'s>(
-        &'s self,
-        runtime: &'s dyn Runtime,
-    ) -> Result<Option<liquid_core::ValueCow<'s>>> {
-        match self {
-            ConditionValue::Simple(expr) => Ok(expr.try_evaluate(runtime)),
-            ConditionValue::Filtered(chain) => chain.try_evaluate(runtime),
-        }
-    }
-}
-
-impl fmt::Display for ConditionValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ConditionValue::Simple(expr) => write!(f, "{}", expr),
-            ConditionValue::Filtered(chain) => write!(f, "{}", chain),
-        }
-    }
-}
-
-#[derive(Debug)]
 struct BinaryCondition {
-    lh: ConditionValue,
+    lh: FilterChain,
     comparison: ComparisonOperator,
-    rh: ConditionValue,
+    rh: FilterChain,
 }
 
 impl BinaryCondition {
@@ -370,7 +331,7 @@ impl ComparisonOperator {
 
 #[derive(Debug)]
 struct ExistenceCondition {
-    lh: ConditionValue,
+    lh: FilterChain,
 }
 
 impl ExistenceCondition {
@@ -421,18 +382,12 @@ impl<'a> PeekableTagTokenIter<'a> {
     }
 }
 
-/// Parse a condition operand as a filter chain (e.g. `x | upcase`) or a plain value (e.g. `x`).
+/// Parse a condition operand as a filter chain.
 ///
-/// Tries filter chain first since the grammar rule `FilterChain = Value ~ ("|" ~ Filter)*`
-/// also matches plain values (zero filters). Falls back to plain value parsing on failure.
-fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<ConditionValue> {
-    match token.expect_filter_chain(options) {
-        TryMatchToken::Matches(chain) => Ok(ConditionValue::Filtered(chain)),
-        TryMatchToken::Fails(token) => {
-            let expr = token.expect_value().into_result()?;
-            Ok(ConditionValue::Simple(expr))
-        }
-    }
+/// The grammar rule `FilterChain = Value ~ ("|" ~ Filter)*` also matches plain values,
+/// so all `if` / `unless` operands can be parsed uniformly through `FilterChain`.
+fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<FilterChain> {
+    token.expect_filter_chain_result(options)
 }
 
 fn parse_atom_condition(
@@ -973,6 +928,16 @@ mod test {
         runtime.set_global("name".into(), Value::scalar("hello"));
         let output = template.render(&runtime);
         assert!(output.is_err());
+    }
+
+    #[test]
+    fn unknown_filter_in_condition_reports_filter_error() {
+        let text = r#"{% if name | nonexistent_filter == "HELLO" %}match{% endif %}"#;
+        let options = options_with_filters();
+
+        let error = parser::parse(text, &options).unwrap_err().to_string();
+        assert!(error.contains("Unknown filter"));
+        assert!(error.contains("requested filter=nonexistent_filter"));
     }
 
     #[test]

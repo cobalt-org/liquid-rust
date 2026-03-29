@@ -958,12 +958,24 @@ impl<'a> TagToken<'a> {
         }
     }
 
+    /// Obtains a `FilterChain` from this token, preserving parser errors such as unknown filters.
+    pub fn expect_filter_chain_result(mut self, options: &Language) -> Result<FilterChain> {
+        let token = match self.unwrap_filter_chain() {
+            Ok(token) => token,
+            Err(_) => {
+                self.expected.push(Rule::FilterChain);
+                return self.raise_error().into_err();
+            }
+        };
+
+        parse_filter_chain(token, options)
+    }
+
     fn expect_filter_chain_err(&mut self, options: &Language) -> Result<FilterChain> {
-        let t = self
+        let token = self
             .unwrap_filter_chain()
             .map_err(|_| Error::with_msg("failed to parse"))?;
-        let f = parse_filter_chain(t, options)?;
-        Ok(f)
+        parse_filter_chain(token, options)
     }
 
     /// Tries to obtain a value from this token.
