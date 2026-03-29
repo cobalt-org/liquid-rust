@@ -1165,6 +1165,17 @@ mod test {
     }
 
     #[test]
+    fn zero_filter_chain_display_has_no_trailing_separator() {
+        let filter_chain = LiquidParser::parse(Rule::FilterChain, "foo")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let filter_chain = parse_filter_chain(filter_chain, &Language::default()).unwrap();
+        assert_eq!(filter_chain.to_string(), "foo");
+    }
+
+    #[test]
     fn test_whitespace_control() {
         let options = Language::default();
 

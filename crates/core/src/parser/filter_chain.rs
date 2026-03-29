@@ -68,6 +68,7 @@ impl FilterChain {
 impl fmt::Display for FilterChain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.entry)?;
+        // The old join-based formatter produced a trailing " | " for zero-filter chains.
         self.filters
             .iter()
             .try_for_each(|filter| write!(f, " | {}", filter))
