@@ -238,9 +238,9 @@ struct BinaryCondition {
 
 impl BinaryCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        let a = self.lh.evaluate(runtime)?;
+        let a = self.lh.try_evaluate(runtime)?;
         let ca = ValueViewCmp::new(a.as_view());
-        let b = self.rh.evaluate(runtime)?;
+        let b = self.rh.try_evaluate(runtime)?;
         let cb = ValueViewCmp::new(b.as_view());
 
         let result = match self.comparison {
@@ -920,6 +920,28 @@ mod test {
     #[test]
     fn filter_chain_existence_check_with_missing_value_applies_filters() {
         let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn missing_value_comparison_treats_missing_as_nil() {
+        let text = r#"{% if name == nil %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn missing_value_comparison_with_filters_applies_filters() {
+        let text = r#"{% if name | upcase == "" %}truthy{% else %}falsy{% endif %}"#;
         let options = options_with_filters();
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 
