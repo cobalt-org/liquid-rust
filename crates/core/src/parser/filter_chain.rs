@@ -21,12 +21,11 @@ impl FilterChain {
         Self { entry, filters }
     }
 
-    /// Process `Value` expression within `runtime`'s stack.
-    pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
-        // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(runtime)?;
-
-        // apply all specified filters
+    fn apply_filters<'s>(
+        &'s self,
+        mut entry: ValueCow<'s>,
+        runtime: &'s dyn Runtime,
+    ) -> Result<ValueCow<'s>> {
         for filter in &self.filters {
             entry = ValueCow::Owned(
                 filter
@@ -42,26 +41,20 @@ impl FilterChain {
         Ok(entry)
     }
 
+    /// Process `Value` expression within `runtime`'s stack.
+    pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
+        // take either the provided value or the value from the provided variable
+        let entry = self.entry.evaluate(runtime)?;
+        self.apply_filters(entry, runtime)
+    }
+
     /// Process `Value` expression within `runtime`'s stack for existence-style checks.
     ///
     /// Missing entries are treated as `nil` so filters still run, matching Liquid's
     /// behavior for expressions like `{% if missing | upcase %}`.
     pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
-        let mut entry = self.entry.try_evaluate(runtime).unwrap_or_default();
-
-        for filter in &self.filters {
-            entry = ValueCow::Owned(
-                filter
-                    .evaluate(entry.as_view(), runtime)
-                    .trace("Filter error")
-                    .context_key("filter")
-                    .value_with(|| format!("{}", filter).into())
-                    .context_key("input")
-                    .value_with(|| format!("{}", entry.source()).into())?,
-            );
-        }
-
-        Ok(entry)
+        let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
+        self.apply_filters(entry, runtime)
     }
 }
 
