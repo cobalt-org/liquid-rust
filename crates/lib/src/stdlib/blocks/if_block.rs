@@ -238,9 +238,9 @@ struct BinaryCondition {
 
 impl BinaryCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        let a = self.lh.evaluate_comparison_operand(runtime)?;
+        let a = self.lh.try_evaluate(runtime)?;
         let ca = ValueViewCmp::new(a.as_view());
-        let b = self.rh.evaluate_comparison_operand(runtime)?;
+        let b = self.rh.try_evaluate(runtime)?;
         let cb = ValueViewCmp::new(b.as_view());
 
         let result = match self.comparison {
@@ -930,14 +930,25 @@ mod test {
     }
 
     #[test]
-    fn plain_missing_value_comparison_propagates_render_error() {
+    fn missing_value_comparison_treats_missing_as_nil() {
         let text = r#"{% if name == nil %}truthy{% else %}falsy{% endif %}"#;
         let options = options_with_filters();
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
-        let output = template.render(&runtime);
-        assert!(output.is_err());
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn missing_value_comparison_to_number_is_false() {
+        let text = r#"{% if name == 1 %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "falsy");
     }
 
     #[test]

@@ -284,9 +284,7 @@ fn test_else_if() {
 
 #[test]
 fn test_syntax_error_no_variable() {
-    // Modified: since missing variables are render errors, we would hit a syntax error due to no
-    // close block, preventing us from testing the real thing.
-    assert_render_error!("{% if jerry == 1 %}{% endif %}");
+    assert_template_result!("", "{% if jerry == 1 %}{% endif %}");
 }
 
 #[test]
