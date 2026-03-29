@@ -56,6 +56,24 @@ impl FilterChain {
         let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
         self.apply_filters(entry, runtime)
     }
+
+    /// Process a comparison operand.
+    ///
+    /// Plain operands keep `evaluate`'s strict missing-variable behavior so
+    /// `{% if missing == 1 %}` still reports a render error. Filtered operands
+    /// use `try_evaluate` so a missing input becomes `nil` and the filter chain
+    /// still runs, matching Liquid behavior for cases like
+    /// `{% if missing | upcase == "" %}`.
+    pub fn evaluate_comparison_operand<'s>(
+        &'s self,
+        runtime: &'s dyn Runtime,
+    ) -> Result<ValueCow<'s>> {
+        if self.filters.is_empty() {
+            self.evaluate(runtime)
+        } else {
+            self.try_evaluate(runtime)
+        }
+    }
 }
 
 impl fmt::Display for FilterChain {
