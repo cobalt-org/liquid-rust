@@ -958,8 +958,8 @@ impl<'a> TagToken<'a> {
         }
     }
 
-    /// Obtains a `FilterChain` from this token, preserving parser errors such as unknown filters.
-    pub fn parse_filter_chain(mut self, options: &Language) -> Result<FilterChain> {
+    /// Parses this token as a `FilterChain`, preserving parser errors such as unknown filters.
+    pub fn parse_as_filter_chain(mut self, options: &Language) -> Result<FilterChain> {
         let token = match self.unwrap_filter_chain() {
             Ok(token) => token,
             Err(_) => {
