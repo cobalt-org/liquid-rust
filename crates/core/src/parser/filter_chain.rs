@@ -46,7 +46,7 @@ impl FilterChain {
     ///
     /// Missing entries are treated as `nil` so filters still run, matching Liquid's
     /// behavior for expressions like `{% if missing | upcase %}`.
-    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<Option<ValueCow<'s>>> {
+    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
         let mut entry = self.entry.try_evaluate(runtime).unwrap_or_default();
 
         for filter in &self.filters {
@@ -61,7 +61,7 @@ impl FilterChain {
             );
         }
 
-        Ok(Some(entry))
+        Ok(entry)
     }
 }
 

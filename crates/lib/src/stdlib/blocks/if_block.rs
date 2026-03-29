@@ -337,7 +337,6 @@ struct ExistenceCondition {
 impl ExistenceCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
         let a = self.lh.try_evaluate(runtime)?;
-        let a = a.unwrap_or_default();
         let is_truthy = a.query_state(liquid_core::model::State::Truthy);
         Ok(is_truthy)
     }
