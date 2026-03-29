@@ -245,6 +245,7 @@ impl ConditionValue {
         }
     }
 
+    /// Non-failing evaluate, used for existence checks like `{% if x | upcase %}`.
     fn try_evaluate<'s>(
         &'s self,
         runtime: &'s dyn Runtime,
@@ -418,6 +419,10 @@ impl<'a> PeekableTagTokenIter<'a> {
     }
 }
 
+/// Parse a condition operand as a filter chain (e.g. `x | upcase`) or a plain value (e.g. `x`).
+///
+/// Tries filter chain first since the grammar rule `FilterChain = Value ~ ("|" ~ Filter)*`
+/// also matches plain values (zero filters). Falls back to plain value parsing on failure.
 fn parse_condition_value(
     token: TagToken<'_>,
     options: &Language,
