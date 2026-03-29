@@ -246,10 +246,7 @@ impl ConditionValue {
     }
 
     /// Non-failing evaluate, used for existence checks like `{% if x | upcase %}`.
-    fn try_evaluate<'s>(
-        &'s self,
-        runtime: &'s dyn Runtime,
-    ) -> Option<liquid_core::ValueCow<'s>> {
+    fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Option<liquid_core::ValueCow<'s>> {
         match self {
             ConditionValue::Simple(expr) => expr.try_evaluate(runtime),
             ConditionValue::Filtered(chain) => chain.evaluate(runtime).ok(),
@@ -423,10 +420,7 @@ impl<'a> PeekableTagTokenIter<'a> {
 ///
 /// Tries filter chain first since the grammar rule `FilterChain = Value ~ ("|" ~ Filter)*`
 /// also matches plain values (zero filters). Falls back to plain value parsing on failure.
-fn parse_condition_value(
-    token: TagToken<'_>,
-    options: &Language,
-) -> Result<ConditionValue> {
+fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<ConditionValue> {
     match token.expect_filter_chain(options) {
         TryMatchToken::Matches(chain) => Ok(ConditionValue::Filtered(chain)),
         TryMatchToken::Fails(token) => {
@@ -537,11 +531,7 @@ mod test {
     struct UpcaseFilter;
 
     impl Filter for UpcaseFilter {
-        fn evaluate(
-            &self,
-            input: &dyn ValueView,
-            _runtime: &dyn Runtime,
-        ) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_uppercase()))
         }
     }
@@ -555,11 +545,7 @@ mod test {
     struct DowncaseFilter;
 
     impl Filter for DowncaseFilter {
-        fn evaluate(
-            &self,
-            input: &dyn ValueView,
-            _runtime: &dyn Runtime,
-        ) -> Result<Value> {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
             Ok(Value::scalar(input.to_kstr().to_lowercase()))
         }
     }
@@ -964,8 +950,7 @@ mod test {
 
     #[test]
     fn multiple_filters_in_condition() {
-        let text =
-            r#"{% if a | upcase | downcase == b | upcase | downcase %}match{% else %}no match{% endif %}"#;
+        let text = r#"{% if a | upcase | downcase == b | upcase | downcase %}match{% else %}no match{% endif %}"#;
         let options = options_with_filters();
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 
