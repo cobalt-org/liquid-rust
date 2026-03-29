@@ -42,12 +42,12 @@ impl FilterChain {
         Ok(entry)
     }
 
-    /// Process `Value` expression within `runtime`'s stack, returning `None` when the
-    /// chain entry does not resolve and propagating filter failures otherwise.
+    /// Process `Value` expression within `runtime`'s stack for existence-style checks.
+    ///
+    /// Missing entries are treated as `nil` so filters still run, matching Liquid's
+    /// behavior for expressions like `{% if missing | upcase %}`.
     pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<Option<ValueCow<'s>>> {
-        let Some(mut entry) = self.entry.try_evaluate(runtime) else {
-            return Ok(None);
-        };
+        let mut entry = self.entry.try_evaluate(runtime).unwrap_or_default();
 
         for filter in &self.filters {
             entry = ValueCow::Owned(

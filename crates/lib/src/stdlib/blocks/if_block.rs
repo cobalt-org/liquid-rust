@@ -908,14 +908,25 @@ mod test {
     }
 
     #[test]
-    fn filter_chain_existence_check_with_missing_value_is_falsy() {
-        let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+    fn plain_existence_check_with_missing_value_is_falsy() {
+        let text = r#"{% if name %}truthy{% else %}falsy{% endif %}"#;
         let options = options_with_filters();
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "falsy");
+    }
+
+    #[test]
+    fn filter_chain_existence_check_with_missing_value_applies_filters() {
+        let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
     }
 
     #[test]
