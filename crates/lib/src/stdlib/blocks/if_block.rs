@@ -386,7 +386,8 @@ impl<'a> PeekableTagTokenIter<'a> {
 /// The grammar rule `FilterChain = Value ~ ("|" ~ Filter)*` also matches plain values,
 /// so all `if` / `unless` operands can be parsed uniformly through `FilterChain`.
 fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<FilterChain> {
-    token.expect_filter_chain_result(options)
+    // Preserve filter parser errors here (for example, unknown filters in if/unless conditions).
+    token.parse_filter_chain(options)
 }
 
 fn parse_atom_condition(
