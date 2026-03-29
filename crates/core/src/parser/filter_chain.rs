@@ -41,6 +41,28 @@ impl FilterChain {
 
         Ok(entry)
     }
+
+    /// Process `Value` expression within `runtime`'s stack, returning `None` when the
+    /// chain entry does not resolve and propagating filter failures otherwise.
+    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<Option<ValueCow<'s>>> {
+        let Some(mut entry) = self.entry.try_evaluate(runtime) else {
+            return Ok(None);
+        };
+
+        for filter in &self.filters {
+            entry = ValueCow::Owned(
+                filter
+                    .evaluate(entry.as_view(), runtime)
+                    .trace("Filter error")
+                    .context_key("filter")
+                    .value_with(|| format!("{}", filter).into())
+                    .context_key("input")
+                    .value_with(|| format!("{}", entry.source()).into())?,
+            );
+        }
+
+        Ok(Some(entry))
+    }
 }
 
 impl fmt::Display for FilterChain {

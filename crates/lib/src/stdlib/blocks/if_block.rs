@@ -245,11 +245,16 @@ impl ConditionValue {
         }
     }
 
-    /// Non-failing evaluate, used for existence checks like `{% if x | upcase %}`.
-    fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Option<liquid_core::ValueCow<'s>> {
+    /// Evaluate for existence checks like `{% if x | upcase %}`.
+    ///
+    /// Missing variables remain falsy, but filter execution failures still propagate.
+    fn try_evaluate<'s>(
+        &'s self,
+        runtime: &'s dyn Runtime,
+    ) -> Result<Option<liquid_core::ValueCow<'s>>> {
         match self {
-            ConditionValue::Simple(expr) => expr.try_evaluate(runtime),
-            ConditionValue::Filtered(chain) => chain.evaluate(runtime).ok(),
+            ConditionValue::Simple(expr) => Ok(expr.try_evaluate(runtime)),
+            ConditionValue::Filtered(chain) => chain.try_evaluate(runtime),
         }
     }
 }
@@ -370,7 +375,7 @@ struct ExistenceCondition {
 
 impl ExistenceCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        let a = self.lh.try_evaluate(runtime);
+        let a = self.lh.try_evaluate(runtime)?;
         let a = a.unwrap_or_default();
         let is_truthy = a.query_state(liquid_core::model::State::Truthy);
         Ok(is_truthy)
@@ -511,6 +516,7 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime::RuntimeBuilder;
+    use liquid_core::Error;
     use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
     fn options() -> Language {
@@ -550,6 +556,20 @@ mod test {
         }
     }
 
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(name = "fail", description = "test helper", parsed(FailFilter))]
+    struct FailFilterParser;
+
+    #[derive(Debug, Default, Display_filter)]
+    #[name = "fail"]
+    struct FailFilter;
+
+    impl Filter for FailFilter {
+        fn evaluate(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
+            Err(Error::with_msg("filter failed"))
+        }
+    }
+
     fn options_with_filters() -> Language {
         let mut options = options();
         options
@@ -558,6 +578,9 @@ mod test {
         options
             .filters
             .register("downcase".to_owned(), Box::new(DowncaseFilterParser));
+        options
+            .filters
+            .register("fail".to_owned(), Box::new(FailFilterParser));
         options
     }
 
@@ -927,6 +950,29 @@ mod test {
         runtime.set_global("name".into(), Value::scalar("hello"));
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn filter_chain_existence_check_with_missing_value_is_falsy() {
+        let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "falsy");
+    }
+
+    #[test]
+    fn filter_chain_existence_check_propagates_filter_errors() {
+        let text = r#"{% if name | fail %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let output = template.render(&runtime);
+        assert!(output.is_err());
     }
 
     #[test]
