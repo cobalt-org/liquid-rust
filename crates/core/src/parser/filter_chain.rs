@@ -45,12 +45,10 @@ impl FilterChain {
 
 impl fmt::Display for FilterChain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{} | {}",
-            self.entry,
-            itertools::join(&self.filters, " | ")
-        )
+        write!(f, "{}", self.entry)?;
+        self.filters
+            .iter()
+            .try_for_each(|filter| write!(f, " | {}", filter))
     }
 }
 
