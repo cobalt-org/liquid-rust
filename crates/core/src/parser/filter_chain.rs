@@ -21,6 +21,24 @@ impl FilterChain {
         Self { entry, filters }
     }
 
+    /// Process `Value` expression within `runtime`'s stack.
+    pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
+        // take either the provided value or the value from the provided variable
+        let entry = self.entry.evaluate(runtime)?;
+        self.apply_filters(entry, runtime)
+    }
+
+    /// Process `Value` expression within `runtime`'s stack for existence-style checks.
+    ///
+    /// Missing entries are treated as `nil` so filters still run, matching Liquid's
+    /// behavior for expressions like `{% if missing | upcase %}`.
+    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
+        let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
+        self.apply_filters(entry, runtime)
+    }
+
+    /// Apply each parsed filter in order, preserving the current value so filter
+    /// failures can report both the filter name and the input that triggered it.
     fn apply_filters<'s>(
         &'s self,
         mut entry: ValueCow<'s>,
@@ -39,22 +57,6 @@ impl FilterChain {
         }
 
         Ok(entry)
-    }
-
-    /// Process `Value` expression within `runtime`'s stack.
-    pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
-        // take either the provided value or the value from the provided variable
-        let entry = self.entry.evaluate(runtime)?;
-        self.apply_filters(entry, runtime)
-    }
-
-    /// Process `Value` expression within `runtime`'s stack for existence-style checks.
-    ///
-    /// Missing entries are treated as `nil` so filters still run, matching Liquid's
-    /// behavior for expressions like `{% if missing | upcase %}`.
-    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
-        let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
-        self.apply_filters(entry, runtime)
     }
 }
 
