@@ -384,15 +384,6 @@ impl<'a> PeekableTagTokenIter<'a> {
     }
 }
 
-/// Parse a condition operand as a filter chain.
-///
-/// The grammar rule `FilterChain = Value ~ ("|" ~ Filter)*` also matches plain values,
-/// so all `if` / `unless` operands can be parsed uniformly through `FilterChain`.
-fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<FilterChain> {
-    // Preserve filter parser errors here (for example, unknown filters in if/unless conditions).
-    token.parse_as_filter_chain(options)
-}
-
 fn parse_atom_condition(
     arguments: &mut PeekableTagTokenIter<'_>,
     options: &Language,
@@ -418,6 +409,15 @@ fn parse_atom_condition(
     };
 
     Ok(cond)
+}
+
+/// Parse a condition operand as a filter chain.
+///
+/// The grammar rule `FilterChain = Value ~ ("|" ~ Filter)*` also matches plain values,
+/// so all `if` / `unless` operands can be parsed uniformly through `FilterChain`.
+fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<FilterChain> {
+    // Preserve filter parser errors here (for example, unknown filters in if/unless conditions).
+    token.parse_as_filter_chain(options)
 }
 
 fn parse_conjunction_chain(
