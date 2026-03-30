@@ -56,7 +56,6 @@ impl FilterChain {
         let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
         self.apply_filters(entry, runtime)
     }
-
 }
 
 impl fmt::Display for FilterChain {

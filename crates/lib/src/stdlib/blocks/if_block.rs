@@ -264,7 +264,10 @@ impl fmt::Display for BinaryCondition {
 }
 
 fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
-    if let Some(a) = a.as_scalar() {
+    if a.is_nil() {
+        // Shopify Liquid treats `nil contains x` as false rather than an error.
+        Ok(false)
+    } else if let Some(a) = a.as_scalar() {
         let b = b.to_kstr();
         Ok(a.to_kstr().contains(b.as_str()))
     } else if let Some(a) = a.as_object() {
@@ -777,6 +780,26 @@ mod test {
         runtime.set_global("movies".into(), Value::Array(arr));
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn contains_with_missing_value_is_false() {
+        let text = r#"{% if missing contains "foo" %}yes{% else %}no{% endif %}"#;
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no");
+    }
+
+    #[test]
+    fn contains_with_nil_value_is_false() {
+        let text = r#"{% if nil contains "foo" %}yes{% else %}no{% endif %}"#;
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no");
     }
 
     #[test]
