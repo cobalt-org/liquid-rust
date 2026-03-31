@@ -4,8 +4,8 @@ use std::io::Write;
 use liquid_core::error::ResultLiquidExt;
 use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
+use liquid_core::parser::FilterChain;
 use liquid_core::parser::TagToken;
-use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
@@ -59,7 +59,7 @@ fn parse_if(
     tokens: &mut TagBlock<'_, '_>,
     options: &Language,
 ) -> Result<Box<dyn Renderable>> {
-    let condition = parse_condition(arguments)?;
+    let condition = parse_condition(arguments, options)?;
 
     let mut if_true = Vec::new();
     let mut if_false = None;
@@ -122,7 +122,7 @@ impl ParseBlock for UnlessBlock {
         mut tokens: TagBlock<'_, '_>,
         options: &Language,
     ) -> Result<Box<dyn Renderable>> {
-        let condition = parse_condition(arguments)?;
+        let condition = parse_condition(arguments, options)?;
 
         let mut if_true = Vec::new();
         let mut if_false = None;
@@ -195,7 +195,7 @@ impl Renderable for Conditional {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 enum Condition {
     Binary(BinaryCondition),
     Existence(ExistenceCondition),
@@ -229,18 +229,18 @@ impl fmt::Display for Condition {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct BinaryCondition {
-    lh: Expression,
+    lh: FilterChain,
     comparison: ComparisonOperator,
-    rh: Expression,
+    rh: FilterChain,
 }
 
 impl BinaryCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        let a = self.lh.evaluate(runtime)?;
+        let a = self.lh.try_evaluate(runtime)?;
         let ca = ValueViewCmp::new(a.as_view());
-        let b = self.rh.evaluate(runtime)?;
+        let b = self.rh.try_evaluate(runtime)?;
         let cb = ValueViewCmp::new(b.as_view());
 
         let result = match self.comparison {
@@ -264,7 +264,10 @@ impl fmt::Display for BinaryCondition {
 }
 
 fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
-    if let Some(a) = a.as_scalar() {
+    if a.is_nil() {
+        // Shopify Liquid treats `nil contains x` as false rather than an error.
+        Ok(false)
+    } else if let Some(a) = a.as_scalar() {
         let b = b.to_kstr();
         Ok(a.to_kstr().contains(b.as_str()))
     } else if let Some(a) = a.as_object() {
@@ -329,15 +332,14 @@ impl ComparisonOperator {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct ExistenceCondition {
-    lh: Expression,
+    lh: FilterChain,
 }
 
 impl ExistenceCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
-        let a = self.lh.try_evaluate(runtime);
-        let a = a.unwrap_or_default();
+        let a = self.lh.try_evaluate(runtime)?;
         let is_truthy = a.query_state(liquid_core::model::State::Truthy);
         Ok(is_truthy)
     }
@@ -382,11 +384,12 @@ impl<'a> PeekableTagTokenIter<'a> {
     }
 }
 
-fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
-    let lh = arguments
-        .expect_next("Value expected.")?
-        .expect_value()
-        .into_result()?;
+fn parse_atom_condition(
+    arguments: &mut PeekableTagTokenIter<'_>,
+    options: &Language,
+) -> Result<Condition> {
+    let token = arguments.expect_next("Value expected.")?;
+    let lh = parse_condition_value(token, options)?;
     let cond = match arguments
         .peek()
         .map(TagToken::as_str)
@@ -394,10 +397,8 @@ fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Cond
     {
         Some(op) => {
             arguments.next();
-            let rh = arguments
-                .expect_next("Value expected.")?
-                .expect_value()
-                .into_result()?;
+            let token = arguments.expect_next("Value expected.")?;
+            let rh = parse_condition_value(token, options)?;
             Condition::Binary(BinaryCondition {
                 lh,
                 comparison: op,
@@ -410,12 +411,24 @@ fn parse_atom_condition(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Cond
     Ok(cond)
 }
 
-fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter<'_>) -> Result<Condition> {
-    let mut lh = parse_atom_condition(arguments)?;
+/// Parse a condition operand as a filter chain.
+///
+/// The grammar rule `FilterChain = Value ~ ("|" ~ Filter)*` also matches plain values,
+/// so all `if` / `unless` operands can be parsed uniformly through `FilterChain`.
+fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<FilterChain> {
+    // Preserve filter parser errors here (for example, unknown filters in if/unless conditions).
+    token.parse_as_filter_chain(options)
+}
+
+fn parse_conjunction_chain(
+    arguments: &mut PeekableTagTokenIter<'_>,
+    options: &Language,
+) -> Result<Condition> {
+    let mut lh = parse_atom_condition(arguments, options)?;
 
     while let Some("and") = arguments.peek().map(TagToken::as_str) {
         arguments.next();
-        let rh = parse_atom_condition(arguments)?;
+        let rh = parse_atom_condition(arguments, options)?;
         lh = Condition::Conjunction(Box::new(lh), Box::new(rh));
     }
 
@@ -423,19 +436,19 @@ fn parse_conjunction_chain(arguments: &mut PeekableTagTokenIter<'_>) -> Result<C
 }
 
 /// Common parsing for "if" and "unless" condition
-fn parse_condition(arguments: TagTokenIter<'_>) -> Result<Condition> {
+fn parse_condition(arguments: TagTokenIter<'_>, options: &Language) -> Result<Condition> {
     let mut arguments = PeekableTagTokenIter {
         iter: arguments,
         peeked: None,
     };
-    let mut lh = parse_conjunction_chain(&mut arguments)?;
+    let mut lh = parse_conjunction_chain(&mut arguments, options)?;
 
     while let Some(token) = arguments.next() {
         token
             .expect_str("or")
             .into_result_custom_msg("\"and\" or \"or\" expected.")?;
 
-        let rh = parse_conjunction_chain(&mut arguments)?;
+        let rh = parse_conjunction_chain(&mut arguments, options)?;
         lh = Condition::Disjunction(Box::new(lh), Box::new(rh));
     }
 
@@ -461,6 +474,8 @@ mod test {
     use liquid_core::model::Value;
     use liquid_core::parser;
     use liquid_core::runtime::RuntimeBuilder;
+    use liquid_core::Error;
+    use liquid_core::{Display_filter, Filter, FilterReflection, ParseFilter};
 
     fn options() -> Language {
         let mut options = Language::default();
@@ -468,6 +483,62 @@ mod test {
         options
             .blocks
             .register("unless".to_owned(), UnlessBlock.into());
+        options
+    }
+
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(name = "upcase", description = "test helper", parsed(UpcaseFilter))]
+    struct UpcaseFilterParser;
+
+    #[derive(Debug, Default, Display_filter)]
+    #[name = "upcase"]
+    struct UpcaseFilter;
+
+    impl Filter for UpcaseFilter {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
+            Ok(Value::scalar(input.to_kstr().to_uppercase()))
+        }
+    }
+
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(name = "downcase", description = "test helper", parsed(DowncaseFilter))]
+    struct DowncaseFilterParser;
+
+    #[derive(Debug, Default, Display_filter)]
+    #[name = "downcase"]
+    struct DowncaseFilter;
+
+    impl Filter for DowncaseFilter {
+        fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
+            Ok(Value::scalar(input.to_kstr().to_lowercase()))
+        }
+    }
+
+    #[derive(Clone, ParseFilter, FilterReflection)]
+    #[filter(name = "fail", description = "test helper", parsed(FailFilter))]
+    struct FailFilterParser;
+
+    #[derive(Debug, Default, Display_filter)]
+    #[name = "fail"]
+    struct FailFilter;
+
+    impl Filter for FailFilter {
+        fn evaluate(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
+            Err(Error::with_msg("filter failed"))
+        }
+    }
+
+    fn options_with_filters() -> Language {
+        let mut options = options();
+        options
+            .filters
+            .register("upcase".to_owned(), Box::new(UpcaseFilterParser));
+        options
+            .filters
+            .register("downcase".to_owned(), Box::new(DowncaseFilterParser));
+        options
+            .filters
+            .register("fail".to_owned(), Box::new(FailFilterParser));
         options
     }
 
@@ -712,6 +783,26 @@ mod test {
     }
 
     #[test]
+    fn contains_with_missing_value_is_false() {
+        let text = r#"{% if missing contains "foo" %}yes{% else %}no{% endif %}"#;
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no");
+    }
+
+    #[test]
+    fn contains_with_nil_value_is_false() {
+        let text = r#"{% if nil contains "foo" %}yes{% else %}no{% endif %}"#;
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no");
+    }
+
+    #[test]
     fn multiple_conditions_and() {
         let text = "{% if 1 == 1 and 2 == 2 %}if true{% else %}if false{% endif %}";
         let template = parser::parse(text, &options()).map(Template::new).unwrap();
@@ -753,5 +844,198 @@ mod test {
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if true");
+    }
+
+    #[test]
+    fn filter_chain_both_sides_of_comparison() {
+        let text = r#"{% if a | upcase == b | upcase %}match{% else %}no match{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("HELLO"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "match");
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("world"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no match");
+    }
+
+    #[test]
+    fn filter_chain_on_left_side_only() {
+        let text = r#"{% if name | upcase == "HELLO" %}match{% else %}no match{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "match");
+    }
+
+    #[test]
+    fn filter_chain_on_right_side_only() {
+        let text = r#"{% if "HELLO" == name | upcase %}match{% else %}no match{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "match");
+    }
+
+    #[test]
+    fn filter_chain_with_and_or() {
+        let text = concat!(
+            "{% if a | upcase == b | upcase and c | downcase == d | downcase %}",
+            "match",
+            "{% else %}",
+            "no match",
+            "{% endif %}"
+        );
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("HELLO"));
+        runtime.set_global("c".into(), Value::scalar("WORLD"));
+        runtime.set_global("d".into(), Value::scalar("World"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "match");
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("HELLO"));
+        runtime.set_global("c".into(), Value::scalar("WORLD"));
+        runtime.set_global("d".into(), Value::scalar("other"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "no match");
+    }
+
+    #[test]
+    fn filter_chain_existence_check() {
+        let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn plain_existence_check_with_missing_value_is_falsy() {
+        let text = r#"{% if name %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "falsy");
+    }
+
+    #[test]
+    fn filter_chain_existence_check_with_missing_value_applies_filters() {
+        let text = r#"{% if name | upcase %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn missing_value_comparison_treats_missing_as_nil() {
+        let text = r#"{% if name == nil %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn missing_value_comparison_to_number_is_false() {
+        let text = r#"{% if name == 1 %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "falsy");
+    }
+
+    #[test]
+    fn missing_value_comparison_with_filters_applies_filters() {
+        let text = r#"{% if name | upcase == "" %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "truthy");
+    }
+
+    #[test]
+    fn filter_chain_existence_check_propagates_filter_errors() {
+        let text = r#"{% if name | fail %}truthy{% else %}falsy{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let output = template.render(&runtime);
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn unknown_filter_in_condition_reports_filter_error() {
+        let text = r#"{% if name | nonexistent_filter == "HELLO" %}match{% endif %}"#;
+        let options = options_with_filters();
+
+        let error = parser::parse(text, &options).unwrap_err().to_string();
+        assert!(error.contains("Unknown filter"));
+        assert!(error.contains("requested filter=nonexistent_filter"));
+    }
+
+    #[test]
+    fn filter_chain_in_unless() {
+        let text = r#"{% unless a | upcase == b | upcase %}not equal{% endunless %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("world"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "not equal");
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("hello"));
+        runtime.set_global("b".into(), Value::scalar("HELLO"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "");
+    }
+
+    #[test]
+    fn multiple_filters_in_condition() {
+        let text = r#"{% if a | upcase | downcase == b | upcase | downcase %}match{% else %}no match{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("a".into(), Value::scalar("Hello"));
+        runtime.set_global("b".into(), Value::scalar("HELLO"));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "match");
     }
 }

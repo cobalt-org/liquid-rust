@@ -958,12 +958,24 @@ impl<'a> TagToken<'a> {
         }
     }
 
+    /// Parses this token as a `FilterChain`, preserving parser errors such as unknown filters.
+    pub fn parse_as_filter_chain(mut self, options: &Language) -> Result<FilterChain> {
+        let token = match self.unwrap_filter_chain() {
+            Ok(token) => token,
+            Err(_) => {
+                self.expected.push(Rule::FilterChain);
+                return self.raise_error().into_err();
+            }
+        };
+
+        parse_filter_chain(token, options)
+    }
+
     fn expect_filter_chain_err(&mut self, options: &Language) -> Result<FilterChain> {
-        let t = self
+        let token = self
             .unwrap_filter_chain()
             .map_err(|_| Error::with_msg("failed to parse"))?;
-        let f = parse_filter_chain(t, options)?;
-        Ok(f)
+        parse_filter_chain(token, options)
     }
 
     /// Tries to obtain a value from this token.
@@ -1150,6 +1162,17 @@ mod test {
         expected.extend(indexes);
 
         assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn zero_filter_chain_display_has_no_trailing_separator() {
+        let filter_chain = LiquidParser::parse(Rule::FilterChain, "foo")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let filter_chain = parse_filter_chain(filter_chain, &Language::default()).unwrap();
+        assert_eq!(filter_chain.to_string(), "foo");
     }
 
     #[test]
