@@ -2,7 +2,7 @@
 
 require "json"
 require "strscan"
-require_relative "../liquid_ext"
+require "liquid/liquid_ext"
 
 module Liquid
   VERSION = "0.1.0"

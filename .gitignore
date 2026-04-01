@@ -3,3 +3,6 @@ harness/ruby-liquid/Makefile
 harness/ruby-liquid/liquid_ext.bundle
 harness/ruby-liquid/liquid_ext.bundle.dSYM/
 harness/ruby-liquid/mkmf.log
+harness/ruby-liquid/lib/liquid/liquid_ext.bundle
+harness/ruby-liquid/lib/liquid/liquid_ext.bundle.dSYM/
+harness/ruby-liquid/tmp/
