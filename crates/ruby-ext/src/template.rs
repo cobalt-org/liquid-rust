@@ -626,6 +626,9 @@ fn wrap_exception_renderer_error(error: MagnusError) -> MagnusError {
     let Ok(wrapper) = template.const_get::<_, RClass>("ExceptionRendererRaised") else {
         return error;
     };
+    if error.is_kind_of(wrapper) {
+        return error;
+    }
     let Some(raised) = error.value() else {
         return error;
     };

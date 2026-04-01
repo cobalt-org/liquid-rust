@@ -167,7 +167,9 @@ module Liquid
         context.registers[key] = value
       end
       context.exception_renderer = options[:exception_renderer] if options.key?(:exception_renderer)
-      context.native_handle["exception_renderer"] = context.exception_renderer || context.environment&.exception_renderer
+      context.native_handle["exception_renderer"] = native_exception_renderer(
+        context.exception_renderer || context.environment&.exception_renderer
+      )
       context.global_filter = options[:global_filter] if options.key?(:global_filter)
       context.strict_variables = options[:strict_variables] if options.key?(:strict_variables)
       context.strict_filters = options[:strict_filters] if options.key?(:strict_filters)
@@ -212,6 +214,24 @@ module Liquid
 
     def finalize_render_output(rendered, context)
       context.apply_global_filter(rendered)
+    end
+
+    def native_exception_renderer(renderer)
+      return nil unless renderer
+
+      lambda do |error|
+        begin
+          raise error
+        rescue StandardError => current
+          begin
+            renderer.call(current).to_s
+          rescue StandardError => raised
+            raise raised if raised.equal?(current)
+
+            raise ExceptionRendererRaised.new(raised)
+          end
+        end
+      end
     end
 
     def render_options_hash?(args)
