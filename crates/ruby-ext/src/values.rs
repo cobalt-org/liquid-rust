@@ -65,8 +65,16 @@ impl RenderRootObject {
     }
 
     pub(crate) fn from_value_with_mode(value: Value, mode: LookupMode) -> Result<Self, MagnusError> {
+        Self::from_value_with_mode_and_context(value, mode, None)
+    }
+
+    pub(crate) fn from_value_with_mode_and_context(
+        value: Value,
+        mode: LookupMode,
+        context: Option<Value>,
+    ) -> Result<Self, MagnusError> {
         Ok(Self {
-            scopes: vec![render_scope_from_value(value, mode)?],
+            scopes: vec![render_scope_from_value(value, mode, context)?],
         })
     }
 
@@ -78,9 +86,17 @@ impl RenderRootObject {
         values: Vec<Value>,
         mode: LookupMode,
     ) -> Result<Self, MagnusError> {
+        Self::from_values_with_mode_and_context(values, mode, None)
+    }
+
+    pub(crate) fn from_values_with_mode_and_context(
+        values: Vec<Value>,
+        mode: LookupMode,
+        context: Option<Value>,
+    ) -> Result<Self, MagnusError> {
         let mut scopes = Vec::with_capacity(values.len());
         for value in values {
-            scopes.push(render_scope_from_value(value, mode)?);
+            scopes.push(render_scope_from_value(value, mode, context)?);
         }
         Ok(Self { scopes })
     }
@@ -276,6 +292,7 @@ impl ValueView for RenderScalar {
 #[derive(Debug)]
 pub(crate) struct RenderDynamicObject {
     value: Value,
+    context: Option<Value>,
     cache: RefCell<HashMap<String, Box<RenderValue>>>,
     errors: RefCell<Vec<String>>,
     lookup_mode: LookupMode,
@@ -285,6 +302,7 @@ impl Clone for RenderDynamicObject {
     fn clone(&self) -> Self {
         Self {
             value: self.value,
+            context: self.context,
             cache: RefCell::new(HashMap::new()),
             errors: RefCell::new(Vec::new()),
             lookup_mode: self.lookup_mode,
@@ -293,9 +311,10 @@ impl Clone for RenderDynamicObject {
 }
 
 impl RenderDynamicObject {
-    fn new(value: Value, lookup_mode: LookupMode) -> Self {
+    fn new(value: Value, lookup_mode: LookupMode, context: Option<Value>) -> Self {
         Self {
             value,
+            context,
             cache: RefCell::new(HashMap::new()),
             errors: RefCell::new(Vec::new()),
             lookup_mode,
@@ -320,7 +339,7 @@ impl RenderDynamicObject {
             if result.is_nil() {
                 Ok(None)
             } else {
-                Ok(Some(result))
+                resolve_dynamic_value(self.value, self.context, index, result).map(Some)
             }
         } else {
             self.record_missing(index);
@@ -354,13 +373,26 @@ impl RenderDynamicObject {
         }
         errors
     }
+
+    fn hash_keys_owned(&self) -> Vec<String> {
+        let Some(hash) = RHash::from_value(self.value) else {
+            return Vec::new();
+        };
+
+        let mut keys = Vec::new();
+        let _ = hash.foreach(|key: Value, _val: Value| {
+            keys.push(ruby_key_to_string(key)?);
+            Ok(ForEach::Continue)
+        });
+        keys
+    }
 }
 
 impl RenderScope {
     fn keys_owned(&self) -> Vec<String> {
         match self {
             Self::Materialized(object) => object.keys().cloned().collect(),
-            Self::Dynamic(_) => Vec::new(),
+            Self::Dynamic(object) => object.hash_keys_owned(),
         }
     }
 
@@ -426,11 +458,13 @@ impl ObjectView for RenderDynamicObject {
     }
 
     fn size(&self) -> i64 {
-        0
+        RHash::from_value(self.value)
+            .map(|hash| hash.len() as i64)
+            .unwrap_or(0)
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
-        Box::new(std::iter::empty())
+        Box::new(self.hash_keys_owned().into_iter().map(KStringCow::from_string))
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
@@ -475,7 +509,7 @@ impl ObjectView for RenderDynamicObject {
                 return None;
             }
         };
-        let render_value = ruby_to_render_value(value, self.lookup_mode).ok()?;
+        let render_value = ruby_to_render_value_with_context(value, self.lookup_mode, self.context).ok()?;
 
         let mut cache = self.cache.borrow_mut();
         let entry = cache
@@ -673,14 +707,21 @@ pub(crate) fn ruby_to_render_object(value: Value) -> Result<RenderObject, Magnus
     }
 }
 
-fn render_scope_from_value(value: Value, lookup_mode: LookupMode) -> Result<RenderScope, MagnusError> {
+fn render_scope_from_value(
+    value: Value,
+    lookup_mode: LookupMode,
+    context: Option<Value>,
+) -> Result<RenderScope, MagnusError> {
     if value.respond_to("invoke_drop", false)?
         || lookup_mode == LookupMode::TrackMissing
         || hash_has_dynamic_default(value)?
+        || hash_contains_proc(value)?
+        || (value.respond_to("key?", false)? && value.respond_to("[]", false)?)
     {
         Ok(RenderScope::Dynamic(RenderDynamicObject::new(
             value,
             lookup_mode,
+            context,
         )))
     } else {
         Ok(RenderScope::Materialized(ruby_to_render_object(value)?))
@@ -709,6 +750,14 @@ pub(crate) fn liquid_to_render_object(object: LiquidObject) -> RenderObject {
 }
 
 fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderValue, MagnusError> {
+    ruby_to_render_value_with_context(value, lookup_mode, None)
+}
+
+fn ruby_to_render_value_with_context(
+    value: Value,
+    lookup_mode: LookupMode,
+    context: Option<Value>,
+) -> Result<RenderValue, MagnusError> {
     let render_override =
         if value.respond_to("to_liquid_value", false)? && !ruby_value_is_direct_scalar(value) {
             Some(value.to_string())
@@ -723,10 +772,11 @@ fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderV
     }
 
     if let Some(hash) = RHash::from_value(semantic) {
-        if lookup_mode == LookupMode::TrackMissing {
+        if lookup_mode == LookupMode::TrackMissing || hash_contains_proc(hash.as_value())? {
             return Ok(RenderValue::DynamicObject(RenderDynamicObject::new(
                 hash.as_value(),
                 lookup_mode,
+                context,
             )));
         }
 
@@ -737,7 +787,7 @@ fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderV
         let mut items = Vec::with_capacity(array.len());
         for idx in 0..array.len() {
             let item: Value = array.entry(idx as isize)?;
-            items.push(ruby_to_render_value(item, lookup_mode)?);
+            items.push(ruby_to_render_value_with_context(item, lookup_mode, context)?);
         }
         return Ok(RenderValue::Array(items));
     }
@@ -753,6 +803,7 @@ fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderV
         return Ok(RenderValue::DynamicObject(RenderDynamicObject::new(
             semantic,
             lookup_mode,
+            context,
         )));
     }
 
@@ -760,6 +811,47 @@ fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderV
         ScalarCow::new(semantic.to_string()),
         render_override,
     )))
+}
+
+fn resolve_dynamic_value(
+    scope: Value,
+    context: Option<Value>,
+    key: &str,
+    value: Value,
+) -> Result<Value, MagnusError> {
+    if unsafe { value.classname() }.as_ref() != "Proc" {
+        return Ok(value);
+    }
+
+    let arity: i64 = value.funcall("arity", ())?;
+    let resolved: Value = if arity == 0 {
+        value.funcall("call", ())?
+    } else if let Some(context) = context {
+        value.funcall("call", (context,))?
+    } else {
+        return Ok(value);
+    };
+    if let Some(hash) = RHash::from_value(scope) {
+        hash.aset(key, resolved)?;
+    } else if scope.respond_to("[]=", false)? {
+        let _: Value = scope.funcall("[]=", (key, resolved))?;
+    }
+    Ok(resolved)
+}
+
+fn hash_contains_proc(value: Value) -> Result<bool, MagnusError> {
+    let Some(hash) = RHash::from_value(value) else {
+        return Ok(false);
+    };
+
+    let mut contains_proc = false;
+    hash.foreach(|_key: Value, val: Value| {
+        if unsafe { val.classname() }.as_ref() == "Proc" {
+            contains_proc = true;
+        }
+        Ok(ForEach::Continue)
+    })?;
+    Ok(contains_proc)
 }
 
 fn liquid_to_render_value(value: LiquidValue) -> RenderValue {

@@ -12,6 +12,35 @@ module Liquid
       end
     end
 
+    class MergedAssigns
+      def initialize(assigns, instance_assigns)
+        @assigns = assigns
+        @instance_assigns = instance_assigns
+      end
+
+      def key?(key)
+        @instance_assigns.key?(key) || @assigns.key?(key)
+      end
+
+      def [](key)
+        if @assigns.key?(key)
+          @assigns[key]
+        else
+          @instance_assigns[key]
+        end
+      end
+
+      def []=(key, value)
+        if @assigns.key?(key)
+          @assigns[key] = value
+        elsif @instance_assigns.key?(key)
+          @instance_assigns[key] = value
+        else
+          @instance_assigns[key] = value
+        end
+      end
+    end
+
     RENDER_OPTION_KEYS = [
       :filters,
       :registers,
@@ -138,14 +167,36 @@ module Liquid
         args.shift
       when Liquid::Drop
         drop = args.shift
-        drop.context = Liquid::Context.new([@assigns, drop], registers: @registers, environment: @environment)
+        build_template_context(
+          [base_lookup_assigns, drop]
+        ).tap do |context|
+          drop.context = context
+        end
       when Hash
-        Liquid::Context.new([@assigns, args.shift], registers: @registers, environment: @environment)
+        build_template_context(
+          [base_lookup_assigns, args.shift]
+        )
       when nil
-        Liquid::Context.new(@assigns.dup, registers: @registers, environment: @environment)
+        build_template_context(
+          [base_lookup_assigns]
+        )
       else
         raise ::ArgumentError, "Expected Hash, Liquid::Drop, Liquid::Context, or nil as parameter"
       end
+    end
+
+    def build_template_context(environments)
+      Liquid::Context.new(
+        environments,
+        registers: @registers,
+        environment: @environment
+      ).tap do |context|
+        context.native_handle["persistent_assigns"] = @instance_assigns
+      end
+    end
+
+    def base_lookup_assigns
+      MergedAssigns.new(@assigns, @instance_assigns)
     end
 
     def extract_render_options(args)

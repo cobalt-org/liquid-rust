@@ -82,7 +82,7 @@ fn lookup_scope_value(handle: RHash, key: &str) -> Result<Value, MagnusError> {
         let scope: Value = scopes.entry(idx as isize)?;
         if let Some(hash) = RHash::from_value(scope) {
             if let Some(value) = hash.get(key) {
-                return Ok(value);
+                return resolve_scope_value(handle, hash.as_value(), key, value);
             }
             continue;
         }
@@ -90,10 +90,43 @@ fn lookup_scope_value(handle: RHash, key: &str) -> Result<Value, MagnusError> {
         if scope.respond_to("[]", false)? {
             let value: Value = scope.funcall("[]", (key,))?;
             if !value.is_nil() {
-                return Ok(value);
+                return resolve_scope_value(handle, scope, key, value);
             }
         }
     }
 
     Ok(magnus::Ruby::get().expect("Ruby VM should be available").qnil().as_value())
+}
+
+fn resolve_scope_value(
+    handle: RHash,
+    scope: Value,
+    key: &str,
+    value: Value,
+) -> Result<Value, MagnusError> {
+    if !ruby_value_is_proc(value) {
+        return Ok(value);
+    }
+
+    let arity: i64 = value.funcall("arity", ())?;
+    let resolved = if arity == 0 {
+        value.funcall("call", ())?
+    } else if let Some(context) = handle.get("context") {
+        value.funcall("call", (context,))?
+    } else {
+        value.funcall("call", ())?
+    };
+
+    if let Some(hash) = RHash::from_value(scope) {
+        hash.aset(key, resolved)?;
+    } else if scope.respond_to("[]=", false)? {
+        let _: Value = scope.funcall("[]=", (key, resolved))?;
+    }
+
+    Ok(resolved)
+}
+
+fn ruby_value_is_proc(value: Value) -> bool {
+    let class_name = unsafe { value.classname() };
+    class_name.as_ref() == "Proc"
 }

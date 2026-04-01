@@ -11,7 +11,24 @@ module Liquid
       new(scopes, rethrow_errors: rethrow_errors, registers: registers, environment: environment)
     end
 
-    def initialize(environments = {}, rethrow_errors: false, registers: nil, environment: nil, resource_limits: ResourceLimits.new)
+    def initialize(
+      environments = {},
+      rethrow_errors: false,
+      registers: nil,
+      environment: nil,
+      resource_limits: ResourceLimits.new,
+      **legacy_environments
+    )
+      if legacy_environments.any?
+        keyword_environment = legacy_environments.transform_keys(&:to_s)
+        environments =
+          if environments.is_a?(Hash)
+            keyword_environment.merge(environments)
+          else
+            [keyword_environment, environments].flatten(1)
+          end
+      end
+
       @environment = environment || Liquid::Environment.default
       @rethrow_errors = rethrow_errors
       @registers = registers.is_a?(Liquid::Registers) ? registers : Liquid::Registers.new(registers || {})
@@ -25,13 +42,14 @@ module Liquid
       @environments =
         case environments
         when Array
-          environments.map { |scope| scope.is_a?(Hash) ? scope.dup : scope }
+          environments
         when Hash
-          [environments.dup]
+          [environments]
         else
           [environments || {}]
         end
       @native_handle = Liquid::RustExtension.ext_context_new(@environments, @registers.to_h, @environment.error_mode.to_s)
+      @native_handle["context"] = self
       @native_handle["strict_variables"] = @strict_variables
       @native_handle["strict_filters"] = @strict_filters
       @native_handle["filters"] = @filters

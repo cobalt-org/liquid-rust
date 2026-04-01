@@ -153,7 +153,10 @@ fn render_internal(
         Err(error) => {
             let message = error.to_string();
             let tracked_errors = globals.take_errors();
-            if strict && message.contains("Unknown variable") && !tracked_errors.is_empty() {
+            if strict
+                && (message.contains("Unknown variable") || message.contains("Unknown index"))
+                && !tracked_errors.is_empty()
+            {
                 for tracked_error in &tracked_errors {
                     errors.push(tracked_error.clone())?;
                 }
@@ -202,6 +205,8 @@ fn globals_from_context(
     context_or_assigns: Value,
     lookup_mode: values::LookupMode,
 ) -> Result<values::RenderRootObject, MagnusError> {
+    let context = current_context(context_or_assigns);
+
     if let Ok(payload) = String::try_convert(context_or_assigns) {
         return values::json_to_object(&payload).map(values::RenderRootObject::from_liquid_object);
     }
@@ -213,13 +218,25 @@ fn globals_from_context(
                 let scope: Value = scopes.entry(idx as isize)?;
                 values.push(scope);
             }
-            return values::RenderRootObject::from_values_with_mode(values, lookup_mode);
+            return values::RenderRootObject::from_values_with_mode_and_context(
+                values,
+                lookup_mode,
+                context,
+            );
         }
 
-        return values::RenderRootObject::from_value_with_mode(handle.as_value(), lookup_mode);
+        return values::RenderRootObject::from_value_with_mode_and_context(
+            handle.as_value(),
+            lookup_mode,
+            context,
+        );
     }
 
-    values::RenderRootObject::from_value_with_mode(context_or_assigns, lookup_mode)
+    values::RenderRootObject::from_value_with_mode_and_context(context_or_assigns, lookup_mode, context)
+}
+
+fn current_context(context_or_assigns: Value) -> Option<Value> {
+    RHash::from_value(context_or_assigns).and_then(|handle| handle.get("context"))
 }
 
 fn strict_variables_enabled(context_or_assigns: Value) -> bool {
@@ -273,6 +290,7 @@ struct DynamicFilterRuntime<'a> {
     inner: &'a dyn Runtime,
     filter_host: Option<Value>,
     recovery: Option<RenderRecoveryState>,
+    persistent_assigns: Option<RHash>,
 }
 
 impl<'a> DynamicFilterRuntime<'a> {
@@ -286,6 +304,7 @@ impl<'a> DynamicFilterRuntime<'a> {
             inner,
             filter_host,
             recovery: (!strict).then(|| RenderRecoveryState::new(context_or_assigns)),
+            persistent_assigns: persistent_assigns_from_context(context_or_assigns),
         }
     }
 
@@ -393,6 +412,14 @@ impl Runtime for DynamicFilterRuntime<'_> {
         name: liquid::model::KString,
         val: liquid::model::Value,
     ) -> Option<liquid::model::Value> {
+        if let Some(target) = self.persistent_assigns {
+            if let Ok(vm) = magnus::Ruby::get() {
+                if let Ok(value) = values::liquid_to_ruby_value(&vm, &val) {
+                    let _ = target.aset(name.as_str(), value);
+                }
+            }
+        }
+
         self.inner.set_global(name, val)
     }
 
@@ -476,6 +503,29 @@ impl RenderRecoveryState {
             raised_exception: RefCell::new(None),
         }
     }
+}
+
+fn persistent_assigns_from_context(context_or_assigns: Value) -> Option<RHash> {
+    if let Some(handle) = RHash::from_value(context_or_assigns) {
+        if let Some(persistent_assigns) = handle.get("persistent_assigns").and_then(RHash::from_value)
+        {
+            return Some(persistent_assigns);
+        }
+
+        if let Some(scopes) = handle.get("scopes").and_then(RArray::from_value) {
+            for idx in (0..scopes.len()).rev() {
+                let scope: Value = scopes.entry(idx as isize).ok()?;
+                if let Some(hash) = RHash::from_value(scope) {
+                    return Some(hash);
+                }
+            }
+            return None;
+        }
+
+        return Some(handle);
+    }
+
+    RHash::from_value(context_or_assigns)
 }
 
 struct RenderErrorMetadata {
