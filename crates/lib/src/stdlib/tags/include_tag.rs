@@ -201,8 +201,7 @@ mod test {
     fn include_tag_quotes() {
         let text = "{% include 'example.txt' %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
@@ -278,8 +277,7 @@ mod test {
     fn no_file() {
         let text = "{% include 'file_does_not_exist.liquid' %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)

@@ -2,7 +2,9 @@ use std::sync;
 
 use crate::error::Error;
 use crate::error::Result;
+use crate::error::ResultLiquidExt;
 use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
+use crate::parser::{FilterCall, ParseFilter, PluginRegistry};
 
 use super::PartialStore;
 use super::Renderable;
@@ -36,6 +38,42 @@ pub trait Runtime {
 
     /// Unnamed state for plugins during rendering
     fn registers(&self) -> &Registers;
+
+    /// Evaluate a filter call against the current runtime.
+    fn evaluate_filter(
+        &self,
+        filter: &FilterCall,
+        input: &dyn ValueView,
+        fallback_filters: &PluginRegistry<Box<dyn ParseFilter>>,
+    ) -> Result<Value> {
+        evaluate_filter_with_registry(self, filter, input, fallback_filters)
+    }
+}
+
+/// Evaluate a filter call against a specific registry.
+pub fn evaluate_filter_with_registry<R: Runtime + ?Sized>(
+    runtime: &R,
+    filter: &FilterCall,
+    input: &dyn ValueView,
+    filters: &PluginRegistry<Box<dyn ParseFilter>>,
+) -> Result<Value> {
+    let runtime_ref: &dyn Runtime = &runtime;
+    let parser = filters.get(filter.name()).ok_or_else(|| {
+        let mut available: Vec<_> = filters.plugin_names().collect();
+        available.sort_unstable();
+        let available = itertools::join(available, ", ");
+        Error::with_msg("Unknown filter")
+            .context("requested filter", filter.name().to_owned())
+            .context("available filters", available)
+    })?;
+
+    let filter_impl = parser
+        .parse(filter.args())
+        .trace("Filter parsing error")
+        .context_key("filter")
+        .value_with(|| format!("{}", filter).into())?;
+
+    filter_impl.evaluate(input, runtime_ref)
 }
 
 impl<R: Runtime + ?Sized> Runtime for &R {
@@ -77,6 +115,15 @@ impl<R: Runtime + ?Sized> Runtime for &R {
 
     fn registers(&self) -> &super::Registers {
         <R as Runtime>::registers(self)
+    }
+
+    fn evaluate_filter(
+        &self,
+        filter: &FilterCall,
+        input: &dyn ValueView,
+        fallback_filters: &PluginRegistry<Box<dyn ParseFilter>>,
+    ) -> Result<Value> {
+        <R as Runtime>::evaluate_filter(self, filter, input, fallback_filters)
     }
 }
 

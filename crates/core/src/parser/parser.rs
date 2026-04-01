@@ -11,7 +11,7 @@ use crate::runtime::Variable;
 
 use super::Language;
 use super::Text;
-use super::{Filter, FilterArguments, FilterChain};
+use super::{FilterCall, FilterChain, ParsedFilter};
 
 use pest::Parser;
 
@@ -199,7 +199,7 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
+fn parse_filter(filter: Pair, options: &Language) -> Result<ParsedFilter> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
@@ -229,27 +229,24 @@ fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
         }
     }
 
-    let args = FilterArguments {
-        positional: Box::new(positional_args.into_iter()),
-        keyword: Box::new(keyword_args.into_iter()),
+    let keyword_args: Vec<_> = keyword_args
+        .into_iter()
+        .map(|(name, expression)| (name.to_owned(), expression))
+        .collect();
+
+    let filter_call = FilterCall::new(name.to_owned(), positional_args, keyword_args);
+
+    let Some(parser) = options.filters.get(name) else {
+        return Ok(ParsedFilter::Deferred(filter_call));
     };
 
-    let f = options.filters.get(name).ok_or_else(|| {
-        let mut available: Vec<_> = options.filters.plugin_names().collect();
-        available.sort_unstable();
-        let available = itertools::join(available, ", ");
-        Error::with_msg("Unknown filter")
-            .context("requested filter", name.to_owned())
-            .context("available filters", available)
-    })?;
-
-    let f = f
-        .parse(args)
+    let compiled = parser
+        .parse(filter_call.args())
         .trace("Filter parsing error")
         .context_key("filter")
         .value_with(|| filter_str.to_string().into())?;
 
-    Ok(f)
+    Ok(ParsedFilter::Compiled(compiled))
 }
 
 /// Parses a `FilterChain` from a `Pair` with a filter chain.
@@ -268,7 +265,7 @@ fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
     let filters: Result<Vec<_>> = chain.map(|f| parse_filter(f, options)).collect();
     let filters = filters?;
 
-    let filters = FilterChain::new(entry, filters);
+    let filters = FilterChain::new(entry, filters, options.filters.clone());
     Ok(filters)
 }
 

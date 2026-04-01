@@ -12,6 +12,7 @@ use magnus::{function, Error, Module, Object, Ruby};
 fn init(ruby: &Ruby) -> Result<(), Error> {
     let liquid = ruby.define_module("Liquid")?;
     let ext = liquid.define_module("RustExtension")?;
+    ext.define_class("NativeTemplate", ruby.class_object())?;
 
     ext.define_singleton_method("ext_parse", function!(template::ext_parse, 4))?;
     ext.define_singleton_method("ext_render", function!(template::ext_render, 2))?;

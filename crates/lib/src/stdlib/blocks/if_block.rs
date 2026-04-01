@@ -530,14 +530,11 @@ mod test {
 
     fn options_with_filters() -> Language {
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("upcase".to_owned(), Box::new(UpcaseFilterParser));
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("downcase".to_owned(), Box::new(DowncaseFilterParser));
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("fail".to_owned(), Box::new(FailFilterParser));
         options
     }
@@ -1001,10 +998,21 @@ mod test {
     fn unknown_filter_in_condition_reports_filter_error() {
         let text = r#"{% if name | nonexistent_filter == "HELLO" %}match{% endif %}"#;
         let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
-        let error = parser::parse(text, &options).unwrap_err().to_string();
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let error = template.render(&runtime).unwrap_err().to_string();
         assert!(error.contains("Unknown filter"));
         assert!(error.contains("requested filter=nonexistent_filter"));
+    }
+
+    #[test]
+    fn known_filter_with_invalid_arguments_still_fails_during_parse() {
+        let text = r#"{% if name | upcase: 1 == "HELLO" %}match{% endif %}"#;
+        let options = options_with_filters();
+
+        assert!(parser::parse(text, &options).is_err());
     }
 
     #[test]

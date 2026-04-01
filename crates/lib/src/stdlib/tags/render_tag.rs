@@ -347,8 +347,7 @@ mod test {
     fn render_scope() {
         let text = "{% assign numTwo = 10 %}{% render 'example.txt', num: 5 %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
@@ -368,8 +367,7 @@ mod test {
     fn render_tag_quotes() {
         let text = "{% render 'example.txt', num: 5, numTwo: 10 %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
@@ -443,8 +441,7 @@ mod test {
     fn no_file() {
         let text = "{% render 'file_does_not_exist.liquid' %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)

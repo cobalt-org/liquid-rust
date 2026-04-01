@@ -1,7 +1,10 @@
+use std::sync;
 use std::fmt;
 use std::io::Write;
 
-use super::Filter;
+use super::ParsedFilter;
+use super::ParseFilter;
+use super::PluginRegistry;
 use crate::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use crate::model::{ValueCow, ValueView};
 use crate::runtime::Expression;
@@ -9,16 +12,24 @@ use crate::runtime::Renderable;
 use crate::runtime::Runtime;
 
 /// A `Value` expression.
-#[derive(Debug)]
 pub struct FilterChain {
     entry: Expression,
-    filters: Vec<Box<dyn Filter>>,
+    filters: Vec<ParsedFilter>,
+    fallback_filters: sync::Arc<PluginRegistry<Box<dyn ParseFilter>>>,
 }
 
 impl FilterChain {
     /// Create a new expression.
-    pub fn new(entry: Expression, filters: Vec<Box<dyn Filter>>) -> Self {
-        Self { entry, filters }
+    pub fn new(
+        entry: Expression,
+        filters: Vec<ParsedFilter>,
+        fallback_filters: sync::Arc<PluginRegistry<Box<dyn ParseFilter>>>,
+    ) -> Self {
+        Self {
+            entry,
+            filters,
+            fallback_filters,
+        }
     }
 
     /// Process `Value` expression within `runtime`'s stack.
@@ -45,9 +56,15 @@ impl FilterChain {
         runtime: &'s dyn Runtime,
     ) -> Result<ValueCow<'s>> {
         for filter in &self.filters {
+            let evaluated = match filter {
+                ParsedFilter::Compiled(filter) => filter.evaluate(entry.as_view(), runtime),
+                ParsedFilter::Deferred(filter) => {
+                    runtime.evaluate_filter(filter, entry.as_view(), self.fallback_filters.as_ref())
+                }
+            };
+
             entry = ValueCow::Owned(
-                filter
-                    .evaluate(entry.as_view(), runtime)
+                evaluated
                     .trace("Filter error")
                     .context_key("filter")
                     .value_with(|| format!("{}", filter).into())
@@ -67,6 +84,15 @@ impl fmt::Display for FilterChain {
         self.filters
             .iter()
             .try_for_each(|filter| write!(f, " | {}", filter))
+    }
+}
+
+impl fmt::Debug for FilterChain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FilterChain")
+            .field("entry", &self.entry)
+            .field("filters", &self.filters)
+            .finish()
     }
 }
 

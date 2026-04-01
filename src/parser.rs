@@ -160,7 +160,7 @@ where
         let mut options = parser::Language::empty();
         options.blocks = blocks;
         options.tags = tags;
-        options.filters = filters;
+        options.filters = sync::Arc::new(filters);
         let options = sync::Arc::new(options);
         let partials = partials
             .map(|p| p.compile(options.clone()))

@@ -67,6 +67,100 @@ pub struct FilterArguments<'a> {
     pub keyword: Box<dyn Iterator<Item = (&'a str, Expression)> + 'a>,
 }
 
+pub enum ParsedFilter {
+    Compiled(Box<dyn Filter>),
+    Deferred(FilterCall),
+}
+
+/// A parsed filter call whose arguments are still unresolved until render time.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FilterCall {
+    name: String,
+    positional: Vec<Expression>,
+    keyword: Vec<(String, Expression)>,
+}
+
+impl FilterCall {
+    pub fn new(
+        name: String,
+        positional: Vec<Expression>,
+        keyword: Vec<(String, Expression)>,
+    ) -> Self {
+        Self {
+            name,
+            positional,
+            keyword,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn args(&self) -> FilterArguments<'_> {
+        FilterArguments {
+            positional: Box::new(self.positional.clone().into_iter()),
+            keyword: Box::new(
+                self.keyword
+                    .iter()
+                    .map(|(name, expression)| (name.as_str(), expression.clone())),
+            ),
+        }
+    }
+}
+
+impl Display for FilterCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)?;
+
+        if self.positional.is_empty() && self.keyword.is_empty() {
+            return Ok(());
+        }
+
+        write!(f, ": ")?;
+
+        let mut needs_comma = false;
+        for expression in &self.positional {
+            if needs_comma {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", expression)?;
+            needs_comma = true;
+        }
+
+        for (name, expression) in &self.keyword {
+            if needs_comma {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}: {}", name, expression)?;
+            needs_comma = true;
+        }
+
+        Ok(())
+    }
+}
+
+impl Display for ParsedFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Compiled(filter) => write!(f, "{}", filter),
+            Self::Deferred(filter) => write!(f, "{}", filter),
+        }
+    }
+}
+
+impl Debug for ParsedFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Compiled(filter) => f
+                .debug_tuple("Compiled")
+                .field(&format_args!("{}", filter))
+                .finish(),
+            Self::Deferred(filter) => f.debug_tuple("Deferred").field(filter).finish(),
+        }
+    }
+}
+
 /// A trait that holds a filter, ready to evaluate.
 ///
 /// # Deriving

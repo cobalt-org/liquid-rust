@@ -948,8 +948,7 @@ mod test {
         );
 
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("shout".to_owned(), Box::new(ShoutFilterParser));
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 

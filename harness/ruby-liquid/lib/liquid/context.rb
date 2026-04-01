@@ -2,7 +2,7 @@
 
 module Liquid
   class Context
-    attr_accessor :environment, :exception_renderer, :template_name
+    attr_accessor :environment, :exception_renderer, :template_name, :global_filter
     attr_reader :registers, :environments, :errors, :warnings, :resource_limits
 
     def self.build(environments: [], static_environments: {}, rethrow_errors: false, registers: nil, environment: nil)
@@ -19,6 +19,7 @@ module Liquid
       @errors = []
       @warnings = []
       @filters = []
+      @global_filter = nil
       @strict_variables = false
       @strict_filters = false
       @environments =
@@ -33,6 +34,7 @@ module Liquid
       @native_handle = Liquid::RustExtension.ext_context_new(@environments, @registers.to_h, @environment.error_mode.to_s)
       @native_handle["strict_variables"] = @strict_variables
       @native_handle["strict_filters"] = @strict_filters
+      @native_handle["filters"] = @filters
     end
 
     def strict_variables
@@ -67,6 +69,7 @@ module Liquid
 
     def add_filters(filter_module)
       @filters.concat(Array(filter_module))
+      @native_handle["filters"] = @filters if defined?(@native_handle) && @native_handle
       nil
     end
 
@@ -91,6 +94,12 @@ module Liquid
 
     def find_variable(key)
       Liquid::RustExtension.ext_context_find_variable(@native_handle, key.to_s)
+    end
+
+    def apply_global_filter(output)
+      return output unless @global_filter
+
+      @global_filter.call(output)
     end
 
     def to_liquid_payload

@@ -3,12 +3,21 @@ use liquid::ObjectView;
 use liquid::ParserBuilder;
 use liquid::Template as LiquidTemplate;
 use liquid::ValueView;
+use liquid_core::parser::{FilterCall, ParseFilter, PluginRegistry};
+use liquid_core::runtime::evaluate_filter_with_registry;
+use liquid_core::Runtime;
 use magnus::{
-    r_array::RArray, r_hash::RHash, value::ReprValue, Error as MagnusError, TryConvert, Value,
+    class::Class, r_array::RArray, r_hash::RHash, typed_data, value::ReprValue,
+    Error as MagnusError, IntoValue, RModule, TryConvert, Value,
 };
 
 use crate::errors;
 use crate::values;
+
+#[magnus::wrap(class = "Liquid::RustExtension::NativeTemplate", free_immediately, size)]
+struct NativeTemplate {
+    template: LiquidTemplate,
+}
 
 pub(crate) fn ext_parse(
     ruby: &magnus::Ruby,
@@ -32,6 +41,10 @@ pub(crate) fn ext_parse(
     handle.aset("errors", ruby.ary_new())?;
     handle.aset("warnings", ruby.ary_new())?;
     handle.aset("root", build_root_handle(ruby, &template)?)?;
+    handle.aset(
+        "template",
+        ruby.obj_wrap(NativeTemplate { template }).into_value_with(ruby),
+    )?;
     Ok(handle)
 }
 
@@ -83,8 +96,8 @@ fn render_internal(
     context_or_assigns: Value,
     strict: bool,
 ) -> Result<String, MagnusError> {
-    let source: String = handle.lookup("source")?;
-    let template = parse_template(ruby, &source)?;
+    let filter_host = build_filter_host(ruby, handle, context_or_assigns)?;
+    let template = lookup_template(handle)?;
     let globals = globals_from_context(context_or_assigns)?;
     let strict_variables = strict_variables_enabled(context_or_assigns);
     let lenient_globals = LenientObject::new(&globals as &dyn ObjectView);
@@ -94,7 +107,15 @@ fn render_internal(
         &lenient_globals
     };
 
-    let rendered = template.render(render_globals);
+    let base_runtime = liquid_core::runtime::RuntimeBuilder::new()
+        .set_globals(render_globals)
+        .build();
+    let runtime = DynamicFilterRuntime::new(&base_runtime, filter_host);
+    let mut rendered = Vec::new();
+    let rendered = template
+        .template
+        .render_to_runtime(&mut rendered, &runtime)
+        .map(|_| String::from_utf8(rendered).expect("render should stay valid utf-8"));
 
     if let Some(message) = globals.take_error() {
         let errors: RArray = handle.lookup("errors")?;
@@ -131,6 +152,10 @@ fn parse_template(ruby: &magnus::Ruby, source: &str) -> Result<LiquidTemplate, M
         .map_err(|error| errors::syntax_error(ruby, error.to_string()))
 }
 
+fn lookup_template(handle: RHash) -> Result<typed_data::Obj<NativeTemplate>, MagnusError> {
+    handle.lookup("template")
+}
+
 fn build_root_handle(
     ruby: &magnus::Ruby,
     _template: &LiquidTemplate,
@@ -165,6 +190,180 @@ fn strict_variables_enabled(context_or_assigns: Value) -> bool {
         .and_then(|handle| handle.get("strict_variables"))
         .and_then(|value| bool::try_convert(value).ok())
         .unwrap_or(false)
+}
+
+fn build_filter_host(
+    ruby: &magnus::Ruby,
+    handle: RHash,
+    context_or_assigns: Value,
+) -> Result<Option<Value>, MagnusError> {
+    let mut modules = Vec::new();
+
+    if let Some(environment) = handle.get("environment").and_then(RHash::from_value) {
+        collect_filter_modules(environment, &mut modules)?;
+    }
+
+    if let Some(context) = RHash::from_value(context_or_assigns) {
+        collect_filter_modules(context, &mut modules)?;
+    }
+
+    if modules.is_empty() {
+        return Ok(None);
+    }
+
+    let host = ruby.class_object().new_instance(())?.as_value();
+    for module in modules {
+        host.funcall::<_, _, Value>("extend", (module,))?;
+    }
+
+    Ok(Some(host))
+}
+
+fn collect_filter_modules(handle: RHash, modules: &mut Vec<RModule>) -> Result<(), MagnusError> {
+    let Some(filters) = handle.get("filters").and_then(RArray::from_value) else {
+        return Ok(());
+    };
+
+    for idx in 0..filters.len() {
+        let module: RModule = filters.entry(idx as isize)?;
+        modules.push(module);
+    }
+
+    Ok(())
+}
+
+struct DynamicFilterRuntime<'a> {
+    inner: &'a dyn Runtime,
+    filter_host: Option<Value>,
+}
+
+impl<'a> DynamicFilterRuntime<'a> {
+    fn new(inner: &'a dyn Runtime, filter_host: Option<Value>) -> Self {
+        Self { inner, filter_host }
+    }
+
+    fn try_host_filter(
+        &self,
+        filter: &FilterCall,
+        input: &dyn ValueView,
+    ) -> liquid_core::Result<Option<LiquidValue>> {
+        let Some(host) = self.filter_host else {
+            return Ok(None);
+        };
+
+        if !host.respond_to(filter.name(), false).unwrap_or(false) {
+            return Ok(None);
+        }
+
+        let vm = magnus::Ruby::get().expect("VM should be available");
+        let mut args = Vec::new();
+        args.push(
+            values::liquid_to_ruby_value(&vm, &input.to_value())
+                .map_err(|error| liquid_core::Error::with_msg(error.to_string()))?,
+        );
+
+        let filter_args = filter.args();
+        for expression in filter_args.positional {
+            let value = expression.evaluate(self.inner)?;
+            args.push(
+                values::liquid_to_ruby_value(&vm, &value.to_value())
+                    .map_err(|error| liquid_core::Error::with_msg(error.to_string()))?,
+            );
+        }
+
+        let mut kwargs = Vec::new();
+        for (name, expression) in filter_args.keyword {
+            kwargs.push((name, expression.evaluate(self.inner)?.to_value()));
+        }
+
+        if !kwargs.is_empty() {
+            let keyword_hash = vm.hash_new();
+            for (name, value) in kwargs {
+                keyword_hash
+                    .aset(
+                        name,
+                        values::liquid_to_ruby_value(&vm, &value)
+                            .map_err(|error| liquid_core::Error::with_msg(error.to_string()))?,
+                    )
+                    .map_err(|error| liquid_core::Error::with_msg(error.to_string()))?;
+            }
+            args.push(keyword_hash.into_value_with(&vm));
+        }
+
+        let mut send_args = Vec::with_capacity(args.len() + 1);
+        send_args.push(vm.to_symbol(filter.name()).as_value());
+        send_args.extend(args);
+
+        let result: Value = host
+            .funcall("public_send", &send_args[..])
+            .map_err(|error| liquid_core::Error::with_msg(error.to_string()))?;
+
+        values::ruby_to_liquid_value(result)
+            .map(Some)
+            .map_err(|error| liquid_core::Error::with_msg(error.to_string()))
+    }
+}
+
+impl Runtime for DynamicFilterRuntime<'_> {
+    fn partials(&self) -> &dyn liquid_core::runtime::PartialStore {
+        self.inner.partials()
+    }
+
+    fn name(&self) -> Option<liquid::model::KStringRef<'_>> {
+        self.inner.name()
+    }
+
+    fn roots(&self) -> std::collections::BTreeSet<KStringCow<'_>> {
+        self.inner.roots()
+    }
+
+    fn try_get(&self, path: &[liquid::model::ScalarCow<'_>]) -> Option<liquid::model::ValueCow<'_>> {
+        self.inner.try_get(path)
+    }
+
+    fn get(
+        &self,
+        path: &[liquid::model::ScalarCow<'_>],
+    ) -> liquid_core::Result<liquid::model::ValueCow<'_>> {
+        self.inner.get(path)
+    }
+
+    fn set_global(
+        &self,
+        name: liquid::model::KString,
+        val: liquid::model::Value,
+    ) -> Option<liquid::model::Value> {
+        self.inner.set_global(name, val)
+    }
+
+    fn set_index(
+        &self,
+        name: liquid::model::KString,
+        val: liquid::model::Value,
+    ) -> Option<liquid::model::Value> {
+        self.inner.set_index(name, val)
+    }
+
+    fn get_index<'a>(&'a self, name: &str) -> Option<liquid::model::ValueCow<'a>> {
+        self.inner.get_index(name)
+    }
+
+    fn registers(&self) -> &liquid_core::runtime::Registers {
+        self.inner.registers()
+    }
+
+    fn evaluate_filter(
+        &self,
+        filter: &FilterCall,
+        input: &dyn ValueView,
+        fallback_filters: &PluginRegistry<Box<dyn ParseFilter>>,
+    ) -> liquid_core::Result<LiquidValue> {
+        if let Some(value) = self.try_host_filter(filter, input)? {
+            return Ok(value);
+        }
+
+        evaluate_filter_with_registry(self.inner, filter, input, fallback_filters)
+    }
 }
 
 static NIL_VALUE: LiquidValue = LiquidValue::Nil;

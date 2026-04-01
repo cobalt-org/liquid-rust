@@ -1,3 +1,5 @@
+use std::sync;
+
 use super::ParseBlock;
 use super::ParseFilter;
 use super::ParseTag;
@@ -8,7 +10,7 @@ use super::PluginRegistry;
 pub struct Language {
     pub blocks: PluginRegistry<Box<dyn ParseBlock>>,
     pub tags: PluginRegistry<Box<dyn ParseTag>>,
-    pub filters: PluginRegistry<Box<dyn ParseFilter>>,
+    pub filters: sync::Arc<PluginRegistry<Box<dyn ParseFilter>>>,
 }
 
 impl Language {

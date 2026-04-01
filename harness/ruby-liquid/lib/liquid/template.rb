@@ -74,6 +74,7 @@ module Liquid
       apply_options_to_context(context, options)
 
       rendered = Liquid::RustExtension.ext_render(@handle, context.native_handle)
+      rendered = context.apply_global_filter(rendered)
       @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
       options[:output] ? options[:output] << rendered : rendered
     rescue StandardError => error
@@ -87,6 +88,7 @@ module Liquid
       apply_options_to_context(context, options)
 
       rendered = Liquid::RustExtension.ext_render_strict(@handle, context.native_handle)
+      rendered = context.apply_global_filter(rendered)
       @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
       options[:output] ? options[:output] << rendered : rendered
     rescue StandardError => error
@@ -134,6 +136,7 @@ module Liquid
         context.registers[key] = value
       end
       context.exception_renderer = options[:exception_renderer] if options.key?(:exception_renderer)
+      context.global_filter = options[:global_filter] if options.key?(:global_filter)
       context.strict_variables = options[:strict_variables] if options.key?(:strict_variables)
       context.strict_filters = options[:strict_filters] if options.key?(:strict_filters)
       context.template_name ||= name
