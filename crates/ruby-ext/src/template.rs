@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use liquid::model::{DisplayCow, KStringCow, State, Value as LiquidValue};
 use liquid::ObjectView;
 use liquid::ParserBuilder;
@@ -7,8 +9,8 @@ use liquid_core::parser::{FilterCall, ParseFilter, PluginRegistry};
 use liquid_core::runtime::evaluate_filter_with_registry;
 use liquid_core::Runtime;
 use magnus::{
-    class::Class, r_array::RArray, r_hash::RHash, typed_data, value::ReprValue,
-    Error as MagnusError, IntoValue, RModule, TryConvert, Value,
+    class::Class, Exception, Module, RClass, r_array::RArray, r_hash::RHash, typed_data,
+    value::ReprValue, Error as MagnusError, IntoValue, RModule, TryConvert, Value,
 };
 
 use crate::errors;
@@ -120,12 +122,19 @@ fn render_internal(
     let base_runtime = liquid_core::runtime::RuntimeBuilder::new()
         .set_globals(render_globals)
         .build();
-    let runtime = DynamicFilterRuntime::new(&base_runtime, filter_host);
+    let runtime = DynamicFilterRuntime::new(&base_runtime, filter_host, context_or_assigns, strict);
     let mut rendered = Vec::new();
     let render_result = template
         .template
         .render_to_runtime(&mut rendered, &runtime);
     let rendered = String::from_utf8(rendered).expect("render should stay valid utf-8");
+    for handled_error in runtime.handled_errors() {
+        errors.push(handled_error)?;
+    }
+
+    if let Some(raised_exception) = runtime.take_raised_exception() {
+        return Err(raised_exception);
+    }
 
     match render_result {
         Ok(()) => {
@@ -263,11 +272,34 @@ fn collect_filter_modules(handle: RHash, modules: &mut Vec<RModule>) -> Result<(
 struct DynamicFilterRuntime<'a> {
     inner: &'a dyn Runtime,
     filter_host: Option<Value>,
+    recovery: Option<RenderRecoveryState>,
 }
 
 impl<'a> DynamicFilterRuntime<'a> {
-    fn new(inner: &'a dyn Runtime, filter_host: Option<Value>) -> Self {
-        Self { inner, filter_host }
+    fn new(
+        inner: &'a dyn Runtime,
+        filter_host: Option<Value>,
+        context_or_assigns: Value,
+        strict: bool,
+    ) -> Self {
+        Self {
+            inner,
+            filter_host,
+            recovery: (!strict).then(|| RenderRecoveryState::new(context_or_assigns)),
+        }
+    }
+
+    fn handled_errors(&self) -> Vec<String> {
+        self.recovery
+            .as_ref()
+            .map(|recovery| recovery.handled_errors.borrow().clone())
+            .unwrap_or_default()
+    }
+
+    fn take_raised_exception(&self) -> Option<MagnusError> {
+        self.recovery
+            .as_ref()
+            .and_then(|recovery| recovery.raised_exception.borrow_mut().take())
     }
 
     fn try_host_filter(
@@ -391,6 +423,217 @@ impl Runtime for DynamicFilterRuntime<'_> {
         }
 
         evaluate_filter_with_registry(self.inner, filter, input, fallback_filters)
+    }
+
+    fn handle_render_error(&self, error: liquid_core::Error) -> liquid_core::Result<Option<String>> {
+        let Some(recovery) = &self.recovery else {
+            return Err(error);
+        };
+
+        if recovery.raised_exception.borrow().is_some() {
+            return Err(error);
+        }
+
+        let message = error.to_string();
+        recovery.handled_errors.borrow_mut().push(message.clone());
+
+        if preserve_partial_output(&message) {
+            return Ok(None);
+        }
+
+        if let Some(renderer) = recovery.exception_renderer {
+            return match call_exception_renderer(renderer, &message) {
+                Ok(replacement) => Ok(Some(replacement)),
+                Err(error) => {
+                    recovery
+                        .raised_exception
+                        .borrow_mut()
+                        .replace(wrap_exception_renderer_error(error));
+                    Err(liquid_core::Error::with_msg("exception renderer raised"))
+                }
+            };
+        }
+
+        Ok(Some(render_default_error_output(&message)))
+    }
+}
+
+struct RenderRecoveryState {
+    exception_renderer: Option<Value>,
+    handled_errors: RefCell<Vec<String>>,
+    raised_exception: RefCell<Option<MagnusError>>,
+}
+
+impl RenderRecoveryState {
+    fn new(context_or_assigns: Value) -> Self {
+        let exception_renderer = RHash::from_value(context_or_assigns)
+            .and_then(|handle| handle.get("exception_renderer"))
+            .filter(|value| !value.is_nil());
+
+        Self {
+            exception_renderer,
+            handled_errors: RefCell::new(Vec::new()),
+            raised_exception: RefCell::new(None),
+        }
+    }
+}
+
+struct RenderErrorMetadata {
+    message: String,
+    line_number: Option<usize>,
+}
+
+impl RenderErrorMetadata {
+    fn from_raw(message: &str) -> Self {
+        let line_number = extract_line_number(message);
+
+        if message.contains("Unknown filter") {
+            let requested = extract_context_value(message, "requested filter=");
+            return Self {
+                message: requested
+                    .map(|requested| format!("undefined filter {requested}"))
+                    .unwrap_or_else(|| "undefined filter".to_string()),
+                line_number,
+            };
+        }
+
+        if message.contains("Can't divide by zero") {
+            return Self {
+                message: "divided by 0".to_string(),
+                line_number,
+            };
+        }
+
+        if message.contains("Undefined drop method") {
+            let requested = extract_context_value(message, "requested variable=");
+            return Self {
+                message: requested
+                    .map(|requested| format!("undefined drop method {requested}"))
+                    .unwrap_or_else(|| "undefined drop method".to_string()),
+                line_number,
+            };
+        }
+
+        if message.contains("Unknown variable") {
+            let requested = extract_context_value(message, "requested variable=");
+            return Self {
+                message: requested
+                    .map(|requested| format!("undefined variable {requested}"))
+                    .unwrap_or_else(|| "undefined variable".to_string()),
+                line_number,
+            };
+        }
+
+        Self {
+            message: normalize_error_message(message),
+            line_number,
+        }
+    }
+
+    fn render(&self) -> String {
+        let mut rendered = String::from("Liquid error");
+        if let Some(line_number) = self.line_number {
+            rendered.push_str(&format!(" (line {line_number})"));
+        }
+        rendered.push_str(": ");
+        rendered.push_str(&self.message);
+        rendered
+    }
+}
+
+fn preserve_partial_output(message: &str) -> bool {
+    message.contains("Unknown filter")
+        || message.contains("Unknown variable")
+        || message.contains("Undefined drop method")
+}
+
+fn render_default_error_output(message: &str) -> String {
+    RenderErrorMetadata::from_raw(message).render()
+}
+
+fn extract_context_value(message: &str, key: &str) -> Option<String> {
+    message
+        .lines()
+        .find_map(|line| line.split_once(key).map(|(_, value)| value.trim().to_string()))
+}
+
+fn extract_line_number(message: &str) -> Option<usize> {
+    message.lines().find_map(|line| {
+        let (_, remainder) = line.split_once("-->")?;
+        let remainder = remainder.trim_start();
+        let digits: String = remainder
+            .chars()
+            .take_while(|char| char.is_ascii_digit())
+            .collect();
+        if digits.is_empty() {
+            None
+        } else {
+            digits.parse().ok()
+        }
+    })
+}
+
+fn normalize_error_message(message: &str) -> String {
+    if message.contains("Unknown tag.") {
+        let requested = extract_context_value(message, "requested=");
+        return match requested.as_deref() {
+            Some("else") => "Unexpected outer 'else' tag".to_string(),
+            Some(requested) => format!("Unknown tag '{requested}'"),
+            None => "Unknown tag".to_string(),
+        };
+    }
+
+    if message.contains("expected Identifier or Value") {
+        return "is not a valid expression".to_string();
+    }
+
+    if let Some(line) = message.lines().find(|line| line.trim_start().starts_with('=')) {
+        return line
+            .split_once('=')
+            .map(|(_, value)| value.trim().to_string())
+            .unwrap_or_else(|| line.trim().to_string());
+    }
+
+    message
+        .strip_prefix("liquid: ")
+        .unwrap_or(message)
+        .trim()
+        .to_string()
+}
+
+fn call_exception_renderer(renderer: Value, message: &str) -> Result<String, MagnusError> {
+    let wrapped_error = wrap_liquid_error(message)?;
+    let rendered: Value = renderer.funcall("call", (wrapped_error,))?;
+    rendered.funcall("to_s", ())
+}
+
+fn wrap_liquid_error(message: &str) -> Result<Value, MagnusError> {
+    let ruby = magnus::Ruby::get().expect("Ruby VM should be available");
+    let liquid: RModule = ruby.class_object().const_get("Liquid")?;
+    let liquid_error: RClass = liquid.const_get("Error")?;
+    let runtime_error = ruby.exception_runtime_error().new_instance((message,))?;
+    liquid_error.funcall("wrap", (runtime_error,))
+}
+
+fn wrap_exception_renderer_error(error: MagnusError) -> MagnusError {
+    let ruby = magnus::Ruby::get().expect("Ruby VM should be available");
+    let Ok(liquid) = ruby.class_object().const_get::<_, RModule>("Liquid") else {
+        return error;
+    };
+    let Ok(template) = liquid.const_get::<_, RClass>("Template") else {
+        return error;
+    };
+    let Ok(wrapper) = template.const_get::<_, RClass>("ExceptionRendererRaised") else {
+        return error;
+    };
+    let Some(raised) = error.value() else {
+        return error;
+    };
+    match wrapper.new_instance((raised,)) {
+        Ok(exception) => Exception::from_value(exception)
+            .map(MagnusError::from)
+            .unwrap_or(error),
+        Err(_) => error,
     }
 }
 

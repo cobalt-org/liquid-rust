@@ -89,6 +89,10 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
     }
+
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        self.parent.handle_render_error(error)
+    }
 }
 
 /// A stack frame that only provides a sandboxed set of globals
@@ -166,6 +170,10 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
     }
+
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        self.parent.handle_render_error(error)
+    }
 }
 
 pub(crate) struct IndexFrame<P> {
@@ -240,6 +248,10 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
 
     fn registers(&self) -> &super::Registers {
         self.parent.registers()
+    }
+
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        self.parent.handle_render_error(error)
     }
 }
 
@@ -326,6 +338,10 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for SandboxedStackFrame<P,
 
     fn registers(&self) -> &super::Registers {
         &self.registers
+    }
+
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        self.parent.handle_render_error(error)
     }
 }
 

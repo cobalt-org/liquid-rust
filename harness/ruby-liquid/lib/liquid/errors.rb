@@ -52,6 +52,11 @@ module Liquid
         return [Liquid::UndefinedFilter, metadata]
       end
 
+      if message.include?("Can't divide by zero")
+        metadata[:message] = "divided by 0"
+        return [Liquid::ZeroDivisionError, metadata]
+      end
+
       if message.include?("Undefined drop method")
         requested = message[/requested variable=([^\n]+)/, 1]
         metadata[:message] = requested ? "undefined drop method #{requested}" : "undefined drop method"
@@ -124,6 +129,7 @@ module Liquid
   class ContextError < Error; end
   class StackLevelError < Error; end
   class MemoryError < Error; end
+  class ZeroDivisionError < Error; end
   class UndefinedVariable < Error; end
   class UndefinedDropMethod < Error; end
   class UndefinedFilter < Error; end

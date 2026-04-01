@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use crate::error::Result;
+use crate::error::ResultLiquidReplaceExt;
 
 use super::Renderable;
 use super::Runtime;
@@ -21,7 +22,16 @@ impl Template {
 impl Renderable for Template {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         for el in &self.elements {
-            el.render_to(writer, runtime)?;
+            match el.render_to(writer, runtime) {
+                Ok(()) => {}
+                Err(error) => {
+                    if let Some(replacement) = runtime.handle_render_error(error)? {
+                        writer
+                            .write_all(replacement.as_bytes())
+                            .replace("Failed to render")?;
+                    }
+                }
+            }
 
             // Did the last element we processed set an interrupt? If so, we
             // need to abandon the rest of our child elements and just

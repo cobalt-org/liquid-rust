@@ -112,4 +112,87 @@ impl runtime::Runtime for TemplateRuntime<'_> {
     ) -> Result<Value> {
         self.inner.evaluate_filter(filter, input, fallback_filters)
     }
+
+    fn handle_render_error(&self, error: liquid_core::Error) -> Result<Option<String>> {
+        self.inner.handle_render_error(error)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use liquid_core::parser::{FilterCall, ParseFilter, PluginRegistry};
+    use liquid_core::runtime::{Runtime, RuntimeBuilder};
+
+    use super::*;
+
+    struct RecoveringRuntime<'a> {
+        inner: &'a dyn Runtime,
+    }
+
+    impl Runtime for RecoveringRuntime<'_> {
+        fn partials(&self) -> &dyn PartialStore {
+            self.inner.partials()
+        }
+
+        fn name(&self) -> Option<KStringRef<'_>> {
+            self.inner.name()
+        }
+
+        fn roots(&self) -> std::collections::BTreeSet<KStringCow<'_>> {
+            self.inner.roots()
+        }
+
+        fn try_get(&self, path: &[ScalarCow<'_>]) -> Option<ValueCow<'_>> {
+            self.inner.try_get(path)
+        }
+
+        fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
+            self.inner.get(path)
+        }
+
+        fn set_global(&self, name: KString, val: Value) -> Option<Value> {
+            self.inner.set_global(name, val)
+        }
+
+        fn set_index(&self, name: KString, val: Value) -> Option<Value> {
+            self.inner.set_index(name, val)
+        }
+
+        fn get_index<'a>(&'a self, name: &str) -> Option<ValueCow<'a>> {
+            self.inner.get_index(name)
+        }
+
+        fn registers(&self) -> &runtime::Registers {
+            self.inner.registers()
+        }
+
+        fn evaluate_filter(
+            &self,
+            filter: &FilterCall,
+            input: &dyn crate::ValueView,
+            fallback_filters: &PluginRegistry<Box<dyn ParseFilter>>,
+        ) -> Result<Value> {
+            self.inner.evaluate_filter(filter, input, fallback_filters)
+        }
+
+        fn handle_render_error(&self, _error: liquid_core::Error) -> Result<Option<String>> {
+            Ok(Some("ERR".to_string()))
+        }
+    }
+
+    #[test]
+    fn render_to_runtime_continues_after_recovered_error() {
+        let parser = crate::ParserBuilder::with_stdlib().build().unwrap();
+        let template = parser.parse("A{{ 1 | divided_by: 0 }}B").unwrap();
+        let globals = crate::Object::new();
+        let base_runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let runtime = RecoveringRuntime {
+            inner: &base_runtime,
+        };
+        let mut output = Vec::new();
+
+        template.render_to_runtime(&mut output, &runtime).unwrap();
+
+        assert_eq!(String::from_utf8(output).unwrap(), "AERRB");
+    }
 }

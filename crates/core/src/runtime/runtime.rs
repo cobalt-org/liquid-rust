@@ -48,6 +48,15 @@ pub trait Runtime {
     ) -> Result<Value> {
         evaluate_filter_with_registry(self, filter, input, fallback_filters)
     }
+
+    /// Handle a render error and optionally provide replacement output.
+    ///
+    /// Returning `Ok(Some(...))` writes replacement text and continues rendering.
+    /// Returning `Ok(None)` suppresses the failing node's output and continues.
+    /// Returning `Err(...)` aborts rendering and propagates the error.
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        Err(error)
+    }
 }
 
 /// Evaluate a filter call against a specific registry.
@@ -124,6 +133,10 @@ impl<R: Runtime + ?Sized> Runtime for &R {
         fallback_filters: &PluginRegistry<Box<dyn ParseFilter>>,
     ) -> Result<Value> {
         <R as Runtime>::evaluate_filter(self, filter, input, fallback_filters)
+    }
+
+    fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
+        <R as Runtime>::handle_render_error(self, error)
     }
 }
 

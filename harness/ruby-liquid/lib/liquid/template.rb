@@ -2,6 +2,16 @@
 
 module Liquid
   class Template
+    class ExceptionRendererRaised < StandardError
+      attr_reader :error
+
+      def initialize(error)
+        @error = error
+        super(error.message)
+        set_backtrace(error.backtrace)
+      end
+    end
+
     RENDER_OPTION_KEYS = [
       :filters,
       :registers,
@@ -90,6 +100,9 @@ module Liquid
       @errors = collect_template_errors
       rendered = finalize_render_output(rendered, context)
       options[:output] ? options[:output] << rendered : rendered
+    rescue ExceptionRendererRaised => error
+      @errors = collect_template_errors
+      raise error.error
     rescue StandardError => error
       wrapped = Liquid::Error.wrap(error)
       @errors = [wrapped]
@@ -154,6 +167,7 @@ module Liquid
         context.registers[key] = value
       end
       context.exception_renderer = options[:exception_renderer] if options.key?(:exception_renderer)
+      context.native_handle["exception_renderer"] = context.exception_renderer || context.environment&.exception_renderer
       context.global_filter = options[:global_filter] if options.key?(:global_filter)
       context.strict_variables = options[:strict_variables] if options.key?(:strict_variables)
       context.strict_filters = options[:strict_filters] if options.key?(:strict_filters)
@@ -197,20 +211,7 @@ module Liquid
     end
 
     def finalize_render_output(rendered, context)
-      return context.apply_global_filter(rendered) if @errors.empty?
-
-      first_error = @errors.first
-      if preserve_partial_output?(first_error)
-        context.apply_global_filter(rendered)
-      else
-        first_error.to_s
-      end
-    end
-
-    def preserve_partial_output?(error)
-      error.is_a?(Liquid::UndefinedFilter) ||
-        error.is_a?(Liquid::UndefinedVariable) ||
-        error.is_a?(Liquid::UndefinedDropMethod)
+      context.apply_global_filter(rendered)
     end
 
     def render_options_hash?(args)
