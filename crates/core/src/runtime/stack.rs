@@ -64,7 +64,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
         let key = key.to_kstr();
         let data = &self.data;
         if data.contains_key(key.as_str()) {
-            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::find(data.as_value(), path)
         } else {
             self.parent.get(path)
         }

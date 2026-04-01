@@ -87,7 +87,7 @@ fn render_internal(
     let template = parse_template(ruby, &source)?;
     let globals = globals_from_context(context_or_assigns)?;
     let strict_variables = strict_variables_enabled(context_or_assigns);
-    let lenient_globals = LenientObject::new(&globals);
+    let lenient_globals = LenientObject::new(&globals as &dyn ObjectView);
     let globals: &dyn ObjectView = if strict_variables {
         &globals
     } else {
@@ -124,17 +124,17 @@ fn build_root_handle(ruby: &magnus::Ruby, _template: &LiquidTemplate) -> Result<
     Ok(nodes)
 }
 
-fn globals_from_context(context_or_assigns: Value) -> Result<liquid::Object, MagnusError> {
+fn globals_from_context(context_or_assigns: Value) -> Result<values::RenderObject, MagnusError> {
     if let Ok(payload) = String::try_convert(context_or_assigns) {
-        return values::json_to_object(&payload);
+        return values::json_to_object(&payload).map(values::liquid_to_render_object);
     }
 
     if let Some(handle) = RHash::from_value(context_or_assigns) {
         if let Some(scopes) = handle.get("scopes").and_then(RArray::from_value) {
-            let mut merged = liquid::Object::new();
+            let mut merged = values::RenderObject::new();
             for idx in 0..scopes.len() {
                 let scope: RHash = scopes.entry(idx as isize)?;
-                let object = values::ruby_to_object(scope.as_value())?;
+                let object = values::ruby_to_render_object(scope.as_value())?;
                 for (key, value) in object {
                     merged.insert(key, value);
                 }
@@ -142,10 +142,10 @@ fn globals_from_context(context_or_assigns: Value) -> Result<liquid::Object, Mag
             return Ok(merged);
         }
 
-        return values::ruby_to_object(handle.as_value());
+        return values::ruby_to_render_object(handle.as_value());
     }
 
-    values::ruby_to_object(context_or_assigns)
+    values::ruby_to_render_object(context_or_assigns)
 }
 
 fn strict_variables_enabled(context_or_assigns: Value) -> bool {
@@ -158,11 +158,11 @@ fn strict_variables_enabled(context_or_assigns: Value) -> bool {
 static NIL_VALUE: LiquidValue = LiquidValue::Nil;
 
 struct LenientObject<'a> {
-    inner: &'a liquid::Object,
+    inner: &'a dyn ObjectView,
 }
 
 impl<'a> LenientObject<'a> {
-    fn new(inner: &'a liquid::Object) -> Self {
+    fn new(inner: &'a dyn ObjectView) -> Self {
         Self { inner }
     }
 }
@@ -217,18 +217,22 @@ impl ObjectView for LenientObject<'_> {
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
-        Box::new(self.inner.keys().map(|key| key.as_ref().into()))
+        Box::new(
+            self.inner
+                .keys()
+                .map(|key| KStringCow::from_string(key.into_owned().to_string())),
+        )
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
-        Box::new(self.inner.values().map(|value| value.as_view()))
+        self.inner.values()
     }
 
     fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
         Box::new(
             self.inner
                 .iter()
-                .map(|(key, value)| (key.as_str().into(), value.as_view())),
+                .map(|(key, value)| (KStringCow::from_string(key.into_owned().to_string()), value)),
         )
     }
 
