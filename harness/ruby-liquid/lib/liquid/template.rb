@@ -2,6 +2,16 @@
 
 module Liquid
   class Template
+    RENDER_OPTION_KEYS = [
+      :filters,
+      :registers,
+      :exception_renderer,
+      :global_filter,
+      :strict_variables,
+      :strict_filters,
+      :output
+    ].freeze
+
     attr_accessor :name, :assigns, :instance_assigns
     attr_reader :resource_limits, :warnings, :errors, :root
 
@@ -69,27 +79,31 @@ module Liquid
     end
 
     def render(*args)
-      context = build_render_context(args)
-      options = extract_render_options(args)
+      render_args = args.dup
+      options = extract_render_options(render_args)
+      context = build_render_context(render_args)
       apply_options_to_context(context, options)
 
       rendered = Liquid::RustExtension.ext_render(@handle, context.native_handle)
-      rendered = context.apply_global_filter(rendered)
-      @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
+      @errors = collect_template_errors
+      rendered = finalize_render_output(rendered, context)
       options[:output] ? options[:output] << rendered : rendered
     rescue StandardError => error
-      @errors = [error.message]
-      ""
+      wrapped = Liquid::Error.wrap(error)
+      @errors = [wrapped]
+      rendered = wrapped.to_s
+      options[:output] ? options[:output] << rendered : rendered
     end
 
     def render!(*args)
-      context = build_render_context(args)
-      options = extract_render_options(args)
+      render_args = args.dup
+      options = extract_render_options(render_args)
+      context = build_render_context(render_args)
       apply_options_to_context(context, options)
 
       rendered = Liquid::RustExtension.ext_render_strict(@handle, context.native_handle)
       rendered = context.apply_global_filter(rendered)
-      @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
+      @errors = collect_template_errors
       options[:output] ? options[:output] << rendered : rendered
     rescue StandardError => error
       raise error unless liquid_error?(error)
@@ -122,6 +136,8 @@ module Liquid
     def extract_render_options(args)
       case args.last
       when Hash
+        return {} unless render_options_hash?(args)
+
         args.pop.dup
       when Module, Array
         { filters: args.pop }
@@ -170,6 +186,39 @@ module Liquid
       return true if error.is_a?(Liquid::Error)
 
       error.message.to_s.start_with?("liquid:")
+    end
+
+    def collect_template_errors
+      Array(Liquid::RustExtension.ext_template_errors(@handle)).map do |error|
+        error.is_a?(Liquid::Error) ? error : Liquid::Error.wrap(::RuntimeError.new(error.to_s))
+      end
+    end
+
+    def finalize_render_output(rendered, context)
+      return context.apply_global_filter(rendered) if @errors.empty?
+
+      first_error = @errors.first
+      if preserve_partial_output?(first_error)
+        context.apply_global_filter(rendered)
+      else
+        first_error.to_s
+      end
+    end
+
+    def preserve_partial_output?(error)
+      error.is_a?(Liquid::UndefinedFilter) ||
+        error.is_a?(Liquid::UndefinedVariable) ||
+        error.is_a?(Liquid::UndefinedDropMethod)
+    end
+
+    def render_options_hash?(args)
+      return false unless args.last.is_a?(Hash)
+      return true if args.length > 1
+      return false if args.last.empty?
+
+      args.last.keys.all? do |key|
+        key.respond_to?(:to_sym) && RENDER_OPTION_KEYS.include?(key.to_sym)
+      end
     end
   end
 end

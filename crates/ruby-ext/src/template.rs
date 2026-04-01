@@ -96,6 +96,11 @@ fn render_internal(
     context_or_assigns: Value,
     strict: bool,
 ) -> Result<String, MagnusError> {
+    let errors: RArray = handle.lookup("errors")?;
+    errors.clear()?;
+    let warnings: RArray = handle.lookup("warnings")?;
+    warnings.clear()?;
+
     let filter_host = build_filter_host(ruby, handle, context_or_assigns)?;
     let template = lookup_template(handle)?;
     let globals = globals_from_context(context_or_assigns)?;
@@ -112,31 +117,29 @@ fn render_internal(
         .build();
     let runtime = DynamicFilterRuntime::new(&base_runtime, filter_host);
     let mut rendered = Vec::new();
-    let rendered = template
+    let render_result = template
         .template
-        .render_to_runtime(&mut rendered, &runtime)
-        .map(|_| String::from_utf8(rendered).expect("render should stay valid utf-8"));
+        .render_to_runtime(&mut rendered, &runtime);
+    let rendered = String::from_utf8(rendered).expect("render should stay valid utf-8");
 
     if let Some(message) = globals.take_error() {
-        let errors: RArray = handle.lookup("errors")?;
         errors.push(message.clone())?;
         if strict {
             return Err(MagnusError::new(ruby.exception_runtime_error(), message));
         }
 
-        return Ok(String::new());
+        return Ok(rendered);
     }
 
-    match rendered {
-        Ok(rendered) => Ok(rendered),
+    match render_result {
+        Ok(()) => Ok(rendered),
         Err(error) => {
             let message = error.to_string();
-            let errors: RArray = handle.lookup("errors")?;
             errors.push(message.clone())?;
             if strict {
                 Err(errors::runtime_error(ruby, message))
             } else {
-                Ok(String::new())
+                Ok(rendered)
             }
         }
     }

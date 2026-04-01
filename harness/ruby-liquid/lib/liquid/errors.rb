@@ -33,14 +33,26 @@ module Liquid
     def self.wrap(exception, default_class: self)
       return exception if exception.is_a?(Liquid::Error)
 
-      metadata = extract_metadata(exception.message.to_s)
-      default_class.new(
+      error_class, metadata = classify_exception(exception.message.to_s, default_class)
+      error_class.new(
         metadata[:message],
         line_number: metadata[:line_number],
         template_name: metadata[:template_name],
         markup_context: metadata[:markup_context],
         cause: exception
       )
+    end
+
+    def self.classify_exception(message, default_class)
+      metadata = extract_metadata(message)
+
+      if message.include?("Unknown filter")
+        requested = message[/requested filter=([^\n]+)/, 1]
+        metadata[:message] = requested ? "undefined filter #{requested}" : "undefined filter"
+        return [Liquid::UndefinedFilter, metadata]
+      end
+
+      [default_class, metadata]
     end
 
     def self.extract_metadata(message)
