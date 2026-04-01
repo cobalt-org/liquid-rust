@@ -37,14 +37,29 @@ pub(crate) enum RenderValue {
     Nil,
     Scalar(RenderScalar),
     Array(Vec<RenderValue>),
-    // Eager object data we already converted into a native key/value map.
-    // Example: { "product" => { "title" => "Hat" } } becomes
-    // Object({ "title" => Scalar("Hat") }).
+    // Materialized object data.
+    //
+    // Use this when we already have the full object as native key/value data.
+    // Example:
+    //   { "product" => { "title" => "Hat" } }
+    // becomes:
+    //   Object({ "title" => Scalar("Hat") })
     Object(RenderObject),
-    // Dynamic object data we keep behind a runtime lookup boundary.
-    // Example: a Drop-like object such as SettingsDrop that answers
-    // `settings["zero"]` via `[]`/`key?` stays dynamic instead of being
-    // flattened into a plain map up front.
+    // Runtime-backed object data.
+    //
+    // Use this when the value behaves like an object, but its fields must be
+    // resolved by calling back into the original object at lookup time instead
+    // of being copied into a native map first.
+    //
+    // Example:
+    //   settings.zero
+    // where `settings` is a Drop-like object that answers `"zero"` dynamically.
+    //
+    // In Shopify Liquid, expressions like:
+    //   list[settings.zero]
+    // must ask the original object for `"zero"` during lookup. If we flatten
+    // that object too early, we lose that behavior and the lookup can resolve
+    // to the wrong value or `nil`.
     DynamicObject(RenderDynamicObject),
 }
 
