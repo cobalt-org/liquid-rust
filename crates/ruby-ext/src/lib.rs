@@ -25,6 +25,7 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     ext.define_singleton_method("ext_context_new", function!(context::ext_context_new, 3))?;
     ext.define_singleton_method("ext_context_set", function!(context::ext_context_set, 3))?;
     ext.define_singleton_method("ext_context_get", function!(context::ext_context_get, 2))?;
+    ext.define_singleton_method("ext_context_has_key", function!(context::ext_context_has_key, 2))?;
     ext.define_singleton_method("ext_context_push", function!(context::ext_context_push, 2))?;
     ext.define_singleton_method("ext_context_pop", function!(context::ext_context_pop, 1))?;
     ext.define_singleton_method(

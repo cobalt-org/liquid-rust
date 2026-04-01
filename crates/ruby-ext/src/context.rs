@@ -61,6 +61,14 @@ pub(crate) fn ext_context_find_variable(
     lookup_scope_value(handle, &key)
 }
 
+pub(crate) fn ext_context_has_key(
+    _ruby: &magnus::Ruby,
+    handle: RHash,
+    key: String,
+) -> Result<bool, MagnusError> {
+    scope_contains_key(handle, &key)
+}
+
 pub(crate) fn ext_context_push(
     ruby: &magnus::Ruby,
     handle: RHash,
@@ -87,15 +95,44 @@ fn lookup_scope_value(handle: RHash, key: &str) -> Result<Value, MagnusError> {
             continue;
         }
 
+        if scope.respond_to("key?", false)? {
+            let has_key: bool = scope.funcall("key?", (key,))?;
+            if !has_key {
+                continue;
+            }
+        }
+
         if scope.respond_to("[]", false)? {
             let value: Value = scope.funcall("[]", (key,))?;
-            if !value.is_nil() {
-                return resolve_scope_value(handle, scope, key, value);
-            }
+            return resolve_scope_value(handle, scope, key, value);
         }
     }
 
     Ok(magnus::Ruby::get().expect("Ruby VM should be available").qnil().as_value())
+}
+
+fn scope_contains_key(handle: RHash, key: &str) -> Result<bool, MagnusError> {
+    let scopes: RArray = handle.lookup("scopes")?;
+    for idx in (0..scopes.len()).rev() {
+        let scope: Value = scopes.entry(idx as isize)?;
+        if let Some(hash) = RHash::from_value(scope) {
+            if hash.get(key).is_some() {
+                return Ok(true);
+            }
+            continue;
+        }
+
+        if scope.respond_to("key?", false)? {
+            let has_key: bool = scope.funcall("key?", (key,))?;
+            if has_key {
+                return Ok(true);
+            }
+        } else if scope.respond_to("[]", false)? {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
 }
 
 fn resolve_scope_value(

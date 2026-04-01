@@ -74,7 +74,7 @@ module Liquid
     end
 
     def [](key)
-      Liquid::RustExtension.ext_context_get(@native_handle, key.to_s)
+      find_variable(key.to_s)
     end
 
     def []=(key, value)
@@ -82,7 +82,7 @@ module Liquid
     end
 
     def key?(key)
-      !self[key].nil?
+      Liquid::RustExtension.ext_context_has_key(@native_handle, key.to_s)
     end
 
     def add_filters(filter_module)
@@ -111,7 +111,12 @@ module Liquid
     end
 
     def find_variable(key)
-      Liquid::RustExtension.ext_context_find_variable(@native_handle, key.to_s)
+      key = key.to_s
+      if @strict_variables && !Liquid::RustExtension.ext_context_has_key(@native_handle, key)
+        raise Liquid::UndefinedVariable, "undefined variable #{key}"
+      end
+
+      Liquid::RustExtension.ext_context_find_variable(@native_handle, key)
     end
 
     def apply_global_filter(output)

@@ -64,7 +64,10 @@ impl RenderRootObject {
         Self::from_value_with_mode(value, LookupMode::Materialized)
     }
 
-    pub(crate) fn from_value_with_mode(value: Value, mode: LookupMode) -> Result<Self, MagnusError> {
+    pub(crate) fn from_value_with_mode(
+        value: Value,
+        mode: LookupMode,
+    ) -> Result<Self, MagnusError> {
         Self::from_value_with_mode_and_context(value, mode, None)
     }
 
@@ -192,7 +195,10 @@ impl ObjectView for RenderRootObject {
     }
 
     fn contains_key(&self, index: &str) -> bool {
-        self.scopes.iter().rev().any(|scope| scope.contains_key(index))
+        self.scopes
+            .iter()
+            .rev()
+            .any(|scope| scope.contains_key(index))
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
@@ -326,18 +332,25 @@ impl RenderDynamicObject {
     }
 
     fn lookup_value(&self, index: &str) -> Result<Option<Value>, MagnusError> {
+        let mut present_via_key_check = false;
+
         if !hash_has_dynamic_default(self.value)? && self.value.respond_to("key?", false)? {
             let has_key: bool = self.value.funcall("key?", (index,))?;
             if !has_key {
                 self.record_missing(index);
                 return Ok(None);
             }
+            present_via_key_check = true;
         }
 
         if self.value.respond_to("[]", false)? {
             let result: Value = self.value.funcall("[]", (index,))?;
             if result.is_nil() {
-                Ok(None)
+                if present_via_key_check {
+                    Ok(Some(result))
+                } else {
+                    Ok(None)
+                }
             } else {
                 resolve_dynamic_value(self.value, self.context, index, result).map(Some)
             }
@@ -464,7 +477,11 @@ impl ObjectView for RenderDynamicObject {
     }
 
     fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
-        Box::new(self.hash_keys_owned().into_iter().map(KStringCow::from_string))
+        Box::new(
+            self.hash_keys_owned()
+                .into_iter()
+                .map(KStringCow::from_string),
+        )
     }
 
     fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
@@ -509,7 +526,8 @@ impl ObjectView for RenderDynamicObject {
                 return None;
             }
         };
-        let render_value = ruby_to_render_value_with_context(value, self.lookup_mode, self.context).ok()?;
+        let render_value =
+            ruby_to_render_value_with_context(value, self.lookup_mode, self.context).ok()?;
 
         let mut cache = self.cache.borrow_mut();
         let entry = cache
@@ -787,7 +805,11 @@ fn ruby_to_render_value_with_context(
         let mut items = Vec::with_capacity(array.len());
         for idx in 0..array.len() {
             let item: Value = array.entry(idx as isize)?;
-            items.push(ruby_to_render_value_with_context(item, lookup_mode, context)?);
+            items.push(ruby_to_render_value_with_context(
+                item,
+                lookup_mode,
+                context,
+            )?);
         }
         return Ok(RenderValue::Array(items));
     }
@@ -869,36 +891,6 @@ fn liquid_to_render_value(value: LiquidValue) -> RenderValue {
             None,
         )),
     }
-}
-
-fn json_to_liquid_value(value: serde_json::Value) -> Result<LiquidValue, MagnusError> {
-    Ok(match value {
-        serde_json::Value::Null => LiquidValue::Nil,
-        serde_json::Value::Bool(value) => LiquidValue::scalar(value),
-        serde_json::Value::Number(number) => {
-            if let Some(value) = number.as_i64() {
-                LiquidValue::scalar(value)
-            } else if let Some(value) = number.as_f64() {
-                LiquidValue::scalar(value)
-            } else {
-                LiquidValue::scalar(number.to_string())
-            }
-        }
-        serde_json::Value::String(value) => LiquidValue::scalar(value),
-        serde_json::Value::Array(values) => LiquidValue::array(
-            values
-                .into_iter()
-                .map(json_to_liquid_value)
-                .collect::<Result<Vec<_>, _>>()?,
-        ),
-        serde_json::Value::Object(values) => {
-            let mut object = LiquidObject::new();
-            for (key, value) in values {
-                object.insert(key.into(), json_to_liquid_value(value)?);
-            }
-            LiquidValue::Object(object)
-        }
-    })
 }
 
 pub(crate) fn liquid_to_ruby_value(

@@ -133,7 +133,7 @@ module Liquid
       @errors = collect_template_errors
       raise error.error
     rescue StandardError => error
-      wrapped = Liquid::Error.wrap(error)
+      wrapped = wrap_render_error(error)
       @errors = [wrapped]
       rendered = wrapped.to_s
       options[:output] ? options[:output] << rendered : rendered
@@ -152,7 +152,7 @@ module Liquid
     rescue StandardError => error
       raise error unless liquid_error?(error)
 
-      raise Liquid::Error.wrap(error)
+      raise wrap_render_error(error)
     end
 
     def render_to_output_buffer(context, output)
@@ -254,12 +254,31 @@ module Liquid
     def liquid_error?(error)
       return true if error.is_a?(Liquid::Error)
 
-      error.message.to_s.start_with?("liquid:")
+      message = error.message.to_s
+      message.start_with?("liquid:") || message.start_with?("Liquid error:")
     end
 
     def collect_template_errors
       Array(Liquid::RustExtension.ext_template_errors(@handle)).map do |error|
-        error.is_a?(Liquid::Error) ? error : Liquid::Error.wrap(::RuntimeError.new(error.to_s))
+        error.is_a?(Liquid::Error) ? error : wrap_render_error(::RuntimeError.new(error.to_s))
+      end
+    end
+
+    def wrap_render_error(error)
+      return error.cause if error.cause.is_a?(Liquid::Error)
+
+      message = error.message.to_s
+      case message
+      when /\ALiquid error: undefined variable (.+)\z/
+        Liquid::UndefinedVariable.new("undefined variable #{$1}", cause: error)
+      when /\ALiquid error: Liquid error: undefined variable (.+)\z/
+        Liquid::UndefinedVariable.new("undefined variable #{$1}", cause: error)
+      when /\ALiquid error: undefined drop method (.+)\z/
+        Liquid::UndefinedDropMethod.new("undefined drop method #{$1}", cause: error)
+      when /\ALiquid error: Liquid error: undefined drop method (.+)\z/
+        Liquid::UndefinedDropMethod.new("undefined drop method #{$1}", cause: error)
+      else
+        Liquid::Error.wrap(error)
       end
     end
 
