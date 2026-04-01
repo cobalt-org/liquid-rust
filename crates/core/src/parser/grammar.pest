@@ -29,11 +29,9 @@ Raw = @{ (!(TagStart | ExpressionStart) ~ ANY)+ }
 // Inner parsing
 Identifier = @{ (ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN) ~ (ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN)* }
 
-Variable = ${ Identifier
-            ~ ( ("." ~ Identifier)
-              | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
-              )*
-            }
+VariableRoot = _{ Identifier | VariableLookup }
+VariableLookup = { "[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]" }
+Variable = ${ VariableRoot ~ ( ("." ~ Identifier) | VariableLookup )* }
 Value = { Literal | Variable }
 Filter = { Identifier ~ (":" ~ FilterArgument ~ ("," ~ FilterArgument)*)? }
 FilterChain = { Value ~ ("|" ~ Filter)* }

@@ -141,21 +141,40 @@ fn parse_variable_pair(variable: Pair) -> Variable {
 
     let mut indexes = variable.into_inner();
 
-    let first_identifier = indexes
+    let root = indexes
         .next()
-        .expect("A variable starts with an identifier.")
-        .as_str()
-        .to_owned();
-    let mut variable = Variable::with_literal(first_identifier);
+        .expect("A variable starts with an identifier or lookup.");
+    let mut variable = parse_variable_root(root);
 
     let indexes = indexes.map(|index| match index.as_rule() {
         Rule::Identifier => Expression::with_literal(index.as_str().to_owned()),
-        Rule::Value => parse_value(index),
+        Rule::VariableLookup => parse_variable_lookup(index),
         _ => unreachable!(),
     });
 
     variable.extend(indexes);
     variable
+}
+
+fn parse_variable_root(root: Pair) -> Variable {
+    match root.as_rule() {
+        Rule::Identifier => Variable::with_literal(root.as_str().to_owned()),
+        Rule::VariableLookup => Variable::with_expression(parse_variable_lookup(root)),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_variable_lookup(lookup: Pair) -> Expression {
+    if lookup.as_rule() != Rule::VariableLookup {
+        panic!("Expected variable lookup.");
+    }
+
+    let value = lookup
+        .into_inner()
+        .next()
+        .expect("Variable lookup contains a value.");
+
+    parse_value(value)
 }
 
 /// Parses an `Expression` from a `Pair` with a value.
@@ -1160,6 +1179,21 @@ mod test {
 
         let mut expected = Variable::with_literal("foo");
         expected.extend(indexes);
+
+        assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn test_parse_variable_pair_with_nested_bracket_expression() {
+        let variable = LiquidParser::parse(Rule::Variable, "a[['b']]")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let mut expected = Variable::with_literal("a");
+        expected.extend([Expression::Variable(Variable::with_expression(
+            Expression::Literal(Value::scalar("b")),
+        ))]);
 
         assert_eq!(parse_variable_pair(variable), expected);
     }
