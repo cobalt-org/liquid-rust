@@ -32,6 +32,138 @@ pub(crate) fn ruby_to_object(value: Value) -> Result<LiquidObject, MagnusError> 
 
 pub(crate) type RenderObject = HashMap<String, RenderValue>;
 
+#[derive(Debug)]
+pub(crate) struct RenderRootObject {
+    scopes: Vec<RenderScope>,
+}
+
+#[derive(Debug)]
+enum RenderScope {
+    Materialized(RenderObject),
+    Dynamic(RenderDynamicObject),
+}
+
+impl RenderRootObject {
+    pub(crate) fn from_render_object(object: RenderObject) -> Self {
+        Self {
+            scopes: vec![RenderScope::Materialized(object)],
+        }
+    }
+
+    pub(crate) fn from_liquid_object(object: LiquidObject) -> Self {
+        Self::from_render_object(liquid_to_render_object(object))
+    }
+
+    pub(crate) fn from_value(value: Value) -> Result<Self, MagnusError> {
+        Ok(Self {
+            scopes: vec![render_scope_from_value(value)?],
+        })
+    }
+
+    pub(crate) fn from_values(values: Vec<Value>) -> Result<Self, MagnusError> {
+        let mut scopes = Vec::with_capacity(values.len());
+        for value in values {
+            scopes.push(render_scope_from_value(value)?);
+        }
+        Ok(Self { scopes })
+    }
+
+    fn merged_keys(&self) -> Vec<String> {
+        let mut keys = Vec::new();
+        for scope in &self.scopes {
+            for key in scope.keys_owned() {
+                if !keys.iter().any(|existing| existing == &key) {
+                    keys.push(key);
+                }
+            }
+        }
+        keys
+    }
+
+    pub(crate) fn take_error(&self) -> Option<String> {
+        self.scopes.iter().find_map(RenderScope::take_error)
+    }
+}
+
+impl ValueView for RenderRootObject {
+    fn as_debug(&self) -> &dyn std::fmt::Debug {
+        self
+    }
+
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(self.to_value().render().to_string()))
+    }
+
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(self.to_value().source().to_string()))
+    }
+
+    fn type_name(&self) -> &'static str {
+        "object"
+    }
+
+    fn query_state(&self, state: State) -> bool {
+        !matches!(state, State::DefaultValue | State::Empty | State::Blank)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        KStringCow::from_string(self.to_value().to_kstr().into_owned().to_string())
+    }
+
+    fn to_value(&self) -> LiquidValue {
+        let mut object = LiquidObject::new();
+        for key in self.merged_keys() {
+            if let Some(value) = self.get(&key) {
+                object.insert(key.into(), value.to_value());
+            }
+        }
+        LiquidValue::Object(object)
+    }
+
+    fn as_object(&self) -> Option<&dyn ObjectView> {
+        Some(self)
+    }
+}
+
+impl ObjectView for RenderRootObject {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
+    fn size(&self) -> i64 {
+        self.merged_keys().len() as i64
+    }
+
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
+        Box::new(
+            self.merged_keys()
+                .into_iter()
+                .map(|key| KStringCow::from_string(key)),
+        )
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        let keys = self.merged_keys();
+        Box::new(keys.into_iter().filter_map(|key| self.get(&key)))
+    }
+
+    fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+        let keys = self.merged_keys();
+        Box::new(keys.into_iter().filter_map(|key| {
+            self.get(&key)
+                .map(|value| (KStringCow::from_string(key), value))
+        }))
+    }
+
+    fn contains_key(&self, index: &str) -> bool {
+        self.scopes.iter().rev().any(|scope| scope.contains_key(index))
+    }
+
+    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+        self.scopes.iter().rev().find_map(|scope| scope.get(index))
+    }
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum RenderValue {
     Nil,
@@ -125,6 +257,7 @@ impl ValueView for RenderScalar {
 pub(crate) struct RenderDynamicObject {
     value: Value,
     cache: RefCell<HashMap<String, Box<RenderValue>>>,
+    last_error: RefCell<Option<String>>,
 }
 
 impl Clone for RenderDynamicObject {
@@ -132,6 +265,7 @@ impl Clone for RenderDynamicObject {
         Self {
             value: self.value,
             cache: RefCell::new(HashMap::new()),
+            last_error: RefCell::new(None),
         }
     }
 }
@@ -141,6 +275,7 @@ impl RenderDynamicObject {
         Self {
             value,
             cache: RefCell::new(HashMap::new()),
+            last_error: RefCell::new(None),
         }
     }
 
@@ -149,7 +284,7 @@ impl RenderDynamicObject {
     }
 
     fn lookup_value(&self, index: &str) -> Result<Option<Value>, MagnusError> {
-        if self.value.respond_to("key?", false)? {
+        if !hash_has_dynamic_default(self.value)? && self.value.respond_to("key?", false)? {
             let has_key: bool = self.value.funcall("key?", (index,))?;
             if !has_key {
                 return Ok(None);
@@ -165,6 +300,47 @@ impl RenderDynamicObject {
             }
         } else {
             Ok(None)
+        }
+    }
+
+    fn record_error(&self, error: MagnusError) {
+        let mut slot = self.last_error.borrow_mut();
+        if slot.is_none() {
+            *slot = Some(error.to_string());
+        }
+    }
+
+    fn take_error(&self) -> Option<String> {
+        self.last_error.borrow_mut().take()
+    }
+}
+
+impl RenderScope {
+    fn keys_owned(&self) -> Vec<String> {
+        match self {
+            Self::Materialized(object) => object.keys().cloned().collect(),
+            Self::Dynamic(_) => Vec::new(),
+        }
+    }
+
+    fn contains_key(&self, index: &str) -> bool {
+        match self {
+            Self::Materialized(object) => object.contains_key(index),
+            Self::Dynamic(object) => object.contains_key(index),
+        }
+    }
+
+    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+        match self {
+            Self::Materialized(object) => object.get(index).map(|value| value as &dyn ValueView),
+            Self::Dynamic(object) => object.get(index),
+        }
+    }
+
+    fn take_error(&self) -> Option<String> {
+        match self {
+            Self::Materialized(_) => None,
+            Self::Dynamic(object) => object.take_error(),
         }
     }
 }
@@ -225,7 +401,13 @@ impl ObjectView for RenderDynamicObject {
     }
 
     fn contains_key(&self, index: &str) -> bool {
-        self.lookup_value(index).ok().flatten().is_some()
+        match self.lookup_value(index) {
+            Ok(value) => value.is_some(),
+            Err(error) => {
+                self.record_error(error);
+                false
+            }
+        }
     }
 
     fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
@@ -238,7 +420,13 @@ impl ObjectView for RenderDynamicObject {
             }
         }
 
-        let value = self.lookup_value(index).ok().flatten()?;
+        let value = match self.lookup_value(index) {
+            Ok(value) => value?,
+            Err(error) => {
+                self.record_error(error);
+                return None;
+            }
+        };
         let render_value = ruby_to_render_value(value).ok()?;
 
         let mut cache = self.cache.borrow_mut();
@@ -420,6 +608,28 @@ pub(crate) fn ruby_to_render_object(value: Value) -> Result<RenderObject, Magnus
             "expected a Hash-like object",
         ))
     }
+}
+
+fn render_scope_from_value(value: Value) -> Result<RenderScope, MagnusError> {
+    if hash_has_dynamic_default(value)? {
+        Ok(RenderScope::Dynamic(RenderDynamicObject::new(value)))
+    } else {
+        Ok(RenderScope::Materialized(ruby_to_render_object(value)?))
+    }
+}
+
+fn hash_has_dynamic_default(value: Value) -> Result<bool, MagnusError> {
+    let Some(hash) = RHash::from_value(value) else {
+        return Ok(false);
+    };
+
+    let default_proc: Value = hash.funcall("default_proc", ())?;
+    if !default_proc.is_nil() {
+        return Ok(true);
+    }
+
+    let default_value: Value = hash.funcall("default", ())?;
+    Ok(!default_value.is_nil())
 }
 
 pub(crate) fn liquid_to_render_object(object: LiquidObject) -> RenderObject {

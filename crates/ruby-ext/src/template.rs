@@ -88,13 +88,25 @@ fn render_internal(
     let globals = globals_from_context(context_or_assigns)?;
     let strict_variables = strict_variables_enabled(context_or_assigns);
     let lenient_globals = LenientObject::new(&globals as &dyn ObjectView);
-    let globals: &dyn ObjectView = if strict_variables {
+    let render_globals: &dyn ObjectView = if strict_variables {
         &globals
     } else {
         &lenient_globals
     };
 
-    match template.render(globals) {
+    let rendered = template.render(render_globals);
+
+    if let Some(message) = globals.take_error() {
+        let errors: RArray = handle.lookup("errors")?;
+        errors.push(message.clone())?;
+        if strict {
+            return Err(MagnusError::new(ruby.exception_runtime_error(), message));
+        }
+
+        return Ok(String::new());
+    }
+
+    match rendered {
         Ok(rendered) => Ok(rendered),
         Err(error) => {
             let message = error.to_string();
@@ -127,28 +139,25 @@ fn build_root_handle(
     Ok(nodes)
 }
 
-fn globals_from_context(context_or_assigns: Value) -> Result<values::RenderObject, MagnusError> {
+fn globals_from_context(context_or_assigns: Value) -> Result<values::RenderRootObject, MagnusError> {
     if let Ok(payload) = String::try_convert(context_or_assigns) {
-        return values::json_to_object(&payload).map(values::liquid_to_render_object);
+        return values::json_to_object(&payload).map(values::RenderRootObject::from_liquid_object);
     }
 
     if let Some(handle) = RHash::from_value(context_or_assigns) {
         if let Some(scopes) = handle.get("scopes").and_then(RArray::from_value) {
-            let mut merged = values::RenderObject::new();
+            let mut values = Vec::with_capacity(scopes.len());
             for idx in 0..scopes.len() {
                 let scope: RHash = scopes.entry(idx as isize)?;
-                let object = values::ruby_to_render_object(scope.as_value())?;
-                for (key, value) in object {
-                    merged.insert(key, value);
-                }
+                values.push(scope.as_value());
             }
-            return Ok(merged);
+            return values::RenderRootObject::from_values(values);
         }
 
-        return values::ruby_to_render_object(handle.as_value());
+        return values::RenderRootObject::from_value(handle.as_value());
     }
 
-    values::ruby_to_render_object(context_or_assigns)
+    values::RenderRootObject::from_value(context_or_assigns)
 }
 
 fn strict_variables_enabled(context_or_assigns: Value) -> bool {

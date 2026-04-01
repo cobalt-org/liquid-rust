@@ -57,7 +57,8 @@ module Liquid
 
     def parse(source, line_numbers: false, error_mode: nil, environment: nil, **_options)
       env = environment || @environment
-      normalized_source = normalize_source(source.to_s)
+      effective_error_mode = (error_mode || env&.error_mode || :strict).to_sym
+      normalized_source = normalize_source(source.to_s, effective_error_mode)
       @handle = Liquid::RustExtension.ext_parse(normalized_source, line_numbers, error_mode&.to_s, env&.native_handle)
       @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
       @warnings = Array(Liquid::RustExtension.ext_template_warnings(@handle))
@@ -89,6 +90,8 @@ module Liquid
       @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
       options[:output] ? options[:output] << rendered : rendered
     rescue StandardError => error
+      raise error unless liquid_error?(error)
+
       raise Liquid::Error.wrap(error)
     end
 
@@ -136,14 +139,34 @@ module Liquid
       context.template_name ||= name
     end
 
-    def normalize_source(source)
+    def normalize_source(source, error_mode)
       source.gsub(/\{\{(.*?)\}\}/m) do
-        "{{#{normalize_output_markup(Regexp.last_match(1))}}}"
+        "{{#{normalize_output_markup(Regexp.last_match(1), error_mode)}}}"
       end
     end
 
-    def normalize_output_markup(markup)
-      markup.gsub(/(?<=\w|\]|\))\s*\.\s*(?=\w)/, ".")
+    def normalize_output_markup(markup, error_mode)
+      normalized = markup.gsub(/(?<=\w|\]|\))\s*\.\s*(?=\w)/, ".")
+
+      case error_mode
+      when :strict2, :lax
+        normalized = normalized.gsub(/,\s*(?=\||\z)/, "")
+        normalized = normalized.gsub(/:\s*(?=\||\z)/, "")
+      end
+
+      return normalized unless error_mode == :lax
+
+      normalized = normalized.sub(/\A(\s*)\[\s*\[/, '\1[')
+      opens = normalized.count("[")
+      closes = normalized.count("]")
+      normalized += "]" * (opens - closes) if opens > closes
+      normalized
+    end
+
+    def liquid_error?(error)
+      return true if error.is_a?(Liquid::Error)
+
+      error.message.to_s.start_with?("liquid:")
     end
   end
 end
