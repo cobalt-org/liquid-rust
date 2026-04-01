@@ -1,1 +1,5 @@
 target
+harness/ruby-liquid/Makefile
+harness/ruby-liquid/liquid_ext.bundle
+harness/ruby-liquid/liquid_ext.bundle.dSYM/
+harness/ruby-liquid/mkmf.log

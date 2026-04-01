@@ -1,0 +1,10 @@
+# Failure classification tracker for the upstream Shopify/liquid suite.
+# Schema:
+#   "<test_name>":
+#     bucket: engine_semantics|api_contract|bridge_conversion|partial_integration|harness_infrastructure
+#     sub_category: short machine-friendly string
+#     description: human readable summary
+#     next_action: next concrete step
+#     status: open|in_progress|fixed|deferred
+#     fixed_in_commit: optional git commit sha
+{}
