@@ -79,9 +79,19 @@ pub(crate) fn ext_context_pop(_ruby: &magnus::Ruby, handle: RHash) -> Result<Val
 fn lookup_scope_value(handle: RHash, key: &str) -> Result<Value, MagnusError> {
     let scopes: RArray = handle.lookup("scopes")?;
     for idx in (0..scopes.len()).rev() {
-        let scope: RHash = scopes.entry(idx as isize)?;
-        if let Some(value) = scope.get(key) {
-            return Ok(value);
+        let scope: Value = scopes.entry(idx as isize)?;
+        if let Some(hash) = RHash::from_value(scope) {
+            if let Some(value) = hash.get(key) {
+                return Ok(value);
+            }
+            continue;
+        }
+
+        if scope.respond_to("[]", false)? {
+            let value: Value = scope.funcall("[]", (key,))?;
+            if !value.is_nil() {
+                return Ok(value);
+            }
         }
     }
 

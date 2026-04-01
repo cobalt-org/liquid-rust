@@ -52,6 +52,18 @@ module Liquid
         return [Liquid::UndefinedFilter, metadata]
       end
 
+      if message.include?("Undefined drop method")
+        requested = message[/requested variable=([^\n]+)/, 1]
+        metadata[:message] = requested ? "undefined drop method #{requested}" : "undefined drop method"
+        return [Liquid::UndefinedDropMethod, metadata]
+      end
+
+      if message.include?("Unknown variable")
+        requested = message[/requested variable=([^\n]+)/, 1]
+        metadata[:message] = requested ? "undefined variable #{requested}" : "undefined variable"
+        return [Liquid::UndefinedVariable, metadata]
+      end
+
       [default_class, metadata]
     end
 

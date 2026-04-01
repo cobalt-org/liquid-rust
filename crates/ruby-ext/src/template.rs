@@ -86,7 +86,7 @@ pub(crate) fn ext_debug_payload(
     _ruby: &magnus::Ruby,
     context_or_assigns: Value,
 ) -> Result<Vec<String>, MagnusError> {
-    let globals = globals_from_context(context_or_assigns)?;
+    let globals = globals_from_context(context_or_assigns, values::LookupMode::Materialized)?;
     Ok(globals.keys().map(|key| key.to_string()).collect())
 }
 
@@ -103,10 +103,15 @@ fn render_internal(
 
     let filter_host = build_filter_host(ruby, handle, context_or_assigns)?;
     let template = lookup_template(handle)?;
-    let globals = globals_from_context(context_or_assigns)?;
+    let lookup_mode = if strict_variables_enabled(context_or_assigns) && !strict {
+        values::LookupMode::TrackMissing
+    } else {
+        values::LookupMode::Materialized
+    };
+    let globals = globals_from_context(context_or_assigns, lookup_mode)?;
     let strict_variables = strict_variables_enabled(context_or_assigns);
     let lenient_globals = LenientObject::new(&globals as &dyn ObjectView);
-    let render_globals: &dyn ObjectView = if strict_variables {
+    let render_globals: &dyn ObjectView = if strict_variables && strict {
         &globals
     } else {
         &lenient_globals
@@ -122,20 +127,37 @@ fn render_internal(
         .render_to_runtime(&mut rendered, &runtime);
     let rendered = String::from_utf8(rendered).expect("render should stay valid utf-8");
 
-    if let Some(message) = globals.take_error() {
-        errors.push(message.clone())?;
-        if strict {
-            return Err(MagnusError::new(ruby.exception_runtime_error(), message));
-        }
-
-        return Ok(rendered);
-    }
-
     match render_result {
-        Ok(()) => Ok(rendered),
+        Ok(()) => {
+            let tracked_errors = globals.take_errors();
+            if let Some(message) = tracked_errors.first() {
+                for error in &tracked_errors {
+                    errors.push(error.clone())?;
+                }
+                if strict {
+                    return Err(MagnusError::new(ruby.exception_runtime_error(), message.clone()));
+                }
+            }
+
+            Ok(rendered)
+        }
         Err(error) => {
             let message = error.to_string();
+            let tracked_errors = globals.take_errors();
+            if strict && message.contains("Unknown variable") && !tracked_errors.is_empty() {
+                for tracked_error in &tracked_errors {
+                    errors.push(tracked_error.clone())?;
+                }
+                return Err(MagnusError::new(
+                    ruby.exception_runtime_error(),
+                    tracked_errors[0].clone(),
+                ));
+            }
+
             errors.push(message.clone())?;
+            for tracked_error in tracked_errors {
+                errors.push(tracked_error)?;
+            }
             if strict {
                 Err(errors::runtime_error(ruby, message))
             } else {
@@ -167,7 +189,10 @@ fn build_root_handle(
     Ok(nodes)
 }
 
-fn globals_from_context(context_or_assigns: Value) -> Result<values::RenderRootObject, MagnusError> {
+fn globals_from_context(
+    context_or_assigns: Value,
+    lookup_mode: values::LookupMode,
+) -> Result<values::RenderRootObject, MagnusError> {
     if let Ok(payload) = String::try_convert(context_or_assigns) {
         return values::json_to_object(&payload).map(values::RenderRootObject::from_liquid_object);
     }
@@ -176,16 +201,16 @@ fn globals_from_context(context_or_assigns: Value) -> Result<values::RenderRootO
         if let Some(scopes) = handle.get("scopes").and_then(RArray::from_value) {
             let mut values = Vec::with_capacity(scopes.len());
             for idx in 0..scopes.len() {
-                let scope: RHash = scopes.entry(idx as isize)?;
-                values.push(scope.as_value());
+                let scope: Value = scopes.entry(idx as isize)?;
+                values.push(scope);
             }
-            return values::RenderRootObject::from_values(values);
+            return values::RenderRootObject::from_values_with_mode(values, lookup_mode);
         }
 
-        return values::RenderRootObject::from_value(handle.as_value());
+        return values::RenderRootObject::from_value_with_mode(handle.as_value(), lookup_mode);
     }
 
-    values::RenderRootObject::from_value(context_or_assigns)
+    values::RenderRootObject::from_value_with_mode(context_or_assigns, lookup_mode)
 }
 
 fn strict_variables_enabled(context_or_assigns: Value) -> bool {

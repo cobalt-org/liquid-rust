@@ -25,11 +25,11 @@ module Liquid
       @environments =
         case environments
         when Array
-          environments.map { |scope| scope.is_a?(Hash) ? scope.dup : {} }
+          environments.map { |scope| scope.is_a?(Hash) ? scope.dup : scope }
         when Hash
           [environments.dup]
         else
-          [{}]
+          [environments || {}]
         end
       @native_handle = Liquid::RustExtension.ext_context_new(@environments, @registers.to_h, @environment.error_mode.to_s)
       @native_handle["strict_variables"] = @strict_variables
@@ -104,6 +104,8 @@ module Liquid
 
     def to_liquid_payload
       @environments.each_with_object({}) do |scope, merged|
+        next merged unless scope.is_a?(Hash)
+
         merged.merge!(scope)
       end
     end

@@ -37,6 +37,12 @@ pub(crate) struct RenderRootObject {
     scopes: Vec<RenderScope>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum LookupMode {
+    Materialized,
+    TrackMissing,
+}
+
 #[derive(Debug)]
 enum RenderScope {
     Materialized(RenderObject),
@@ -55,15 +61,26 @@ impl RenderRootObject {
     }
 
     pub(crate) fn from_value(value: Value) -> Result<Self, MagnusError> {
+        Self::from_value_with_mode(value, LookupMode::Materialized)
+    }
+
+    pub(crate) fn from_value_with_mode(value: Value, mode: LookupMode) -> Result<Self, MagnusError> {
         Ok(Self {
-            scopes: vec![render_scope_from_value(value)?],
+            scopes: vec![render_scope_from_value(value, mode)?],
         })
     }
 
     pub(crate) fn from_values(values: Vec<Value>) -> Result<Self, MagnusError> {
+        Self::from_values_with_mode(values, LookupMode::Materialized)
+    }
+
+    pub(crate) fn from_values_with_mode(
+        values: Vec<Value>,
+        mode: LookupMode,
+    ) -> Result<Self, MagnusError> {
         let mut scopes = Vec::with_capacity(values.len());
         for value in values {
-            scopes.push(render_scope_from_value(value)?);
+            scopes.push(render_scope_from_value(value, mode)?);
         }
         Ok(Self { scopes })
     }
@@ -80,8 +97,11 @@ impl RenderRootObject {
         keys
     }
 
-    pub(crate) fn take_error(&self) -> Option<String> {
-        self.scopes.iter().find_map(RenderScope::take_error)
+    pub(crate) fn take_errors(&self) -> Vec<String> {
+        self.scopes
+            .iter()
+            .flat_map(RenderScope::take_errors)
+            .collect()
     }
 }
 
@@ -257,7 +277,8 @@ impl ValueView for RenderScalar {
 pub(crate) struct RenderDynamicObject {
     value: Value,
     cache: RefCell<HashMap<String, Box<RenderValue>>>,
-    last_error: RefCell<Option<String>>,
+    errors: RefCell<Vec<String>>,
+    lookup_mode: LookupMode,
 }
 
 impl Clone for RenderDynamicObject {
@@ -265,17 +286,19 @@ impl Clone for RenderDynamicObject {
         Self {
             value: self.value,
             cache: RefCell::new(HashMap::new()),
-            last_error: RefCell::new(None),
+            errors: RefCell::new(Vec::new()),
+            lookup_mode: self.lookup_mode,
         }
     }
 }
 
 impl RenderDynamicObject {
-    fn new(value: Value) -> Self {
+    fn new(value: Value, lookup_mode: LookupMode) -> Self {
         Self {
             value,
             cache: RefCell::new(HashMap::new()),
-            last_error: RefCell::new(None),
+            errors: RefCell::new(Vec::new()),
+            lookup_mode,
         }
     }
 
@@ -287,6 +310,7 @@ impl RenderDynamicObject {
         if !hash_has_dynamic_default(self.value)? && self.value.respond_to("key?", false)? {
             let has_key: bool = self.value.funcall("key?", (index,))?;
             if !has_key {
+                self.record_missing(index);
                 return Ok(None);
             }
         }
@@ -299,19 +323,36 @@ impl RenderDynamicObject {
                 Ok(Some(result))
             }
         } else {
+            self.record_missing(index);
             Ok(None)
         }
     }
 
     fn record_error(&self, error: MagnusError) {
-        let mut slot = self.last_error.borrow_mut();
-        if slot.is_none() {
-            *slot = Some(error.to_string());
-        }
+        self.errors.borrow_mut().push(error.to_string());
     }
 
-    fn take_error(&self) -> Option<String> {
-        self.last_error.borrow_mut().take()
+    fn record_missing(&self, index: &str) {
+        let is_drop_like = self.value.respond_to("invoke_drop", false).unwrap_or(false);
+        if self.lookup_mode != LookupMode::TrackMissing && !is_drop_like {
+            return;
+        }
+
+        let message = if is_drop_like {
+            format!("liquid: Undefined drop method\n  with:\n    requested variable={index}")
+        } else {
+            format!("liquid: Unknown variable\n  with:\n    requested variable={index}")
+        };
+        self.errors.borrow_mut().push(message);
+    }
+
+    fn take_errors(&self) -> Vec<String> {
+        let mut errors = std::mem::take(&mut *self.errors.borrow_mut());
+        let cache = self.cache.borrow();
+        for value in cache.values() {
+            errors.extend(value.take_errors());
+        }
+        errors
     }
 }
 
@@ -337,10 +378,10 @@ impl RenderScope {
         }
     }
 
-    fn take_error(&self) -> Option<String> {
+    fn take_errors(&self) -> Vec<String> {
         match self {
-            Self::Materialized(_) => None,
-            Self::Dynamic(object) => object.take_error(),
+            Self::Materialized(object) => take_object_errors(object),
+            Self::Dynamic(object) => object.take_errors(),
         }
     }
 }
@@ -402,10 +443,11 @@ impl ObjectView for RenderDynamicObject {
 
     fn contains_key(&self, index: &str) -> bool {
         match self.lookup_value(index) {
+            Ok(None) if self.lookup_mode == LookupMode::TrackMissing => true,
             Ok(value) => value.is_some(),
             Err(error) => {
                 self.record_error(error);
-                false
+                self.lookup_mode == LookupMode::TrackMissing
             }
         }
     }
@@ -421,13 +463,19 @@ impl ObjectView for RenderDynamicObject {
         }
 
         let value = match self.lookup_value(index) {
+            Ok(None) if self.lookup_mode == LookupMode::TrackMissing => {
+                return Some(&LiquidValue::Nil as &dyn ValueView);
+            }
             Ok(value) => value?,
             Err(error) => {
                 self.record_error(error);
+                if self.lookup_mode == LookupMode::TrackMissing {
+                    return Some(&LiquidValue::Nil as &dyn ValueView);
+                }
                 return None;
             }
         };
-        let render_value = ruby_to_render_value(value).ok()?;
+        let render_value = ruby_to_render_value(value, self.lookup_mode).ok()?;
 
         let mut cache = self.cache.borrow_mut();
         let entry = cache
@@ -531,6 +579,21 @@ impl ValueView for RenderValue {
     }
 }
 
+impl RenderValue {
+    fn take_errors(&self) -> Vec<String> {
+        match self {
+            Self::Nil | Self::Scalar(_) => Vec::new(),
+            Self::Array(values) => values.iter().flat_map(RenderValue::take_errors).collect(),
+            Self::Object(values) => take_object_errors(values),
+            Self::DynamicObject(value) => value.take_errors(),
+        }
+    }
+}
+
+fn take_object_errors(object: &RenderObject) -> Vec<String> {
+    object.values().flat_map(RenderValue::take_errors).collect()
+}
+
 pub(crate) fn json_to_object(payload: &str) -> Result<LiquidObject, MagnusError> {
     let parsed: serde_json::Value = serde_json::from_str(payload).map_err(|error| {
         errors::argument_error(
@@ -598,7 +661,7 @@ pub(crate) fn ruby_to_render_object(value: Value) -> Result<RenderObject, Magnus
         let mut object = RenderObject::new();
         hash.foreach(|key: Value, val: Value| {
             let key = ruby_key_to_string(key)?;
-            object.insert(key, ruby_to_render_value(val)?);
+            object.insert(key, ruby_to_render_value(val, LookupMode::Materialized)?);
             Ok(ForEach::Continue)
         })?;
         Ok(object)
@@ -610,9 +673,15 @@ pub(crate) fn ruby_to_render_object(value: Value) -> Result<RenderObject, Magnus
     }
 }
 
-fn render_scope_from_value(value: Value) -> Result<RenderScope, MagnusError> {
-    if hash_has_dynamic_default(value)? {
-        Ok(RenderScope::Dynamic(RenderDynamicObject::new(value)))
+fn render_scope_from_value(value: Value, lookup_mode: LookupMode) -> Result<RenderScope, MagnusError> {
+    if value.respond_to("invoke_drop", false)?
+        || lookup_mode == LookupMode::TrackMissing
+        || hash_has_dynamic_default(value)?
+    {
+        Ok(RenderScope::Dynamic(RenderDynamicObject::new(
+            value,
+            lookup_mode,
+        )))
     } else {
         Ok(RenderScope::Materialized(ruby_to_render_object(value)?))
     }
@@ -639,7 +708,7 @@ pub(crate) fn liquid_to_render_object(object: LiquidObject) -> RenderObject {
         .collect()
 }
 
-fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
+fn ruby_to_render_value(value: Value, lookup_mode: LookupMode) -> Result<RenderValue, MagnusError> {
     let render_override =
         if value.respond_to("to_liquid_value", false)? && !ruby_value_is_direct_scalar(value) {
             Some(value.to_string())
@@ -654,6 +723,13 @@ fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
     }
 
     if let Some(hash) = RHash::from_value(semantic) {
+        if lookup_mode == LookupMode::TrackMissing {
+            return Ok(RenderValue::DynamicObject(RenderDynamicObject::new(
+                hash.as_value(),
+                lookup_mode,
+            )));
+        }
+
         return Ok(RenderValue::Object(ruby_to_render_object(hash.as_value())?));
     }
 
@@ -661,7 +737,7 @@ fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
         let mut items = Vec::with_capacity(array.len());
         for idx in 0..array.len() {
             let item: Value = array.entry(idx as isize)?;
-            items.push(ruby_to_render_value(item)?);
+            items.push(ruby_to_render_value(item, lookup_mode)?);
         }
         return Ok(RenderValue::Array(items));
     }
@@ -676,6 +752,7 @@ fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
     if semantic.respond_to("[]", false)? {
         return Ok(RenderValue::DynamicObject(RenderDynamicObject::new(
             semantic,
+            lookup_mode,
         )));
     }
 

@@ -13,6 +13,7 @@ module Liquid
     ].freeze
 
     attr_accessor :name, :assigns, :instance_assigns
+    attr_reader :registers
     attr_reader :resource_limits, :warnings, :errors, :root
 
     class << self
@@ -60,6 +61,7 @@ module Liquid
       @instance_assigns = {}
       @errors = []
       @warnings = []
+      @registers = Liquid::Registers.new
       @resource_limits = Liquid::ResourceLimits.new
       @root = Liquid::BlockBody.new([])
       @handle = nil
@@ -123,11 +125,11 @@ module Liquid
         args.shift
       when Liquid::Drop
         drop = args.shift
-        drop.context = Liquid::Context.new([@assigns, { "drop" => drop }], environment: @environment)
+        drop.context = Liquid::Context.new([@assigns, drop], registers: @registers, environment: @environment)
       when Hash
-        Liquid::Context.new([@assigns, args.shift], environment: @environment)
+        Liquid::Context.new([@assigns, args.shift], registers: @registers, environment: @environment)
       when nil
-        Liquid::Context.new(@assigns.dup, environment: @environment)
+        Liquid::Context.new(@assigns.dup, registers: @registers, environment: @environment)
       else
         raise ::ArgumentError, "Expected Hash, Liquid::Drop, Liquid::Context, or nil as parameter"
       end
