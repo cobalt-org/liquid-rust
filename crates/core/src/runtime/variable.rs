@@ -53,6 +53,7 @@ impl Variable {
             let s = match v {
                 ValueCow::Owned(v) => v.into_scalar(),
                 ValueCow::Borrowed(v) => v.as_scalar(),
+                ValueCow::Shared(v) => v.as_scalar().map(|value| value.into_owned()),
             }?;
             path.push(s);
         }
@@ -68,6 +69,7 @@ impl Variable {
             let s = match v {
                 ValueCow::Owned(v) => v.into_scalar(),
                 ValueCow::Borrowed(v) => v.as_scalar(),
+                ValueCow::Shared(v) => v.as_scalar().map(|value| value.into_owned()),
             }
             .ok_or_else(|| {
                 let v = expr.evaluate(runtime).expect("lookup already verified");
@@ -88,6 +90,7 @@ impl Variable {
                 match value {
                     ValueCow::Owned(value) => value.into_scalar(),
                     ValueCow::Borrowed(value) => value.as_scalar().map(|value| value.into_owned()),
+                    ValueCow::Shared(value) => value.as_scalar().map(|value| value.into_owned()),
                 }
             }
         }
@@ -101,14 +104,24 @@ impl Variable {
                 match value {
                     ValueCow::Owned(value) => {
                         let rendered = value.source().to_string();
-                        value
-                            .into_scalar()
-                            .ok_or_else(|| Error::with_msg(format!("Expected scalar, found `{}`", rendered)))
+                        value.into_scalar().ok_or_else(|| {
+                            Error::with_msg(format!("Expected scalar, found `{}`", rendered))
+                        })
                     }
-                    ValueCow::Borrowed(value) => value.as_scalar().map(|value| value.into_owned()).ok_or_else(|| {
-                        let rendered = value.source();
-                        Error::with_msg(format!("Expected scalar, found `{}`", rendered))
-                    }),
+                    ValueCow::Borrowed(value) => value
+                        .as_scalar()
+                        .map(|value| value.into_owned())
+                        .ok_or_else(|| {
+                            let rendered = value.source();
+                            Error::with_msg(format!("Expected scalar, found `{}`", rendered))
+                        }),
+                    ValueCow::Shared(value) => value
+                        .as_scalar()
+                        .map(|value| value.into_owned())
+                        .ok_or_else(|| {
+                            let rendered = value.source();
+                            Error::with_msg(format!("Expected scalar, found `{}`", rendered))
+                        }),
                 }
             }
         }
@@ -221,7 +234,9 @@ a:
         )
         .unwrap();
         let mut var = Variable::with_literal("a");
-        var.extend([Expression::Variable(Variable::with_expression(Expression::with_literal("b")))]);
+        var.extend([Expression::Variable(Variable::with_expression(
+            Expression::with_literal("b"),
+        ))]);
 
         let runtime = RuntimeBuilder::new().build();
         let runtime = StackFrame::new(&runtime, &globals);

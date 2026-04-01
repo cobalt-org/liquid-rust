@@ -107,11 +107,16 @@ impl Renderable for Include {
             }
 
             let scope = StackFrame::new(runtime, &pass_through);
-            let partial = scope
+            let partial = match scope
                 .partials()
                 .get(&name)
-                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?;
+                .trace_with(|| format!("{{% include {} %}}", self.partial).into())?
+            {
+                Some(partial) => partial,
+                None => return Err(missing_partial_error(scope.partials(), &name)),
+            };
 
+            scope.reset_resource_limits()?;
             partial
                 .render_to(writer, &scope)
                 .trace_with(|| format!("{{% include {} %}}", self.partial).into())
@@ -121,6 +126,16 @@ impl Renderable for Include {
 
         Ok(())
     }
+}
+
+fn missing_partial_error(partials: &dyn liquid_core::runtime::PartialStore, name: &str) -> Error {
+    let available = partials.names();
+    let mut available = available;
+    available.sort_unstable();
+    let available = itertools::join(available, ", ");
+    Error::with_msg("Unknown partial-template")
+        .context("requested partial", name.to_owned())
+        .context("available partials", available)
 }
 
 #[cfg(test)]
@@ -143,21 +158,17 @@ mod test {
     struct TestSource;
 
     impl partials::PartialSource for TestSource {
-        fn contains(&self, _name: &str) -> bool {
-            true
-        }
-
         fn names(&self) -> Vec<&str> {
             vec![]
         }
 
-        fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
-            match name {
+        fn get<'a>(&'a self, name: &str) -> Result<Option<borrow::Cow<'a, str>>> {
+            Ok(match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
                 "example_var.txt" => Some(r#"{{example_var}}"#.into()),
                 "example_multi_var.txt" => Some(r#"{{example_var}} {{example}}"#.into()),
-                _ => None
-            }
+                _ => None,
+            })
         }
     }
 

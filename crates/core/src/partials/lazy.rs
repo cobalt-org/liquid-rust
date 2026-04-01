@@ -104,35 +104,21 @@ impl<S> LazyStore<S>
 where
     S: PartialSource,
 {
-    fn try_get_or_create(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
+    fn get_or_create(&self, name: &str) -> Result<Option<sync::Arc<dyn Renderable>>> {
         let mut cache = self.cache.lock().expect("not to be poisoned and reused");
         if let Some(result) = cache.get(name) {
-            result.as_ref().ok().cloned()
+            result.clone().map(Some)
         } else {
-            let s = self.source.try_get(name)?;
+            let Some(s) = self.source.get(name)? else {
+                return Ok(None);
+            };
             let s = s.as_ref();
             let template = parser::parse(s, &self.language)
                 .map(runtime::Template::new)
                 .map(sync::Arc::new)
                 .map(|t| t as sync::Arc<dyn Renderable>);
             cache.insert(name.to_string(), template.clone());
-            template.ok()
-        }
-    }
-
-    fn get_or_create(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
-        let mut cache = self.cache.lock().expect("not to be poisoned and reused");
-        if let Some(result) = cache.get(name) {
-            result.clone()
-        } else {
-            let s = self.source.get(name)?;
-            let s = s.as_ref();
-            let template = parser::parse(s, &self.language)
-                .map(runtime::Template::new)
-                .map(sync::Arc::new)
-                .map(|t| t as sync::Arc<dyn Renderable>);
-            cache.insert(name.to_string(), template.clone());
-            template
+            template.map(Some)
         }
     }
 }
@@ -141,19 +127,11 @@ impl<S> PartialStore for LazyStore<S>
 where
     S: PartialSource,
 {
-    fn contains(&self, name: &str) -> bool {
-        self.source.contains(name)
-    }
-
     fn names(&self) -> Vec<&str> {
         self.source.names()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
-        self.try_get_or_create(name)
-    }
-
-    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
+    fn get(&self, name: &str) -> Result<Option<sync::Arc<dyn Renderable>>> {
         self.get_or_create(name)
     }
 }
@@ -178,19 +156,15 @@ mod test {
     struct TestSource;
 
     impl partials::PartialSource for TestSource {
-        fn contains(&self, _name: &str) -> bool {
-            true
-        }
-
         fn names(&self) -> Vec<&str> {
             vec![]
         }
 
-        fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
-            match name {
+        fn get<'a>(&'a self, name: &str) -> crate::error::Result<Option<borrow::Cow<'a, str>>> {
+            Ok(match name {
                 "example.txt" => Some("Hello Liquid!".into()),
                 _ => None,
-            }
+            })
         }
     }
 
@@ -218,7 +192,7 @@ mod test {
     }
 
     #[test]
-    fn test_store_caches_try_get() {
+    fn test_store_does_not_cache_missing_partial() {
         let options = Language::empty();
         let store = lazy::LazyStore {
             language: sync::Arc::new(options),
@@ -231,12 +205,12 @@ mod test {
             "The store cache should not contain the key yet."
         );
 
-        // Look up the partial, causing it to be cached.
-        let _ = store.try_get("example.txt").unwrap();
+        let missing = store.get("missing.txt").unwrap();
+        assert!(missing.is_none());
 
         assert!(
-            store.cache.lock().unwrap().contains_key("example.txt"),
-            "The store cache should now contain the key."
+            !store.cache.lock().unwrap().contains_key("missing.txt"),
+            "Missing partials should not be cached."
         );
     }
 }

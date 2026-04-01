@@ -1,6 +1,10 @@
+use std::borrow::Cow;
 use std::cell::RefCell;
+use std::error::Error as StdError;
+use std::fmt;
 
 use liquid::model::{DisplayCow, KStringCow, State, Value as LiquidValue};
+use liquid::partials::{OnDemandCompiler, PartialSource};
 use liquid::ObjectView;
 use liquid::ParserBuilder;
 use liquid::Template as LiquidTemplate;
@@ -9,16 +13,113 @@ use liquid_core::parser::{FilterCall, ParseFilter, PluginRegistry};
 use liquid_core::runtime::evaluate_filter_with_registry;
 use liquid_core::Runtime;
 use magnus::{
-    class::Class, Exception, Module, RClass, r_array::RArray, r_hash::RHash, typed_data,
-    value::ReprValue, Error as MagnusError, IntoValue, RModule, TryConvert, Value,
+    class::Class,
+    r_array::RArray,
+    r_hash::RHash,
+    typed_data,
+    value::{InnerValue, Opaque, ReprValue},
+    Error as MagnusError, Exception, ExceptionClass, IntoValue, Module, RClass, RModule,
+    TryConvert, Value,
 };
 
 use crate::errors;
 use crate::values;
 
-#[magnus::wrap(class = "Liquid::RustExtension::NativeTemplate", free_immediately, size)]
+#[magnus::wrap(
+    class = "Liquid::RustExtension::NativeTemplate",
+    free_immediately,
+    size
+)]
 struct NativeTemplate {
     template: LiquidTemplate,
+}
+
+#[derive(Clone, Copy)]
+struct HostPartialSource {
+    file_system: Opaque<Value>,
+}
+
+impl fmt::Debug for HostPartialSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("HostPartialSource")
+    }
+}
+
+impl PartialSource for HostPartialSource {
+    fn names(&self) -> Vec<&str> {
+        Vec::new()
+    }
+
+    fn get<'a>(&'a self, name: &str) -> liquid_core::Result<Option<Cow<'a, str>>> {
+        match load_host_partial(self.file_system, name) {
+            Ok(source) => Ok(Some(Cow::Owned(source))),
+            Err(error) => Err(error),
+        }
+    }
+}
+
+#[derive(Clone)]
+struct HostPartialLoadError {
+    class_name: String,
+    message: String,
+    original: Option<Opaque<Value>>,
+}
+
+impl fmt::Debug for HostPartialLoadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HostPartialLoadError")
+            .field("class_name", &self.class_name)
+            .field("message", &self.message)
+            .finish()
+    }
+}
+
+impl fmt::Display for HostPartialLoadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.class_name, self.message)
+    }
+}
+
+impl StdError for HostPartialLoadError {}
+
+impl HostPartialLoadError {
+    fn from_host_error(error: &MagnusError) -> Self {
+        let message = error.to_string();
+        let Some(value) = error.value() else {
+            return Self {
+                class_name: "RuntimeError".to_owned(),
+                message,
+                original: None,
+            };
+        };
+
+        let class_name = unsafe { value.classname() }.to_string();
+        let message = value
+            .funcall::<_, _, String>("message", ())
+            .unwrap_or(message);
+        let message = normalize_host_error_message(&class_name, message);
+        Self {
+            class_name,
+            message,
+            original: Some(Opaque::from(value)),
+        }
+    }
+}
+
+fn normalize_host_error_message(class_name: &str, message: String) -> String {
+    if !class_name.starts_with("Liquid::") {
+        return message;
+    }
+
+    if let Some(stripped) = message.strip_prefix("Liquid error: ") {
+        return stripped.to_owned();
+    }
+
+    if let Some(stripped) = message.strip_prefix("Liquid syntax error: ") {
+        return stripped.to_owned();
+    }
+
+    message
 }
 
 pub(crate) fn ext_parse(
@@ -28,7 +129,7 @@ pub(crate) fn ext_parse(
     error_mode: Option<String>,
     environment: Option<RHash>,
 ) -> Result<RHash, MagnusError> {
-    let template = parse_template(ruby, &source)?;
+    let template = parse_template_with_environment(ruby, &source, environment)?;
     let handle = ruby.hash_new();
     handle.aset("source", source)?;
     handle.aset("line_numbers", line_numbers)?;
@@ -45,7 +146,8 @@ pub(crate) fn ext_parse(
     handle.aset("root", build_root_handle(ruby, &template)?)?;
     handle.aset(
         "template",
-        ruby.obj_wrap(NativeTemplate { template }).into_value_with(ruby),
+        ruby.obj_wrap(NativeTemplate { template })
+            .into_value_with(ruby),
     )?;
     Ok(handle)
 }
@@ -124,11 +226,9 @@ fn render_internal(
         .build();
     let runtime = DynamicFilterRuntime::new(&base_runtime, filter_host, context_or_assigns, strict);
     let mut rendered = Vec::new();
-    let render_result = template
-        .template
-        .render_to_runtime(&mut rendered, &runtime);
+    let render_result = template.template.render_to_runtime(&mut rendered, &runtime);
     let rendered = String::from_utf8(rendered).expect("render should stay valid utf-8");
-    for handled_error in runtime.handled_errors() {
+    for handled_error in runtime.handled_errors(ruby) {
         errors.push(handled_error)?;
     }
 
@@ -144,13 +244,20 @@ fn render_internal(
                     errors.push(error.clone())?;
                 }
                 if strict {
-                    return Err(MagnusError::new(ruby.exception_runtime_error(), message.clone()));
+                    return Err(MagnusError::new(
+                        ruby.exception_runtime_error(),
+                        message.clone(),
+                    ));
                 }
             }
 
             Ok(rendered)
         }
         Err(error) => {
+            if let Some(load_error) = host_partial_load_error(&error) {
+                return Err(rebuild_host_error(ruby, load_error));
+            }
+
             let message = error.to_string();
             let tracked_errors = globals.take_errors();
             if strict
@@ -172,6 +279,8 @@ fn render_internal(
             }
             if strict {
                 Err(errors::runtime_error(ruby, message))
+            } else if is_memory_limit_error(&message) {
+                Ok(non_strict_error_output(&message))
             } else {
                 Ok(rendered)
             }
@@ -180,13 +289,80 @@ fn render_internal(
 }
 
 fn parse_template(ruby: &magnus::Ruby, source: &str) -> Result<LiquidTemplate, MagnusError> {
-    let parser = ParserBuilder::with_stdlib()
-        .build()
-        .map_err(|error| errors::runtime_error(ruby, error.to_string()))?;
+    parse_template_with_environment(ruby, source, None)
+}
+
+fn parse_template_with_environment(
+    ruby: &magnus::Ruby,
+    source: &str,
+    environment: Option<RHash>,
+) -> Result<LiquidTemplate, MagnusError> {
+    let parser = if let Some(file_system) = environment
+        .and_then(|handle| handle.get("file_system"))
+        .filter(|value| !value.is_nil())
+    {
+        ParserBuilder::with_stdlib()
+            .partials(OnDemandCompiler::new(HostPartialSource {
+                file_system: Opaque::from(file_system),
+            }))
+            .build()
+    } else {
+        ParserBuilder::with_stdlib().build()
+    }
+    .map_err(|error| errors::runtime_error(ruby, error.to_string()))?;
 
     parser
         .parse(source)
         .map_err(|error| errors::syntax_error(ruby, error.to_string()))
+}
+
+fn load_host_partial(file_system: Opaque<Value>, name: &str) -> liquid_core::Result<String> {
+    let vm = magnus::Ruby::get().expect("VM should be available");
+    let file_system = file_system.get_inner_with(&vm);
+
+    let value = file_system
+        .funcall::<_, _, Value>("read_template_file", (name,))
+        .map_err(|error| {
+            liquid_core::Error::with_msg("Host partial load failed")
+                .context("requested partial", name.to_owned())
+                .cause(HostPartialLoadError::from_host_error(&error))
+        })?;
+
+    Ok(String::try_convert(value)
+        .ok()
+        .unwrap_or_else(|| value.to_string()))
+}
+
+fn host_partial_load_error(error: &liquid_core::Error) -> Option<&HostPartialLoadError> {
+    error
+        .source()
+        .and_then(|cause| cause.downcast_ref::<HostPartialLoadError>())
+}
+
+fn rebuild_host_error(vm: &magnus::Ruby, error: &HostPartialLoadError) -> MagnusError {
+    if let Some(original) = error.original {
+        if let Some(exception) = Exception::from_value(original.get_inner_with(vm)) {
+            return MagnusError::from(exception);
+        }
+    }
+
+    match lookup_exception_class(vm, &error.class_name) {
+        Ok(class) => MagnusError::new(class, error.message.clone()),
+        Err(_) => MagnusError::new(vm.exception_runtime_error(), error.message.clone()),
+    }
+}
+
+fn lookup_exception_class(
+    vm: &magnus::Ruby,
+    class_name: &str,
+) -> Result<ExceptionClass, MagnusError> {
+    let mut current = vm.class_object().as_value();
+    for segment in class_name.split("::").filter(|segment| !segment.is_empty()) {
+        current = current.funcall("const_get", (segment,))?;
+    }
+
+    ExceptionClass::from_value(current)
+        .ok_or_else(|| MagnusError::new(vm.exception_type_error(), class_name.to_owned()))
 }
 
 fn lookup_template(handle: RHash) -> Result<typed_data::Obj<NativeTemplate>, MagnusError> {
@@ -232,7 +408,11 @@ fn globals_from_context(
         );
     }
 
-    values::RenderRootObject::from_value_with_mode_and_context(context_or_assigns, lookup_mode, context)
+    values::RenderRootObject::from_value_with_mode_and_context(
+        context_or_assigns,
+        lookup_mode,
+        context,
+    )
 }
 
 fn current_context(context_or_assigns: Value) -> Option<Value> {
@@ -291,6 +471,7 @@ struct DynamicFilterRuntime<'a> {
     filter_host: Option<Value>,
     recovery: Option<RenderRecoveryState>,
     persistent_assigns: Option<RHash>,
+    resource_limits: Option<Value>,
 }
 
 impl<'a> DynamicFilterRuntime<'a> {
@@ -305,13 +486,21 @@ impl<'a> DynamicFilterRuntime<'a> {
             filter_host,
             recovery: (!strict).then(|| RenderRecoveryState::new(context_or_assigns)),
             persistent_assigns: persistent_assigns_from_context(context_or_assigns),
+            resource_limits: resource_limits_from_context(context_or_assigns),
         }
     }
 
-    fn handled_errors(&self) -> Vec<String> {
+    fn handled_errors(&self, ruby: &magnus::Ruby) -> Vec<Value> {
         self.recovery
             .as_ref()
-            .map(|recovery| recovery.handled_errors.borrow().clone())
+            .map(|recovery| {
+                recovery
+                    .handled_errors
+                    .borrow()
+                    .iter()
+                    .map(|error| error.to_value(ruby))
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -396,7 +585,10 @@ impl Runtime for DynamicFilterRuntime<'_> {
         self.inner.roots()
     }
 
-    fn try_get(&self, path: &[liquid::model::ScalarCow<'_>]) -> Option<liquid::model::ValueCow<'_>> {
+    fn try_get(
+        &self,
+        path: &[liquid::model::ScalarCow<'_>],
+    ) -> Option<liquid::model::ValueCow<'_>> {
         self.inner.try_get(path)
     }
 
@@ -452,7 +644,67 @@ impl Runtime for DynamicFilterRuntime<'_> {
         evaluate_filter_with_registry(self.inner, filter, input, fallback_filters)
     }
 
-    fn handle_render_error(&self, error: liquid_core::Error) -> liquid_core::Result<Option<String>> {
+    fn handle_render_error(
+        &self,
+        error: liquid_core::Error,
+    ) -> liquid_core::Result<Option<String>> {
+        if let Some(load_error) = host_partial_load_error(&error) {
+            let Some(recovery) = &self.recovery else {
+                return Err(error);
+            };
+
+            if recovery.raised_exception.borrow().is_some() {
+                return Err(error);
+            }
+
+            let vm = magnus::Ruby::get().expect("VM should be available");
+            let message = render_default_error_output(&load_error.message);
+            let error_value = build_host_exception_value(&vm, load_error).ok();
+            if let Some(error_value) = error_value {
+                recovery
+                    .handled_errors
+                    .borrow_mut()
+                    .push(HandledRenderError::Value(Opaque::from(error_value)));
+
+                if let Some(renderer) = recovery.exception_renderer {
+                    return match call_exception_renderer_with_value(renderer, error_value) {
+                        Ok(replacement) => Ok(Some(replacement)),
+                        Err(error) => {
+                            recovery
+                                .raised_exception
+                                .borrow_mut()
+                                .replace(wrap_exception_renderer_error(error));
+                            Err(liquid_core::Error::with_msg("exception renderer raised"))
+                        }
+                    };
+                }
+            } else {
+                recovery
+                    .handled_errors
+                    .borrow_mut()
+                    .push(HandledRenderError::Message(message.clone()));
+
+                if let Some(renderer) = recovery.exception_renderer {
+                    return match call_exception_renderer(renderer, &message) {
+                        Ok(replacement) => Ok(Some(replacement)),
+                        Err(error) => {
+                            recovery
+                                .raised_exception
+                                .borrow_mut()
+                                .replace(wrap_exception_renderer_error(error));
+                            Err(liquid_core::Error::with_msg("exception renderer raised"))
+                        }
+                    };
+                }
+            }
+
+            return Ok(Some(message));
+        }
+
+        if is_memory_limit_error(&error.to_string()) {
+            return Err(error);
+        }
+
         let Some(recovery) = &self.recovery else {
             return Err(error);
         };
@@ -462,7 +714,10 @@ impl Runtime for DynamicFilterRuntime<'_> {
         }
 
         let message = error.to_string();
-        recovery.handled_errors.borrow_mut().push(message.clone());
+        recovery
+            .handled_errors
+            .borrow_mut()
+            .push(HandledRenderError::Message(message.clone()));
 
         if preserve_partial_output(&message) {
             return Ok(None);
@@ -483,11 +738,31 @@ impl Runtime for DynamicFilterRuntime<'_> {
 
         Ok(Some(render_default_error_output(&message)))
     }
+
+    fn increment_render_score(&self, amount: usize) -> liquid_core::Result<()> {
+        call_resource_limits_method(self.resource_limits, "increment_render_score", amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> liquid_core::Result<()> {
+        call_resource_limits_method(self.resource_limits, "increment_assign_score", amount)
+    }
+
+    fn check_resource_limits(&self) -> liquid_core::Result<()> {
+        let current_bytes = self
+            .registers()
+            .get_mut::<liquid_core::runtime::RenderedBytesRegister>()
+            .bytes();
+        call_resource_limits_method(self.resource_limits, "increment_write_score", current_bytes)
+    }
+
+    fn reset_resource_limits(&self) -> liquid_core::Result<()> {
+        call_resource_limits_reset(self.resource_limits)
+    }
 }
 
 struct RenderRecoveryState {
     exception_renderer: Option<Value>,
-    handled_errors: RefCell<Vec<String>>,
+    handled_errors: RefCell<Vec<HandledRenderError>>,
     raised_exception: RefCell<Option<MagnusError>>,
 }
 
@@ -505,9 +780,24 @@ impl RenderRecoveryState {
     }
 }
 
+enum HandledRenderError {
+    Message(String),
+    Value(Opaque<Value>),
+}
+
+impl HandledRenderError {
+    fn to_value(&self, ruby: &magnus::Ruby) -> Value {
+        match self {
+            Self::Message(message) => ruby.str_new(message).as_value(),
+            Self::Value(value) => value.get_inner_with(ruby),
+        }
+    }
+}
+
 fn persistent_assigns_from_context(context_or_assigns: Value) -> Option<RHash> {
     if let Some(handle) = RHash::from_value(context_or_assigns) {
-        if let Some(persistent_assigns) = handle.get("persistent_assigns").and_then(RHash::from_value)
+        if let Some(persistent_assigns) =
+            handle.get("persistent_assigns").and_then(RHash::from_value)
         {
             return Some(persistent_assigns);
         }
@@ -526,6 +816,55 @@ fn persistent_assigns_from_context(context_or_assigns: Value) -> Option<RHash> {
     }
 
     RHash::from_value(context_or_assigns)
+}
+
+fn resource_limits_from_context(context_or_assigns: Value) -> Option<Value> {
+    current_context(context_or_assigns).and_then(|context| {
+        context
+            .funcall::<_, _, Value>("resource_limits", ())
+            .ok()
+            .filter(|value| !value.is_nil())
+    })
+}
+
+fn call_resource_limits_method(
+    resource_limits: Option<Value>,
+    method: &str,
+    amount: usize,
+) -> liquid_core::Result<()> {
+    let Some(resource_limits) = resource_limits else {
+        return Ok(());
+    };
+
+    resource_limits
+        .funcall::<_, _, Value>(method, (amount as i64,))
+        .map(|_| ())
+        .map_err(|error| liquid_core::Error::with_msg(error.to_string()))
+}
+
+fn call_resource_limits_reset(resource_limits: Option<Value>) -> liquid_core::Result<()> {
+    let Some(resource_limits) = resource_limits else {
+        return Ok(());
+    };
+
+    resource_limits
+        .funcall::<_, _, Value>("reset", ())
+        .map(|_| ())
+        .map_err(|error| liquid_core::Error::with_msg(error.to_string()))
+}
+
+fn is_memory_limit_error(message: &str) -> bool {
+    message.contains("Memory limits exceeded")
+}
+
+fn non_strict_error_output(message: &str) -> String {
+    if is_memory_limit_error(message) {
+        "Liquid error: Memory limits exceeded".to_string()
+    } else if message.starts_with("Liquid error: ") {
+        message.to_string()
+    } else {
+        render_default_error_output(message)
+    }
 }
 
 struct RenderErrorMetadata {
@@ -602,9 +941,10 @@ fn render_default_error_output(message: &str) -> String {
 }
 
 fn extract_context_value(message: &str, key: &str) -> Option<String> {
-    message
-        .lines()
-        .find_map(|line| line.split_once(key).map(|(_, value)| value.trim().to_string()))
+    message.lines().find_map(|line| {
+        line.split_once(key)
+            .map(|(_, value)| value.trim().to_string())
+    })
 }
 
 fn extract_line_number(message: &str) -> Option<usize> {
@@ -637,7 +977,10 @@ fn normalize_error_message(message: &str) -> String {
         return "is not a valid expression".to_string();
     }
 
-    if let Some(line) = message.lines().find(|line| line.trim_start().starts_with('=')) {
+    if let Some(line) = message
+        .lines()
+        .find(|line| line.trim_start().starts_with('='))
+    {
         return line
             .split_once('=')
             .map(|(_, value)| value.trim().to_string())
@@ -653,8 +996,34 @@ fn normalize_error_message(message: &str) -> String {
 
 fn call_exception_renderer(renderer: Value, message: &str) -> Result<String, MagnusError> {
     let wrapped_error = wrap_liquid_error(message)?;
-    let rendered: Value = renderer.funcall("call", (wrapped_error,))?;
+    call_exception_renderer_with_value(renderer, wrapped_error)
+}
+
+fn call_exception_renderer_with_value(
+    renderer: Value,
+    error: Value,
+) -> Result<String, MagnusError> {
+    let rendered: Value = renderer.funcall("call", (error,))?;
     rendered.funcall("to_s", ())
+}
+
+fn build_host_exception_value(
+    vm: &magnus::Ruby,
+    error: &HostPartialLoadError,
+) -> Result<Value, MagnusError> {
+    if let Some(original) = error.original {
+        return Ok(original.get_inner_with(vm));
+    }
+
+    match lookup_exception_class(vm, &error.class_name) {
+        Ok(class) => class
+            .new_instance((error.message.clone(),))
+            .map(ReprValue::as_value),
+        Err(_) => vm
+            .exception_runtime_error()
+            .new_instance((error.message.clone(),))
+            .map(ReprValue::as_value),
+    }
 }
 
 fn wrap_liquid_error(message: &str) -> Result<Value, MagnusError> {

@@ -126,6 +126,32 @@ impl fmt::Display for Error {
 
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        self.inner.cause.as_ref().and_then(|e| e.source())
+        self.inner
+            .cause
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn error::Error + 'static))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[derive(Debug, Clone)]
+    struct DirectCause;
+
+    impl fmt::Display for DirectCause {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("direct cause")
+        }
+    }
+
+    impl error::Error for DirectCause {}
+
+    #[test]
+    fn source_returns_direct_cause() {
+        let error = Error::with_msg("outer").cause(DirectCause);
+        let source = std::error::Error::source(&error).expect("missing direct cause");
+        assert!(source.downcast_ref::<DirectCause>().is_some());
     }
 }

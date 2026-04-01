@@ -57,6 +57,11 @@ module Liquid
         return [Liquid::ZeroDivisionError, metadata]
       end
 
+      if message.include?("Memory limits exceeded")
+        metadata[:message] = "Memory limits exceeded"
+        return [Liquid::MemoryError, metadata]
+      end
+
       if message.include?("Undefined drop method")
         requested = message[/requested variable=([^\n]+)/, 1]
         metadata[:message] = requested ? "undefined drop method #{requested}" : "undefined drop method"
@@ -129,6 +134,7 @@ module Liquid
   class ContextError < Error; end
   class StackLevelError < Error; end
   class MemoryError < Error; end
+  class TemplateEncodingError < Error; end
   class ZeroDivisionError < Error; end
   class UndefinedVariable < Error; end
   class UndefinedDropMethod < Error; end

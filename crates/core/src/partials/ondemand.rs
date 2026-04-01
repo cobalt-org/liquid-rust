@@ -100,31 +100,19 @@ impl<S> PartialStore for OnDemandStore<S>
 where
     S: PartialSource,
 {
-    fn contains(&self, name: &str) -> bool {
-        self.source.contains(name)
-    }
-
     fn names(&self) -> Vec<&str> {
         self.source.names()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
-        let s = self.source.try_get(name)?;
-        let s = s.as_ref();
-        let template = parser::parse(s, &self.language)
-            .map(runtime::Template::new)
-            .map(sync::Arc::new)
-            .ok()?;
-        Some(template)
-    }
-
-    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
-        let s = self.source.get(name)?;
+    fn get(&self, name: &str) -> Result<Option<sync::Arc<dyn Renderable>>> {
+        let Some(s) = self.source.get(name)? else {
+            return Ok(None);
+        };
         let s = s.as_ref();
         let template = parser::parse(s, &self.language)
             .map(runtime::Template::new)
             .map(sync::Arc::new)?;
-        Ok(template)
+        Ok(Some(template))
     }
 }
 

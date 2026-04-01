@@ -6,6 +6,7 @@ use liquid_core::model::{KString, KStringCow, KStringRef, ScalarCow, Value, Valu
 use liquid_core::runtime;
 use liquid_core::runtime::PartialStore;
 use liquid_core::runtime::Renderable;
+use liquid_core::Runtime;
 
 pub struct Template {
     pub(crate) template: runtime::Template,
@@ -30,7 +31,11 @@ impl Template {
             None => runtime,
         };
         let runtime = runtime.build();
-        self.template.render_to(writer, &runtime)
+        Runtime::registers(&runtime)
+            .get_mut::<runtime::RenderedBytesRegister>()
+            .reset();
+        let mut writer = CountingWriter::new(writer, Runtime::registers(&runtime));
+        self.template.render_to(&mut writer, &runtime)
     }
 
     /// Renders an instance of the Template with a caller-provided runtime.
@@ -43,7 +48,36 @@ impl Template {
             inner: runtime,
             partials: self.partials.as_deref(),
         };
-        self.template.render_to(writer, &runtime)
+        Runtime::registers(&runtime)
+            .get_mut::<runtime::RenderedBytesRegister>()
+            .reset();
+        let mut writer = CountingWriter::new(writer, Runtime::registers(&runtime));
+        self.template.render_to(&mut writer, &runtime)
+    }
+}
+
+struct CountingWriter<'a, 'r> {
+    inner: &'a mut dyn Write,
+    registers: &'r runtime::Registers,
+}
+
+impl<'a, 'r> CountingWriter<'a, 'r> {
+    fn new(inner: &'a mut dyn Write, registers: &'r runtime::Registers) -> Self {
+        Self { inner, registers }
+    }
+}
+
+impl Write for CountingWriter<'_, '_> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let written = self.inner.write(buf)?;
+        self.registers
+            .get_mut::<runtime::RenderedBytesRegister>()
+            .add(written);
+        Ok(written)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
     }
 }
 
@@ -108,13 +142,31 @@ impl runtime::Runtime for TemplateRuntime<'_> {
         &self,
         filter: &liquid_core::parser::FilterCall,
         input: &dyn crate::ValueView,
-        fallback_filters: &liquid_core::parser::PluginRegistry<Box<dyn liquid_core::parser::ParseFilter>>,
+        fallback_filters: &liquid_core::parser::PluginRegistry<
+            Box<dyn liquid_core::parser::ParseFilter>,
+        >,
     ) -> Result<Value> {
         self.inner.evaluate_filter(filter, input, fallback_filters)
     }
 
     fn handle_render_error(&self, error: liquid_core::Error) -> Result<Option<String>> {
         self.inner.handle_render_error(error)
+    }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        self.inner.increment_render_score(amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        self.inner.increment_assign_score(amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        self.inner.check_resource_limits()
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        self.inner.reset_resource_limits()
     }
 }
 

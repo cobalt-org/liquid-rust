@@ -101,21 +101,28 @@ module Liquid
       @errors = []
       @warnings = []
       @registers = Liquid::Registers.new
-      @resource_limits = Liquid::ResourceLimits.new
+      @resource_limits = Liquid::ResourceLimits.new(@environment.default_resource_limits)
       @root = Liquid::BlockBody.new([])
       @handle = nil
     end
 
     def parse(source, line_numbers: false, error_mode: nil, environment: nil, **_options)
       env = environment || @environment
+      source = source.to_s.to_str
+      unless source.valid_encoding?
+        raise Liquid::TemplateEncodingError, "Invalid template encoding"
+      end
+
       effective_error_mode = (error_mode || env&.error_mode || :strict).to_sym
-      normalized_source = normalize_source(source.to_s, effective_error_mode)
+      normalized_source = normalize_source(source, effective_error_mode)
       @handle = Liquid::RustExtension.ext_parse(normalized_source, line_numbers, error_mode&.to_s, env&.native_handle)
       @errors = Array(Liquid::RustExtension.ext_template_errors(@handle))
       @warnings = Array(Liquid::RustExtension.ext_template_warnings(@handle))
       @root = Liquid::BlockBody.from_native(Liquid::RustExtension.ext_template_root(@handle))
       self
     rescue StandardError => error
+      raise error if error.is_a?(Liquid::TemplateEncodingError)
+
       raise Liquid::SyntaxError.wrap(error, default_class: Liquid::SyntaxError)
     end
 
@@ -124,19 +131,22 @@ module Liquid
       options = extract_render_options(render_args)
       context = build_render_context(render_args)
       apply_options_to_context(context, options)
+      context.resource_limits.reset
 
-      rendered = Liquid::RustExtension.ext_render(@handle, context.native_handle)
-      @errors = collect_template_errors
-      rendered = finalize_render_output(rendered, context)
-      options[:output] ? options[:output] << rendered : rendered
-    rescue ExceptionRendererRaised => error
-      @errors = collect_template_errors
-      raise error.error
-    rescue StandardError => error
-      wrapped = wrap_render_error(error)
-      @errors = [wrapped]
-      rendered = wrapped.to_s
-      options[:output] ? options[:output] << rendered : rendered
+      begin
+        rendered = Liquid::RustExtension.ext_render(@handle, context.native_handle)
+        @errors = collect_template_errors
+        rendered = finalize_render_output(rendered, context)
+        options[:output] ? options[:output] << rendered : rendered
+      rescue ExceptionRendererRaised => error
+        @errors = collect_template_errors
+        raise error.error
+      rescue StandardError => error
+        wrapped = wrap_render_error(error)
+        @errors = [wrapped]
+        rendered = wrapped.to_s
+        options[:output] ? options[:output] << rendered : rendered
+      end
     end
 
     def render!(*args)
@@ -144,6 +154,7 @@ module Liquid
       options = extract_render_options(render_args)
       context = build_render_context(render_args)
       apply_options_to_context(context, options)
+      context.resource_limits.reset
 
       rendered = Liquid::RustExtension.ext_render_strict(@handle, context.native_handle)
       rendered = context.apply_global_filter(rendered)
@@ -181,7 +192,7 @@ module Liquid
           [base_lookup_assigns]
         )
       else
-        raise ::ArgumentError, "Expected Hash, Liquid::Drop, Liquid::Context, or nil as parameter"
+        raise Liquid::ArgumentError, "Expected Hash, Liquid::Drop, Liquid::Context, or nil as parameter"
       end
     end
 
@@ -189,7 +200,8 @@ module Liquid
       Liquid::Context.new(
         environments,
         registers: @registers,
-        environment: @environment
+        environment: @environment,
+        resource_limits: @resource_limits
       ).tap do |context|
         context.native_handle["persistent_assigns"] = @instance_assigns
       end
@@ -234,21 +246,65 @@ module Liquid
     end
 
     def normalize_output_markup(markup, error_mode)
-      normalized = markup.gsub(/(?<=\w|\]|\))\s*\.\s*(?=\w)/, ".")
+      normalized =
+        transform_unquoted_markup(markup) do |segment|
+          segment = segment.gsub(/(?<=\w|\]|\))\s*\.\s*(?=\w)/, ".")
 
-      case error_mode
-      when :strict2, :lax
-        normalized = normalized.gsub(/,\s*(?=\||\z)/, "")
-        normalized = normalized.gsub(/:\s*(?=\||\z)/, "")
-      end
+          case error_mode
+          when :strict2, :lax
+            segment = segment.gsub(/,\s*(?=\||\z)/, "")
+            segment = segment.gsub(/:\s*(?=\||\z)/, "")
+          end
+
+          segment
+        end
 
       return normalized unless error_mode == :lax
 
       normalized = normalized.sub(/\A(\s*)\[\s*\[/, '\1[')
-      opens = normalized.count("[")
-      closes = normalized.count("]")
+      opens = count_unquoted_char(normalized, "[")
+      closes = count_unquoted_char(normalized, "]")
       normalized += "]" * (opens - closes) if opens > closes
       normalized
+    end
+
+    def transform_unquoted_markup(markup)
+      result = +""
+      segment = +""
+      quote = nil
+      escaped = false
+
+      markup.each_char do |char|
+        if quote
+          result << char
+          if escaped
+            escaped = false
+          elsif char == "\\"
+            escaped = true
+          elsif char == quote
+            quote = nil
+          end
+        elsif char == "'" || char == '"'
+          result << yield(segment) unless segment.empty?
+          segment.clear
+          quote = char
+          result << char
+        else
+          segment << char
+        end
+      end
+
+      result << yield(segment) unless segment.empty?
+      result
+    end
+
+    def count_unquoted_char(markup, target)
+      count = 0
+      transform_unquoted_markup(markup) do |segment|
+        count += segment.count(target)
+        segment
+      end
+      count
     end
 
     def liquid_error?(error)

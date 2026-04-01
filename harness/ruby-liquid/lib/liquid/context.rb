@@ -16,7 +16,7 @@ module Liquid
       rethrow_errors: false,
       registers: nil,
       environment: nil,
-      resource_limits: ResourceLimits.new,
+      resource_limits: nil,
       **legacy_environments
     )
       if legacy_environments.any?
@@ -32,7 +32,7 @@ module Liquid
       @environment = environment || Liquid::Environment.default
       @rethrow_errors = rethrow_errors
       @registers = registers.is_a?(Liquid::Registers) ? registers : Liquid::Registers.new(registers || {})
-      @resource_limits = resource_limits
+      @resource_limits = resource_limits || ResourceLimits.new(@environment.default_resource_limits)
       @errors = []
       @warnings = []
       @filters = []

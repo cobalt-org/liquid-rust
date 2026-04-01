@@ -83,6 +83,7 @@ impl Renderable for Capture {
             .render_to(&mut captured, runtime)
             .trace_with(|| self.trace().into())?;
 
+        runtime.increment_assign_score(captured.len())?;
         let output = String::from_utf8(captured).expect("render only writes UTF-8");
         runtime.set_global(self.id.clone(), Value::scalar(output));
         Ok(())

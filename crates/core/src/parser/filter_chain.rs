@@ -1,15 +1,15 @@
-use std::sync;
 use std::fmt;
 use std::io::Write;
+use std::sync;
 
-use super::ParsedFilter;
 use super::ParseFilter;
+use super::ParsedFilter;
 use super::PluginRegistry;
 use crate::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use crate::model::{ValueCow, ValueView};
-use crate::runtime::{Expression, Variable};
 use crate::runtime::Renderable;
 use crate::runtime::Runtime;
+use crate::runtime::{Expression, Variable};
 
 /// A `Value` expression.
 pub struct FilterChain {
@@ -82,7 +82,8 @@ impl FilterChain {
         entry: ValueCow<'s>,
         runtime: &'s dyn Runtime,
     ) -> Result<ValueCow<'s>> {
-        self.apply_filters_with_identity(entry, runtime).map(|(entry, _)| entry)
+        self.apply_filters_with_identity(entry, runtime)
+            .map(|(entry, _)| entry)
     }
 
     fn apply_filters_with_identity<'s>(

@@ -1,9 +1,14 @@
+use std::collections::HashMap;
+use std::fmt;
 use std::sync;
 
 use crate::error::Error;
 use crate::error::Result;
 use crate::error::ResultLiquidExt;
-use crate::model::{Object, ObjectView, Scalar, ScalarCow, Value, ValueCow, ValueView};
+use crate::model::{
+    ArrayView, DisplayCow, KString, KStringCow, Object, ObjectView, Scalar, ScalarCow, State,
+    Value, ValueCow, ValueView,
+};
 use crate::parser::{FilterCall, ParseFilter, PluginRegistry};
 
 use super::PartialStore;
@@ -56,6 +61,26 @@ pub trait Runtime {
     /// Returning `Err(...)` aborts rendering and propagates the error.
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         Err(error)
+    }
+
+    /// Track the render score for the current template or block body.
+    fn increment_render_score(&self, _amount: usize) -> Result<()> {
+        Ok(())
+    }
+
+    /// Track assign-like writes into the runtime.
+    fn increment_assign_score(&self, _amount: usize) -> Result<()> {
+        Ok(())
+    }
+
+    /// Check output-related resource limits after writes have occurred.
+    fn check_resource_limits(&self) -> Result<()> {
+        Ok(())
+    }
+
+    /// Reset per-template resource counters while preserving cumulative totals.
+    fn reset_resource_limits(&self) -> Result<()> {
+        Ok(())
     }
 }
 
@@ -137,6 +162,22 @@ impl<R: Runtime + ?Sized> Runtime for &R {
 
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         <R as Runtime>::handle_render_error(self, error)
+    }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        <R as Runtime>::increment_render_score(self, amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        <R as Runtime>::increment_assign_score(self, amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        <R as Runtime>::check_resource_limits(self)
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        <R as Runtime>::reset_resource_limits(self)
     }
 }
 
@@ -364,6 +405,145 @@ impl Default for Registers {
     }
 }
 
+/// Tracks the number of bytes written to the active rendered output buffer.
+#[derive(Debug, Default)]
+pub struct RenderedBytesRegister {
+    bytes: usize,
+}
+
+impl RenderedBytesRegister {
+    /// Add newly written bytes to the running total.
+    pub fn add(&mut self, amount: usize) {
+        self.bytes += amount;
+    }
+
+    /// Return the total number of bytes written so far.
+    pub fn bytes(&self) -> usize {
+        self.bytes
+    }
+
+    /// Clear the running byte count before a fresh render begins.
+    pub fn reset(&mut self) {
+        self.bytes = 0;
+    }
+}
+
+/// Tracks variables assigned from range literals so they can render like ranges
+/// while still participating in array-style lookups.
+#[derive(Debug, Default)]
+pub struct AssignedRangeRegister {
+    ranges: HashMap<KString, (i64, i64)>,
+}
+
+impl AssignedRangeRegister {
+    /// Record the bounds for a variable assigned from a range literal.
+    pub fn insert(&mut self, name: KString, start: i64, stop: i64) {
+        self.ranges.insert(name, (start, stop));
+    }
+
+    /// Forget any range metadata associated with a variable.
+    pub fn remove(&mut self, name: &str) {
+        self.ranges.remove(name);
+    }
+
+    /// Look up the bounds for a previously assigned range variable.
+    pub fn get(&self, name: &str) -> Option<(i64, i64)> {
+        self.ranges.get(name).copied()
+    }
+}
+
+/// Array-like view for assigned range literals.
+#[derive(Clone, Debug)]
+pub struct AssignedRangeValue {
+    start: i64,
+    stop: i64,
+    values: Vec<Value>,
+}
+
+impl AssignedRangeValue {
+    /// Create a renderable range view.
+    pub fn new(start: i64, stop: i64) -> Self {
+        let values = (start..=stop).map(Value::scalar).collect();
+        Self {
+            start,
+            stop,
+            values,
+        }
+    }
+}
+
+impl ValueView for AssignedRangeValue {
+    fn as_debug(&self) -> &dyn fmt::Debug {
+        self
+    }
+
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(format!("{}..{}", self.start, self.stop)))
+    }
+
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(format!("({}..{})", self.start, self.stop)))
+    }
+
+    fn type_name(&self) -> &'static str {
+        "array"
+    }
+
+    fn query_state(&self, state: State) -> bool {
+        match state {
+            State::Truthy => true,
+            State::DefaultValue | State::Empty | State::Blank => self.values.is_empty(),
+        }
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        KStringCow::from_string(format!("{}..{}", self.start, self.stop))
+    }
+
+    fn to_value(&self) -> Value {
+        Value::Array(self.values.clone())
+    }
+
+    fn as_array(&self) -> Option<&dyn ArrayView> {
+        Some(self)
+    }
+}
+
+impl ArrayView for AssignedRangeValue {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
+    fn size(&self) -> i64 {
+        self.values.len() as i64
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        Box::new(self.values.iter().map(|value| value.as_view()))
+    }
+
+    fn contains_key(&self, index: i64) -> bool {
+        let index = if index >= 0 {
+            index
+        } else {
+            self.size() + index
+        };
+        (0..self.size()).contains(&index)
+    }
+
+    fn get(&self, index: i64) -> Option<&dyn ValueView> {
+        let index = if index >= 0 {
+            index
+        } else {
+            self.size() + index
+        };
+        self.values
+            .as_slice()
+            .get(index as usize)
+            .map(|value| value.as_view())
+    }
+}
+
 /// The current interrupt state. The interrupt state is used by
 /// the `break` and `continue` tags to halt template rendering
 /// at a given point and unwind the `render` call stack until
@@ -404,20 +584,12 @@ pub enum Interrupt {
 struct NullPartials;
 
 impl PartialStore for NullPartials {
-    fn contains(&self, _name: &str) -> bool {
-        false
-    }
-
     fn names(&self) -> Vec<&str> {
         Vec::new()
     }
 
-    fn try_get(&self, _name: &str) -> Option<sync::Arc<dyn Renderable>> {
-        None
-    }
-
-    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
-        Err(Error::with_msg("Partial does not exist").context("name", name.to_owned()))
+    fn get(&self, _name: &str) -> Result<Option<sync::Arc<dyn Renderable>>> {
+        Ok(None)
     }
 }
 

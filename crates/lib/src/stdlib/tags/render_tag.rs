@@ -184,12 +184,10 @@ impl Renderable for Render {
 
                     let scope = GlobalFrame::new(SandboxedStackFrame::new(runtime, &root));
 
-                    let partial = scope
-                        .partials()
-                        .get(&name)
-                        .or_else(|_| scope.partials().get(&format!("{name}.liquid")))
+                    let partial = get_render_partial(&scope, &name)
                         .trace_with(|| format!("{{% render {} %}}", self.partial).into())?;
 
+                    scope.reset_resource_limits()?;
                     partial
                         .render_to(writer, &scope)
                         .trace_with(|| format!("{{% render {} %}}", self.partial).into())
@@ -219,12 +217,10 @@ impl Renderable for Render {
 
             let scope = GlobalFrame::new(SandboxedStackFrame::new(runtime, &root));
 
-            let partial = scope
-                .partials()
-                .get(&name)
-                .or_else(|_| scope.partials().get(&format!("{name}.liquid")))
+            let partial = get_render_partial(&scope, &name)
                 .trace_with(|| format!("{{% render {} %}}", self.partial).into())?;
 
+            scope.reset_resource_limits()?;
             partial
                 .render_to(writer, &scope)
                 .trace_with(|| format!("{{% render {} %}}", self.partial).into())
@@ -234,6 +230,27 @@ impl Renderable for Render {
 
         Ok(())
     }
+}
+
+fn get_render_partial(runtime: &dyn Runtime, name: &str) -> Result<std::sync::Arc<dyn Renderable>> {
+    match runtime.partials().get(name) {
+        Ok(Some(partial)) => Ok(partial),
+        Ok(None) => match runtime.partials().get(&format!("{name}.liquid"))? {
+            Some(partial) => Ok(partial),
+            None => Err(missing_partial_error(runtime.partials(), name)),
+        },
+        Err(error) => Err(error),
+    }
+}
+
+fn missing_partial_error(partials: &dyn liquid_core::runtime::PartialStore, name: &str) -> Error {
+    let available = partials.names();
+    let mut available = available;
+    available.sort_unstable();
+    let available = itertools::join(available, ", ");
+    Error::with_msg("Unknown partial-template")
+        .context("requested partial", name.to_owned())
+        .context("available partials", available)
 }
 
 #[cfg(test)]
@@ -253,22 +270,18 @@ mod test {
     struct TestSource;
 
     impl partials::PartialSource for TestSource {
-        fn contains(&self, _name: &str) -> bool {
-            true
-        }
-
         fn names(&self) -> Vec<&str> {
             vec![]
         }
 
-        fn try_get<'a>(&'a self, name: &str) -> Option<std::borrow::Cow<'a, str>> {
-            match name {
+        fn get<'a>(&'a self, name: &str) -> liquid_core::Result<Option<std::borrow::Cow<'a, str>>> {
+            Ok(match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
                 "example_var.txt" => Some(r#"{{example_var}}"#.into()),
                 "example_multi_var.txt" => Some(r#"{{example_var}} {{example}}"#.into()),
                 "missing_extension.liquid" => Some(r#"{{example_var}}"#.into()),
-                _ => None
-            }
+                _ => None,
+            })
         }
     }
 
@@ -361,6 +374,42 @@ mod test {
             .build();
         let output = template.render(&runtime);
         assert!(output.is_err());
+    }
+
+    #[test]
+    fn render_does_not_fallback_on_non_missing_partial_error() {
+        #[derive(Debug, Clone, Copy)]
+        struct ErroringSource;
+
+        impl partials::PartialSource for ErroringSource {
+            fn names(&self) -> Vec<&str> {
+                vec!["example.liquid"]
+            }
+
+            fn get<'a>(&'a self, name: &str) -> Result<Option<std::borrow::Cow<'a, str>>> {
+                match name {
+                    "example" => Err(Error::with_msg("filesystem boom")),
+                    "example.liquid" => Ok(Some("should not render".into())),
+                    _ => Ok(None),
+                }
+            }
+        }
+
+        let text = "{% render 'example' %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::new(ErroringSource)
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+
+        let error = template.render(&runtime).unwrap_err().to_string();
+        assert!(error.contains("filesystem boom"));
     }
 
     #[test]

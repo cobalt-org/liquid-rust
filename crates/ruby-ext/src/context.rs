@@ -21,8 +21,14 @@ pub(crate) fn ext_context_new(
     }
 
     handle.aset("scopes", scopes)?;
-    handle.aset("registers", registers.unwrap_or_else(|| ruby.hash_new().as_value()))?;
-    handle.aset("error_mode", error_mode.unwrap_or_else(|| "strict".to_string()))?;
+    handle.aset(
+        "registers",
+        registers.unwrap_or_else(|| ruby.hash_new().as_value()),
+    )?;
+    handle.aset(
+        "error_mode",
+        error_mode.unwrap_or_else(|| "strict".to_string()),
+    )?;
     Ok(handle)
 }
 
@@ -34,7 +40,9 @@ pub(crate) fn ext_context_set(
 ) -> Result<Value, MagnusError> {
     let scopes: RArray = handle.lookup("scopes")?;
     let target = if scopes.is_empty() {
-        let hash = magnus::Ruby::get().expect("Ruby VM should be available").hash_new();
+        let hash = magnus::Ruby::get()
+            .expect("Ruby VM should be available")
+            .hash_new();
         scopes.push(hash)?;
         hash
     } else {
@@ -108,7 +116,10 @@ fn lookup_scope_value(handle: RHash, key: &str) -> Result<Value, MagnusError> {
         }
     }
 
-    Ok(magnus::Ruby::get().expect("Ruby VM should be available").qnil().as_value())
+    Ok(magnus::Ruby::get()
+        .expect("Ruby VM should be available")
+        .qnil()
+        .as_value())
 }
 
 fn scope_contains_key(handle: RHash, key: &str) -> Result<bool, MagnusError> {

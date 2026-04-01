@@ -136,6 +136,9 @@ fn try_find_borrowed<'o, 'i>(
     match child {
         ValueCow::Owned(child) => try_find_owned(child, path),
         ValueCow::Borrowed(child) => try_find_borrowed(child, path),
+        ValueCow::Shared(child) => {
+            try_find_borrowed(child.as_ref(), path).map(|v| ValueCow::Owned(v.into_owned()))
+        }
     }
 }
 
@@ -154,6 +157,9 @@ fn try_find_owned<'o, 'i>(
         ValueCow::Owned(child) => try_find_owned(child, path),
         ValueCow::Borrowed(child) => {
             try_find_borrowed(child, path).map(|v| ValueCow::Owned(v.into_owned()))
+        }
+        ValueCow::Shared(child) => {
+            try_find_borrowed(child.as_ref(), path).map(|v| ValueCow::Owned(v.into_owned()))
         }
     }
 }

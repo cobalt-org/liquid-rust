@@ -1,8 +1,9 @@
 use crate::error::Error;
 use crate::error::Result;
 use crate::model::{Object, ObjectView, ScalarCow, Value, ValueCow, ValueView};
+use std::sync::Arc;
 
-use super::Registers;
+use super::{AssignedRangeRegister, AssignedRangeValue, Registers};
 
 /// Layer variables on top of the existing runtime
 pub struct StackFrame<P, O> {
@@ -93,6 +94,22 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         self.parent.handle_render_error(error)
     }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_render_score(amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_assign_score(amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        self.parent.check_resource_limits()
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        self.parent.reset_resource_limits()
+    }
 }
 
 /// A stack frame that only provides a sandboxed set of globals
@@ -131,7 +148,15 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+            if let Some(range_value) = assigned_range_value(self.registers(), key.as_str()) {
+                if path.len() == 1 {
+                    Some(ValueCow::Shared(Arc::new(range_value)))
+                } else {
+                    crate::model::try_find(&range_value, &path[1..]).map(|v| v.into_owned().into())
+                }
+            } else {
+                crate::model::try_find(data.as_value(), path).map(|v| v.into_owned().into())
+            }
         } else {
             self.parent.try_get(path)
         }
@@ -144,7 +169,15 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
-            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+            if let Some(range_value) = assigned_range_value(self.registers(), key.as_str()) {
+                if path.len() == 1 {
+                    Ok(ValueCow::Shared(Arc::new(range_value)))
+                } else {
+                    crate::model::find(&range_value, &path[1..]).map(|v| v.into_owned().into())
+                }
+            } else {
+                crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+            }
         } else {
             self.parent.get(path)
         }
@@ -174,6 +207,29 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         self.parent.handle_render_error(error)
     }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_render_score(amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_assign_score(amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        self.parent.check_resource_limits()
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        self.parent.reset_resource_limits()
+    }
+}
+
+fn assigned_range_value(registers: &Registers, name: &str) -> Option<AssignedRangeValue> {
+    registers
+        .get_mut::<AssignedRangeRegister>()
+        .get(name)
+        .map(|(start, stop)| AssignedRangeValue::new(start, stop))
 }
 
 pub(crate) struct IndexFrame<P> {
@@ -252,6 +308,22 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
 
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         self.parent.handle_render_error(error)
+    }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_render_score(amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_assign_score(amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        self.parent.check_resource_limits()
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        self.parent.reset_resource_limits()
     }
 }
 
@@ -342,6 +414,22 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for SandboxedStackFrame<P,
 
     fn handle_render_error(&self, error: Error) -> Result<Option<String>> {
         self.parent.handle_render_error(error)
+    }
+
+    fn increment_render_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_render_score(amount)
+    }
+
+    fn increment_assign_score(&self, amount: usize) -> Result<()> {
+        self.parent.increment_assign_score(amount)
+    }
+
+    fn check_resource_limits(&self) -> Result<()> {
+        self.parent.check_resource_limits()
+    }
+
+    fn reset_resource_limits(&self) -> Result<()> {
+        self.parent.reset_resource_limits()
     }
 }
 

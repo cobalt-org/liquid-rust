@@ -21,6 +21,8 @@ impl Template {
 
 impl Renderable for Template {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        runtime.increment_render_score(self.elements.len())?;
+
         for el in &self.elements {
             match el.render_to(writer, runtime) {
                 Ok(()) => {}
@@ -32,6 +34,8 @@ impl Renderable for Template {
                     }
                 }
             }
+
+            runtime.check_resource_limits()?;
 
             // Did the last element we processed set an interrupt? If so, we
             // need to abandon the rest of our child elements and just

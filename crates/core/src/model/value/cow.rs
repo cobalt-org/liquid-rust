@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use crate::model::KStringCow;
 
@@ -17,6 +18,8 @@ pub enum ValueCow<'s> {
     Owned(Value),
     /// A borrowed `Value`
     Borrowed(&'s dyn ValueView),
+    /// A shared ad-hoc `ValueView`.
+    Shared(Arc<dyn ValueView + Send + Sync>),
 }
 
 impl ValueCow<'_> {
@@ -27,6 +30,7 @@ impl ValueCow<'_> {
         match self {
             ValueCow::Owned(x) => x,
             ValueCow::Borrowed(x) => x.to_value(),
+            ValueCow::Shared(x) => x.to_value(),
         }
     }
 
@@ -35,6 +39,7 @@ impl ValueCow<'_> {
         match self {
             ValueCow::Owned(o) => o.as_view(),
             ValueCow::Borrowed(b) => *b,
+            ValueCow::Shared(s) => s.as_ref(),
         }
     }
 }

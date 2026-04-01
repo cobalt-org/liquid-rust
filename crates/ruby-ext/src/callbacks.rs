@@ -16,7 +16,10 @@ pub(crate) fn call_to_liquid_value(value: Value) -> Result<Value, MagnusError> {
     }
 }
 
-pub(crate) fn call_liquid_method_missing(value: Value, method_name: &str) -> Result<Value, MagnusError> {
+pub(crate) fn call_liquid_method_missing(
+    value: Value,
+    method_name: &str,
+) -> Result<Value, MagnusError> {
     if value.respond_to("liquid_method_missing", false)? {
         value.funcall("liquid_method_missing", (method_name,))
     } else {

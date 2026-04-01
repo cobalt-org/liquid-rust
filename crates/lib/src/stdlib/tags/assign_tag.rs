@@ -52,9 +52,9 @@ impl ParseTag for AssignTag {
             liquid_core::parser::TryMatchToken::Matches((start, stop)) => {
                 AssignSource::Range(start, stop)
             }
-            liquid_core::parser::TryMatchToken::Fails(token) => AssignSource::Filter(
-                token.expect_filter_chain(options).into_result()?,
-            ),
+            liquid_core::parser::TryMatchToken::Fails(token) => {
+                AssignSource::Filter(token.expect_filter_chain(options).into_result()?)
+            }
         };
 
         // no more arguments should be supplied, trying to supply them is an error
@@ -84,7 +84,10 @@ impl Renderable for Assign {
     fn render_to(&self, _writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
         let (value, range_bounds, assign_score) = match &self.src {
             AssignSource::Range(start, stop) => {
-                let value = self.src.evaluate(runtime).trace_with(|| self.trace().into())?;
+                let value = self
+                    .src
+                    .evaluate(runtime)
+                    .trace_with(|| self.trace().into())?;
                 let start = int_argument(start, runtime, "start")? as i64;
                 let stop = int_argument(stop, runtime, "end")? as i64;
                 (value, Some((start, stop)), 1)
@@ -95,7 +98,9 @@ impl Renderable for Assign {
                     .map(|(value, preserved_identity)| (value.into_owned(), preserved_identity))
                     .trace_with(|| self.trace().into())?;
                 let range_bounds = copied_range_bounds(chain, runtime, preserved_identity)?;
-                let assign_score = range_bounds.map(|_| 1).unwrap_or_else(|| assign_score_of(&value));
+                let assign_score = range_bounds
+                    .map(|_| 1)
+                    .unwrap_or_else(|| assign_score_of(&value));
                 (value, range_bounds, assign_score)
             }
         };
@@ -129,7 +134,9 @@ impl AssignSource {
                 let start = int_argument(start, runtime, "start")? as i64;
                 let stop = int_argument(stop, runtime, "end")? as i64;
                 Ok(liquid_core::model::Value::Array(
-                    (start..=stop).map(liquid_core::model::Value::scalar).collect(),
+                    (start..=stop)
+                        .map(liquid_core::model::Value::scalar)
+                        .collect(),
                 ))
             }
         }
@@ -211,8 +218,8 @@ mod test {
     use liquid_core::model::Scalar;
     use liquid_core::model::Value;
     use liquid_core::parser::{self, FilterCall, ParseFilter, PluginRegistry};
-    use liquid_core::runtime::{self, Runtime};
     use liquid_core::runtime::RuntimeBuilder;
+    use liquid_core::runtime::{self, Runtime};
 
     use crate::stdlib;
 
@@ -257,11 +264,17 @@ mod test {
             self.inner.roots()
         }
 
-        fn try_get(&self, path: &[liquid_core::model::ScalarCow<'_>]) -> Option<liquid_core::model::ValueCow<'_>> {
+        fn try_get(
+            &self,
+            path: &[liquid_core::model::ScalarCow<'_>],
+        ) -> Option<liquid_core::model::ValueCow<'_>> {
             self.inner.try_get(path)
         }
 
-        fn get(&self, path: &[liquid_core::model::ScalarCow<'_>]) -> Result<liquid_core::model::ValueCow<'_>> {
+        fn get(
+            &self,
+            path: &[liquid_core::model::ScalarCow<'_>],
+        ) -> Result<liquid_core::model::ValueCow<'_>> {
             self.inner.get(path)
         }
 

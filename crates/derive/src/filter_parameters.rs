@@ -442,6 +442,9 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
                 ::liquid_core::ValueCow::Borrowed(v) => {
                     v.as_scalar()
                 },
+                ::liquid_core::ValueCow::Shared(v) => {
+                    v.as_scalar().map(|s| s.into_owned().into())
+                },
             }.ok_or_else(||
                 ::liquid_core::error::Error::with_msg("Invalid argument")
                     .context("argument", #liquid_name)
@@ -500,6 +503,9 @@ fn generate_evaluate_field(field: &FilterParameter<'_>) -> TokenStream {
                 },
                 ::liquid_core::ValueCow::Borrowed(v) => {
                     ::std::result::Result::Ok(v.to_kstr())
+                },
+                ::liquid_core::ValueCow::Shared(v) => {
+                    ::std::result::Result::Ok(v.to_kstr().into_owned().into())
                 },
             }
         },

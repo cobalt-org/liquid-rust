@@ -8,8 +8,8 @@ module Liquid
   end
 
   class Environment
-    attr_accessor :error_mode, :file_system, :exception_renderer, :default_resource_limits
-    attr_reader :tags, :filters
+    attr_accessor :exception_renderer, :default_resource_limits
+    attr_reader :error_mode, :file_system, :tags, :filters
 
     class << self
       def default
@@ -51,13 +51,25 @@ module Liquid
     end
 
     def dup
-      self.class.new(
+      copy = self.class.new(
         error_mode: @error_mode,
         file_system: @file_system,
         tags: @tags,
         filters: @filters,
         exception_renderer: @exception_renderer
       )
+      copy.default_resource_limits = ResourceLimits.new(@default_resource_limits)
+      copy
+    end
+
+    def error_mode=(error_mode)
+      @error_mode = error_mode
+      @native_handle&.[]=("error_mode", @error_mode.to_s)
+    end
+
+    def file_system=(file_system)
+      @file_system = file_system
+      @native_handle&.[]=("file_system", @file_system)
     end
 
     def register_tag(name, klass)

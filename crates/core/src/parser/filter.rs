@@ -240,7 +240,11 @@ pub trait Filter: Send + Sync + Debug + Display {
 
     /// Whether this filter returns the original input value unchanged for assign
     /// range-identity tracking.
-    fn preserves_input_identity(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<bool> {
+    fn preserves_input_identity(
+        &self,
+        _input: &dyn ValueView,
+        _runtime: &dyn Runtime,
+    ) -> Result<bool> {
         Ok(false)
     }
 }
