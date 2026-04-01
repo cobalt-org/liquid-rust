@@ -1,6 +1,6 @@
-use liquid::ParserBuilder;
 use liquid::model::{DisplayCow, KStringCow, State, Value as LiquidValue};
 use liquid::ObjectView;
+use liquid::ParserBuilder;
 use liquid::Template as LiquidTemplate;
 use liquid::ValueView;
 use magnus::{
@@ -21,7 +21,10 @@ pub(crate) fn ext_parse(
     let handle = ruby.hash_new();
     handle.aset("source", source)?;
     handle.aset("line_numbers", line_numbers)?;
-    handle.aset("error_mode", error_mode.unwrap_or_else(|| "strict".to_string()))?;
+    handle.aset(
+        "error_mode",
+        error_mode.unwrap_or_else(|| "strict".to_string()),
+    )?;
     handle.aset(
         "environment",
         environment.map_or_else(|| ruby.qnil().as_value(), ReprValue::as_value),
@@ -48,10 +51,7 @@ pub(crate) fn ext_render_strict(
     render_internal(ruby, handle, context_or_assigns, true)
 }
 
-pub(crate) fn ext_template_root(
-    _ruby: &magnus::Ruby,
-    handle: RHash,
-) -> Result<Value, MagnusError> {
+pub(crate) fn ext_template_root(_ruby: &magnus::Ruby, handle: RHash) -> Result<Value, MagnusError> {
     handle.lookup("root")
 }
 
@@ -119,7 +119,10 @@ fn parse_template(ruby: &magnus::Ruby, source: &str) -> Result<LiquidTemplate, M
         .map_err(|error| errors::syntax_error(ruby, error.to_string()))
 }
 
-fn build_root_handle(ruby: &magnus::Ruby, _template: &LiquidTemplate) -> Result<RArray, MagnusError> {
+fn build_root_handle(
+    ruby: &magnus::Ruby,
+    _template: &LiquidTemplate,
+) -> Result<RArray, MagnusError> {
     let nodes = ruby.ary_new();
     Ok(nodes)
 }

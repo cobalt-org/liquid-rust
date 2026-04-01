@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use liquid::model::{ArrayView, DisplayCow, KStringCow, ScalarCow, State, Value as LiquidValue};
@@ -36,7 +37,15 @@ pub(crate) enum RenderValue {
     Nil,
     Scalar(RenderScalar),
     Array(Vec<RenderValue>),
+    // Eager object data we already converted into a native key/value map.
+    // Example: { "product" => { "title" => "Hat" } } becomes
+    // Object({ "title" => Scalar("Hat") }).
     Object(RenderObject),
+    // Dynamic object data we keep behind a runtime lookup boundary.
+    // Example: a Drop-like object such as SettingsDrop that answers
+    // `settings["zero"]` via `[]`/`key?` stays dynamic instead of being
+    // flattened into a plain map up front.
+    DynamicObject(RenderDynamicObject),
 }
 
 #[derive(Clone, Debug)]
@@ -97,6 +106,136 @@ impl ValueView for RenderScalar {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct RenderDynamicObject {
+    value: Value,
+    cache: RefCell<HashMap<String, Box<RenderValue>>>,
+}
+
+impl Clone for RenderDynamicObject {
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value,
+            cache: RefCell::new(HashMap::new()),
+        }
+    }
+}
+
+impl RenderDynamicObject {
+    fn new(value: Value) -> Self {
+        Self {
+            value,
+            cache: RefCell::new(HashMap::new()),
+        }
+    }
+
+    fn render_string(&self) -> String {
+        self.value.to_string()
+    }
+
+    fn lookup_value(&self, index: &str) -> Result<Option<Value>, MagnusError> {
+        if self.value.respond_to("key?", false)? {
+            let has_key: bool = self.value.funcall("key?", (index,))?;
+            if !has_key {
+                return Ok(None);
+            }
+        }
+
+        if self.value.respond_to("[]", false)? {
+            let result: Value = self.value.funcall("[]", (index,))?;
+            if result.is_nil() {
+                Ok(None)
+            } else {
+                Ok(Some(result))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl ValueView for RenderDynamicObject {
+    fn as_debug(&self) -> &dyn std::fmt::Debug {
+        self
+    }
+
+    fn render(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(self.render_string()))
+    }
+
+    fn source(&self) -> DisplayCow<'_> {
+        DisplayCow::Owned(Box::new(self.render_string()))
+    }
+
+    fn type_name(&self) -> &'static str {
+        "object"
+    }
+
+    fn query_state(&self, state: State) -> bool {
+        matches!(state, State::Truthy)
+    }
+
+    fn to_kstr(&self) -> KStringCow<'_> {
+        KStringCow::from_string(self.render_string())
+    }
+
+    fn to_value(&self) -> LiquidValue {
+        LiquidValue::scalar(self.render_string())
+    }
+
+    fn as_object(&self) -> Option<&dyn ObjectView> {
+        Some(self)
+    }
+}
+
+impl ObjectView for RenderDynamicObject {
+    fn as_value(&self) -> &dyn ValueView {
+        self
+    }
+
+    fn size(&self) -> i64 {
+        0
+    }
+
+    fn keys<'k>(&'k self) -> Box<dyn Iterator<Item = KStringCow<'k>> + 'k> {
+        Box::new(std::iter::empty())
+    }
+
+    fn values<'k>(&'k self) -> Box<dyn Iterator<Item = &'k dyn ValueView> + 'k> {
+        Box::new(std::iter::empty())
+    }
+
+    fn iter<'k>(&'k self) -> Box<dyn Iterator<Item = (KStringCow<'k>, &'k dyn ValueView)> + 'k> {
+        Box::new(std::iter::empty())
+    }
+
+    fn contains_key(&self, index: &str) -> bool {
+        self.lookup_value(index).ok().flatten().is_some()
+    }
+
+    fn get<'s>(&'s self, index: &str) -> Option<&'s dyn ValueView> {
+        {
+            let cache = self.cache.borrow();
+            if let Some(value) = cache.get(index) {
+                let ptr: *const RenderValue = &**value;
+                drop(cache);
+                return Some(unsafe { &*ptr } as &dyn ValueView);
+            }
+        }
+
+        let value = self.lookup_value(index).ok().flatten()?;
+        let render_value = ruby_to_render_value(value).ok()?;
+
+        let mut cache = self.cache.borrow_mut();
+        let entry = cache
+            .entry(index.to_string())
+            .or_insert_with(|| Box::new(render_value));
+        let ptr: *const RenderValue = &**entry;
+        drop(cache);
+        Some(unsafe { &*ptr } as &dyn ValueView)
+    }
+}
+
 impl ValueView for RenderValue {
     fn as_debug(&self) -> &dyn std::fmt::Debug {
         self
@@ -108,6 +247,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.render(),
             Self::Array(values) => values.render(),
             Self::Object(values) => values.render(),
+            Self::DynamicObject(value) => value.render(),
         }
     }
 
@@ -117,6 +257,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.source(),
             Self::Array(values) => values.source(),
             Self::Object(values) => values.source(),
+            Self::DynamicObject(value) => value.source(),
         }
     }
 
@@ -126,6 +267,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.type_name(),
             Self::Array(values) => values.type_name(),
             Self::Object(values) => values.type_name(),
+            Self::DynamicObject(value) => value.type_name(),
         }
     }
 
@@ -135,6 +277,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.query_state(state),
             Self::Array(values) => values.query_state(state),
             Self::Object(values) => values.query_state(state),
+            Self::DynamicObject(value) => value.query_state(state),
         }
     }
 
@@ -144,6 +287,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.to_kstr(),
             Self::Array(values) => values.to_kstr(),
             Self::Object(values) => values.to_kstr(),
+            Self::DynamicObject(value) => value.to_kstr(),
         }
     }
 
@@ -153,6 +297,7 @@ impl ValueView for RenderValue {
             Self::Scalar(value) => value.to_value(),
             Self::Array(values) => values.to_value(),
             Self::Object(values) => values.to_value(),
+            Self::DynamicObject(value) => value.to_value(),
         }
     }
 
@@ -173,6 +318,7 @@ impl ValueView for RenderValue {
     fn as_object(&self) -> Option<&dyn ObjectView> {
         match self {
             Self::Object(values) => Some(values),
+            Self::DynamicObject(value) => Some(value),
             _ => None,
         }
     }
@@ -296,7 +442,16 @@ fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
     }
 
     if let Some(scalar) = ruby_to_scalar(semantic)? {
-        return Ok(RenderValue::Scalar(RenderScalar::new(scalar, render_override)));
+        return Ok(RenderValue::Scalar(RenderScalar::new(
+            scalar,
+            render_override,
+        )));
+    }
+
+    if semantic.respond_to("[]", false)? {
+        return Ok(RenderValue::DynamicObject(RenderDynamicObject::new(
+            semantic,
+        )));
     }
 
     Ok(RenderValue::Scalar(RenderScalar::new(
@@ -308,14 +463,17 @@ fn ruby_to_render_value(value: Value) -> Result<RenderValue, MagnusError> {
 fn liquid_to_render_value(value: LiquidValue) -> RenderValue {
     match value {
         LiquidValue::Nil => RenderValue::Nil,
-        LiquidValue::Scalar(scalar) => RenderValue::Scalar(RenderScalar::new(scalar.into_owned(), None)),
+        LiquidValue::Scalar(scalar) => {
+            RenderValue::Scalar(RenderScalar::new(scalar.into_owned(), None))
+        }
         LiquidValue::Array(values) => {
             RenderValue::Array(values.into_iter().map(liquid_to_render_value).collect())
         }
         LiquidValue::Object(values) => RenderValue::Object(liquid_to_render_object(values)),
-        LiquidValue::State(state) => {
-            RenderValue::Scalar(RenderScalar::new(ScalarCow::new(state.to_kstr().into_owned()), None))
-        }
+        LiquidValue::State(state) => RenderValue::Scalar(RenderScalar::new(
+            ScalarCow::new(state.to_kstr().into_owned()),
+            None,
+        )),
     }
 }
 
@@ -333,9 +491,12 @@ fn json_to_liquid_value(value: serde_json::Value) -> Result<LiquidValue, MagnusE
             }
         }
         serde_json::Value::String(value) => LiquidValue::scalar(value),
-        serde_json::Value::Array(values) => {
-            LiquidValue::array(values.into_iter().map(json_to_liquid_value).collect::<Result<Vec<_>, _>>()?)
-        }
+        serde_json::Value::Array(values) => LiquidValue::array(
+            values
+                .into_iter()
+                .map(json_to_liquid_value)
+                .collect::<Result<Vec<_>, _>>()?,
+        ),
         serde_json::Value::Object(values) => {
             let mut object = LiquidObject::new();
             for (key, value) in values {
