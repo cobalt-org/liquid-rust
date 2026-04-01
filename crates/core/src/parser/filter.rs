@@ -237,6 +237,12 @@ impl Debug for ParsedFilter {
 pub trait Filter: Send + Sync + Debug + Display {
     // This will evaluate the expressions and evaluate the filter.
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value>;
+
+    /// Whether this filter returns the original input value unchanged for assign
+    /// range-identity tracking.
+    fn preserves_input_identity(&self, _input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<bool> {
+        Ok(false)
+    }
 }
 
 /// A trait to register a new filter in the `liquid::Parser`.

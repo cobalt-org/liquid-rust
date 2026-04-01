@@ -88,6 +88,10 @@ impl Filter for DefaultFilter {
             Ok(input.to_value())
         }
     }
+
+    fn preserves_input_identity(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<bool> {
+        Ok(!input.query_state(liquid_core::model::State::DefaultValue))
+    }
 }
 
 #[cfg(test)]
