@@ -24,9 +24,26 @@ impl FilterChain {
     /// Process `Value` expression within `runtime`'s stack.
     pub fn evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
         // take either the provided value or the value from the provided variable
-        let mut entry = self.entry.evaluate(runtime)?;
+        let entry = self.entry.evaluate(runtime)?;
+        self.apply_filters(entry, runtime)
+    }
 
-        // apply all specified filters
+    /// Process `Value` expression within `runtime`'s stack for existence-style checks.
+    ///
+    /// Missing entries are treated as `nil` so filters still run, matching Liquid's
+    /// behavior for expressions like `{% if missing | upcase %}`.
+    pub fn try_evaluate<'s>(&'s self, runtime: &'s dyn Runtime) -> Result<ValueCow<'s>> {
+        let entry = self.entry.try_evaluate(runtime).unwrap_or_default();
+        self.apply_filters(entry, runtime)
+    }
+
+    /// Apply each parsed filter in order, preserving the current value so filter
+    /// failures can report both the filter name and the input that triggered it.
+    fn apply_filters<'s>(
+        &'s self,
+        mut entry: ValueCow<'s>,
+        runtime: &'s dyn Runtime,
+    ) -> Result<ValueCow<'s>> {
         for filter in &self.filters {
             entry = ValueCow::Owned(
                 filter
@@ -45,12 +62,11 @@ impl FilterChain {
 
 impl fmt::Display for FilterChain {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{} | {}",
-            self.entry,
-            itertools::join(&self.filters, " | ")
-        )
+        write!(f, "{}", self.entry)?;
+        // The old join-based formatter produced a trailing " | " for zero-filter chains.
+        self.filters
+            .iter()
+            .try_for_each(|filter| write!(f, " | {}", filter))
     }
 }
 
