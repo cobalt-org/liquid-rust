@@ -1,5 +1,4 @@
 #[test]
-#[should_panic] // liquid-rust#245
 fn test_captures_block_content_in_variable() {
     assert_template_result!(
         r#"test string"#,

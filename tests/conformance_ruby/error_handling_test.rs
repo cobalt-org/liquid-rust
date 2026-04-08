@@ -150,3 +150,87 @@ fn test_included_template_name_with_line_numbers() {
     assert_equal "Argument error:\nLiquid error (product line 1): argument error", page
     assert_equal "product", template.errors.first.template_name*/
 }
+
+#[cfg(feature = "conformance-harness")]
+mod conformance_harness_tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use liquid::conformance::{self, ConformanceCallbacks, RenderConfig};
+    use liquid_core::runtime::{Runtime, RuntimeBuilder};
+    use liquid_core::{Error, Result};
+
+    #[derive(Default)]
+    struct NormalizingCallbacks {
+        seen_messages: RefCell<Vec<String>>,
+    }
+
+    impl ConformanceCallbacks for NormalizingCallbacks {
+        fn handle_render_error(
+            &self,
+            _runtime: &dyn Runtime,
+            error: Error,
+        ) -> Result<Option<String>> {
+            self.seen_messages.borrow_mut().push(error.to_string());
+            Ok(Some("[normalized render error]".to_owned()))
+        }
+
+        fn increment_render_ops(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn increment_assign_bytes(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn check_resource_limits(
+            &self,
+            _runtime: &dyn Runtime,
+            _rendered_bytes: usize,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        fn reset_resource_limits(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_conformance_callbacks_normalize_unknown_filter_errors() {
+        let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+        let template = conformance::parse(
+            "{{ price | missing_late_filter }}",
+            parser.conformance_language(),
+        )
+        .unwrap();
+        let globals = o!({ "price": 42 });
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let callbacks = Rc::new(NormalizingCallbacks::default());
+        let mut output = Vec::new();
+
+        conformance::render_to(
+            &template,
+            &mut output,
+            &runtime,
+            &RenderConfig {
+                strict_variables: false,
+                strict_filters: true,
+                callbacks: callbacks.clone(),
+                fallback_filters: None,
+                live_scope_session: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            String::from_utf8(output).unwrap(),
+            "[normalized render error]"
+        );
+        assert!(callbacks
+            .seen_messages
+            .borrow()
+            .iter()
+            .any(|message| message.contains("Unknown filter")));
+    }
+}

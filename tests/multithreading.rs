@@ -34,5 +34,36 @@ pub fn pass_between_threads() {
     }
 
     // Wait for threads to finish
-    handles.into_iter().map(|h| h.join()).next_back();
+    for handle in handles {
+        handle.join().expect("thread render should succeed");
+    }
+}
+
+#[test]
+pub fn shared_template_remains_correct_across_many_concurrent_renders() {
+    let template = liquid::ParserBuilder::with_stdlib()
+        .build()
+        .unwrap()
+        .parse("{{ label }}:{{ value }}")
+        .unwrap();
+    let template = Arc::new(template);
+
+    let mut handles = Vec::new();
+    for worker in 0..8 {
+        let template = Arc::clone(&template);
+        handles.push(thread::spawn(move || {
+            for iteration in 0..25 {
+                let globals = liquid::object!({
+                    "label": format!("worker-{worker}"),
+                    "value": iteration,
+                });
+                let rendered = template.render(&globals).unwrap();
+                assert_eq!(rendered, format!("worker-{worker}:{iteration}"));
+            }
+        }));
+    }
+
+    for handle in handles {
+        handle.join().expect("thread render should succeed");
+    }
 }

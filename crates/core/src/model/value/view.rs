@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::fmt;
 
 use crate::model::KStringCow;
+use crate::model::Object;
 
 use super::DisplayCow;
 use super::State;
@@ -28,6 +29,29 @@ pub trait ValueView: fmt::Debug {
     fn to_kstr(&self) -> KStringCow<'_>;
     /// Convert to an owned type.
     fn to_value(&self) -> Value;
+    /// Convert to an owned value suitable for live-scope snapshots.
+    fn to_live_scope_value(&self) -> Value {
+        if let Some(object) = self.as_object() {
+            let mut snapshot = Object::new();
+            for (key, item) in object.iter() {
+                snapshot.insert(key.into_owned(), item.to_live_scope_value());
+            }
+            Value::Object(snapshot)
+        } else if let Some(array) = self.as_array() {
+            Value::Array(
+                array
+                    .values()
+                    .map(|item| item.to_live_scope_value())
+                    .collect(),
+            )
+        } else if let Some(scalar) = self.as_scalar() {
+            Value::Scalar(scalar.into_owned())
+        } else if let Some(state) = self.as_state() {
+            Value::State(state)
+        } else {
+            self.to_value()
+        }
+    }
 
     /// Extracts the scalar value if it is a scalar.
     fn as_scalar(&self) -> Option<ScalarCow<'_>> {
@@ -97,6 +121,9 @@ impl<V: ValueView + ?Sized> ValueView for &V {
     fn to_value(&self) -> Value {
         <V as ValueView>::to_value(self)
     }
+    fn to_live_scope_value(&self) -> Value {
+        <V as ValueView>::to_live_scope_value(self)
+    }
 
     fn as_scalar(&self) -> Option<ScalarCow<'_>> {
         <V as ValueView>::as_scalar(self)
@@ -144,6 +171,9 @@ impl<T: ValueView> ValueView for Option<T> {
     }
     fn to_value(&self) -> Value {
         forward(self).to_value()
+    }
+    fn to_live_scope_value(&self) -> Value {
+        forward(self).to_live_scope_value()
     }
 
     fn as_scalar(&self) -> Option<ScalarCow<'_>> {
@@ -295,21 +325,7 @@ pub(crate) fn value_eq(lhs: &dyn ValueView, rhs: &dyn ValueView) -> bool {
     match (lhs.as_scalar(), rhs.as_scalar()) {
         (Some(x), Some(y)) => return x == y,
         (None, None) => (),
-        // encode Ruby truthiness: all values except false and nil are true
-        (Some(x), _) => {
-            if rhs.is_nil() {
-                return !x.to_bool().unwrap_or(true);
-            } else {
-                return x.to_bool().unwrap_or(false);
-            }
-        }
-        (_, Some(x)) => {
-            if lhs.is_nil() {
-                return !x.to_bool().unwrap_or(true);
-            } else {
-                return x.to_bool().unwrap_or(false);
-            }
-        }
+        (Some(_), _) | (_, Some(_)) => return false,
     }
 
     false

@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::model::{Value, ValueView};
 use crate::runtime::{Expression, Runtime};
 
@@ -65,6 +65,112 @@ pub trait FilterParameters<'a>: Sized + FilterParametersReflection + Debug + Dis
 pub struct FilterArguments<'a> {
     pub positional: Box<dyn Iterator<Item = Expression>>,
     pub keyword: Box<dyn Iterator<Item = (&'a str, Expression)> + 'a>,
+}
+
+pub enum ParsedFilter {
+    Compiled(FilterCall, Box<dyn Filter>),
+    Deferred(FilterCall),
+    DeferredError(FilterCall, Error),
+}
+
+/// A parsed filter call whose arguments are still unresolved until render time.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FilterCall {
+    name: String,
+    positional: Vec<Expression>,
+    keyword: Vec<(String, Expression)>,
+}
+
+impl FilterCall {
+    pub fn new(
+        name: String,
+        positional: Vec<Expression>,
+        keyword: Vec<(String, Expression)>,
+    ) -> Self {
+        Self {
+            name,
+            positional,
+            keyword,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn positional_len(&self) -> usize {
+        self.positional.len()
+    }
+
+    pub fn args(&self) -> FilterArguments<'_> {
+        FilterArguments {
+            positional: Box::new(self.positional.clone().into_iter()),
+            keyword: Box::new(
+                self.keyword
+                    .iter()
+                    .map(|(name, expression)| (name.as_str(), expression.clone())),
+            ),
+        }
+    }
+}
+
+impl Display for FilterCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)?;
+
+        if self.positional.is_empty() && self.keyword.is_empty() {
+            return Ok(());
+        }
+
+        write!(f, ": ")?;
+
+        let mut needs_comma = false;
+        for expression in &self.positional {
+            if needs_comma {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", expression)?;
+            needs_comma = true;
+        }
+
+        for (name, expression) in &self.keyword {
+            if needs_comma {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}: {}", name, expression)?;
+            needs_comma = true;
+        }
+
+        Ok(())
+    }
+}
+
+impl Display for ParsedFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Compiled(filter, _) => write!(f, "{}", filter),
+            Self::Deferred(filter) => write!(f, "{}", filter),
+            Self::DeferredError(filter, _) => write!(f, "{}", filter),
+        }
+    }
+}
+
+impl Debug for ParsedFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Compiled(filter_call, filter) => f
+                .debug_tuple("Compiled")
+                .field(filter_call)
+                .field(&format_args!("{}", filter))
+                .finish(),
+            Self::Deferred(filter) => f.debug_tuple("Deferred").field(filter).finish(),
+            Self::DeferredError(filter, error) => f
+                .debug_tuple("DeferredError")
+                .field(filter)
+                .field(error)
+                .finish(),
+        }
+    }
 }
 
 /// A trait that holds a filter, ready to evaluate.
@@ -143,6 +249,16 @@ pub struct FilterArguments<'a> {
 pub trait Filter: Send + Sync + Debug + Display {
     // This will evaluate the expressions and evaluate the filter.
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value>;
+
+    /// Whether this filter returns the original input value unchanged for assign
+    /// range-identity tracking.
+    fn preserves_input_identity(
+        &self,
+        _input: &dyn ValueView,
+        _runtime: &dyn Runtime,
+    ) -> Result<bool> {
+        Ok(false)
+    }
 }
 
 /// A trait to register a new filter in the `liquid::Parser`.

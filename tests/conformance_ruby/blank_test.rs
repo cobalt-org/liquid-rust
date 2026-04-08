@@ -34,16 +34,12 @@ fn repeat<S: AsRef<str>>(content: S, count: usize) -> String {
 struct BlankTestFilesystem;
 
 impl liquid::partials::PartialSource for BlankTestFilesystem {
-    fn contains(&self, _name: &str) -> bool {
-        true
-    }
-
     fn names(&self) -> Vec<&str> {
         vec![]
     }
 
-    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
-        Some(name.to_owned().into())
+    fn get<'a>(&'a self, name: &str) -> Result<Option<borrow::Cow<'a, str>>, liquid::Error> {
+        Ok(Some(name.to_owned().into()))
     }
 }
 
@@ -57,13 +53,11 @@ fn test_new_tags_are_not_blank_by_default() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_loops_are_blank() {
     assert_template_result!("", wrap_in_for(" "));
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_if_else_are_blank() {
     assert_template_result!("", "{% if true %} {% elsif false %} {% else %} {% endif %}",);
 }
@@ -82,19 +76,16 @@ fn test_mark_as_blank_only_during_parsing() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_comments_are_blank() {
     assert_template_result!("", wrap(" {% comment %} whatever {% endcomment %} "),);
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_captures_are_blank() {
     assert_template_result!("", wrap(" {% capture foo %} whatever {% endcapture %} "),);
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_nested_blocks_are_blank_but_only_if_all_children_are() {
     assert_template_result!("", &wrap(wrap(" ")));
     assert_template_result!(
@@ -107,13 +98,11 @@ fn test_nested_blocks_are_blank_but_only_if_all_children_are() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_assigns_are_blank() {
     assert_template_result!("", &wrap(r#" {% assign foo = "bar" %} "#));
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_whitespace_is_blank() {
     assert_template_result!("", wrap(" "));
     assert_template_result!("", wrap("\t"));
@@ -172,7 +161,6 @@ fn test_include_is_blank() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#244
 fn test_case_is_blank() {
     assert_template_result!("", wrap(" {% assign foo = 'bar' %} {% case foo %} {% when 'bar' %} {% when 'whatever' %} {% else %} {% endcase %} "));
     assert_template_result!("", wrap(" {% assign foo = 'else' %} {% case foo %} {% when 'bar' %} {% when 'whatever' %} {% else %} {% endcase %} "));

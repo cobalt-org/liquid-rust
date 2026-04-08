@@ -87,7 +87,7 @@ impl<'s> ScalarCow<'s> {
     pub fn into_string(self) -> KString {
         match self.0 {
             ScalarCowEnum::Integer(x) => x.to_string().into(),
-            ScalarCowEnum::Float(x) => x.to_string().into(),
+            ScalarCowEnum::Float(x) => render_float(x),
             ScalarCowEnum::Bool(x) => x.to_string().into(),
             ScalarCowEnum::DateTime(x) => x.to_string().into(),
             ScalarCowEnum::Date(x) => x.to_string().into(),
@@ -102,6 +102,11 @@ impl<'s> ScalarCow<'s> {
             ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
             _ => None,
         }
+    }
+
+    /// Returns true when this scalar originated as a string.
+    pub fn is_string(&self) -> bool {
+        matches!(self.0, ScalarCowEnum::Str(_))
     }
 
     /// Interpret as a float, if possible
@@ -314,16 +319,34 @@ impl_copyable!(i16, i64);
 impl_copyable!(u32, i64);
 impl_copyable!(i32, i64);
 
+struct FloatDisplay(f64);
+
+fn render_float(value: f64) -> KString {
+    let mut rendered = value.to_string();
+    if value.is_finite() && !rendered.contains('.') && !rendered.contains(['e', 'E']) {
+        rendered.push_str(".0");
+    }
+
+    rendered.into()
+}
+
+impl fmt::Display for FloatDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let rendered = render_float(self.0);
+        f.write_str(rendered.as_str())
+    }
+}
+
 impl ValueView for f64 {
     fn as_debug(&self) -> &dyn fmt::Debug {
         self
     }
 
     fn render(&self) -> DisplayCow<'_> {
-        DisplayCow::Borrowed(self)
+        DisplayCow::Owned(Box::new(FloatDisplay(*self)))
     }
     fn source(&self) -> DisplayCow<'_> {
-        DisplayCow::Borrowed(self)
+        DisplayCow::Owned(Box::new(FloatDisplay(*self)))
     }
     fn type_name(&self) -> &'static str {
         "fractional number"
@@ -889,10 +912,15 @@ mod test {
     #[test]
     fn test_to_str_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_kstr(), "42");
+        assert_eq!(val.to_kstr(), "42.0");
+        assert_eq!(val.clone().into_string(), "42.0");
+        assert_eq!(val.into_cow_str(), "42.0");
 
         let val: ScalarCow<'_> = 42.34.into();
         assert_eq!(val.to_kstr(), "42.34");
+
+        let val: ScalarCow<'_> = (-0.0f64).into();
+        assert_eq!(val.to_kstr(), "-0.0");
     }
 
     #[test]

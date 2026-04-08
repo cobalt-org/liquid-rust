@@ -45,6 +45,9 @@ pub mod model {
 
 pub use crate::parser::*;
 pub use crate::template::*;
+#[cfg(feature = "conformance-harness")]
+#[doc(hidden)]
+pub use liquid_core::conformance;
 pub use liquid_core::model::{_ObjectView as ObjectView, _ValueView as ValueView};
 pub use liquid_core::object;
 pub use liquid_core::to_object;

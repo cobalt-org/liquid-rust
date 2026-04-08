@@ -9,6 +9,9 @@ extern crate pest_derive;
 #[macro_use]
 mod macros;
 
+#[cfg(feature = "conformance-harness")]
+#[doc(hidden)]
+pub mod conformance;
 pub mod error;
 pub mod model;
 pub mod parser;
@@ -29,6 +32,7 @@ pub use parser::TagTokenIter;
 pub use parser::{BlockReflection, ParseBlock, TagBlock};
 pub use parser::{Filter, FilterParameters, FilterReflection, ParseFilter};
 pub use parser::{ParseTag, TagReflection};
+pub use runtime::Blankness;
 pub use runtime::Expression;
 pub use runtime::Renderable;
 pub use runtime::Runtime;

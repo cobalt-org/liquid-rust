@@ -24,6 +24,15 @@ pub trait ArrayView: ValueView {
     fn contains_key(&self, index: i64) -> bool;
     /// Access a contained `Value`.
     fn get(&self, index: i64) -> Option<&dyn ValueView>;
+    /// Materialize a slice of the array as owned `Value`s.
+    fn slice(&self, from: usize, to: Option<usize>) -> Vec<Value> {
+        let take = to.map(|end| end.saturating_sub(from));
+        let iter = self.values().skip(from);
+        match take {
+            Some(limit) => iter.take(limit).map(|value| value.to_value()).collect(),
+            None => iter.map(|value| value.to_value()).collect(),
+        }
+    }
     /// Returns the first element.
     fn first(&self) -> Option<&dyn ValueView> {
         self.get(0)

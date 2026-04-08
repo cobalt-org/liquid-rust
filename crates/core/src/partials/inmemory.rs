@@ -26,15 +26,11 @@ impl InMemorySource {
 }
 
 impl PartialSource for InMemorySource {
-    fn contains(&self, name: &str) -> bool {
-        self.data.contains_key(name)
-    }
-
     fn names(&self) -> Vec<&str> {
         self.data.keys().map(|s| s.as_str()).collect()
     }
 
-    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
-        self.data.get(name).map(|s| s.as_str().into())
+    fn get<'a>(&'a self, name: &str) -> crate::error::Result<Option<borrow::Cow<'a, str>>> {
+        Ok(self.data.get(name).map(|s| s.as_str().into()))
     }
 }

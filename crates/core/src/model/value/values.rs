@@ -321,8 +321,8 @@ mod test {
     #[test]
     fn test_to_string_scalar() {
         let val = Value::scalar(42f64);
-        assert_eq!(&val.render().to_string(), "42");
-        assert_eq!(&val.to_kstr(), "42");
+        assert_eq!(&val.render().to_string(), "42.0");
+        assert_eq!(&val.to_kstr(), "42.0");
     }
 
     #[test]
@@ -332,8 +332,8 @@ mod test {
             Value::scalar("test"),
             Value::scalar(5.3),
         ]);
-        assert_eq!(&val.render().to_string(), "3test5.3");
-        assert_eq!(&val.to_kstr(), "3test5.3");
+        assert_eq!(&val.render().to_string(), "3.0test5.3");
+        assert_eq!(&val.to_kstr(), "3.0test5.3");
     }
 
     // TODO make a test for object, remember values are in arbitrary orders in HashMaps
@@ -374,8 +374,8 @@ mod test {
     }
 
     #[test]
-    fn arrays_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(true), Value::Array(Vec::new()));
+    fn arrays_do_not_equal_true() {
+        assert_ne!(Value::scalar(true), Value::Array(Vec::new()));
         assert!(Value::Array(Vec::new()).query_state(State::Truthy));
     }
 
@@ -406,8 +406,8 @@ mod test {
     }
 
     #[test]
-    fn objects_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(true), Value::Object(Object::new()));
+    fn objects_do_not_equal_true() {
+        assert_ne!(Value::scalar(true), Value::Object(Object::new()));
         assert!(Value::Object(Object::new()).query_state(State::Truthy));
     }
 
@@ -417,11 +417,10 @@ mod test {
     }
 
     #[test]
-    fn nils_have_ruby_truthiness() {
-        assert_eq!(Value::scalar(false), Value::Nil);
+    fn nils_do_not_equal_false() {
+        assert_ne!(Value::scalar(false), Value::Nil);
         assert!(!Value::Nil.query_state(State::Truthy));
 
-        assert_eq!(Value::scalar(false), Value::Nil);
         assert!(Value::scalar(true) != Value::Nil);
         assert!(Value::scalar("") != Value::Nil);
     }

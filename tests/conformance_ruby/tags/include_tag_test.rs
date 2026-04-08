@@ -6,15 +6,11 @@ use liquid::ValueView;
 struct TestFileSystem;
 
 impl liquid::partials::PartialSource for TestFileSystem {
-    fn contains(&self, _name: &str) -> bool {
-        true
-    }
-
     fn names(&self) -> Vec<&str> {
         vec![]
     }
 
-    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>> {
+    fn get<'a>(&'a self, name: &str) -> Result<Option<borrow::Cow<'a, str>>, liquid::Error> {
         let template = match name {
             "product" => "Product: {{ product.title }} ".into(),
             "locale_variables" => "Locale: {{echo1}} {{echo2}}".into(),
@@ -31,7 +27,7 @@ impl liquid::partials::PartialSource for TestFileSystem {
             "assignments" => "{% assign foo = 'bar' %}".into(),
             _ => name.to_owned().into(),
         };
-        Some(template)
+        Ok(Some(template))
     }
 }
 
@@ -49,7 +45,6 @@ fn test_include_tag_looks_for_file_system_in_registers_first() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_include_tag_with() {
     assert_template_result!(
         "Product: Draft 151cm ",
@@ -70,7 +65,6 @@ fn test_include_tag_with_default_name() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_include_tag_for() {
     assert_template_result!(
         "Product: Draft 151cm Product: Element 155cm ",
@@ -81,7 +75,6 @@ fn test_include_tag_for() {
 }
 
 #[test]
-#[should_panic] // fails due to strict_variables
 fn test_include_tag_with_local_variables() {
     assert_template_result!(
         "Locale: test123 ",
@@ -134,7 +127,6 @@ fn test_nested_include_tag() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#237
 fn test_nested_include_with_variable() {
     assert_template_result!(
         "Product: Draft 151cm details ",
@@ -156,16 +148,12 @@ fn test_nested_include_with_variable() {
 struct InfiniteFileSystem;
 
 impl liquid::partials::PartialSource for InfiniteFileSystem {
-    fn contains(&self, _name: &str) -> bool {
-        true
-    }
-
     fn names(&self) -> Vec<&str> {
         vec![]
     }
 
-    fn try_get<'a>(&'a self, _name: &str) -> Option<borrow::Cow<'a, str>> {
-        Some("-{% include 'loop' %}".into())
+    fn get<'a>(&'a self, _name: &str) -> Result<Option<borrow::Cow<'a, str>>, liquid::Error> {
+        Ok(Some("-{% include 'loop' %}".into()))
     }
 }
 
@@ -183,7 +171,6 @@ fn test_recursively_included_template_does_not_produce_endless_loop() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#275
 fn test_dynamically_chosen_template() {
     assert_template_result!(
         "Test123",
@@ -258,16 +245,20 @@ fn test_passing_options_to_included_templates() {
 fn test_render_raise_argument_error_when_template_is_undefined() {
     let parser = liquid();
     let data = liquid::Object::new();
+    let options = liquid::RenderOptions {
+        strict_variables: true,
+        error_mode: liquid::ErrorMode::Strict,
+        ..liquid::RenderOptions::default()
+    };
 
     let template = parser.parse("{% include undefined_variable %}").unwrap();
-    template.render(&data).unwrap_err();
+    template.render_with_options(&data, &options).unwrap_err();
 
     let template = parser.parse("{% include nil %}").unwrap();
-    template.render(&data).unwrap_err();
+    template.render_with_options(&data, &options).unwrap_err();
 }
 
 #[test]
-#[should_panic] // liquid-rust#275
 fn test_including_via_variable_value() {
     assert_template_result!(
         "from TestFileSystem",

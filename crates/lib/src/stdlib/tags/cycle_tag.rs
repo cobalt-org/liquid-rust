@@ -3,7 +3,6 @@ use std::io::Write;
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::parser::TagToken;
-use liquid_core::parser::TryMatchToken;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -47,22 +46,14 @@ impl ParseTag for CycleTag {
 
 /// Internal implementation of cycle, to allow easier testing.
 fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<Cycle> {
-    let mut name = String::new();
+    let mut name = None;
     let mut values = Vec::new();
 
     let first = arguments.expect_next("Identifier or value expected")?;
     let second = arguments.next();
     match second.as_ref().map(TagToken::as_str) {
         Some(":") => {
-            name = match first.expect_identifier() {
-                TryMatchToken::Matches(name) => name.to_owned(),
-                TryMatchToken::Fails(name) => match name.expect_literal() {
-                    // This will allow non string literals such as 0 to be parsed as such.
-                    // Is this ok or should more specific functions be created?
-                    TryMatchToken::Matches(name) => name.to_kstr().into_string(),
-                    TryMatchToken::Fails(name) => return name.raise_error().into_err(),
-                },
-            };
+            name = Some(CycleName::Named(first.expect_value().into_result()?));
         }
         Some(",") | None => {
             // first argument is the first item in the cycle
@@ -92,41 +83,66 @@ fn parse_cycle(mut arguments: TagTokenIter<'_>, _options: &Language) -> Result<C
         }
     }
 
-    if name.is_empty() {
-        name = itertools::join(values.iter(), "-");
-    }
-
     // no more arguments should be supplied, trying to supply them is an error
     arguments.expect_nothing()?;
+
+    if values.is_empty() {
+        return Err(arguments.raise_error("Identifier or value expected"));
+    }
+
+    let name = name.unwrap_or_else(|| CycleName::Unnamed(itertools::join(values.iter(), "-")));
 
     Ok(Cycle { name, values })
 }
 
 #[derive(Clone, Debug)]
 struct Cycle {
-    name: String,
+    name: CycleName,
     values: Vec<Expression>,
 }
 
 impl Cycle {
     fn trace(&self) -> String {
+        let name = match &self.name {
+            CycleName::Named(expression) => format!("{expression}: "),
+            CycleName::Unnamed(_) => String::new(),
+        };
         format!(
             "{{% cycle {} %}}",
-            itertools::join(self.values.iter(), ", ")
+            name + &itertools::join(self.values.iter(), ", ")
         )
     }
 }
 
 impl Renderable for Cycle {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
+        let name = self
+            .name
+            .render(runtime)
+            .trace_with(|| self.trace().into())?;
         let expr = runtime
             .registers()
             .get_mut::<CycleRegister>()
-            .cycle(&self.name, &self.values)
+            .cycle(&name, &self.values)
             .trace_with(|| self.trace().into())?;
         let value = expr.evaluate(runtime).trace_with(|| self.trace().into())?;
         write!(writer, "{}", value.render()).replace("Failed to render")?;
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+enum CycleName {
+    Named(Expression),
+    Unnamed(String),
+}
+
+impl CycleName {
+    fn render(&self, runtime: &dyn Runtime) -> Result<String> {
+        match self {
+            Self::Named(expression) => Ok(expression.evaluate(runtime)?.render().to_string()),
+            Self::Unnamed(name) => Ok(name.clone()),
+        }
     }
 }
 
@@ -178,7 +194,14 @@ mod test {
     fn unnamed_cycle_gets_a_name() {
         let tag = parser::Tag::new("{% cycle this, cycle, has, no, name %}").unwrap();
         let cycle = parse_cycle(tag.into_tokens(), &options()).unwrap();
-        assert!(!cycle.name.is_empty());
+        assert!(matches!(cycle.name, CycleName::Unnamed(ref name) if !name.is_empty()));
+    }
+
+    #[test]
+    fn named_cycle_requires_at_least_one_value() {
+        let tag = parser::Tag::new("{% cycle 'group': %}").unwrap();
+        let error = parse_cycle(tag.into_tokens(), &options()).unwrap_err();
+        assert!(error.to_string().contains("Identifier or value expected"));
     }
 
     #[test]

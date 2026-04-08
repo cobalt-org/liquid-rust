@@ -2,7 +2,6 @@ use std::borrow;
 use std::fmt;
 use std::sync;
 
-use crate::error::Error;
 use crate::error::Result;
 use crate::parser::Language;
 use crate::runtime::PartialStore;
@@ -34,24 +33,11 @@ pub trait PartialCompiler {
 
 /// Partial-template source repository.
 pub trait PartialSource: fmt::Debug {
-    /// Check if partial-template exists.
-    fn contains(&self, name: &str) -> bool;
-
     /// Enumerate all partial-templates.
     fn names(&self) -> Vec<&str>;
 
     /// Access a partial-template.
-    fn try_get<'a>(&'a self, name: &str) -> Option<borrow::Cow<'a, str>>;
-
-    /// Access a partial-template
-    fn get<'a>(&'a self, name: &str) -> Result<borrow::Cow<'a, str>> {
-        self.try_get(name).ok_or_else(|| {
-            let mut available: Vec<_> = self.names();
-            available.sort_unstable();
-            let available = itertools::join(available, ", ");
-            Error::with_msg("Unknown partial-template")
-                .context("requested partial", name.to_owned())
-                .context("available partials", available)
-        })
+    fn get<'a>(&'a self, _name: &str) -> Result<Option<borrow::Cow<'a, str>>> {
+        Ok(None)
     }
 }

@@ -6,12 +6,15 @@ use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::FilterChain;
 use liquid_core::parser::TagToken;
+use liquid_core::Blankness;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
+
+use super::{elements_are_blank, remove_blank_text_nodes};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct IfBlock;
@@ -63,21 +66,54 @@ fn parse_if(
 
     let mut if_true = Vec::new();
     let mut if_false = None;
+    let mut if_true_visible = false;
+    let mut if_false_visible = false;
 
     while let Some(element) = tokens.next()? {
         match element {
-            BlockElement::Tag(tag) => match tag.name() {
-                "else" => {
-                    if_false = Some(tokens.parse_all(options)?);
-                    break;
+            BlockElement::Tag(mut tag) => {
+                let tag_name = tag.name().to_owned();
+                match tag_name.as_str() {
+                    "else" => {
+                        let elements = tokens.parse_all(options)?;
+                        if_false_visible = !elements_are_blank(&elements);
+                        if_false = Some(elements);
+                        break;
+                    }
+                    "elsif" => {
+                        let conditional = parse_if(tag.into_tokens(), tokens, options)?;
+                        if_false_visible = !conditional.blankness().is_blank();
+                        if_false = Some(vec![conditional]);
+                        break;
+                    }
+                    name if name.starts_with("end") => {
+                        return Err(tag
+                            .tokens()
+                            .raise_error(&invalid_delimiter_message(name, "if", "endif")));
+                    }
+                    _ => {
+                        let renderable = tag.parse(tokens, options)?;
+                        if_true_visible |= !renderable.blankness().is_blank();
+                        if_true.push(renderable)
+                    }
                 }
-                "elsif" => {
-                    if_false = Some(vec![parse_if(tag.into_tokens(), tokens, options)?]);
-                    break;
-                }
-                _ => if_true.push(tag.parse(tokens, options)?),
-            },
-            element => if_true.push(element.parse(tokens, options)?),
+            }
+            element => {
+                let renderable = element.parse(tokens, options)?;
+                if_true_visible |= !renderable.blankness().is_blank();
+                if_true.push(renderable)
+            }
+        }
+    }
+
+    let block_blank = elements_are_blank(&if_true)
+        && if_false
+            .as_ref()
+            .is_none_or(|elements| elements_are_blank(elements));
+    if block_blank {
+        remove_blank_text_nodes(&mut if_true);
+        if let Some(elements) = if_false.as_mut() {
+            remove_blank_text_nodes(elements);
         }
     }
 
@@ -89,6 +125,7 @@ fn parse_if(
         mode: true,
         if_true,
         if_false,
+        visible_on_error: if_true_visible || if_false_visible,
     }))
 }
 
@@ -126,17 +163,50 @@ impl ParseBlock for UnlessBlock {
 
         let mut if_true = Vec::new();
         let mut if_false = None;
+        let mut if_true_visible = false;
+        let mut if_false_visible = false;
 
         while let Some(element) = tokens.next()? {
             match element {
-                BlockElement::Tag(tag) => match tag.name() {
-                    "else" => {
-                        if_false = Some(tokens.parse_all(options)?);
-                        break;
+                BlockElement::Tag(mut tag) => {
+                    let tag_name = tag.name().to_owned();
+                    match tag_name.as_str() {
+                        "else" => {
+                            let elements = tokens.parse_all(options)?;
+                            if_false_visible = !elements_are_blank(&elements);
+                            if_false = Some(elements);
+                            break;
+                        }
+                        name if name.starts_with("end") => {
+                            return Err(tag.tokens().raise_error(&invalid_delimiter_message(
+                                name,
+                                "unless",
+                                "endunless",
+                            )));
+                        }
+                        _ => {
+                            let renderable = tag.parse(&mut tokens, options)?;
+                            if_true_visible |= !renderable.blankness().is_blank();
+                            if_true.push(renderable)
+                        }
                     }
-                    _ => if_true.push(tag.parse(&mut tokens, options)?),
-                },
-                element => if_true.push(element.parse(&mut tokens, options)?),
+                }
+                element => {
+                    let renderable = element.parse(&mut tokens, options)?;
+                    if_true_visible |= !renderable.blankness().is_blank();
+                    if_true.push(renderable)
+                }
+            }
+        }
+
+        let block_blank = elements_are_blank(&if_true)
+            && if_false
+                .as_ref()
+                .is_none_or(|elements| elements_are_blank(elements));
+        if block_blank {
+            remove_blank_text_nodes(&mut if_true);
+            if let Some(elements) = if_false.as_mut() {
+                remove_blank_text_nodes(elements);
             }
         }
 
@@ -149,6 +219,7 @@ impl ParseBlock for UnlessBlock {
             mode: false,
             if_true,
             if_false,
+            visible_on_error: if_true_visible || if_false_visible,
         }))
     }
 
@@ -163,6 +234,7 @@ struct Conditional {
     mode: bool,
     if_true: Template,
     if_false: Option<Template>,
+    visible_on_error: bool,
 }
 
 impl Conditional {
@@ -179,7 +251,11 @@ impl Conditional {
 
 impl Renderable for Conditional {
     fn render_to(&self, writer: &mut dyn Write, runtime: &dyn Runtime) -> Result<()> {
-        let condition = self.compare(runtime).trace_with(|| self.trace().into())?;
+        let condition = match self.compare(runtime).trace_with(|| self.trace().into()) {
+            Ok(condition) => condition,
+            Err(_) if !self.visible_on_error => return Ok(()),
+            Err(error) => return Err(error),
+        };
         if condition {
             self.if_true
                 .render_to(writer, runtime)
@@ -192,6 +268,19 @@ impl Renderable for Conditional {
         }
 
         Ok(())
+    }
+
+    fn blankness(&self) -> Blankness {
+        if self.if_true.blankness().is_blank()
+            && self
+                .if_false
+                .as_ref()
+                .is_none_or(|template| template.blankness().is_blank())
+        {
+            Blankness::BlankNode
+        } else {
+            Blankness::NotBlank
+        }
     }
 }
 
@@ -239,17 +328,29 @@ struct BinaryCondition {
 impl BinaryCondition {
     pub(crate) fn evaluate(&self, runtime: &dyn Runtime) -> Result<bool> {
         let a = self.lh.try_evaluate(runtime)?;
-        let ca = ValueViewCmp::new(a.as_view());
         let b = self.rh.try_evaluate(runtime)?;
-        let cb = ValueViewCmp::new(b.as_view());
 
         let result = match self.comparison {
-            ComparisonOperator::Equals => ca == cb,
-            ComparisonOperator::NotEquals => ca != cb,
-            ComparisonOperator::LessThan => ca < cb,
-            ComparisonOperator::GreaterThan => ca > cb,
-            ComparisonOperator::LessThanEquals => ca <= cb,
-            ComparisonOperator::GreaterThanEquals => ca >= cb,
+            ComparisonOperator::Equals => {
+                ValueViewCmp::new(a.as_view()) == ValueViewCmp::new(b.as_view())
+            }
+            ComparisonOperator::NotEquals => {
+                ValueViewCmp::new(a.as_view()) != ValueViewCmp::new(b.as_view())
+            }
+            ComparisonOperator::LessThan => {
+                compare_ordering(a.as_view(), b.as_view(), ComparisonOperator::LessThan)?
+            }
+            ComparisonOperator::GreaterThan => {
+                compare_ordering(a.as_view(), b.as_view(), ComparisonOperator::GreaterThan)?
+            }
+            ComparisonOperator::LessThanEquals => {
+                compare_ordering(a.as_view(), b.as_view(), ComparisonOperator::LessThanEquals)?
+            }
+            ComparisonOperator::GreaterThanEquals => compare_ordering(
+                a.as_view(),
+                b.as_view(),
+                ComparisonOperator::GreaterThanEquals,
+            )?,
             ComparisonOperator::Contains => contains_check(a.as_view(), b.as_view())?,
         };
 
@@ -288,6 +389,44 @@ fn contains_check(a: &dyn ValueView, b: &dyn ValueView) -> Result<bool> {
             "string | array | object",
             Some(a.type_name()),
         ))
+    }
+}
+
+fn compare_ordering(
+    left: &dyn ValueView,
+    right: &dyn ValueView,
+    op: ComparisonOperator,
+) -> Result<bool> {
+    if let Some(ordering) = ValueViewCmp::new(left).partial_cmp(&ValueViewCmp::new(right)) {
+        return Ok(match op {
+            ComparisonOperator::LessThan => ordering.is_lt(),
+            ComparisonOperator::GreaterThan => ordering.is_gt(),
+            ComparisonOperator::LessThanEquals => !ordering.is_gt(),
+            ComparisonOperator::GreaterThanEquals => !ordering.is_lt(),
+            _ => unreachable!("compare_ordering only supports ordering operators"),
+        });
+    }
+
+    if left.as_scalar().is_some() && right.as_scalar().is_some() {
+        return Err(Error::with_msg(format!(
+            "comparison of {} with {} failed",
+            ruby_type_name(left),
+            ruby_type_name(right),
+        )));
+    }
+
+    Ok(false)
+}
+
+fn ruby_type_name(value: &dyn ValueView) -> &'static str {
+    match value.type_name() {
+        "whole number" => "Integer",
+        "fractional number" => "Float",
+        "boolean" => "Boolean",
+        "date time" => "DateTime",
+        "date" => "Date",
+        "string" => "String",
+        other => other,
     }
 }
 
@@ -420,6 +559,10 @@ fn parse_condition_value(token: TagToken<'_>, options: &Language) -> Result<Filt
     token.parse_as_filter_chain(options)
 }
 
+fn invalid_delimiter_message(tag: &str, block_name: &str, block_delimiter: &str) -> String {
+    format!("'{tag}' is not a valid delimiter for {block_name} tags. use {block_delimiter}")
+}
+
 fn parse_conjunction_chain(
     arguments: &mut PeekableTagTokenIter<'_>,
     options: &Language,
@@ -530,14 +673,11 @@ mod test {
 
     fn options_with_filters() -> Language {
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("upcase".to_owned(), Box::new(UpcaseFilterParser));
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("downcase".to_owned(), Box::new(DowncaseFilterParser));
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("fail".to_owned(), Box::new(FailFilterParser));
         options
     }
@@ -574,6 +714,17 @@ mod test {
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "if false");
+    }
+
+    #[test]
+    fn zero_float_comparison() {
+        let text = "{% if expect == 0.0 %}if true{% else %}if false{% endif %}";
+        let template = parser::parse(text, &options()).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("expect".into(), Value::scalar(0f64));
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "if true");
     }
 
     #[test]
@@ -1001,10 +1152,24 @@ mod test {
     fn unknown_filter_in_condition_reports_filter_error() {
         let text = r#"{% if name | nonexistent_filter == "HELLO" %}match{% endif %}"#;
         let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
 
-        let error = parser::parse(text, &options).unwrap_err().to_string();
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        let error = template.render(&runtime).unwrap_err().to_string();
         assert!(error.contains("Unknown filter"));
         assert!(error.contains("requested filter=nonexistent_filter"));
+    }
+
+    #[test]
+    fn known_filter_with_invalid_arguments_still_fails_during_render() {
+        let text = r#"{% if name | upcase: 1 == "HELLO" %}match{% endif %}"#;
+        let options = options_with_filters();
+        let template = parser::parse(text, &options).map(Template::new).unwrap();
+
+        let runtime = RuntimeBuilder::new().build();
+        runtime.set_global("name".into(), Value::scalar("hello"));
+        assert!(template.render(&runtime).is_err());
     }
 
     #[test]

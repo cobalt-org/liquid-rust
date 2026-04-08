@@ -317,12 +317,7 @@ struct ReverseFilter;
 
 impl Filter for ReverseFilter {
     fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
-        let mut array: Vec<_> = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?
-            .values()
-            .map(|v| v.to_value())
-            .collect();
+        let mut array: Vec<_> = as_sequence(input).map(|v| v.to_value()).collect();
         array.reverse();
         Ok(Value::array(array))
     }
@@ -357,12 +352,16 @@ impl Filter for MapFilter {
     fn evaluate(&self, input: &dyn ValueView, runtime: &dyn Runtime) -> Result<Value> {
         let args = self.args.evaluate(runtime)?;
 
-        let array = input
-            .as_array()
-            .ok_or_else(|| invalid_input("Array expected"))?;
+        let values: Box<dyn Iterator<Item = &dyn ValueView>> = if let Some(array) = input.as_array()
+        {
+            array.values()
+        } else if input.as_object().is_some() {
+            Box::new(std::iter::once(input))
+        } else {
+            return Err(invalid_input("Array expected"));
+        };
 
-        let result: Vec<_> = array
-            .values()
+        let result: Vec<_> = values
             .filter_map(|v| {
                 v.as_object()
                     .and_then(|v| v.get(&args.property))
@@ -725,7 +724,11 @@ mod tests {
     #[test]
     fn unit_reverse_string() {
         let input = "abc";
-        liquid_core::call_filter!(Reverse, input).unwrap_err();
+        let desired_result = liquid_core::value!(["abc"]);
+        assert_eq!(
+            liquid_core::call_filter!(Reverse, input).unwrap(),
+            desired_result
+        );
     }
 
     #[test]

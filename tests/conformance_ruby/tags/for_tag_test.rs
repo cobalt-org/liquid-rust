@@ -44,7 +44,6 @@ fn test_for_reversed() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#273
 fn test_for_with_range() {
     assert_template_result!(
         " 1  2  3 ",
@@ -246,7 +245,6 @@ fn test_offset_only() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#274
 fn test_pause_resume() {
     let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
@@ -267,7 +265,6 @@ fn test_pause_resume() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#274
 fn test_pause_resume_limit() {
     let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
@@ -288,7 +285,6 @@ fn test_pause_resume_limit() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#274
 fn test_pause_resume_big_limit() {
     let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = r#"
@@ -309,7 +305,6 @@ fn test_pause_resume_big_limit() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#274
 fn test_pause_resume_big_offset() {
     let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
     let markup = "{%for i in array.items limit:3 %}{{i}}{%endfor%}
@@ -322,6 +317,19 @@ fn test_pause_resume_big_offset() {
       456
       next
       ";
+    assert_template_result!(expected, markup, assigns);
+}
+
+#[test]
+fn test_pause_resume_after_break() {
+    let assigns = o!({ "array": { "items": [1, 2, 3, 4, 5, 6, 7, 8, 9, 0] } });
+    let markup =
+        "{%for i in array.items limit:5 %}{{i}}{% if i == 2 %}{% break %}{% endif %}{%endfor%}
+      next
+      {%for i in array.items offset:continue limit:3 %}{{i}}{%endfor%}";
+    let expected = "12
+      next
+      345";
     assert_template_result!(expected, markup, assigns);
 }
 
@@ -419,7 +427,6 @@ fn test_for_with_continue() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#270
 fn test_for_tag_string() {
     // ruby 1.8.7 "String".each: Enumerator with single "String" element.
     // ruby 1.9.3 no longer supports .each on String though we mimic
@@ -469,7 +476,6 @@ fn test_for_parentloop_references_parent_loop() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#271
 fn test_for_parentloop_nil_when_not_present() {
     assert_template_result!(
         ".1 .2 ",
@@ -492,7 +498,6 @@ fn test_inner_for_over_empty_input() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#270
 fn test_blank_string_not_iterable() {
     assert_template_result!(
         "",

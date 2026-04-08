@@ -27,14 +27,15 @@ Raw = @{ (!(TagStart | ExpressionStart) ~ ANY)+ }
 
 
 // Inner parsing
-Identifier = @{ (ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN) ~ (ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN)* }
+IdentifierStart = _{ ASCII_ALPHA | "_" | NON_WHITESPACE_CONTROL_HYPHEN }
+IdentifierContinue = _{ ASCII_ALPHANUMERIC | "_" | NON_WHITESPACE_CONTROL_HYPHEN }
+Identifier = @{ IdentifierStart ~ IdentifierContinue* }
+VariableIdentifier = @{ IdentifierStart ~ IdentifierContinue* ~ "?"? }
 
-Variable = ${ Identifier
-            ~ ( ("." ~ Identifier)
-              | ("[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]")
-              )*
-            }
-Value = { Literal | Variable }
+VariableRoot = _{ VariableIdentifier | VariableLookup }
+VariableLookup = { "[" ~ WHITESPACE* ~ Value ~ WHITESPACE* ~ "]" }
+Variable = ${ VariableRoot ~ ( ("." ~ VariableIdentifier) | VariableLookup )* }
+Value = { Range | Literal | Variable }
 Filter = { Identifier ~ (":" ~ FilterArgument ~ ("," ~ FilterArgument)*)? }
 FilterChain = { Value ~ ("|" ~ Filter)* }
 PositionalFilterArgument = {Value}
@@ -42,16 +43,17 @@ KeywordFilterArgument = {Identifier ~ ":" ~ Value}
 FilterArgument = _{KeywordFilterArgument | PositionalFilterArgument }
 
 // Literals
-NilLiteral = @{ "nil" | "null" }
-EmptyLiteral = @{ "empty" }
-BlankLiteral = @{ "blank" }
+LiteralTail = _{ IdentifierContinue | "?" | "." | "[" }
+NilLiteral = @{ ("nil" | "null") ~ !LiteralTail }
+EmptyLiteral = @{ "empty" ~ !LiteralTail }
+BlankLiteral = @{ "blank" ~ !LiteralTail }
 StringLiteral = @{ ("'" ~ (!"'" ~ ANY)* ~ "'")
 		        		 | ("\"" ~ (!"\"" ~ ANY)* ~ "\"") }
 
 IntegerLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
 FloatLiteral = @{ ("+" | "-")? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 
-BooleanLiteral = @{ "true" | "false" }
+BooleanLiteral = @{ ("true" | "false") ~ !LiteralTail }
 
 Literal = { NilLiteral | EmptyLiteral | BlankLiteral | StringLiteral | FloatLiteral | IntegerLiteral | BooleanLiteral }
 

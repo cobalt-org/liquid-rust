@@ -228,7 +228,6 @@ fn test_case_on_size_with_else() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#278
 fn test_case_on_length_with_else() {
     assert_template_result!(
         "else",
@@ -333,9 +332,12 @@ fn test_assign() {
 
 #[test]
 fn test_assign_unassigned() {
-    // Implementation specific: strict_variables is enabled, testing that instead.
     let assigns = o!({ "var": "content" });
-    assert_render_error!("var2:{{var2}} {%assign var2 = var%} var2:{{var2}}", assigns);
+    assert_template_result!(
+        "var2:  var2:content",
+        "var2:{{var2}} {%assign var2 = var%} var2:{{var2}}",
+        assigns
+    );
 }
 
 #[test]

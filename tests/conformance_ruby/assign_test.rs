@@ -39,6 +39,23 @@ fn test_assign_with_filter() {
 }
 
 #[test]
+fn test_assign_range_alias_preserves_range_identity() {
+    assert_template_result!(
+        "1..5|5",
+        "{% assign foo = (1..5) %}{% assign bar = foo %}{{ bar }}|{{ bar.size }}"
+    );
+}
+
+#[test]
+fn test_assign_overwrite_after_plain_alias_uses_latest_value() {
+    assert_template_result!(
+        "x",
+        r#"{% assign foo = bar %}{% assign foo = "x" %}{{ foo }}"#,
+        o!({ "bar": "y" }),
+    );
+}
+
+#[test]
 fn test_assign_syntax_error() {
     assert_parse_error!(r#"{% assign foo not values %}."#);
 }

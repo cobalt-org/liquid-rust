@@ -20,6 +20,11 @@ fn test_raise_on_label_and_no_close_brackets_percent() {
 }
 
 #[test]
+fn test_raise_on_unterminated_tag_start_inside_output() {
+    assert_parse_error!("TEST {{ {% ");
+}
+
+#[test]
 fn test_error_on_empty_filter() {
     // Implementation specific: lax parser
 

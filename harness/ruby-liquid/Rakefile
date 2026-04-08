@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+require "bundler/gem_tasks"
+require "rb_sys/extensiontask"
+
+spec = Gem::Specification.load(File.expand_path("liquid.gemspec", __dir__))
+
+RbSys::ExtensionTask.new("liquid_ext", spec) do |ext|
+  ext.ext_dir = "ext/liquid_ext"
+  ext.lib_dir = "lib/liquid"
+end

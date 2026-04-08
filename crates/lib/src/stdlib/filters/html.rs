@@ -11,7 +11,30 @@ fn nr_escaped(text: &str) -> usize {
             return prefix.len();
         }
     }
-    0
+
+    match (text.as_bytes().get(0), text.as_bytes().get(1)) {
+        (Some(b'#'), Some(b'x' | b'X')) => {}
+        _ => return 0,
+    }
+
+    let Some(end) = text.find(';') else {
+        return 0;
+    };
+
+    let entity = &text[..end];
+    let rest = if let Some(rest) = entity.strip_prefix("#x") {
+        rest
+    } else if let Some(rest) = entity.strip_prefix("#X") {
+        rest
+    } else {
+        return 0;
+    };
+
+    if !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_hexdigit()) {
+        end + 1
+    } else {
+        0
+    }
 }
 
 // The code is adapted from
@@ -187,6 +210,10 @@ mod tests {
         assert_eq!(
             liquid_core::call_filter!(EscapeOnce, "&lt;&gt;&amp;&#39;&quot;&xyz;").unwrap(),
             liquid_core::value!("&lt;&gt;&amp;&#39;&quot;&amp;xyz;")
+        );
+        assert_eq!(
+            liquid_core::call_filter!(EscapeOnce, "&#x27;").unwrap(),
+            liquid_core::value!("&#x27;")
         );
     }
 

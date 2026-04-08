@@ -203,4 +203,16 @@ mod test {
         let output = template.render(&runtime).unwrap();
         assert_eq!(output, "019");
     }
+
+    #[test]
+    fn increment_requires_identifier() {
+        let error = parser::parse("{% increment %}", &options()).unwrap_err();
+        assert!(error.to_string().contains("Identifier expected."));
+    }
+
+    #[test]
+    fn decrement_requires_identifier() {
+        let error = parser::parse("{% decrement %}", &options()).unwrap_err();
+        assert!(error.to_string().contains("Identifier expected."));
+    }
 }

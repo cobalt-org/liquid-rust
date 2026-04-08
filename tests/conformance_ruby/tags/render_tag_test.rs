@@ -185,7 +185,6 @@ fn test_break_through_render() {
 }
 
 #[test]
-#[should_panic] // `increment` without a variable is not supported yet
 fn test_increment_is_isolated_between_renders() {
     assert_template_result!(
         "010",
@@ -196,7 +195,6 @@ fn test_increment_is_isolated_between_renders() {
 }
 
 #[test]
-#[should_panic] // `decrement` without a variable is not supported yet
 fn test_decrement_is_isolated_between_renders() {
     assert_template_result!(
         "-1-2-1",
@@ -236,7 +234,6 @@ fn test_includes_will_not_render_inside_nested_sibling_tags() {
 }
 
 #[test]
-#[should_panic] // Implicit name is not supported yet
 fn test_render_tag_with() {
     assert_template_result!(
         "Product: Draft 151cm ",
@@ -344,6 +341,106 @@ fn test_render_tag_renders_error_with_template_name_from_template_factory() {
     liquid(o!({ "foo": "{{ foo.standard_error }}" },
     template_factory: StubTemplateFactory.new,
     render_errors: true,
-  )
+    )
 }
 */
+
+#[cfg(feature = "conformance-harness")]
+mod conformance_harness_tests {
+    use std::rc::Rc;
+
+    use liquid::conformance::{self, ConformanceCallbacks, FallbackFilterResolver, RenderConfig};
+    use liquid_core::parser::FilterCall;
+    use liquid_core::runtime::RuntimeBuilder;
+    use liquid_core::{Error, Result, Runtime, Value, ValueView};
+
+    struct NoopCallbacks;
+
+    impl ConformanceCallbacks for NoopCallbacks {
+        fn handle_render_error(
+            &self,
+            _runtime: &dyn Runtime,
+            error: Error,
+        ) -> Result<Option<String>> {
+            Err(error)
+        }
+
+        fn increment_render_ops(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn increment_assign_bytes(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn check_resource_limits(
+            &self,
+            _runtime: &dyn Runtime,
+            _rendered_bytes: usize,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        fn reset_resource_limits(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    struct LateFilterResolver;
+
+    impl FallbackFilterResolver for LateFilterResolver {
+        fn has_filter(&self, name: &str) -> bool {
+            name == "late_money"
+        }
+
+        fn evaluate(
+            &self,
+            _filter: &FilterCall,
+            input: &dyn ValueView,
+            _runtime: &dyn Runtime,
+        ) -> Result<Value> {
+            Ok(Value::scalar(format!("late:{}", input.render())))
+        }
+    }
+
+    #[test]
+    fn test_render_propagates_fallback_filter_resolver_into_isolated_scope() {
+        let mut source = liquid::partials::InMemorySource::new();
+        source.add("snippet", "{{ product.title | late_money }}");
+        let partials = liquid::partials::EagerCompiler::new(source);
+        let parser = liquid::ParserBuilder::with_stdlib()
+            .partials(partials)
+            .build()
+            .unwrap();
+        let template = conformance::parse(
+            "{% render 'snippet', product: product %}",
+            parser.conformance_language(),
+        )
+        .unwrap();
+        let partials = parser
+            .conformance_partials()
+            .expect("render test should include compiled partials");
+        let globals = o!({ "product": { "title": "Draft 151cm" } });
+        let runtime = RuntimeBuilder::new()
+            .set_globals(&globals)
+            .set_partials(partials.as_ref())
+            .build();
+        let mut output = Vec::new();
+
+        conformance::render_to(
+            &template,
+            &mut output,
+            &runtime,
+            &RenderConfig {
+                strict_variables: false,
+                strict_filters: true,
+                callbacks: Rc::new(NoopCallbacks),
+                fallback_filters: Some(Rc::new(LateFilterResolver)),
+                live_scope_session: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(String::from_utf8(output).unwrap(), "late:Draft 151cm");
+    }
+}

@@ -1,8 +1,7 @@
 use std::io::Write;
 
 use crate::error::{Result, ResultLiquidReplaceExt};
-use crate::runtime::Renderable;
-use crate::runtime::Runtime;
+use crate::runtime::{Blankness, Renderable, Runtime};
 
 /// A raw template expression.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -21,5 +20,13 @@ impl Renderable for Text {
     fn render_to(&self, writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
         write!(writer, "{}", &self.text).replace("Failed to render")?;
         Ok(())
+    }
+
+    fn blankness(&self) -> Blankness {
+        if self.text.trim().is_empty() {
+            Blankness::BlankText
+        } else {
+            Blankness::NotBlank
+        }
     }
 }

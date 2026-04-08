@@ -1,11 +1,13 @@
 use std::fmt;
 use std::io::Write;
+use std::{collections::HashMap, str::FromStr};
 
 use liquid_core::error::{ResultLiquidExt, ResultLiquidReplaceExt};
-use liquid_core::model::{Object, ObjectView, Value, ValueCow, ValueView};
+use liquid_core::model::{ObjectView, Value, ValueCow, ValueView};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::runtime::{Interrupt, InterruptRegister};
+use liquid_core::Blankness;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -13,6 +15,8 @@ use liquid_core::Template;
 use liquid_core::{runtime::StackFrame, Runtime};
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
 use liquid_core::{Error, Result};
+
+use super::{elements_are_blank, remove_blank_text_nodes};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ForBlock;
@@ -55,6 +59,7 @@ impl ParseBlock for ForBlock {
             .into_result_custom_msg("\"in\" expected.")?;
 
         let range = arguments.expect_next("Array or range expected.")?;
+        let loop_name = format!("{}-{}", var_name, range.as_str());
         let range = match range.expect_value() {
             TryMatchToken::Matches(array) => RangeExpression::Array(array),
             TryMatchToken::Fails(range) => match range.expect_range() {
@@ -70,8 +75,9 @@ impl ParseBlock for ForBlock {
 
         while let Some(token) = arguments.next() {
             match token.as_str() {
+                "," => {}
                 "limit" => limit = Some(parse_attr(&mut arguments)?),
-                "offset" => offset = Some(parse_attr(&mut arguments)?),
+                "offset" => offset = Some(parse_for_offset_attr(&mut arguments)?),
                 "reversed" => reversed = true,
                 _ => {
                     return token
@@ -102,12 +108,24 @@ impl ParseBlock for ForBlock {
             }
         }
 
+        let block_blank = elements_are_blank(&item_template)
+            && else_template
+                .as_ref()
+                .is_none_or(|elements| elements_are_blank(elements));
+        if block_blank {
+            remove_blank_text_nodes(&mut item_template);
+            if let Some(elements) = else_template.as_mut() {
+                remove_blank_text_nodes(elements);
+            }
+        }
+
         let item_template = Template::new(item_template);
         let else_template = else_template.map(Template::new);
 
         tokens.assert_empty();
         Ok(Box::new(For {
             var_name: liquid_core::model::KString::from_ref(var_name),
+            loop_name,
             range,
             item_template,
             else_template,
@@ -125,11 +143,12 @@ impl ParseBlock for ForBlock {
 #[derive(Debug)]
 struct For {
     var_name: liquid_core::model::KString,
+    loop_name: String,
     range: RangeExpression,
     item_template: Template,
     else_template: Option<Template>,
     limit: Option<Expression>,
-    offset: Option<Expression>,
+    offset: Option<ForOffset>,
     reversed: bool,
 }
 
@@ -149,7 +168,7 @@ fn trace_for_tag(
     var_name: &str,
     range: &RangeExpression,
     limit: &Option<Expression>,
-    offset: &Option<Expression>,
+    offset: &Option<ForOffset>,
     reversed: bool,
 ) -> String {
     let mut parameters = vec![];
@@ -176,10 +195,10 @@ impl Renderable for For {
             .range
             .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
-        let array = range.evaluate()?;
         let limit = evaluate_attr(&self.limit, runtime)?;
-        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
-        let array = iter_array(array, limit, offset, self.reversed);
+        let offset = evaluate_for_offset(&self.offset, runtime, &self.loop_name)?;
+        let array = range.segment(limit, offset, self.reversed)?;
+        let mut rendered_count = 0usize;
 
         match array.len() {
             0 => {
@@ -191,14 +210,19 @@ impl Renderable for For {
             }
 
             range_len => {
-                let parentloop = runtime.try_get(&[liquid_core::model::Scalar::new("forloop")]);
+                let parentloop =
+                    runtime.try_get(&[liquid_core::model::Scalar::new("forloop").into()]);
                 let parentloop_ref = parentloop.as_ref().map(|v| v.as_view());
                 for (i, v) in array.into_iter().enumerate() {
-                    let forloop = ForloopObject::new(i, range_len).parentloop(parentloop_ref);
-                    let mut root = std::collections::HashMap::<
-                        liquid_core::model::KStringRef<'_>,
-                        &dyn ValueView,
-                    >::new();
+                    let forloop = ForloopObject::new(i, range_len, self.loop_name.clone())
+                        .parentloop(parentloop_ref);
+                    let mut live_scope = liquid_core::runtime::LiveScopeFrame::new();
+                    live_scope.insert("forloop", &forloop);
+                    live_scope.insert(self.var_name.clone(), v.as_view());
+                    let _live_scope_guard =
+                        liquid_core::runtime::push_live_scope_frame(runtime, live_scope);
+                    let mut root =
+                        HashMap::<liquid_core::model::KStringRef<'_>, &dyn ValueView>::new();
                     root.insert("forloop".into(), &forloop);
                     root.insert(self.var_name.as_ref(), &v);
 
@@ -208,6 +232,7 @@ impl Renderable for For {
                         .trace_with(|| self.trace().into())
                         .context_key("index")
                         .value_with(|| format!("{}", i + 1).into())?;
+                    rendered_count += 1;
 
                     // given that we're at the end of the loop body
                     // already, dealing with a `continue` signal is just
@@ -221,12 +246,36 @@ impl Renderable for For {
                 }
             }
         }
+        runtime
+            .registers()
+            .get_mut::<ForRegister>()
+            .offsets
+            .insert(self.loop_name.clone(), offset + rendered_count);
         Ok(())
     }
+
+    fn blankness(&self) -> Blankness {
+        if self.item_template.blankness().is_blank()
+            && self
+                .else_template
+                .as_ref()
+                .is_none_or(|template| template.blankness().is_blank())
+        {
+            Blankness::BlankNode
+        } else {
+            Blankness::NotBlank
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct ForRegister {
+    offsets: HashMap<String, usize>,
 }
 
 #[derive(Debug, Clone, ValueView, ObjectView)]
 pub struct ForloopObject<'p> {
+    name: String,
     length: i64,
     parentloop: Option<&'p dyn ValueView>,
     index0: i64,
@@ -238,12 +287,13 @@ pub struct ForloopObject<'p> {
 }
 
 impl<'p> ForloopObject<'p> {
-    pub fn new(i: usize, len: usize) -> Self {
+    pub fn new(i: usize, len: usize, name: impl Into<String>) -> Self {
         let i = i as i64;
         let len = len as i64;
         let first = i == 0;
         let last = i == (len - 1);
         Self {
+            name: name.into(),
             length: len,
             parentloop: None,
             index0: i,
@@ -316,10 +366,17 @@ impl ParseBlock for TableRowBlock {
         let mut offset = None;
 
         while let Some(token) = arguments.next() {
+            if token.as_str() == "," {
+                continue;
+            }
+
             match token.as_str() {
                 "cols" => cols = Some(parse_attr(&mut arguments)?),
                 "limit" => limit = Some(parse_attr(&mut arguments)?),
                 "offset" => offset = Some(parse_attr(&mut arguments)?),
+                "range" => {
+                    let _ = parse_attr(&mut arguments)?;
+                }
                 _ => {
                     return token
                         .raise_custom_error("\"cols\", \"limit\" or \"offset\" expected.")
@@ -388,12 +445,16 @@ fn trace_tablerow_tag(
     if let Some(offset) = offset {
         parameters.push(format!("offset:{offset}"));
     }
-    format!(
-        "{{% for {} in {} {} %}}",
-        var_name,
-        range,
-        itertools::join(parameters.iter(), ", ")
-    )
+    if parameters.is_empty() {
+        format!("{{% tablerow {var_name} in {range} %}}")
+    } else {
+        format!(
+            "{{% tablerow {} in {} {} %}}",
+            var_name,
+            range,
+            itertools::join(parameters.iter(), ", ")
+        )
+    }
 }
 
 impl Renderable for TableRow {
@@ -403,34 +464,24 @@ impl Renderable for TableRow {
             .evaluate(runtime)
             .trace_with(|| self.trace().into())?;
         let array = range.evaluate()?;
-        let cols = evaluate_attr(&self.cols, runtime)?;
-        let limit = evaluate_attr(&self.limit, runtime)?;
-        let offset = evaluate_attr(&self.offset, runtime)?.unwrap_or(0);
+        let cols = evaluate_tablerow_attr(&self.cols, runtime)?;
+        let limit = evaluate_tablerow_attr(&self.limit, runtime)?;
+        let offset = evaluate_tablerow_attr(&self.offset, runtime)?.unwrap_or(0);
         let array = iter_array(array, limit, offset, false);
-
-        let mut helper_vars = Object::new();
-
         let range_len = array.len();
-        helper_vars.insert("length".into(), Value::scalar(range_len as i64));
+        let cols = cols.unwrap_or(range_len);
+        let mut row = 1i64;
+        let mut col = 1i64;
+
+        write!(writer, "<tr class=\"row1\">\n").replace("Failed to render")?;
 
         for (i, v) in array.into_iter().enumerate() {
-            let cols = cols.unwrap_or(range_len);
-            let col_index = i % cols;
-            let row_index = i / cols;
-
-            let tablerow = TableRowObject::new(i, range_len, col_index, cols);
-            let mut root = std::collections::HashMap::<
-                liquid_core::model::KStringRef<'_>,
-                &dyn ValueView,
-            >::new();
-            root.insert("tablerow".into(), &tablerow);
+            let tablerow = TableRowObject::new(i, range_len, row, col, cols);
+            let mut root = HashMap::<liquid_core::model::KStringRef<'_>, &dyn ValueView>::new();
+            root.insert("tablerowloop".into(), &tablerow);
             root.insert(self.var_name.as_ref(), &v);
 
-            if tablerow.col_first {
-                write!(writer, "<tr class=\"row{}\">", row_index + 1)
-                    .replace("Failed to render")?;
-            }
-            write!(writer, "<td class=\"col{}\">", col_index + 1).replace("Failed to render")?;
+            write!(writer, "<td class=\"col{}\">", tablerow.col).replace("Failed to render")?;
 
             let scope = StackFrame::new(runtime, &root);
             self.item_template
@@ -440,10 +491,26 @@ impl Renderable for TableRow {
                 .value_with(|| format!("{}", i + 1).into())?;
 
             write!(writer, "</td>").replace("Failed to render")?;
-            if tablerow.col_last {
-                write!(writer, "</tr>").replace("Failed to render")?;
+
+            let current_interrupt = scope.registers().get_mut::<InterruptRegister>().reset();
+            if let Some(Interrupt::Break) = current_interrupt {
+                break;
+            }
+
+            if tablerow.col_last && !tablerow.last {
+                write!(writer, "</tr>\n<tr class=\"row{}\">", tablerow.row + 1)
+                    .replace("Failed to render")?;
+            }
+
+            if cols != 0 && col == cols as i64 {
+                col = 1;
+                row += 1;
+            } else {
+                col += 1;
             }
         }
+
+        write!(writer, "</tr>\n").replace("Failed to render")?;
 
         Ok(())
     }
@@ -452,6 +519,7 @@ impl Renderable for TableRow {
 #[derive(Debug, Clone, ValueView, ObjectView)]
 struct TableRowObject {
     length: i64,
+    row: i64,
     index0: i64,
     index: i64,
     rindex0: i64,
@@ -465,25 +533,25 @@ struct TableRowObject {
 }
 
 impl TableRowObject {
-    fn new(i: usize, len: usize, col: usize, cols: usize) -> Self {
+    fn new(i: usize, len: usize, row: i64, col: i64, cols: usize) -> Self {
         let i = i as i64;
         let len = len as i64;
-        let col = col as i64;
         let cols = cols as i64;
         let first = i == 0;
         let last = i == (len - 1);
-        let col_first = col == 0;
-        let col_last = col == (cols - 1) || last;
+        let col_first = col == 1;
+        let col_last = col == cols;
         Self {
             length: len,
+            row,
             index0: i,
             index: i + 1,
             rindex0: len - i - 1,
             rindex: len - i,
             first,
             last,
-            col0: col,
-            col: (col + 1),
+            col0: col - 1,
+            col,
             col_first,
             col_last,
         }
@@ -497,10 +565,28 @@ fn parse_attr(arguments: &mut TagTokenIter<'_>) -> Result<Expression> {
         .expect_str(":")
         .into_result_custom_msg("\":\" expected.")?;
 
+    let value = arguments.expect_next("Value expected.")?;
+    match value.expect_value() {
+        TryMatchToken::Matches(value) => Ok(value),
+        TryMatchToken::Fails(value) => match value.expect_range() {
+            TryMatchToken::Matches((start, stop)) => Ok(Expression::Range(Box::new((start, stop)))),
+            TryMatchToken::Fails(value) => value.raise_error().into_err(),
+        },
+    }
+}
+
+fn parse_for_offset_attr(arguments: &mut TagTokenIter<'_>) -> Result<ForOffset> {
     arguments
-        .expect_next("Value expected.")?
-        .expect_value()
-        .into_result()
+        .expect_next("\":\" expected.")?
+        .expect_str(":")
+        .into_result_custom_msg("\":\" expected.")?;
+
+    let value = arguments.expect_next("Value expected.")?;
+    if value.as_str() == "continue" {
+        Ok(ForOffset::Continue)
+    } else {
+        Ok(ForOffset::Expression(value.expect_value().into_result()?))
+    }
 }
 
 /// Evaluates an attribute, returning Ok(None) if input is also None.
@@ -508,14 +594,50 @@ fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Opt
     match attr {
         Some(attr) => {
             let value = attr.evaluate(runtime)?;
-            let value = value
-                .as_scalar()
-                .and_then(|s| s.to_integer())
-                .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
-                as usize;
+            if value.is_nil() {
+                return Ok(None);
+            }
+            let value = strict_integer(&value)? as usize;
             Ok(Some(value))
         }
         None => Ok(None),
+    }
+}
+
+fn evaluate_tablerow_attr(
+    attr: &Option<Expression>,
+    runtime: &dyn Runtime,
+) -> Result<Option<usize>> {
+    match attr {
+        Some(attr) => {
+            let value = attr.evaluate(runtime)?;
+            if value.is_nil() {
+                return Ok(Some(0));
+            }
+            let value = strict_integer(&value)? as usize;
+            Ok(Some(value))
+        }
+        None => Ok(None),
+    }
+}
+
+fn evaluate_for_offset(
+    offset: &Option<ForOffset>,
+    runtime: &dyn Runtime,
+    loop_name: &str,
+) -> Result<usize> {
+    match offset {
+        Some(ForOffset::Continue) => Ok(runtime
+            .registers()
+            .get_mut::<ForRegister>()
+            .offsets
+            .get(loop_name)
+            .copied()
+            .unwrap_or(0)),
+        Some(ForOffset::Expression(expression)) => {
+            Ok(evaluate_attr(&Some(expression.clone()), runtime)?.unwrap_or(0))
+        }
+        None => Ok(0),
     }
 }
 
@@ -572,11 +694,44 @@ impl Range<'_> {
 
         Ok(range)
     }
+
+    pub fn segment(
+        &self,
+        limit: Option<usize>,
+        offset: usize,
+        reversed: bool,
+    ) -> Result<Vec<ValueCow<'_>>> {
+        match self {
+            Range::Array(array) => {
+                let mut values = get_array_segment(array.as_view(), limit, offset)?;
+                if reversed {
+                    values.reverse();
+                }
+                Ok(values)
+            }
+            Range::Counted(start, stop) => {
+                let range = (*start)..=(*stop);
+                let range = range.map(|x| Value::scalar(x).into()).collect();
+                Ok(iter_array(range, limit, offset, reversed))
+            }
+        }
+    }
 }
 
 fn get_array(array: &dyn ValueView) -> Result<Vec<ValueCow<'_>>> {
     if let Some(x) = array.as_array() {
         Ok(x.values().map(ValueCow::Borrowed).collect())
+    } else if let Some(scalar) = array.as_scalar() {
+        if scalar.is_string() {
+            let value = scalar.into_string();
+            if value.is_empty() {
+                Ok(vec![])
+            } else {
+                Ok(vec![Value::scalar(value).into()])
+            }
+        } else {
+            Err(unexpected_value_error("array", Some(array.type_name())))
+        }
     } else if let Some(x) = array.as_object() {
         let x = x
             .iter()
@@ -594,13 +749,31 @@ fn get_array(array: &dyn ValueView) -> Result<Vec<ValueCow<'_>>> {
     }
 }
 
+fn get_array_segment(
+    array: &dyn ValueView,
+    limit: Option<usize>,
+    offset: usize,
+) -> Result<Vec<ValueCow<'_>>> {
+    if offset == 0 && limit.is_none() {
+        return get_array(array);
+    }
+
+    if let Some(values) = array.as_array() {
+        let to = limit.map(|limit| offset + limit);
+        return Ok(values
+            .slice(offset, to)
+            .into_iter()
+            .map(ValueCow::Owned)
+            .collect());
+    }
+
+    let values = get_array(array)?;
+    Ok(iter_array(values, limit, offset, false))
+}
+
 fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Result<isize> {
     let value = arg.evaluate(runtime)?;
-
-    let value = value
-        .as_scalar()
-        .and_then(|v| v.to_integer())
-        .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
+    let value = range_integer(&value)
         .context_key_with(|| arg_name.to_owned().into())
         .value_with(|| value.to_kstr().into_owned())?;
 
@@ -636,6 +809,50 @@ fn unexpected_value_error<S: ToString>(expected: &str, actual: Option<S>) -> Err
 fn unexpected_value_error_string(expected: &str, actual: Option<String>) -> Error {
     let actual = actual.unwrap_or_else(|| "nothing".to_owned());
     Error::with_msg(format!("Expected {expected}, found `{actual}`"))
+}
+
+#[derive(Clone, Debug)]
+enum ForOffset {
+    Continue,
+    Expression(Expression),
+}
+
+impl fmt::Display for ForOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Continue => write!(f, "continue"),
+            Self::Expression(expression) => write!(f, "{expression}"),
+        }
+    }
+}
+
+fn strict_integer(value: &ValueCow<'_>) -> Result<i64> {
+    value
+        .as_scalar()
+        .and_then(|scalar| scalar.to_integer())
+        .ok_or_else(invalid_integer_error)
+}
+
+fn range_integer(value: &ValueCow<'_>) -> Result<i64> {
+    if value.is_nil() {
+        return Ok(0);
+    }
+
+    if let Some(scalar) = value.as_scalar() {
+        if let Some(integer) = scalar.to_integer() {
+            return Ok(integer);
+        }
+
+        if scalar.is_string() {
+            return Ok(i64::from_str(scalar.to_kstr().as_str()).unwrap_or(0));
+        }
+    }
+
+    Err(invalid_integer_error())
+}
+
+fn invalid_integer_error() -> Error {
+    Error::with_msg("invalid integer")
 }
 
 #[cfg(test)]
@@ -948,8 +1165,7 @@ mod test {
         );
 
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("shout".to_owned(), Box::new(ShoutFilterParser));
         let template = parser::parse(text, &options).map(Template::new).unwrap();
 
@@ -1004,7 +1220,10 @@ mod test {
             ]),
         );
         let output = template.render(&runtime).unwrap();
-        assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">test 22 </td><td class=\"col2\">test 23 </td><td class=\"col3\">test 24 </td><td class=\"col4\">test wat </td></tr>");
+        assert_eq!(
+            output,
+            "<tr class=\"row1\">\n<td class=\"col1\">test 22 </td><td class=\"col2\">test 23 </td><td class=\"col3\">test 24 </td><td class=\"col4\">test wat </td></tr>\n"
+        );
     }
 
     #[test]
@@ -1029,9 +1248,9 @@ mod test {
         );
         let output = template.render(&runtime).unwrap();
         assert_eq!(
-                output,
-                "<tr class=\"row1\"><td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr><tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr><tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>"
-            );
+            output,
+            "<tr class=\"row1\">\n<td class=\"col1\">test 42 </td><td class=\"col2\">test 43 </td></tr>\n<tr class=\"row2\"><td class=\"col1\">test 44 </td><td class=\"col2\">test 45 </td></tr>\n<tr class=\"row3\"><td class=\"col1\">test 46 </td></tr>\n"
+        );
     }
 
     #[test]
@@ -1048,25 +1267,28 @@ mod test {
 
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
-        assert_eq!(output, "<tr class=\"row1\"><td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr><tr class=\"row2\"><td class=\"col1\">9 </td></tr>");
+        assert_eq!(
+            output,
+            "<tr class=\"row1\">\n<td class=\"col1\">6 </td><td class=\"col2\">7 </td><td class=\"col3\">8 </td></tr>\n<tr class=\"row2\"><td class=\"col1\">9 </td></tr>\n"
+        );
     }
 
     #[test]
     fn tablerow_variables() {
         let text = concat!(
             "{% tablerow v in (100..103) cols:2 %}",
-            "length: {{tablerow.length}}, ",
-            "index: {{tablerow.index}}, ",
-            "index0: {{tablerow.index0}}, ",
-            "rindex: {{tablerow.rindex}}, ",
-            "rindex0: {{tablerow.rindex0}}, ",
-            "col: {{tablerow.col}}, ",
-            "col0: {{tablerow.col0}}, ",
+            "length: {{tablerowloop.length}}, ",
+            "index: {{tablerowloop.index}}, ",
+            "index0: {{tablerowloop.index0}}, ",
+            "rindex: {{tablerowloop.rindex}}, ",
+            "rindex0: {{tablerowloop.rindex0}}, ",
+            "col: {{tablerowloop.col}}, ",
+            "col0: {{tablerowloop.col0}}, ",
             "value: {{v}}, ",
-            "first: {{tablerow.first}}, ",
-            "last: {{tablerow.last}}, ",
-            "col_first: {{tablerow.col_first}}, ",
-            "col_last: {{tablerow.col_last}}",
+            "first: {{tablerowloop.first}}, ",
+            "last: {{tablerowloop.last}}, ",
+            "col_first: {{tablerowloop.col_first}}, ",
+            "col_last: {{tablerowloop.col_last}}",
             "{% endtablerow %}",
         );
 
@@ -1075,14 +1297,15 @@ mod test {
         let runtime = RuntimeBuilder::new().build();
         let output = template.render(&runtime).unwrap();
         assert_eq!(
-                output,
-                concat!(
-    "<tr class=\"row1\"><td class=\"col1\">length: 4, index: 1, index0: 0, rindex: 4, rindex0: 3, col: 1, col0: 0, value: 100, first: true, last: false, col_first: true, col_last: false</td>",
-    "<td class=\"col2\">length: 4, index: 2, index0: 1, rindex: 3, rindex0: 2, col: 2, col0: 1, value: 101, first: false, last: false, col_first: false, col_last: true</td></tr>",
-    "<tr class=\"row2\"><td class=\"col1\">length: 4, index: 3, index0: 2, rindex: 2, rindex0: 1, col: 1, col0: 0, value: 102, first: false, last: false, col_first: true, col_last: false</td>",
-    "<td class=\"col2\">length: 4, index: 4, index0: 3, rindex: 1, rindex0: 0, col: 2, col0: 1, value: 103, first: false, last: true, col_first: false, col_last: true</td></tr>",
-    )
-            );
+            output,
+            concat!(
+                "<tr class=\"row1\">\n",
+                "<td class=\"col1\">length: 4, index: 1, index0: 0, rindex: 4, rindex0: 3, col: 1, col0: 0, value: 100, first: true, last: false, col_first: true, col_last: false</td>",
+                "<td class=\"col2\">length: 4, index: 2, index0: 1, rindex: 3, rindex0: 2, col: 2, col0: 1, value: 101, first: false, last: false, col_first: false, col_last: true</td></tr>\n",
+                "<tr class=\"row2\"><td class=\"col1\">length: 4, index: 3, index0: 2, rindex: 2, rindex0: 1, col: 1, col0: 0, value: 102, first: false, last: false, col_first: true, col_last: false</td>",
+                "<td class=\"col2\">length: 4, index: 4, index0: 3, rindex: 1, rindex0: 0, col: 2, col0: 1, value: 103, first: false, last: true, col_first: false, col_last: true</td></tr>\n",
+            )
+        );
     }
 
     #[test]

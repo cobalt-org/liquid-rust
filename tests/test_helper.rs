@@ -139,6 +139,14 @@ macro_rules! assert_render_error {
             .unwrap()
             .parse($template.as_ref())
             .unwrap();
-        template.render(&$assigns).unwrap_err();
+        let options = ::liquid::RenderOptions {
+            strict_variables: true,
+            strict_filters: true,
+            error_mode: ::liquid::ErrorMode::Strict,
+            ..::liquid::RenderOptions::default()
+        };
+        template
+            .render_with_options(&$assigns, &options)
+            .unwrap_err();
     };
 }

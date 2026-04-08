@@ -19,3 +19,15 @@ pub use self::raw_block::RawBlock;
 pub use self::for_block::ForloopObject;
 pub use self::for_block::Range;
 pub use self::for_block::RangeExpression;
+
+use liquid_core::Renderable;
+
+fn elements_are_blank(elements: &[Box<dyn Renderable>]) -> bool {
+    elements
+        .iter()
+        .all(|element| element.blankness().is_blank())
+}
+
+fn remove_blank_text_nodes(elements: &mut Vec<Box<dyn Renderable>>) {
+    elements.retain(|element| !element.blankness().is_blank_text());
+}

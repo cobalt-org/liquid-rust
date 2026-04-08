@@ -31,6 +31,7 @@ impl Filter for UrlEncodeFilter {
         let s = input.to_kstr();
 
         let result: String = percent_encoding::utf8_percent_encode(s.as_str(), FRAGMENT).collect();
+        let result = result.replace("%20", "+");
         Ok(Value::scalar(result))
     }
 }
@@ -71,7 +72,7 @@ mod tests {
     fn unit_url_encode() {
         assert_eq!(
             liquid_core::call_filter!(UrlEncode, "foo bar").unwrap(),
-            liquid_core::value!("foo%20bar")
+            liquid_core::value!("foo+bar")
         );
         assert_eq!(
             liquid_core::call_filter!(UrlEncode, "foo+1@example.com").unwrap(),

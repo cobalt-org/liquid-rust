@@ -4,6 +4,7 @@ use liquid_core::error::ResultLiquidExt;
 use liquid_core::model::{ValueView, ValueViewCmp};
 use liquid_core::parser::BlockElement;
 use liquid_core::parser::TryMatchToken;
+use liquid_core::Blankness;
 use liquid_core::Expression;
 use liquid_core::Language;
 use liquid_core::Renderable;
@@ -11,6 +12,8 @@ use liquid_core::Result;
 use liquid_core::Runtime;
 use liquid_core::Template;
 use liquid_core::{BlockReflection, ParseBlock, TagBlock, TagTokenIter};
+
+use super::{elements_are_blank, remove_blank_text_nodes};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct CaseBlock;
@@ -50,7 +53,7 @@ impl ParseBlock for CaseBlock {
         // no more arguments should be supplied, trying to supply them is an error
         arguments.expect_nothing()?;
 
-        let mut cases = Vec::new();
+        let mut cases: Vec<(Vec<Expression>, Vec<Box<dyn Renderable>>)> = Vec::new();
         let mut else_block = None;
         let mut current_block = Vec::new();
         let mut current_condition = None;
@@ -60,7 +63,7 @@ impl ParseBlock for CaseBlock {
                 BlockElement::Tag(mut tag) => match tag.name() {
                     "when" => {
                         if let Some(condition) = current_condition {
-                            cases.push(CaseOption::new(condition, Template::new(current_block)));
+                            cases.push((condition, current_block));
                         }
                         current_block = Vec::new();
                         current_condition = Some(parse_condition(tag.tokens())?);
@@ -78,9 +81,28 @@ impl ParseBlock for CaseBlock {
         }
 
         if let Some(condition) = current_condition {
-            cases.push(CaseOption::new(condition, Template::new(current_block)));
+            cases.push((condition, current_block));
         }
 
+        let block_blank = cases
+            .iter()
+            .all(|(_, elements)| elements_are_blank(elements))
+            && else_block
+                .as_ref()
+                .is_none_or(|elements| elements_are_blank(elements));
+        if block_blank {
+            for (_, elements) in &mut cases {
+                remove_blank_text_nodes(elements);
+            }
+            if let Some(elements) = else_block.as_mut() {
+                remove_blank_text_nodes(elements);
+            }
+        }
+
+        let cases = cases
+            .into_iter()
+            .map(|(args, elements)| CaseOption::new(args, Template::new(elements)))
+            .collect();
         let else_block = else_block.map(Template::new);
 
         tokens.assert_empty();
@@ -162,6 +184,22 @@ impl Renderable for Case {
         }
 
         Ok(())
+    }
+
+    fn blankness(&self) -> Blankness {
+        if self
+            .cases
+            .iter()
+            .all(|case| case.template.blankness().is_blank())
+            && self
+                .else_block
+                .as_ref()
+                .is_none_or(|template| template.blankness().is_blank())
+        {
+            Blankness::BlankNode
+        } else {
+            Blankness::NotBlank
+        }
     }
 }
 

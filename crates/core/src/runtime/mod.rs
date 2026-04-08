@@ -5,6 +5,7 @@
 
 mod expression;
 mod partials;
+mod policy;
 mod renderable;
 mod runtime;
 mod stack;
@@ -13,6 +14,12 @@ mod variable;
 
 pub use self::expression::*;
 pub use self::partials::*;
+pub(crate) use self::policy::*;
+#[doc(hidden)]
+pub use self::policy::{
+    assign_resource_cost, enter_render_scope, increment_assign_bytes, install_prod_policy,
+    reset_resource_limits, take_render_errors, ProdErrorMode, ProdPolicyConfig,
+};
 pub use self::renderable::*;
 pub use self::runtime::*;
 pub use self::stack::*;

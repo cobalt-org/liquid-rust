@@ -3,7 +3,7 @@
 //! This module contains functions than can be used for writing plugins
 //! but should be ignored for simple usage.
 
-use crate::error::{Error, Result, ResultLiquidExt};
+use crate::error::{Error, Result};
 use crate::model::Value;
 use crate::runtime::Expression;
 use crate::runtime::Renderable;
@@ -11,7 +11,7 @@ use crate::runtime::Variable;
 
 use super::Language;
 use super::Text;
-use super::{Filter, FilterArguments, FilterChain};
+use super::{FilterCall, FilterChain, FilterReflection, ParsedFilter};
 
 use pest::Parser;
 
@@ -39,6 +39,7 @@ fn convert_pest_error(err: ::pest::error::Error<Rule>) -> Error {
         Rule::Assign => "\"=\"".to_string(),
         Rule::Comma => "\",\"".to_string(),
         Rule::Colon => "\":\"".to_string(),
+        Rule::VariableIdentifier => "Identifier".to_string(),
         other => format!("{:?}", other),
     });
     Error::with_msg(err.to_string())
@@ -141,21 +142,59 @@ fn parse_variable_pair(variable: Pair) -> Variable {
 
     let mut indexes = variable.into_inner();
 
-    let first_identifier = indexes
+    let root = indexes
         .next()
-        .expect("A variable starts with an identifier.")
-        .as_str()
-        .to_owned();
-    let mut variable = Variable::with_literal(first_identifier);
+        .expect("A variable starts with an identifier or lookup.");
+    let mut variable = parse_variable_root(root);
 
-    let indexes = indexes.map(|index| match index.as_rule() {
-        Rule::Identifier => Expression::with_literal(index.as_str().to_owned()),
-        Rule::Value => parse_value(index),
-        _ => unreachable!(),
-    });
+    for index in indexes {
+        match index.as_rule() {
+            Rule::Identifier | Rule::VariableIdentifier => {
+                variable = variable.push_literal(index.as_str().to_owned());
+            }
+            Rule::VariableLookup => {
+                variable = variable.push_lookup(parse_variable_lookup(index));
+            }
+            _ => unreachable!(),
+        }
+    }
 
-    variable.extend(indexes);
     variable
+}
+
+fn parse_variable_root(root: Pair) -> Variable {
+    match root.as_rule() {
+        Rule::Identifier | Rule::VariableIdentifier => {
+            Variable::with_literal(root.as_str().to_owned())
+        }
+        Rule::VariableLookup => Variable::with_expression(parse_variable_lookup(root)),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_variable_lookup(lookup: Pair) -> Expression {
+    if lookup.as_rule() != Rule::VariableLookup {
+        panic!("Expected variable lookup.");
+    }
+
+    let value = lookup
+        .into_inner()
+        .next()
+        .expect("Variable lookup contains a value.");
+
+    parse_value(value)
+}
+
+fn parse_range(range: Pair) -> Expression {
+    if range.as_rule() != Rule::Range {
+        panic!("Expected range.");
+    }
+
+    let mut range = range.into_inner();
+    Expression::Range(Box::new((
+        parse_value(range.next().expect("start")),
+        parse_value(range.next().expect("end")),
+    )))
 }
 
 /// Parses an `Expression` from a `Pair` with a value.
@@ -172,6 +211,7 @@ fn parse_value(value: Pair) -> Expression {
     let value = value.into_inner().next().expect("Get inside the value.");
 
     match value.as_rule() {
+        Rule::Range => parse_range(value),
         Rule::Literal => Expression::Literal(parse_literal(value)),
         Rule::Variable => Expression::Variable(parse_variable_pair(value)),
         _ => unreachable!(),
@@ -180,7 +220,7 @@ fn parse_value(value: Pair) -> Expression {
 
 /// Parses a `FilterCall` from a `Pair` with a filter.
 /// This `Pair` must be `Rule::Filter`.
-fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
+fn parse_filter(filter: Pair, options: &Language) -> Result<ParsedFilter> {
     if filter.as_rule() != Rule::Filter {
         panic!("Expected a filter.");
     }
@@ -210,27 +250,79 @@ fn parse_filter(filter: Pair, options: &Language) -> Result<Box<dyn Filter>> {
         }
     }
 
-    let args = FilterArguments {
-        positional: Box::new(positional_args.into_iter()),
-        keyword: Box::new(keyword_args.into_iter()),
+    let keyword_args: Vec<_> = keyword_args
+        .into_iter()
+        .map(|(name, expression)| (name.to_owned(), expression))
+        .collect();
+
+    let filter_call = FilterCall::new(name.to_owned(), positional_args, keyword_args);
+
+    let Some(parser) = options.filters.get(name) else {
+        return Ok(ParsedFilter::Deferred(filter_call));
     };
 
-    let f = options.filters.get(name).ok_or_else(|| {
-        let mut available: Vec<_> = options.filters.plugin_names().collect();
-        available.sort_unstable();
-        let available = itertools::join(available, ", ");
-        Error::with_msg("Unknown filter")
-            .context("requested filter", name.to_owned())
-            .context("available filters", available)
-    })?;
+    match parser.parse(filter_call.args()) {
+        Ok(compiled) => Ok(ParsedFilter::Compiled(filter_call, compiled)),
+        Err(error) => {
+            if let Some(deferred_error) =
+                deferred_filter_argument_error(&error, &filter_call, parser.reflection())
+            {
+                return Ok(ParsedFilter::DeferredError(filter_call, deferred_error));
+            }
 
-    let f = f
-        .parse(args)
-        .trace("Filter parsing error")
-        .context_key("filter")
-        .value_with(|| filter_str.to_string().into())?;
+            Err(error
+                .trace("Filter parsing error")
+                .context("filter", filter_str.to_string()))
+        }
+    }
+}
 
-    Ok(f)
+fn deferred_filter_argument_error(
+    error: &Error,
+    filter: &FilterCall,
+    reflection: &dyn FilterReflection,
+) -> Option<Error> {
+    let rendered = error.to_string();
+    let summary = rendered
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .strip_prefix("liquid: ")
+        .unwrap_or_default()
+        .to_owned();
+
+    if summary == "Invalid number of positional arguments" {
+        let min = reflection
+            .positional_parameters()
+            .iter()
+            .filter(|parameter| !parameter.is_optional)
+            .count()
+            + 1;
+        let max = reflection.positional_parameters().len() + 1;
+        let given = filter.positional_len() + 1;
+        let expected = if min == max {
+            max.to_string()
+        } else {
+            format!("{min}..{max}")
+        };
+
+        return Some(
+            Error::with_msg(format!(
+                "wrong number of arguments (given {given}, expected {expected})"
+            ))
+            .cause(error.clone()),
+        );
+    }
+
+    if summary.starts_with("Unexpected named argument `")
+        || summary.starts_with("Expected named argument `")
+        || summary.starts_with("Multiple definitions of `")
+    {
+        return Some(Error::with_msg(summary).cause(error.clone()));
+    }
+
+    None
 }
 
 /// Parses a `FilterChain` from a `Pair` with a filter chain.
@@ -249,7 +341,7 @@ fn parse_filter_chain(chain: Pair, options: &Language) -> Result<FilterChain> {
     let filters: Result<Vec<_>> = chain.map(|f| parse_filter(f, options)).collect();
     let filters = filters?;
 
-    let filters = FilterChain::new(entry, filters);
+    let filters = FilterChain::new(entry, filters, options.filters.clone());
     Ok(filters)
 }
 
@@ -600,7 +692,7 @@ impl<'a> From<Pair<'a>> for Exp<'a> {
 impl Exp<'_> {
     /// Parses the expression just as if it weren't inside any block.
     pub fn parse(self, options: &Language) -> Result<Box<dyn Renderable>> {
-        let filter_chain = self
+        let token = self
             .element
             .into_inner()
             .next()
@@ -609,7 +701,7 @@ impl Exp<'_> {
             .next()
             .expect("An expression consists of one filterchain.");
 
-        let filter_chain = parse_filter_chain(filter_chain, options)?;
+        let filter_chain = parse_tag_token_as_filter_chain(token, options)?;
         Ok(Box::new(filter_chain))
     }
 
@@ -959,23 +1051,16 @@ impl<'a> TagToken<'a> {
     }
 
     /// Parses this token as a `FilterChain`, preserving parser errors such as unknown filters.
-    pub fn parse_as_filter_chain(mut self, options: &Language) -> Result<FilterChain> {
-        let token = match self.unwrap_filter_chain() {
-            Ok(token) => token,
-            Err(_) => {
-                self.expected.push(Rule::FilterChain);
-                return self.raise_error().into_err();
-            }
-        };
-
-        parse_filter_chain(token, options)
+    pub fn parse_as_filter_chain(self, options: &Language) -> Result<FilterChain> {
+        match parse_tag_token_as_filter_chain(self.token.clone(), options) {
+            Ok(chain) => Ok(chain),
+            Err(error) => Err(error),
+        }
     }
 
     fn expect_filter_chain_err(&mut self, options: &Language) -> Result<FilterChain> {
-        let token = self
-            .unwrap_filter_chain()
-            .map_err(|_| Error::with_msg("failed to parse"))?;
-        parse_filter_chain(token, options)
+        parse_tag_token_as_filter_chain(self.token.clone(), options)
+            .map_err(|_| Error::with_msg("failed to parse"))
     }
 
     /// Tries to obtain a value from this token.
@@ -1062,9 +1147,22 @@ impl<'a> TagToken<'a> {
     }
 }
 
+fn parse_tag_token_as_filter_chain(token: Pair<'_>, options: &Language) -> Result<FilterChain> {
+    match token.as_rule() {
+        Rule::FilterChain => parse_filter_chain(token, options),
+        Rule::Range => Ok(FilterChain::new(
+            parse_range(token),
+            Vec::new(),
+            options.filters.clone(),
+        )),
+        _ => Err(Error::with_msg("failed to parse")),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::model::Scalar;
     use crate::runtime::{Runtime, RuntimeBuilder, Template};
 
     #[test]
@@ -1151,15 +1249,40 @@ mod test {
             .next()
             .unwrap();
 
-        let indexes = vec![
-            Expression::Literal(Value::scalar(0)),
-            Expression::Literal(Value::scalar("bar")),
-            Expression::Literal(Value::scalar("baz")),
-            Expression::Variable(Variable::with_literal("foo").push_literal("bar")),
-        ];
-
         let mut expected = Variable::with_literal("foo");
-        expected.extend(indexes);
+        expected.extend([Scalar::new(0)]);
+        expected = expected.push_literal("bar");
+        expected = expected.push_literal("baz");
+        expected = expected.push_lookup(Expression::Variable(
+            Variable::with_literal("foo").push_literal("bar"),
+        ));
+
+        assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn test_parse_variable_pair_with_nested_bracket_expression() {
+        let variable = LiquidParser::parse(Rule::Variable, "a[['b']]")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let mut expected = Variable::with_literal("a");
+        expected.extend([Expression::Variable(Variable::with_expression(
+            Expression::Literal(Value::scalar("b")),
+        ))]);
+
+        assert_eq!(parse_variable_pair(variable), expected);
+    }
+
+    #[test]
+    fn test_parse_variable_pair_with_question_mark_lookup() {
+        let variable = LiquidParser::parse(Rule::Variable, "a.empty?")
+            .unwrap()
+            .next()
+            .unwrap();
+
+        let expected = Variable::with_literal("a").push_literal("empty?");
 
         assert_eq!(parse_variable_pair(variable), expected);
     }

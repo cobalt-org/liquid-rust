@@ -86,9 +86,15 @@ fn test_reuse_parsed_template() {
     let rendered = template.render(&globals).unwrap();
     assert_eq!("Hello Tobi", rendered);
 
-    // Modified due to strict_variables: true
     let globals = o!({"greeting": "Hello", "unknown": "Tobi"});
-    template.render(globals.as_object().unwrap()).unwrap_err();
+    let options = liquid::RenderOptions {
+        strict_variables: true,
+        error_mode: liquid::ErrorMode::Strict,
+        ..liquid::RenderOptions::default()
+    };
+    template
+        .render_with_options(globals.as_object().unwrap(), &options)
+        .unwrap_err();
 
     let globals = o!({"greeting": "Hello", "name": "Brian"});
     let rendered = template.render(&globals).unwrap();

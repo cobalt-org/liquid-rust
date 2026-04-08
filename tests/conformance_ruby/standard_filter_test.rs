@@ -232,6 +232,10 @@ fn test_escape_once() {
         )
         .unwrap()
     );
+    assert_eq!(
+        v!("&#x27;"),
+        call_filter!(liquid_lib::stdlib::EscapeOnce, v!("&#x27;")).unwrap()
+    );
 }
 
 #[test]
@@ -667,11 +671,18 @@ fn test_reverse() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#256
 fn test_legacy_reverse_hash() {
     assert_eq!(
         v!([{ "a": 1, "b": 2 }]),
         call_filter!(liquid_lib::stdlib::Reverse, v!({"a": 1, "b": 2})).unwrap()
+    );
+}
+
+#[test]
+fn test_reverse_string_behaves_like_single_element_array() {
+    assert_eq!(
+        v!(["aaaa"]),
+        call_filter!(liquid_lib::stdlib::Reverse, v!("aaaa")).unwrap()
     );
 }
 
@@ -716,7 +727,6 @@ fn test_map_on_hashes() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#255
 fn test_legacy_map_on_hashes_with_dynamic_key() {
     let template = r#"{% assign key = "foo" %}{{ thing | map: key | map: "bar" }}"#;
     let hash = o!({ "foo": { "bar": 42 } });
@@ -1008,7 +1018,6 @@ fn test_newlines_to_br() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#260
 fn test_plus() {
     assert_template_result!("2", r#"{{ 1 | plus:1 }}"#);
     assert_template_result!("2.0", r#"{{ "1" | plus:"1.0" }}"#);

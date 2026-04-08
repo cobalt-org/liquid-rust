@@ -419,6 +419,7 @@ pub fn escape_once() {
         ("&xyz;", "&amp;xyz;"),
         ("<>&'\"", "&lt;&gt;&amp;&#39;&quot;"),
         ("&lt;&gt;&amp;&#39;&quot;", "&lt;&gt;&amp;&#39;&quot;"),
+        ("&#x27;", "&#x27;"),
     ];
     for t in &samples {
         let globals = liquid::object!({"var": t.0});

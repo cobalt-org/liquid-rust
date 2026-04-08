@@ -180,7 +180,6 @@ fn test_undefined_filters_raise() {
 }
 
 #[test]
-#[should_panic] // liquid-rust#224
 fn test_using_range_literal_works_as_expected() {
     let template = liquid::ParserBuilder::with_stdlib()
         .build()
@@ -197,4 +196,18 @@ fn test_using_range_literal_works_as_expected() {
         .unwrap();
     let rendered = template.render(&o!({"x": 1, "y": 5})).unwrap();
     assert_eq!("12345", rendered);
+}
+
+#[test]
+fn test_output_tag_allows_closing_delimiter_inside_string_literal() {
+    assert_template_result!("}}", r#"{{ "}}" }}"#);
+}
+
+#[test]
+fn test_output_tag_allows_closing_delimiter_inside_filter_argument() {
+    assert_template_result!(
+        "ab",
+        r#"{{ value | remove: "}}" }}"#,
+        o!({ "value": "a}}b" })
+    );
 }

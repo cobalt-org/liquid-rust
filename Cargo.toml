@@ -3,6 +3,14 @@ resolver = "2"
 members = [
   "crates/*",
 ]
+default-members = [
+  ".",
+  "crates/bin",
+  "crates/core",
+  "crates/derive",
+  "crates/help-md",
+  "crates/lib",
+]
 
 [workspace.package]
 repository = "https://github.com/cobalt-org/liquid-rust"
@@ -99,7 +107,7 @@ lto = true
 
 [package]
 name = "liquid"
-version = "0.26.11"
+version = "1.0.0"
 description = "The liquid templating language for Rust"
 categories = ["template-engine"]
 repository.workspace = true
@@ -124,11 +132,15 @@ pre-release-replacements = [
 [features]
 default = ["stdlib"]
 stdlib = ["liquid-lib/stdlib"]
+conformance-harness = [
+  "liquid-core/conformance-harness",
+  "liquid-lib/conformance-harness",
+]
 
 [dependencies]
-liquid-core = { version = "^0.26.11", path = "crates/core" }
-liquid-derive = { version = "^0.26.10", path = "crates/derive" }
-liquid-lib = { version = "^0.26.11", path = "crates/lib", optional = true }
+liquid-core = { version = "^1.0.0", path = "crates/core" }
+liquid-derive = { version = "^1.0.0", path = "crates/derive" }
+liquid-lib = { version = "^1.0.0", path = "crates/lib", optional = true }
 serde = { version = "1.0.157", features = ["derive"] }
 
 [dev-dependencies]

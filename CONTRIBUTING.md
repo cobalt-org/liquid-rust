@@ -73,6 +73,22 @@ For code organization, we recommend
   - The intent is to help people quickly find the "relevant" details, allowing them to "dig deeper" as needed.  Or put another way, the `pub` items serve as a table-of-contents.
   - The exact order is fuzzy; do what makes sense
 
+### Validation Lanes
+
+This repo now has two distinct validation lanes:
+
+- Production lane: default build, no Ruby required
+  - `cargo check`
+  - `cargo test`
+  - `cargo test --no-default-features --test minimal_parser`
+- Conformance lane: Ruby-backed Shopify compatibility checks
+  - `cargo test --features conformance-harness --test conformance`
+  - `cargo check -p liquid_ext`
+  - `make harness-test`
+  - this repo treats the pinned Shopify Liquid Ruby suite as the compatibility source of truth, so failures here are compatibility bugs to fix
+
+Changes that touch runtime behavior, partial rendering, filter dispatch, or the Ruby bridge should be validated in both lanes.
+
 ## Releasing
 
 Pre-requisites

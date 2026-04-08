@@ -1,0 +1,11 @@
+# Environment manifest for the pinned upstream Shopify/liquid baseline.
+upstream:
+  path: ../shopify-liquid
+  branch: main
+  commit_sha: a9c85622ddd784078c2eed34b19a351fe57362cf
+  baseline_command: bundle exec rake test
+ruby_version: 3.4.1
+bundler_version: 2.4.10
+gemfile_lock_snapshot: null
+notes:
+  - Update gemfile_lock_snapshot after the first verified upstream baseline run.

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
+### Breaking Changes
+
+- Prepare the `1.0.0` line for the production/conformance split.
+- Remove the old production runtime-interposition path and stop exposing production `Template::render_to_runtime`.
+- Make default `Template::render` and `Template::render_to` use lenient Shopify-compatible missing-variable and missing-filter behavior.
+
+### Features
+
+- Add `RenderOptions`, `ErrorMode`, and `RenderOutput` for per-render limits, strictness, and collected errors.
+- Keep the Shopify compatibility bridge behind the hidden `conformance-harness` feature and Ruby harness workflow.
+- Preserve `default-features = false` support so consumers can build a minimal parser with only custom Rust extensions.
+
+### Internal
+
+- Exclude `crates/ruby-ext` from workspace `default-members` so default production validation stays Ruby-free.
+- Pin the harness workflow to Ruby `3.4.1` and Shopify Liquid commit `a9c85622ddd784078c2eed34b19a351fe57362cf`.
+
 ## [0.26.11] - 2025-02-04
 
 ### Features

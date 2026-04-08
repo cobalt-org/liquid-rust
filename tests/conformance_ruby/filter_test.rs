@@ -220,6 +220,15 @@ fn test_filter_with_keyword_arguments() {
 }
 
 #[test]
+fn test_filter_argument_errors_are_deferred_to_render() {
+    let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+    let template = parser.parse("{{ '' | size: 'too many args' }}").unwrap();
+    let rendered = template.render(&liquid_core::Object::new()).unwrap();
+
+    assert!(rendered.contains("wrong number of arguments"));
+}
+
+#[test]
 #[should_panic]
 fn test_override_object_method_in_filter() {
     panic!("Implementation specific: object API");
@@ -235,4 +244,133 @@ fn test_local_global() {
 #[should_panic]
 fn test_local_filter_with_deprecated_syntax() {
     panic!("Implementation specific: local/global API");
+}
+
+#[cfg(feature = "conformance-harness")]
+mod conformance_harness_tests {
+    use std::rc::Rc;
+
+    use liquid::conformance::{self, ConformanceCallbacks, FallbackFilterResolver, RenderConfig};
+    use liquid_core::parser::FilterCall;
+    use liquid_core::runtime::RuntimeBuilder;
+    use liquid_core::{Error, Result, Runtime, Value, ValueView};
+
+    struct NoopCallbacks;
+
+    impl ConformanceCallbacks for NoopCallbacks {
+        fn handle_render_error(
+            &self,
+            _runtime: &dyn Runtime,
+            error: Error,
+        ) -> Result<Option<String>> {
+            Err(error)
+        }
+
+        fn increment_render_ops(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn increment_assign_bytes(&self, _amount: usize) -> Result<()> {
+            Ok(())
+        }
+
+        fn check_resource_limits(
+            &self,
+            _runtime: &dyn Runtime,
+            _rendered_bytes: usize,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        fn reset_resource_limits(&self) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    struct LateFilterResolver;
+
+    impl FallbackFilterResolver for LateFilterResolver {
+        fn has_filter(&self, name: &str) -> bool {
+            name == "late_money"
+        }
+
+        fn evaluate(
+            &self,
+            _filter: &FilterCall,
+            input: &dyn ValueView,
+            _runtime: &dyn Runtime,
+        ) -> Result<Value> {
+            Ok(Value::scalar(format!("late:{}", input.render())))
+        }
+    }
+
+    struct OverrideDeferredErrorFilterResolver;
+
+    impl FallbackFilterResolver for OverrideDeferredErrorFilterResolver {
+        fn has_filter(&self, name: &str) -> bool {
+            name == "size"
+        }
+
+        fn evaluate(
+            &self,
+            _filter: &FilterCall,
+            input: &dyn ValueView,
+            _runtime: &dyn Runtime,
+        ) -> Result<Value> {
+            Ok(Value::scalar(format!("override:{}", input.render())))
+        }
+    }
+
+    #[test]
+    fn test_late_registered_filter_dispatches_through_conformance_resolver() {
+        let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+        let template =
+            conformance::parse("{{ price | late_money }}", parser.conformance_language()).unwrap();
+        let globals = o!({ "price": 42 });
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let mut output = Vec::new();
+
+        conformance::render_to(
+            &template,
+            &mut output,
+            &runtime,
+            &RenderConfig {
+                strict_variables: false,
+                strict_filters: true,
+                callbacks: Rc::new(NoopCallbacks),
+                fallback_filters: Some(Rc::new(LateFilterResolver)),
+                live_scope_session: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(String::from_utf8(output).unwrap(), "late:42");
+    }
+
+    #[test]
+    fn test_deferred_filter_error_can_dispatch_through_conformance_resolver() {
+        let parser = liquid::ParserBuilder::with_stdlib().build().unwrap();
+        let template =
+            conformance::parse("{{ price | size: 'too many args' }}", parser.conformance_language())
+                .unwrap();
+        let globals = o!({ "price": 42 });
+        let runtime = RuntimeBuilder::new().set_globals(&globals).build();
+        let mut output = Vec::new();
+
+        conformance::render_to(
+            &template,
+            &mut output,
+            &runtime,
+            &RenderConfig {
+                strict_variables: false,
+                strict_filters: true,
+                callbacks: Rc::new(NoopCallbacks),
+                fallback_filters: Some(Rc::new(OverrideDeferredErrorFilterResolver)),
+                live_scope_session: None,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(String::from_utf8(output).unwrap(), "override:42");
+    }
 }

@@ -82,18 +82,23 @@ where
     S: PartialSource + Send + Sync + 'static,
 {
     fn compile(self, language: sync::Arc<Language>) -> Result<Box<dyn PartialStore + Send + Sync>> {
-        let store: HashMap<_, _> = self
-            .source
-            .names()
-            .into_iter()
+        let names: Vec<_> = self.source.names().into_iter().map(str::to_owned).collect();
+        let store: HashMap<_, _> = names
+            .iter()
             .map(|name| {
-                let source = self.source.get(name).and_then(|s| {
-                    parser::parse(s.as_ref(), &language)
+                let source = self.source.get(name).and_then(|s| match s {
+                    Some(s) => parser::parse(s.as_ref(), &language)
                         .map(runtime::Template::new)
                         .map(|t| {
                             let t: sync::Arc<dyn runtime::Renderable> = sync::Arc::new(t);
                             t
-                        })
+                        }),
+                    None => {
+                        let available = itertools::join(names.iter().map(String::as_str), ", ");
+                        Err(Error::with_msg("Unknown partial-template")
+                            .context("requested partial", name.to_owned())
+                            .context("available partials", available))
+                    }
                 });
                 (name.to_owned(), source)
             })
@@ -112,33 +117,50 @@ struct EagerStore {
 }
 
 impl PartialStore for EagerStore {
-    fn contains(&self, name: &str) -> bool {
-        self.store.contains_key(name)
-    }
-
     fn names(&self) -> Vec<&str> {
         self.store.keys().map(|s| s.as_str()).collect()
     }
 
-    fn try_get(&self, name: &str) -> Option<sync::Arc<dyn Renderable>> {
-        self.store.get(name).and_then(|r| r.clone().ok())
-    }
-
-    fn get(&self, name: &str) -> Result<sync::Arc<dyn Renderable>> {
-        let result = self.store.get(name).ok_or_else(|| {
-            let mut available: Vec<_> = self.names();
-            available.sort_unstable();
-            let available = itertools::join(available, ", ");
-            Error::with_msg("Unknown partial-template")
-                .context("requested partial", name.to_owned())
-                .context("available partials", available)
-        })?;
-        result.clone()
+    fn get(&self, name: &str) -> Result<Option<sync::Arc<dyn Renderable>>> {
+        let Some(result) = self.store.get(name) else {
+            return Ok(None);
+        };
+        result.clone().map(Some)
     }
 }
 
 impl fmt::Debug for EagerStore {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.names().fmt(f)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::borrow;
+
+    use crate::partials::{self, PartialCompiler};
+
+    use super::*;
+
+    #[derive(Debug, Default, Clone, Copy)]
+    struct StaleSource;
+
+    impl partials::PartialSource for StaleSource {
+        fn names(&self) -> Vec<&str> {
+            vec!["stale.txt"]
+        }
+
+        fn get<'a>(&'a self, _name: &str) -> Result<Option<borrow::Cow<'a, str>>> {
+            Ok(None)
+        }
+    }
+
+    #[test]
+    fn stale_named_partial_returns_error_instead_of_panicking() {
+        let compiler = EagerCompiler::new(StaleSource);
+        let store = compiler.compile(sync::Arc::new(Language::empty())).unwrap();
+        let error = store.get("stale.txt").unwrap_err().to_string();
+        assert!(error.contains("Unknown partial-template"));
     }
 }

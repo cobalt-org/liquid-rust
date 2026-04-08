@@ -4,6 +4,7 @@ use liquid_core::error::ResultLiquidExt;
 use liquid_core::model::KString;
 use liquid_core::parser::TryMatchToken;
 use liquid_core::runtime::GlobalFrame;
+use liquid_core::runtime::IndexFrame;
 use liquid_core::runtime::Interrupt;
 use liquid_core::runtime::InterruptRegister;
 use liquid_core::runtime::SandboxedStackFrame;
@@ -43,12 +44,15 @@ impl ParseTag for RenderTag {
         mut arguments: TagTokenIter<'_>,
         _options: &Language,
     ) -> Result<Box<dyn Renderable>> {
-        let partial = arguments.expect_next("Identifier or literal expected.")?;
-
+        let partial = arguments.expect_next("String expected.")?;
+        if !matches!(partial.as_str().chars().next(), Some('"') | Some('\'')) {
+            return partial.raise_custom_error("String expected.").into_err();
+        }
         let partial = partial.expect_value().into_result()?;
 
         let mut token = arguments.next();
         let mut vars: Vec<(KString, Expression)> = Vec::new();
+        let mut with_ = None;
         let mut for_ = None;
         match token.as_ref().map(|t| t.as_str()) {
             Some("with") => {
@@ -57,21 +61,20 @@ impl ParseTag for RenderTag {
                     .expect_value()
                     .into_result()?;
 
-                arguments
-                    .expect_next("\"as\" expected.")?
-                    .expect_str("as")
-                    .into_result_custom_msg("expected \"as\" to be used for the assignment")?;
-
-                vars.push((
-                    arguments
+                token = arguments.next();
+                let alias = if matches!(token.as_ref().map(|t| t.as_str()), Some("as")) {
+                    let alias = arguments
                         .expect_next("expected identifier")?
                         .expect_identifier()
                         .into_result()?
                         .to_owned()
-                        .into(),
-                    val,
-                ));
-                token = arguments.next();
+                        .into();
+                    token = arguments.next();
+                    Some(alias)
+                } else {
+                    None
+                };
+                with_ = Some((val, alias));
             }
             Some("for") => {
                 let range = arguments.expect_next("Array or range expected.")?;
@@ -85,31 +88,45 @@ impl ParseTag for RenderTag {
                     },
                 };
 
-                arguments
-                    .expect_next("\"as\" expected")?
-                    .expect_str("as")
-                    .into_result_custom_msg("\"as\" expected")?;
-
-                let var_name = arguments
-                    .expect_next("Identifier expected.")?
-                    .expect_identifier()
-                    .into_result()?
-                    .to_owned()
-                    .into();
-
                 token = arguments.next();
-                for_ = Some((range, var_name));
+                let alias = if matches!(token.as_ref().map(|t| t.as_str()), Some("as")) {
+                    let alias = arguments
+                        .expect_next("Identifier expected.")?
+                        .expect_identifier()
+                        .into_result()?
+                        .to_owned()
+                        .into();
+                    token = arguments.next();
+                    Some(alias)
+                } else {
+                    None
+                };
+                for_ = Some((range, alias));
             }
             _ => {}
         };
 
-        while let Some(t) = token {
-            t.expect_str(",")
-                .into_result_custom_msg("`,` is needed to separate variables")?;
+        if matches!(token.as_ref().map(|t| t.as_str()), Some(",")) {
             token = arguments.next();
-            let Some(t) = token else {
-                break;
-            };
+            if matches!(token.as_ref().map(|t| t.as_str()), Some(",")) {
+                return token
+                    .expect("comma token checked above")
+                    .raise_custom_error("expected named argument after \",\"")
+                    .into_err();
+            }
+        }
+
+        while let Some(t) = token {
+            if t.as_str() == "," {
+                token = arguments.next();
+                if matches!(token.as_ref().map(|t| t.as_str()), Some(",")) {
+                    return token
+                        .expect("comma token checked above")
+                        .raise_custom_error("expected named argument after \",\"")
+                        .into_err();
+                }
+                continue;
+            }
 
             let id = t.expect_identifier().into_result()?.to_owned();
 
@@ -127,12 +144,22 @@ impl ParseTag for RenderTag {
             ));
 
             token = arguments.next();
+            if matches!(token.as_ref().map(|t| t.as_str()), Some(",")) {
+                token = arguments.next();
+                if matches!(token.as_ref().map(|t| t.as_str()), Some(",")) {
+                    return token
+                        .expect("comma token checked above")
+                        .raise_custom_error("expected named argument after \",\"")
+                        .into_err();
+                }
+            }
         }
 
         arguments.expect_nothing()?;
 
         Ok(Box::new(Render {
             partial,
+            with_,
             for_,
             vars,
         }))
@@ -146,7 +173,8 @@ impl ParseTag for RenderTag {
 #[derive(Debug)]
 struct Render {
     partial: Expression,
-    for_: Option<(RangeExpression, KString)>,
+    with_: Option<(Expression, Option<KString>)>,
+    for_: Option<(RangeExpression, Option<KString>)>,
     vars: Vec<(KString, Expression)>,
 }
 
@@ -159,37 +187,46 @@ impl Renderable for Render {
                 .into_err();
         }
         let name = value.to_kstr().into_owned();
+        let default_var_name = default_render_binding_name(&name);
 
         if let Some((range, var_name)) = &self.for_ {
             let range = range
                 .evaluate(runtime)
                 .trace_with(|| format!("{{% render {} %}}", self.partial).into())?;
             let array = range.evaluate()?;
+            let var_name = var_name.clone().unwrap_or_else(|| default_var_name.clone());
 
             if !array.is_empty() {
                 let len = array.len();
                 for (i, v) in array.into_iter().enumerate() {
-                    let forloop = ForloopObject::new(i, len);
+                    let forloop = ForloopObject::new(i, len, name.to_string());
 
                     let mut root = std::collections::HashMap::new();
+                    let mut live_scope = liquid_core::runtime::LiveScopeFrame::new();
                     for (id, val) in &self.vars {
-                        let value = val
-                            .try_evaluate(runtime)
-                            .ok_or_else(|| Error::with_msg("failed to evaluate value"))?;
+                        let value = val.evaluate(runtime)?;
 
-                        root.insert(id.as_ref(), value);
+                        live_scope.insert(id.clone(), value.as_view());
+                        root.insert(id.clone(), value);
                     }
+                    live_scope.insert("forloop", &forloop);
+                    live_scope.insert(var_name.clone(), v.as_view());
                     root.insert("forloop".into(), liquid_core::ValueCow::Borrowed(&forloop));
-                    root.insert(var_name.as_ref(), v);
+                    root.insert(var_name.clone(), v);
+                    let _live_scope_guard =
+                        liquid_core::runtime::push_live_scope_frame(runtime, live_scope);
 
-                    let scope = GlobalFrame::new(SandboxedStackFrame::new(runtime, &root));
+                    let scope = GlobalFrame::new(
+                        SandboxedStackFrame::new(IndexFrame::new(runtime), &root)
+                            .with_name(name.clone()),
+                    );
 
-                    let partial = scope
-                        .partials()
-                        .get(&name)
-                        .or_else(|_| scope.partials().get(&format!("{name}.liquid")))
+                    let partial = get_render_partial(&scope, &name)
                         .trace_with(|| format!("{{% render {} %}}", self.partial).into())?;
 
+                    let _render_tag_scope_guard = scope.registers().enter_render_tag_scope();
+                    let _scope_guard = liquid_core::runtime::enter_render_scope(&scope)?;
+                    liquid_core::runtime::reset_resource_limits(&scope)?;
                     partial
                         .render_to(writer, &scope)
                         .trace_with(|| format!("{{% render {} %}}", self.partial).into())
@@ -209,22 +246,32 @@ impl Renderable for Render {
             }
         } else {
             let mut root = std::collections::HashMap::new();
-            for (id, val) in &self.vars {
-                let value = val
-                    .try_evaluate(runtime)
-                    .ok_or_else(|| Error::with_msg("failed to evaluate value"))?;
-
-                root.insert(id.as_ref(), value);
+            let mut live_scope = liquid_core::runtime::LiveScopeFrame::new();
+            if let Some((val, alias)) = &self.with_ {
+                let value = val.evaluate(runtime)?;
+                let alias = alias.clone().unwrap_or(default_var_name);
+                live_scope.insert(alias.clone(), value.as_view());
+                root.insert(alias, value);
             }
+            for (id, val) in &self.vars {
+                let value = val.evaluate(runtime)?;
 
-            let scope = GlobalFrame::new(SandboxedStackFrame::new(runtime, &root));
+                live_scope.insert(id.clone(), value.as_view());
+                root.insert(id.clone(), value);
+            }
+            let _live_scope_guard =
+                liquid_core::runtime::push_live_scope_frame(runtime, live_scope);
 
-            let partial = scope
-                .partials()
-                .get(&name)
-                .or_else(|_| scope.partials().get(&format!("{name}.liquid")))
+            let scope = GlobalFrame::new(
+                SandboxedStackFrame::new(IndexFrame::new(runtime), &root).with_name(name.clone()),
+            );
+
+            let partial = get_render_partial(&scope, &name)
                 .trace_with(|| format!("{{% render {} %}}", self.partial).into())?;
 
+            let _render_tag_scope_guard = scope.registers().enter_render_tag_scope();
+            let _scope_guard = liquid_core::runtime::enter_render_scope(&scope)?;
+            liquid_core::runtime::reset_resource_limits(&scope)?;
             partial
                 .render_to(writer, &scope)
                 .trace_with(|| format!("{{% render {} %}}", self.partial).into())
@@ -236,13 +283,46 @@ impl Renderable for Render {
     }
 }
 
+fn default_render_binding_name(name: &KString) -> KString {
+    // Keep the basename exactly as Ruby Liquid does for implicit render bindings.
+    // We intentionally do not strip a final extension here:
+    // `{% render 'snippet.liquid' with x %}` binds `snippet.liquid`, not `snippet`.
+    name.as_str()
+        .rsplit('/')
+        .next()
+        .unwrap_or(name.as_str())
+        .to_owned()
+        .into()
+}
+
+fn get_render_partial(runtime: &dyn Runtime, name: &str) -> Result<std::sync::Arc<dyn Renderable>> {
+    match runtime.partials().get(name) {
+        Ok(Some(partial)) => Ok(partial),
+        Ok(None) => match runtime.partials().get(&format!("{name}.liquid"))? {
+            Some(partial) => Ok(partial),
+            None => Err(missing_partial_error(runtime.partials(), name)),
+        },
+        Err(error) => Err(error),
+    }
+}
+
+fn missing_partial_error(partials: &dyn liquid_core::runtime::PartialStore, name: &str) -> Error {
+    let available = partials.names();
+    let mut available = available;
+    available.sort_unstable();
+    let available = itertools::join(available, ", ");
+    Error::with_msg("Unknown partial-template")
+        .context("requested partial", name.to_owned())
+        .context("available partials", available)
+}
+
 #[cfg(test)]
 mod test {
     use liquid_core::{
         parser,
         partials::{self, PartialCompiler},
         runtime::{self, RuntimeBuilder},
-        Display_filter, Filter, FilterReflection, ParseFilter, Value,
+        Display_filter, Filter, FilterReflection, ParseFilter, Result, Value,
     };
 
     use crate::stdlib::{self, AssignTag};
@@ -253,22 +333,18 @@ mod test {
     struct TestSource;
 
     impl partials::PartialSource for TestSource {
-        fn contains(&self, _name: &str) -> bool {
-            true
-        }
-
         fn names(&self) -> Vec<&str> {
             vec![]
         }
 
-        fn try_get<'a>(&'a self, name: &str) -> Option<std::borrow::Cow<'a, str>> {
-            match name {
+        fn get<'a>(&'a self, name: &str) -> Result<Option<std::borrow::Cow<'a, str>>> {
+            Ok(match name {
                 "example.txt" => Some(r#"{{'whooo' | size}}{%comment%}What happens{%endcomment%} {%if num < numTwo%}wat{%else%}wot{%endif%} {%if num > numTwo%}wat{%else%}wot{%endif%}"#.into()),
                 "example_var.txt" => Some(r#"{{example_var}}"#.into()),
                 "example_multi_var.txt" => Some(r#"{{example_var}} {{example}}"#.into()),
                 "missing_extension.liquid" => Some(r#"{{example_var}}"#.into()),
-                _ => None
-            }
+                _ => None,
+            })
         }
     }
 
@@ -347,8 +423,7 @@ mod test {
     fn render_scope() {
         let text = "{% assign numTwo = 10 %}{% render 'example.txt', num: 5 %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
@@ -360,16 +435,51 @@ mod test {
         let runtime = RuntimeBuilder::new()
             .set_partials(partials.as_ref())
             .build();
-        let output = template.render(&runtime);
-        assert!(output.is_err());
+        let output = template.render(&runtime).unwrap();
+        assert_eq!(output, "5 wot wot");
+    }
+
+    #[test]
+    fn render_does_not_fallback_on_non_missing_partial_error() {
+        #[derive(Debug, Clone, Copy)]
+        struct ErroringSource;
+
+        impl partials::PartialSource for ErroringSource {
+            fn names(&self) -> Vec<&str> {
+                vec!["example.liquid"]
+            }
+
+            fn get<'a>(&'a self, name: &str) -> Result<Option<std::borrow::Cow<'a, str>>> {
+                match name {
+                    "example" => Err(Error::with_msg("filesystem boom")),
+                    "example.liquid" => Ok(Some("should not render".into())),
+                    _ => Ok(None),
+                }
+            }
+        }
+
+        let text = "{% render 'example' %}";
+        let options = options();
+        let template = parser::parse(text, &options)
+            .map(runtime::Template::new)
+            .unwrap();
+
+        let partials = partials::OnDemandCompiler::new(ErroringSource)
+            .compile(::std::sync::Arc::new(options))
+            .unwrap();
+        let runtime = RuntimeBuilder::new()
+            .set_partials(partials.as_ref())
+            .build();
+
+        let error = template.render(&runtime).unwrap_err().to_string();
+        assert!(error.contains("filesystem boom"));
     }
 
     #[test]
     fn render_tag_quotes() {
         let text = "{% render 'example.txt', num: 5, numTwo: 10 %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)
@@ -440,11 +550,19 @@ mod test {
     }
 
     #[test]
+    fn render_rejects_consecutive_commas_between_arguments() {
+        let text = "{% render 'example_multi_var.txt', example_var:\"hello\",, example:\"dogs\" %}";
+        let options = options();
+        let error = parser::parse(text, &options).unwrap_err().to_string();
+
+        assert!(error.contains("expected named argument after \",\""));
+    }
+
+    #[test]
     fn no_file() {
         let text = "{% render 'file_does_not_exist.liquid' %}";
         let mut options = options();
-        options
-            .filters
+        std::sync::Arc::make_mut(&mut options.filters)
             .register("size".to_owned(), Box::new(SizeFilterParser));
         let template = parser::parse(text, &options)
             .map(runtime::Template::new)

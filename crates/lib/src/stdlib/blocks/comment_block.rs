@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use liquid_core::parser::BlockElement;
+use liquid_core::Blankness;
 use liquid_core::Language;
 use liquid_core::Renderable;
 use liquid_core::Result;
@@ -69,6 +70,10 @@ struct Comment;
 impl Renderable for Comment {
     fn render_to(&self, _writer: &mut dyn Write, _runtime: &dyn Runtime) -> Result<()> {
         Ok(())
+    }
+
+    fn blankness(&self) -> Blankness {
+        Blankness::BlankNode
     }
 }
 

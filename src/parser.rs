@@ -160,7 +160,7 @@ where
         let mut options = parser::Language::empty();
         options.blocks = blocks;
         options.tags = tags;
-        options.filters = filters;
+        options.filters = sync::Arc::new(filters);
         let options = sync::Arc::new(options);
         let partials = partials
             .map(|p| p.compile(options.clone()))
@@ -221,6 +221,20 @@ pub struct Parser {
 impl Parser {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    #[cfg(feature = "conformance-harness")]
+    #[doc(hidden)]
+    pub fn conformance_language(&self) -> sync::Arc<parser::Language> {
+        self.options.clone()
+    }
+
+    #[cfg(feature = "conformance-harness")]
+    #[doc(hidden)]
+    pub fn conformance_partials(
+        &self,
+    ) -> Option<sync::Arc<dyn runtime::PartialStore + Send + Sync>> {
+        self.partials.clone()
     }
 
     /// Parses a liquid template, returning a Template object.

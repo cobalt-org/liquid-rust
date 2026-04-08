@@ -1,6 +1,6 @@
 #![allow(clippy::bool_assert_comparison)]
 
-use liquid::{Parser, ParserBuilder};
+use liquid::{ErrorMode, Parser, ParserBuilder, RenderOptions};
 use liquid_core::parser::FilterReflection;
 
 mod derive_macros_test_filters;
@@ -13,6 +13,14 @@ fn build_parser() -> Parser {
         .filter(derive_macros_test_filters::TestParameterlessFilterParser)
         .build()
         .unwrap()
+}
+
+fn strict_options() -> RenderOptions {
+    RenderOptions {
+        strict_filters: true,
+        error_mode: ErrorMode::Strict,
+        ..RenderOptions::default()
+    }
 }
 
 #[test]
@@ -52,7 +60,7 @@ pub fn test_derive_positional_filter_err() {
     assert!(parser
         .parse("{{ 0 | pos: \"str\", \"str\" }}\n")
         .unwrap()
-        .render(&globals)
+        .render_with_options(&globals, &strict_options())
         .is_err());
 }
 
@@ -116,7 +124,7 @@ pub fn test_derive_keyword_filter_err() {
     assert!(parser
         .parse("{{ 0 | kw: required:\"str\" }}\n")
         .unwrap()
-        .render(&globals)
+        .render_with_options(&globals, &strict_options())
         .is_err());
 }
 
