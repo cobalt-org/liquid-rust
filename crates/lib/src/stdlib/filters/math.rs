@@ -28,7 +28,7 @@ impl Filter for AbsFilter {
             .as_scalar()
             .ok_or_else(|| invalid_input("Number expected"))?;
         input
-            .to_integer()
+            .to_integer_strict()
             .map(|i| Value::scalar(i.abs()))
             .or_else(|| input.to_float().map(|i| Value::scalar(i.abs())))
             .ok_or_else(|| invalid_input("Number expected"))
@@ -71,8 +71,8 @@ impl Filter for AtLeastFilter {
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
         let result = input
-            .to_integer()
-            .and_then(|i| min.to_integer().map(|min| Value::scalar(i.max(min))))
+            .to_integer_strict()
+            .and_then(|i| min.to_integer_strict().map(|min| Value::scalar(i.max(min))))
             .or_else(|| {
                 input
                     .to_float()
@@ -120,8 +120,8 @@ impl Filter for AtMostFilter {
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
         let result = input
-            .to_integer()
-            .and_then(|i| max.to_integer().map(|max| Value::scalar(i.min(max))))
+            .to_integer_strict()
+            .and_then(|i| max.to_integer_strict().map(|max| Value::scalar(i.min(max))))
             .or_else(|| {
                 input
                     .to_float()
@@ -169,8 +169,8 @@ impl Filter for PlusFilter {
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
         let result = input
-            .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i + o)))
+            .to_integer_strict()
+            .and_then(|i| operand.to_integer_strict().map(|o| Value::scalar(i + o)))
             .or_else(|| {
                 input
                     .to_float()
@@ -218,8 +218,8 @@ impl Filter for MinusFilter {
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
         let result = input
-            .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i - o)))
+            .to_integer_strict()
+            .and_then(|i| operand.to_integer_strict().map(|o| Value::scalar(i - o)))
             .or_else(|| {
                 input
                     .to_float()
@@ -267,8 +267,8 @@ impl Filter for TimesFilter {
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
         let result = input
-            .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i * o)))
+            .to_integer_strict()
+            .and_then(|i| operand.to_integer_strict().map(|o| Value::scalar(i * o)))
             .or_else(|| {
                 input
                     .to_float()
@@ -315,7 +315,7 @@ impl Filter for DividedByFilter {
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
-        if let Some(o) = operand.to_integer() {
+        if let Some(o) = operand.to_integer_strict() {
             if o == 0 {
                 return Err(invalid_argument("operand", "Can't divide by zero"));
             }
@@ -326,8 +326,8 @@ impl Filter for DividedByFilter {
         }
 
         let result = input
-            .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i / o)))
+            .to_integer_strict()
+            .and_then(|i| operand.to_integer_strict().map(|o| Value::scalar(i / o)))
             .or_else(|| {
                 input
                     .to_float()
@@ -374,7 +374,7 @@ impl Filter for ModuloFilter {
             .as_scalar()
             .ok_or_else(|| invalid_argument("operand", "Number expected"))?;
 
-        if let Some(o) = operand.to_integer() {
+        if let Some(o) = operand.to_integer_strict() {
             if o == 0 {
                 return Err(invalid_argument("operand", "Can't divide by zero"));
             }
@@ -385,8 +385,8 @@ impl Filter for ModuloFilter {
         }
 
         let result = input
-            .to_integer()
-            .and_then(|i| operand.to_integer().map(|o| Value::scalar(i % o)))
+            .to_integer_strict()
+            .and_then(|i| operand.to_integer_strict().map(|o| Value::scalar(i % o)))
             .or_else(|| {
                 input
                     .to_float()
