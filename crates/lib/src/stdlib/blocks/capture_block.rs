@@ -52,7 +52,7 @@ impl ParseBlock for CaptureBlock {
         let template = Template::new(
             tokens
                 .parse_all(options)
-                .trace_with(|| format!("{{% capture {} %}}", &id).into())?,
+                .trace_with(|| format!("{{% capture {id} %}}").into())?,
         );
 
         tokens.assert_empty();
