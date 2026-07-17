@@ -16,26 +16,50 @@ pub struct Error {
     inner: Box<InnerError>,
 }
 
+impl Error {
+    /// Identifies the underlying kind for this error
+    pub fn kind(&self) -> &ErrorKind {
+        &self.inner.kind
+    }
+}
+
 // Guts of `Error` here to keep `Error`'s memory size small to avoid bloating the size of
 // `Result<T>` in the success case and spilling over from register-based returns to stack-based
 // returns.  There are already enough memory allocations below, one more
 // shouldn't hurt.
 #[derive(Debug, Clone)]
 struct InnerError {
-    msg: crate::model::KString,
+    kind: ErrorKind,
     user_backtrace: Vec<Trace>,
     cause: Option<BoxedError>,
 }
 
 impl Error {
-    /// Create a new compiler error with the given message
+    /// Create an error that identifies the provided variable as unknown
+    pub fn unknown_variable<S: Into<crate::model::KString>>(name: S) -> Self {
+        Self::with_kind(ErrorKind::UnknownVariable).context("requested variable", name)
+    }
+
+    /// Create a new error of the given kind
+    pub fn with_kind(kind: ErrorKind) -> Self {
+        let error = InnerError {
+            kind,
+            user_backtrace: vec![Trace::empty()],
+            cause: None,
+        };
+        Self {
+            inner: Box::new(error),
+        }
+    }
+
+    /// Create a new custom error with the given message
     pub fn with_msg<S: Into<crate::model::KString>>(msg: S) -> Self {
         Self::with_msg_cow(msg.into())
     }
 
     fn with_msg_cow(msg: crate::model::KString) -> Self {
         let error = InnerError {
-            msg,
+            kind: ErrorKind::Custom(msg),
             user_backtrace: vec![Trace::empty()],
             cause: None,
         };
@@ -108,7 +132,7 @@ const ERROR_DESCRIPTION: &str = "liquid";
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}: {}", ERROR_DESCRIPTION, self.inner.msg)?;
+        writeln!(f, "{}: {}", ERROR_DESCRIPTION, self.inner.kind)?;
         for trace in &self.inner.user_backtrace {
             if let Some(trace) = trace.get_trace() {
                 writeln!(f, "from: {}", trace)?;
@@ -127,5 +151,26 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         self.inner.cause.as_ref().and_then(|e| e.source())
+    }
+}
+
+/// The type of an error.
+#[derive(Debug, Clone)]
+pub enum ErrorKind {
+    /// A variable was being indexed but the desired index did not exist
+    UnknownIndex,
+    /// A referenced variable did not exist
+    UnknownVariable,
+    /// A custom error with no discernible kind
+    Custom(crate::model::KString),
+}
+
+impl std::fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorKind::UnknownIndex => f.write_str("Unknown index"),
+            ErrorKind::UnknownVariable => f.write_str("Unknown variable"),
+            ErrorKind::Custom(s) => s.fmt(f),
+        }
     }
 }

@@ -58,9 +58,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
     }
 
     fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        let key = path.first().ok_or_else(|| {
-            Error::with_msg("Unknown variable").context("requested variable", "nil")
-        })?;
+        let key = path.first().ok_or_else(|| Error::unknown_variable("nil"))?;
         let key = key.to_kstr();
         let data = &self.data;
         if data.contains_key(key.as_str()) {
@@ -134,9 +132,7 @@ impl<P: super::Runtime> super::Runtime for GlobalFrame<P> {
     }
 
     fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        let key = path.first().ok_or_else(|| {
-            Error::with_msg("Unknown variable").context("requested variable", "nil")
-        })?;
+        let key = path.first().ok_or_else(|| Error::unknown_variable("nil"))?;
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
@@ -209,9 +205,7 @@ impl<P: super::Runtime> super::Runtime for IndexFrame<P> {
     }
 
     fn get(&self, path: &[ScalarCow<'_>]) -> Result<ValueCow<'_>> {
-        let key = path.first().ok_or_else(|| {
-            Error::with_msg("Unknown variable").context("requested variable", "nil")
-        })?;
+        let key = path.first().ok_or_else(|| Error::unknown_variable("nil"))?;
         let key = key.to_kstr();
         let data = self.data.borrow();
         if data.contains_key(key.as_str()) {
