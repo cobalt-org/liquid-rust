@@ -12,6 +12,47 @@ fn test_simple_variable() {
 }
 
 #[test]
+fn test_simple_root_index_with_literal() {
+    assert_template_result!(r#"worked"#, r#"{{['test']}}"#, o!({"test": "worked"}));
+}
+
+#[test]
+fn test_variable_index_access_with_literal() {
+    assert_template_result!(
+        r#"worked"#,
+        r#"{{nested['test']}}"#,
+        o!({"nested": {"test": "worked"}})
+    );
+}
+
+#[test]
+fn test_nested_hash_access() {
+    assert_template_result!(
+        r#"worked"#,
+        r#"{{['nested']['test']}}"#,
+        o!({"nested": {"test": "worked"}})
+    );
+}
+
+#[test]
+fn test_nested_literal_and_variable_access() {
+    assert_template_result!(
+        r#"worked"#,
+        r#"{{['nested'].test}}"#,
+        o!({"nested": {"test": "worked"}})
+    );
+}
+
+#[test]
+fn test_root_index_with_variable() {
+    assert_template_result!(
+        r#"it did"#,
+        r#"{{[nested.test]}}"#,
+        o!({"nested": {"test": "worked"}, "worked": "it did" })
+    );
+}
+
+#[test]
 #[should_panic]
 fn test_variable_render_calls_to_liquid() {
     panic!("to_liquid is implementation specific");
