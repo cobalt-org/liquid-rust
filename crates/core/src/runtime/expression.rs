@@ -57,7 +57,13 @@ impl Expression {
             Expression::Literal(ref x) => ValueCow::Borrowed(x),
             Expression::Variable(ref x) => {
                 let path = x.evaluate(runtime)?;
-                runtime.get(&path)?
+
+                match runtime.render_mode() {
+                    super::RenderingMode::Lax => {
+                        runtime.try_get(&path).unwrap_or_else(|| Value::Nil.into())
+                    }
+                    _ => runtime.get(&path)?,
+                }
             }
         };
         Ok(val)
@@ -70,5 +76,34 @@ impl fmt::Display for Expression {
             Expression::Literal(ref x) => write!(f, "{}", x.source()),
             Expression::Variable(ref x) => write!(f, "{}", x),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use crate::model::Object;
+    use crate::model::Value;
+    use crate::runtime::RenderingMode;
+    use crate::runtime::RuntimeBuilder;
+    use crate::runtime::StackFrame;
+
+    #[test]
+    fn test_rendering_mode() {
+        let globals = Object::new();
+        let expression = Expression::Variable(Variable::with_literal("test"));
+
+        let runtime = RuntimeBuilder::new()
+            .set_render_mode(RenderingMode::Strict)
+            .build();
+        let runtime = StackFrame::new(&runtime, &globals);
+        assert_eq!(expression.evaluate(&runtime).is_err(), true);
+
+        let runtime = RuntimeBuilder::new()
+            .set_render_mode(RenderingMode::Lax)
+            .build();
+        let runtime = StackFrame::new(&runtime, &globals);
+        assert_eq!(expression.evaluate(&runtime).unwrap(), Value::Nil);
     }
 }
