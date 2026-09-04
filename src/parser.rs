@@ -3,6 +3,7 @@ use std::sync;
 
 use liquid_core::error::{Result, ResultLiquidExt, ResultLiquidReplaceExt};
 use liquid_core::parser;
+use liquid_core::parser::ParseMode;
 use liquid_core::runtime;
 
 use super::Template;
@@ -17,6 +18,7 @@ pub struct ParserBuilder<P = Partials>
 where
     P: partials::PartialCompiler,
 {
+    mode: parser::ParseMode,
     blocks: parser::PluginRegistry<Box<dyn parser::ParseBlock>>,
     tags: parser::PluginRegistry<Box<dyn parser::ParseTag>>,
     filters: parser::PluginRegistry<Box<dyn parser::ParseFilter>>,
@@ -109,6 +111,12 @@ where
             .filter(stdlib::Where)
     }
 
+    /// Sets the parse mode to lax.
+    pub fn in_lax_mode(mut self) -> Self {
+        self.mode = ParseMode::Lax;
+        self
+    }
+
     /// Inserts a new custom block into the parser
     pub fn block<B: Into<Box<dyn parser::ParseBlock>>>(mut self, block: B) -> Self {
         let block = block.into();
@@ -135,12 +143,14 @@ where
     /// Set which partial-templates will be available.
     pub fn partials<N: partials::PartialCompiler>(self, partials: N) -> ParserBuilder<N> {
         let Self {
+            mode,
             blocks,
             tags,
             filters,
             partials: _partials,
         } = self;
         ParserBuilder {
+            mode,
             blocks,
             tags,
             filters,
@@ -151,6 +161,7 @@ where
     /// Create a parser
     pub fn build(self) -> Result<Parser> {
         let Self {
+            mode,
             blocks,
             tags,
             filters,
@@ -158,6 +169,7 @@ where
         } = self;
 
         let mut options = parser::Language::empty();
+        options.mode = mode;
         options.blocks = blocks;
         options.tags = tags;
         options.filters = filters;
@@ -178,6 +190,7 @@ where
 {
     fn default() -> Self {
         Self {
+            mode: Default::default(),
             blocks: Default::default(),
             tags: Default::default(),
             filters: Default::default(),
