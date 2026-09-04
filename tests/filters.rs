@@ -539,3 +539,32 @@ fn test_compact() {
     let output = template.render(&globals).unwrap();
     assert_eq!(output, "A C".to_owned());
 }
+
+#[test]
+fn indexed_variable_default() {
+    let text = "{{ does.not.exist | default: 'default' }}";
+    let globals = liquid::object!({});
+
+    let template = liquid::ParserBuilder::with_stdlib()
+        .build()
+        .unwrap()
+        .parse(text)
+        .unwrap();
+    let output = template.render(&globals).unwrap();
+    assert_eq!(output, "default".to_string());
+}
+
+#[test]
+fn indexed_variable_no_default() {
+    let text = "{{ does.not.exist }}";
+    let globals = liquid::object!({});
+
+    let template = liquid::ParserBuilder::with_stdlib()
+        .build()
+        .unwrap()
+        .parse(text)
+        .unwrap();
+    template
+        .render(&globals)
+        .expect_err("should fail when the filter ends with a missing value");
+}
