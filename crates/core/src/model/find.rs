@@ -160,7 +160,7 @@ fn try_find_owned<'o, 'i>(
 
 fn augmented_get<'o>(value: &'o dyn ValueView, index: &ScalarCow<'_>) -> Option<ValueCow<'o>> {
     if let Some(arr) = value.as_array() {
-        if let Some(index) = index.to_integer() {
+        if let Some(index) = index.to_integer_strict() {
             arr.get(index).map(ValueCow::Borrowed)
         } else {
             match &*index.to_kstr() {
