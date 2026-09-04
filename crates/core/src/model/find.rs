@@ -18,6 +18,10 @@ use super::ValueView;
 pub struct Path<'s>(Vec<ScalarCow<'s>>);
 
 impl<'s> Path<'s> {
+    pub fn empty() -> Self {
+        Path(vec![])
+    }
+
     /// Create a `Value` reference.
     pub fn with_index<I: Into<ScalarCow<'s>>>(value: I) -> Self {
         let indexes = vec![value.into()];
