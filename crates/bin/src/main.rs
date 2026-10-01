@@ -1,5 +1,6 @@
 // Allow zero pointers for lazy_static. Otherwise clippy will complain.
 #![allow(unknown_lints)]
+#![expect(clippy::redundant_field_names, reason = "derive_more is causing this")]
 
 use std::ffi;
 use std::fs;

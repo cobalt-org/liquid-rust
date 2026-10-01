@@ -656,8 +656,6 @@ impl<'de> serde::de::SeqAccess<'de> for ArrayDeserializer<'de> {
 
 #[cfg(test)]
 mod test {
-    use std::f64;
-
     use snapbox::assert_data_eq;
     use snapbox::prelude::*;
     use snapbox::str;
