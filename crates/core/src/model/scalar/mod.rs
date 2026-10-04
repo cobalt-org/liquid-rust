@@ -95,8 +95,22 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as an integer, if possible
+    /// Interpret as an integer, if possible.  Returns 0 if given a non-parseable string, and truncates floats.
     pub fn to_integer(&self) -> Option<i64> {
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => Some(*x),
+            ScalarCowEnum::Float(ref x) => Some(x.trunc() as i64),
+            ScalarCowEnum::Str(ref x) => Some(
+                x.parse::<f64>()
+                    .map(|parsed| parsed.trunc() as i64)
+                    .unwrap_or(0),
+            ),
+            _ => None,
+        }
+    }
+
+    /// Interpret as an integer, if possible.  Return None if given a float or non-parseable string.
+    pub fn to_integer_strict(&self) -> Option<i64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x),
             ScalarCowEnum::Str(ref x) => x.parse::<i64>().ok(),
@@ -104,8 +118,18 @@ impl<'s> ScalarCow<'s> {
         }
     }
 
-    /// Interpret as a float, if possible
+    /// Interpret as a float, if possible.  Return 0.0 if given a non-parseable string.
     pub fn to_float(&self) -> Option<f64> {
+        match self.0 {
+            ScalarCowEnum::Integer(ref x) => Some(*x as f64),
+            ScalarCowEnum::Float(ref x) => Some(*x),
+            ScalarCowEnum::Str(ref x) => Some(x.parse::<f64>().unwrap_or(0.0)),
+            _ => None,
+        }
+    }
+
+    /// Interpret as a float, if possible.  Return None if given a non-parseable string.
+    pub fn to_float_strict(&self) -> Option<f64> {
         match self.0 {
             ScalarCowEnum::Integer(ref x) => Some(*x as f64),
             ScalarCowEnum::Float(ref x) => Some(*x),
@@ -915,19 +939,19 @@ mod test {
     #[test]
     fn test_to_integer_float() {
         let val: ScalarCow<'_> = 42f64.into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
 
         let val: ScalarCow<'_> = 42.34.into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
     }
 
     #[test]
     fn test_to_integer_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(0));
 
         let val: ScalarCow<'_> = "42.34".into();
-        assert_eq!(val.to_integer(), None);
+        assert_eq!(val.to_integer(), Some(42));
 
         let val: ScalarCow<'_> = "42".into();
         assert_eq!(val.to_integer(), Some(42));
@@ -956,7 +980,7 @@ mod test {
     #[test]
     fn test_to_float_str() {
         let val: ScalarCow<'_> = "foobar".into();
-        assert_eq!(val.to_float(), None);
+        assert_eq!(val.to_float(), Some(0.0));
 
         let val: ScalarCow<'_> = "42.34".into();
         assert_eq!(val.to_float(), Some(42.34));

@@ -510,7 +510,7 @@ fn evaluate_attr(attr: &Option<Expression>, runtime: &dyn Runtime) -> Result<Opt
             let value = attr.evaluate(runtime)?;
             let value = value
                 .as_scalar()
-                .and_then(|s| s.to_integer())
+                .and_then(|s| s.to_integer_strict())
                 .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))?
                 as usize;
             Ok(Some(value))
@@ -599,7 +599,7 @@ fn int_argument(arg: &Expression, runtime: &dyn Runtime, arg_name: &str) -> Resu
 
     let value = value
         .as_scalar()
-        .and_then(|v| v.to_integer())
+        .and_then(|v| v.to_integer_strict())
         .ok_or_else(|| unexpected_value_error("whole number", Some(value.type_name())))
         .context_key_with(|| arg_name.to_owned().into())
         .value_with(|| value.to_kstr().into_owned())?;
