@@ -280,8 +280,10 @@ impl Default for RuntimeCore<'_> {
 }
 
 /// Unnamed state for plugins during rendering
+#[derive(Default)]
 pub struct Registers {
-    registers: std::cell::RefCell<anymap2::AnyMap>,
+    registers:
+        std::cell::RefCell<std::collections::HashMap<std::any::TypeId, Box<dyn std::any::Any>>>,
 }
 
 impl Registers {
@@ -291,16 +293,12 @@ impl Registers {
     /// `get_mut`.
     pub fn get_mut<T: std::any::Any + Default>(&self) -> std::cell::RefMut<'_, T> {
         std::cell::RefMut::map(self.registers.borrow_mut(), |registers| {
-            registers.entry::<T>().or_default()
+            registers
+                .entry(std::any::TypeId::of::<T>())
+                .or_insert_with(|| Box::new(T::default()))
+                .downcast_mut::<T>()
+                .expect("registers are keyed by their own `TypeId`")
         })
-    }
-}
-
-impl Default for Registers {
-    fn default() -> Self {
-        Self {
-            registers: std::cell::RefCell::new(anymap2::AnyMap::new()),
-        }
     }
 }
 

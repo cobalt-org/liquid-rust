@@ -15,7 +15,6 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-anymap2 = "0.13"
 itertools = "0.15.0"
 pest = "2.0"
 pest_derive = "2.0"
