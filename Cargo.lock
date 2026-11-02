@@ -101,12 +101,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anymap2"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
-
-[[package]]
 name = "autocfg"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -658,7 +652,6 @@ dependencies = [
 name = "liquid-core"
 version = "0.26.11"
 dependencies = [
- "anymap2",
  "itertools 0.15.0",
  "kstring",
  "liquid-derive",
