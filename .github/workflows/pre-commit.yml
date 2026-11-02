@@ -25,4 +25,4 @@ jobs:
     - uses: actions/checkout@v7
     - uses: j178/prek-action@v3.1.0
       with:
-        prek-version: '0.2.27'
+        prek-version: 'v0.5.9'
