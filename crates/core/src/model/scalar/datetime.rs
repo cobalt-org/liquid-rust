@@ -240,9 +240,10 @@ fn parse_date_time(s: &str) -> Option<DateTimeImpl> {
     } else if s.parse::<i64>().is_ok() {
         DateTimeImpl::parse(s, format_description!("[unix_timestamp]")).ok()
     } else {
-        let offset_re = Regex::new(r"[+-][01][0-9]{3}$").unwrap();
+        static OFFSET_RE: std::sync::LazyLock<Regex> =
+            std::sync::LazyLock::new(|| Regex::new(r"[+-][01][0-9]{3}$").unwrap());
 
-        let offset = if offset_re.is_match(s) { "" } else { " +0000" };
+        let offset = if OFFSET_RE.is_match(s) { "" } else { " +0000" };
         let s = s.to_owned() + offset;
 
         USER_FORMATS
