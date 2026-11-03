@@ -393,6 +393,33 @@ mod test {
     }
 
     #[test]
+    fn parse_date_time_offset_detection() {
+        let input = "2016-02-16 10:00:00 -0500"; // default format, negative offset
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455634800);
+
+        let input = "16 Feb 2016 10:00:00 +1345"; // day_mon format, offset over 10 hours
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455567300);
+
+        let input = "02/16/2016 10:00:00 -0130"; // mdy format, offset with minutes
+        let actual = parse_date_time(input);
+        assert!(actual.unwrap().unix_timestamp() == 1455622200);
+
+        // Alternate inputs with and without an offset, so the offset check
+        // runs many times in one process.
+        for _ in 0..100 {
+            let input = "Tue Feb 16 10:00:00 2016 -0130"; // dow_mon format with offset
+            let actual = parse_date_time(input);
+            assert!(actual.unwrap().unix_timestamp() == 1455622200);
+
+            let input = "Tue Feb 16 10:00:00 2016"; // dow_mon format no offset
+            let actual = parse_date_time(input);
+            assert!(actual.unwrap().unix_timestamp() == 1455616800);
+        }
+    }
+
+    #[test]
     fn parse_date_time_to_string() {
         let date = DateTime::now();
         let input = date.to_string();
