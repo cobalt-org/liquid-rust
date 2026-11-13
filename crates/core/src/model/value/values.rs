@@ -12,11 +12,28 @@ use crate::model::array::{Array, ArrayView};
 use crate::model::object::{Object, ObjectView};
 use crate::model::scalar::{Scalar, ScalarCow};
 
+/// A value supplied by the caller that keeps its own `ValueView` behavior
+/// after liquid has had to own it - across `{% assign %}`, a `{% for %}` item,
+/// or any other point a borrow cannot cross.
+///
+/// Serializes as [`ValueView::to_value`]; deserialization never produces one.
+pub trait CustomValue: ValueView + Send + Sync {}
+
+fn serialize_custom<S: serde::Serializer>(
+    value: &std::sync::Arc<dyn CustomValue>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serde::Serialize::serialize(&value.to_value(), serializer)
+}
+
 /// An enum to represent different value types
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 #[derive(Default)]
 pub enum Value {
+    /// A caller-supplied view.
+    #[serde(skip_deserializing)]
+    Custom(#[serde(serialize_with = "serialize_custom")] std::sync::Arc<dyn CustomValue>),
     /// A scalar value.
     Scalar(Scalar),
     /// A sequence of `Value`s.
@@ -49,6 +66,9 @@ impl Value {
             Value::Object(ref x) => x,
             Value::Array(ref x) => x,
             Value::State(ref x) => x,
+            // Not the inner view: `into_owned` calls `to_value` on whatever
+            // this returns, and the inner one flattens.
+            Value::Custom(_) => self,
             Value::Nil => self,
         }
     }
@@ -113,6 +133,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.render(),
             Value::Object(ref x) => x.render(),
             Value::State(ref x) => x.render(),
+            Value::Custom(ref x) => x.render(),
             Value::Nil => DisplayCow::Borrowed(&""),
         }
     }
@@ -122,6 +143,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.source(),
             Value::Object(ref x) => x.source(),
             Value::State(ref x) => x.source(),
+            Value::Custom(ref x) => x.source(),
             Value::Nil => DisplayCow::Owned(Box::new(super::StrDisplay {
                 s: self.type_name(),
             })),
@@ -133,6 +155,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.type_name(),
             Value::Object(ref x) => x.type_name(),
             Value::State(ref x) => x.type_name(),
+            Value::Custom(ref x) => x.type_name(),
             Value::Nil => "nil",
         }
     }
@@ -142,6 +165,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.query_state(state),
             Value::Object(ref x) => x.query_state(state),
             Value::State(ref x) => x.query_state(state),
+            Value::Custom(ref x) => x.query_state(state),
             Value::Nil => match state {
                 State::Truthy => false,
                 State::DefaultValue => true,
@@ -157,6 +181,7 @@ impl ValueView for Value {
             Value::Array(ref x) => x.to_kstr(),
             Value::Object(ref x) => x.to_kstr(),
             Value::State(ref x) => x.to_kstr(),
+            Value::Custom(ref x) => x.to_kstr(),
             Value::Nil => KStringCow::from_static(""),
         }
     }
@@ -170,6 +195,7 @@ impl ValueView for Value {
             Value::Array(ref x) => Value::Array(x.clone()),
             Value::Object(ref x) => Value::Object(x.clone()),
             Value::State(ref x) => Value::State(*x),
+            Value::Custom(ref x) => Value::Custom(x.clone()),
             Value::Nil => Value::Nil,
         }
     }
@@ -177,24 +203,28 @@ impl ValueView for Value {
     fn as_scalar(&self) -> Option<ScalarCow<'_>> {
         match self {
             Value::Scalar(s) => Some(s.as_ref()),
+            Value::Custom(x) => x.as_scalar(),
             _ => None,
         }
     }
     fn as_array(&self) -> Option<&dyn ArrayView> {
         match self {
             Value::Array(ref s) => Some(s),
+            Value::Custom(x) => x.as_array(),
             _ => None,
         }
     }
     fn as_object(&self) -> Option<&dyn ObjectView> {
         match self {
             Value::Object(ref s) => Some(s),
+            Value::Custom(x) => x.as_object(),
             _ => None,
         }
     }
     fn as_state(&self) -> Option<State> {
         match self {
             Value::State(s) => Some(*s),
+            Value::Custom(x) => x.as_state(),
             _ => None,
         }
     }
