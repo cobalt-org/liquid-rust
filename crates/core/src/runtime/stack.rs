@@ -64,7 +64,7 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for StackFrame<P, O> {
         let key = key.to_kstr();
         let data = &self.data;
         if data.contains_key(key.as_str()) {
-            crate::model::find(data.as_value(), path).map(|v| v.into_owned().into())
+            crate::model::find(data.as_value(), path)
         } else {
             self.parent.get(path)
         }
@@ -304,7 +304,6 @@ impl<P: super::Runtime, O: ObjectView> super::Runtime for SandboxedStackFrame<P,
         let data = &self.data;
         data.get(key.as_str())
             .and_then(|_| crate::model::try_find(data.as_value(), path))
-            .map(|v| v.into_owned().into())
             .ok_or_else(|| Error::with_msg("Unknown variable").context("requested variable", key))
     }
 
@@ -334,6 +333,69 @@ mod tests {
     use crate::{runtime::RuntimeBuilder, Runtime};
 
     use super::*;
+
+    /// A view that renders as something other than its owned `Value`, so a
+    /// frame that converts it with `to_value` can be told apart from one that
+    /// hands the view back.
+    #[derive(Debug)]
+    struct Custom;
+
+    impl ValueView for Custom {
+        fn as_debug(&self) -> &dyn std::fmt::Debug {
+            self
+        }
+        fn render(&self) -> crate::model::DisplayCow<'_> {
+            crate::model::DisplayCow::Owned(Box::new("borrowed"))
+        }
+        fn source(&self) -> crate::model::DisplayCow<'_> {
+            crate::model::DisplayCow::Owned(Box::new("borrowed"))
+        }
+        fn type_name(&self) -> &'static str {
+            "custom"
+        }
+        fn query_state(&self, _state: crate::model::State) -> bool {
+            true
+        }
+        fn to_kstr(&self) -> crate::model::KStringCow<'_> {
+            crate::model::KStringCow::from_static("borrowed")
+        }
+        fn to_value(&self) -> Value {
+            Value::scalar("owned")
+        }
+    }
+
+    fn custom_frame_data() -> std::collections::HashMap<crate::model::KStringRef<'static>, Custom> {
+        let mut data = std::collections::HashMap::new();
+        data.insert("custom".into(), Custom);
+        data
+    }
+
+    /// A frame holding its data borrows out of it, so a caller keeps whatever
+    /// `ValueView` the data holds. Converting to a `Value` on the way out both
+    /// drops a custom view and deep-clones arrays and objects.
+    #[test]
+    fn stack_frame_lookups_keep_a_custom_value_view() {
+        let runtime = RuntimeBuilder::new().build();
+        let data = custom_frame_data();
+        let frame = StackFrame::new(&runtime, &data);
+
+        let got = frame.get(&["custom".into()]).unwrap();
+        assert_eq!(got.as_view().render().to_string(), "borrowed");
+        let got = frame.try_get(&["custom".into()]).unwrap();
+        assert_eq!(got.as_view().render().to_string(), "borrowed");
+    }
+
+    #[test]
+    fn sandboxed_stack_frame_lookups_keep_a_custom_value_view() {
+        let runtime = RuntimeBuilder::new().build();
+        let data = custom_frame_data();
+        let frame = SandboxedStackFrame::new(&runtime, &data);
+
+        let got = frame.get(&["custom".into()]).unwrap();
+        assert_eq!(got.as_view().render().to_string(), "borrowed");
+        let got = frame.try_get(&["custom".into()]).unwrap();
+        assert_eq!(got.as_view().render().to_string(), "borrowed");
+    }
 
     #[test]
     fn test_opaque_stack_frame_try_get() {
