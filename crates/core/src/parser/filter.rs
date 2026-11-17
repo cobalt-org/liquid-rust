@@ -254,3 +254,19 @@ where
         Box::new(filter)
     }
 }
+
+/// A filter used internally when parsing is done in lax mode.
+#[derive(Debug, Default)]
+pub struct NoopFilter;
+
+impl Filter for NoopFilter {
+    fn evaluate(&self, input: &dyn ValueView, _runtime: &dyn Runtime) -> Result<Value> {
+        Ok(input.to_value())
+    }
+}
+
+impl Display for NoopFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        ::std::write!(f, "{}", "noop")
+    }
+}
