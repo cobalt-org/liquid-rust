@@ -219,7 +219,7 @@ pub fn find<'o>(value: &'o dyn ValueView, path: &[ScalarCow<'_>]) -> Result<Valu
                     Vec::new()
                 };
                 let available = itertools::join(available.iter(), ", ");
-                return Error::with_msg("Unknown index")
+                return Error::with_kind(crate::ErrorKind::UnknownIndex)
                     .context("variable", subpath)
                     .context("requested index", format!("{}", requested.render()))
                     .context("available indexes", available)
