@@ -281,7 +281,7 @@ impl Default for RuntimeCore<'_> {
 
 /// Unnamed state for plugins during rendering
 pub struct Registers {
-    registers: std::cell::RefCell<anymap2::AnyMap>,
+    registers: std::cell::RefCell<anymap3::AnyMap>,
 }
 
 impl Registers {
@@ -299,7 +299,7 @@ impl Registers {
 impl Default for Registers {
     fn default() -> Self {
         Self {
-            registers: std::cell::RefCell::new(anymap2::AnyMap::new()),
+            registers: std::cell::RefCell::new(anymap3::AnyMap::new()),
         }
     }
 }
