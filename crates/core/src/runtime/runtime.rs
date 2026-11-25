@@ -281,7 +281,7 @@ impl Default for RuntimeCore<'_> {
 
 /// Unnamed state for plugins during rendering
 pub struct Registers {
-    registers: std::cell::RefCell<anymap2::AnyMap>,
+    registers: std::cell::RefCell<anymap3::AnyMap>,
 }
 
 impl Registers {
@@ -299,7 +299,7 @@ impl Registers {
 impl Default for Registers {
     fn default() -> Self {
         Self {
-            registers: std::cell::RefCell::new(anymap2::AnyMap::new()),
+            registers: std::cell::RefCell::new(anymap3::AnyMap::new()),
         }
     }
 }
@@ -406,5 +406,96 @@ mod test {
             &rt.get(&global_path).unwrap(),
             &ValueViewCmp::new(&"some value")
         );
+    }
+
+    #[derive(Debug, Default, PartialEq, Eq)]
+    struct Count(u32);
+
+    // Same layout as `Count`, so only the type can tell them apart.
+    #[derive(Debug, Default, PartialEq, Eq)]
+    struct Other(u32);
+
+    #[test]
+    fn registers_missing_type_is_default() {
+        let registers = Registers::default();
+        assert_eq!(*registers.get_mut::<Count>(), Count(0));
+        assert_eq!(*registers.get_mut::<String>(), "");
+    }
+
+    #[test]
+    fn registers_keep_inserted_value() {
+        let registers = Registers::default();
+        registers.get_mut::<Count>().0 = 3;
+        assert_eq!(*registers.get_mut::<Count>(), Count(3));
+        registers.get_mut::<Count>().0 += 1;
+        assert_eq!(*registers.get_mut::<Count>(), Count(4));
+    }
+
+    #[test]
+    fn registers_overwrite_value() {
+        let registers = Registers::default();
+        *registers.get_mut::<String>() = "first".to_owned();
+        *registers.get_mut::<String>() = "second".to_owned();
+        assert_eq!(*registers.get_mut::<String>(), "second");
+    }
+
+    #[test]
+    fn registers_separate_types() {
+        let registers = Registers::default();
+        *registers.get_mut::<Count>() = Count(1);
+        *registers.get_mut::<Other>() = Other(2);
+        *registers.get_mut::<String>() = "three".to_owned();
+        assert_eq!(*registers.get_mut::<Count>(), Count(1));
+        assert_eq!(*registers.get_mut::<Other>(), Other(2));
+        assert_eq!(*registers.get_mut::<String>(), "three");
+    }
+
+    #[test]
+    fn registers_separate_instances() {
+        let first = Registers::default();
+        let second = Registers::default();
+        *first.get_mut::<Count>() = Count(1);
+        assert_eq!(*second.get_mut::<Count>(), Count(0));
+        assert_eq!(*first.get_mut::<Count>(), Count(1));
+    }
+
+    #[test]
+    fn registers_default_once_and_drop_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        static CREATED: AtomicUsize = AtomicUsize::new(0);
+        static DROPPED: AtomicUsize = AtomicUsize::new(0);
+
+        struct Tracked;
+
+        impl Default for Tracked {
+            fn default() -> Self {
+                CREATED.fetch_add(1, Ordering::SeqCst);
+                Self
+            }
+        }
+
+        impl Drop for Tracked {
+            fn drop(&mut self) {
+                DROPPED.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+
+        let registers = Registers::default();
+        for _ in 0..3 {
+            drop(registers.get_mut::<Tracked>());
+        }
+        assert_eq!(CREATED.load(Ordering::SeqCst), 1);
+        assert_eq!(DROPPED.load(Ordering::SeqCst), 0);
+        drop(registers);
+        assert_eq!(DROPPED.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "already")]
+    fn registers_borrow_is_exclusive() {
+        let registers = Registers::default();
+        let _count = registers.get_mut::<Count>();
+        let _other = registers.get_mut::<Other>();
     }
 }
